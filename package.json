@@ -1,0 +1,160 @@
+{
+  "name": "@oni.bot/core",
+  "version": "1.0.0",
+  "description": "The graph execution engine for agent swarms — production-grade orchestration with zero dependencies",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./prebuilt": {
+      "import": "./dist/prebuilt/index.js",
+      "types": "./dist/prebuilt/index.d.ts"
+    },
+    "./swarm": {
+      "import": "./dist/swarm/index.js",
+      "types": "./dist/swarm/index.d.ts"
+    },
+    "./hitl": {
+      "import": "./dist/hitl/index.js",
+      "types": "./dist/hitl/index.d.ts"
+    },
+    "./store": {
+      "import": "./dist/store/index.js",
+      "types": "./dist/store/index.d.ts"
+    },
+    "./messages": {
+      "import": "./dist/messages/index.js",
+      "types": "./dist/messages/index.d.ts"
+    },
+    "./checkpointers": {
+      "import": "./dist/checkpointers/index.js",
+      "types": "./dist/checkpointers/index.d.ts"
+    },
+    "./functional": {
+      "import": "./dist/functional.js",
+      "types": "./dist/functional.d.ts"
+    },
+    "./inspect": {
+      "import": "./dist/inspect.js",
+      "types": "./dist/inspect.d.ts"
+    },
+    "./streaming": {
+      "import": "./dist/streaming.js",
+      "types": "./dist/streaming.d.ts"
+    },
+    "./models": {
+      "import": "./dist/models/index.js",
+      "types": "./dist/models/index.d.ts"
+    },
+    "./tools": {
+      "import": "./dist/tools/index.js",
+      "types": "./dist/tools/index.d.ts"
+    },
+    "./agents": {
+      "import": "./dist/agents/index.js",
+      "types": "./dist/agents/index.d.ts"
+    },
+    "./coordination": {
+      "import": "./dist/coordination/index.js",
+      "types": "./dist/coordination/index.d.ts"
+    },
+    "./events": {
+      "import": "./dist/events/index.js",
+      "types": "./dist/events/index.d.ts"
+    },
+    "./guardrails": {
+      "import": "./dist/guardrails/index.js",
+      "types": "./dist/guardrails/index.d.ts"
+    },
+    "./testing": {
+      "import": "./dist/testing/index.js",
+      "types": "./dist/testing/index.d.ts"
+    },
+    "./harness": {
+      "import": "./dist/harness/index.js",
+      "types": "./dist/harness/index.d.ts"
+    },
+    "./mcp": {
+      "import": "./dist/mcp/index.js",
+      "types": "./dist/mcp/index.d.ts"
+    },
+    "./lsp": {
+      "import": "./dist/lsp/index.js",
+      "types": "./dist/lsp/index.d.ts"
+    },
+    "./config": {
+      "import": "./dist/config/index.js",
+      "types": "./dist/config/index.d.ts"
+    }
+  },
+  "scripts": {
+    "prepublishOnly": "npm run verify && npm run build",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "npm run typecheck && npm test",
+    "demo": "tsx examples/demo-content-pipeline.ts",
+    "bench": "tsx benchmarks/index.ts"
+  },
+  "peerDependencies": {
+    "better-sqlite3": ">=9.0.0"
+  },
+  "peerDependenciesMeta": {
+    "better-sqlite3": {
+      "optional": true
+    }
+  },
+  "bin": {
+    "oni-core": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "SECURITY.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AP3X-Dev/oni-core"
+  },
+  "homepage": "https://github.com/AP3X-Dev/oni-core#readme",
+  "bugs": {
+    "url": "https://github.com/AP3X-Dev/oni-core/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "oni",
+    "agent",
+    "swarm",
+    "graph",
+    "llm",
+    "pregel",
+    "hitl",
+    "stategraph",
+    "multi-agent",
+    "orchestration",
+    "production",
+    "circuit-breaker",
+    "dead-letter-queue",
+    "telemetry",
+    "testing",
+    "timeout"
+  ],
+  "author": "CJ — ONI Platform",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.4.0",
+    "vitest": "^4.0.18"
+  }
+}

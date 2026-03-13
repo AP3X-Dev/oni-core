@@ -1,0 +1,146 @@
+{
+  "timestamp": "2026-03-09T06:09:07.615Z",
+  "version": "0.7.0",
+  "platform": "win32 x64",
+  "nodeVersion": "v20.18.2",
+  "results": [
+    {
+      "name": "invoke: 1 node",
+      "ops": 30414,
+      "avgMs": 0.03,
+      "runs": 500
+    },
+    {
+      "name": "invoke: 5 nodes",
+      "ops": 16364,
+      "avgMs": 0.06,
+      "runs": 500
+    },
+    {
+      "name": "invoke: 10 nodes",
+      "ops": 11342,
+      "avgMs": 0.09,
+      "runs": 500
+    },
+    {
+      "name": "invoke: 20 nodes",
+      "ops": 7548,
+      "avgMs": 0.13,
+      "runs": 200
+    },
+    {
+      "name": "stream: 5 nodes (events)",
+      "ops": 22210,
+      "avgMs": 0.05,
+      "runs": 500
+    },
+    {
+      "name": "stream: 10 nodes (events)",
+      "ops": 12977,
+      "avgMs": 0.08,
+      "runs": 500
+    },
+    {
+      "name": "reducer: lastValue (1000x)",
+      "ops": 316116,
+      "avgMs": 0,
+      "runs": 500
+    },
+    {
+      "name": "reducer: appendList (1000x)",
+      "ops": 1895,
+      "avgMs": 0.53,
+      "runs": 500
+    },
+    {
+      "name": "reducer: mergeObject (1000x)",
+      "ops": 11,
+      "avgMs": 91.43,
+      "runs": 500
+    },
+    {
+      "name": "checkpoint: write (small state)",
+      "ops": 941442,
+      "avgMs": 0,
+      "runs": 500
+    },
+    {
+      "name": "checkpoint: read (small state)",
+      "ops": 563952,
+      "avgMs": 0,
+      "runs": 500
+    },
+    {
+      "name": "checkpoint: write (large state)",
+      "ops": 827815,
+      "avgMs": 0,
+      "runs": 500
+    },
+    {
+      "name": "checkpoint: read (large state)",
+      "ops": 2220249,
+      "avgMs": 0,
+      "runs": 500
+    },
+    {
+      "name": "store: put (100 items)",
+      "ops": 9561,
+      "avgMs": 0.1,
+      "runs": 200
+    },
+    {
+      "name": "store: get (from 1000 items)",
+      "ops": 1068376,
+      "avgMs": 0,
+      "runs": 500
+    },
+    {
+      "name": "store: list (100 items)",
+      "ops": 105352,
+      "avgMs": 0.01,
+      "runs": 200
+    },
+    {
+      "name": "store: search (100 items)",
+      "ops": 18366,
+      "avgMs": 0.05,
+      "runs": 200
+    },
+    {
+      "name": "swarm: hierarchical compile",
+      "ops": 15324,
+      "avgMs": 0.07,
+      "runs": 200
+    },
+    {
+      "name": "swarm: hierarchical invoke",
+      "ops": 10337,
+      "avgMs": 0.1,
+      "runs": 100
+    },
+    {
+      "name": "swarm: fanOut compile",
+      "ops": 17451,
+      "avgMs": 0.06,
+      "runs": 200
+    },
+    {
+      "name": "swarm: fanOut invoke",
+      "ops": 5567,
+      "avgMs": 0.18,
+      "runs": 100
+    },
+    {
+      "name": "swarm: pipeline compile",
+      "ops": 29100,
+      "avgMs": 0.03,
+      "runs": 200
+    },
+    {
+      "name": "swarm: pipeline invoke",
+      "ops": 10866,
+      "avgMs": 0.09,
+      "runs": 100
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+node_modules/
+dist/
+.env
+*.env.local
+*.env.*
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build artifacts
+*.tgz
+*.tar.gz
+
+# Debug / temp
+*.log
+npm-debug.log*
+.oni/session-progress.json
+.oni/scheduled_tasks.json
+.tmp-*
+
+# Test artifacts
+coverage/
+
+# Internal / planning docs
+docs/
+.claude/
+memory/
+agent-builder/
+oni-landing/
+*.jsonl
