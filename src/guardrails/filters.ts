@@ -1,0 +1,133 @@
+import type { ContentFilter, ContentFilterResult } from "./types.js";
+
+// ── PII patterns ──────────────────────────────────────────────────
+
+const PII_PATTERNS: Record<string, RegExp> = {
+  email:      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+  ssn:        /\b\d{3}-\d{2}-\d{4}\b/g,
+  phone:      /\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
+  creditCard: /\b(?:\d{4}[-\s]?){3}\d{4}\b/g,
+};
+
+const REDACT_LABELS: Record<string, string> = {
+  email:      "[EMAIL REDACTED]",
+  ssn:        "[SSN REDACTED]",
+  phone:      "[PHONE REDACTED]",
+  creditCard: "[CREDIT CARD REDACTED]",
+};
+
+export interface PiiFilterOptions {
+  block: Array<"email" | "ssn" | "phone" | "creditCard">;
+  redact?: boolean;
+}
+
+export function piiFilter(options: PiiFilterOptions): ContentFilter {
+  const { block, redact = false } = options;
+
+  return {
+    name: "pii",
+    apply: "both",
+    check(content: string): ContentFilterResult {
+      for (const kind of block) {
+        const pattern = PII_PATTERNS[kind];
+        if (!pattern) continue;
+
+        // Reset lastIndex for global regex
+        pattern.lastIndex = 0;
+
+        if (pattern.test(content)) {
+          if (redact) {
+            // Reset again for replace
+            pattern.lastIndex = 0;
+            const redacted = content.replace(pattern, REDACT_LABELS[kind]);
+            return { blocked: true, reason: `PII detected: ${kind}`, redacted };
+          }
+          return { blocked: true, reason: `PII detected: ${kind}` };
+        }
+      }
+      return { blocked: false };
+    },
+  };
+}
+
+// ── Topic filter ──────────────────────────────────────────────────
+
+export interface TopicFilterOptions {
+  blocked?: string[];
+}
+
+export function topicFilter(options: TopicFilterOptions): ContentFilter {
+  const blockedTopics = (options.blocked ?? []).map(t => t.toLowerCase());
+
+  return {
+    name: "topic",
+    apply: "both",
+    check(content: string): ContentFilterResult {
+      const lower = content.toLowerCase();
+      for (const topic of blockedTopics) {
+        if (lower.includes(topic)) {
+          return { blocked: true, reason: `Blocked topic: ${topic}` };
+        }
+      }
+      return { blocked: false };
+    },
+  };
+}
+
+// ── Custom filter ─────────────────────────────────────────────────
+
+export interface CustomFilterOptions {
+  name: string;
+  check: (content: string) => ContentFilterResult;
+  apply: "input" | "output" | "both";
+}
+
+export function customFilter(options: CustomFilterOptions): ContentFilter {
+  return {
+    name: options.name,
+    apply: options.apply,
+    check: options.check,
+  };
+}
+
+// ── Run filters pipeline ──────────────────────────────────────────
+
+export interface FilterPipelineResult {
+  passed: boolean;
+  content: string;
+  blockedBy?: string;
+  reason?: string;
+}
+
+export function runFilters(
+  filters: ContentFilter[],
+  content: string,
+  direction: "input" | "output",
+): FilterPipelineResult {
+  let currentContent = content;
+
+  for (const filter of filters) {
+    // Skip filters that don't apply to this direction
+    if (filter.apply !== "both" && filter.apply !== direction) {
+      continue;
+    }
+
+    const result = filter.check(currentContent);
+
+    if (result.blocked) {
+      if (result.redacted !== undefined) {
+        // Redaction mode — update content and continue
+        currentContent = result.redacted;
+        continue;
+      }
+      return {
+        passed: false,
+        content: currentContent,
+        blockedBy: filter.name,
+        reason: result.reason,
+      };
+    }
+  }
+
+  return { passed: true, content: currentContent };
+}

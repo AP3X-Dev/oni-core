@@ -1,0 +1,21 @@
+# ONI Audit — Suppressed findings
+# Format: file:category or file:line:category or glob:category
+
+# Ignore all findings in test files for security category
+**/*.test.ts:security
+**/*.spec.ts:security
+
+# Ignore generated/dist files
+dist/**:*
+
+# Ignore console.log in examples (intentional demo output)
+examples/**:code-smell
+
+# Ignore console.log in CLI (intentional user-facing output)
+src/cli/**:code-smell
+
+# Ignore console.log in benchmarks
+benchmarks/**:code-smell
+
+# Ignore type warnings in test utilities (any is acceptable in test mocks)
+src/testing/**:types
