@@ -518,3 +518,89 @@ describe("interrupt() outside context throws", () => {
     expect(_getInterruptContext()).toBeNull();
   });
 });
+
+// ----------------------------------------------------------------
+// 8. Bug regression — resume() uses resumeId + marks session resumed
+// ----------------------------------------------------------------
+
+describe("resume() bug regression", () => {
+  it("uses resumeId to identify the correct node (not just first pending)", async () => {
+    type S = { nodeA: string; nodeB: string };
+
+    const g = new StateGraph<S>({
+      channels: {
+        nodeA: lastValue(() => ""),
+        nodeB: lastValue(() => ""),
+      },
+    });
+
+    g.addNode("a", async () => {
+      const v = await interrupt<string>("input-a");
+      return { nodeA: v };
+    });
+    g.addNode("b", async () => {
+      const v = await interrupt<string>("input-b");
+      return { nodeB: v };
+    });
+
+    g.addEdge(START, "a");
+    g.addEdge("a", END);
+
+    const checkpointer = new MemoryCheckpointer<S>();
+    const app = g.compile({ checkpointer });
+
+    let caught: HITLInterruptException<S> | null = null;
+    try {
+      await app.invoke({}, { threadId: "resume-id-thread" });
+    } catch (err) {
+      caught = err as HITLInterruptException<S>;
+    }
+
+    expect(caught).not.toBeNull();
+    const resumeId = caught!.interrupt.resumeId;
+
+    // Resume by specific resumeId — session should be found and resolved
+    const result = await app.resume({ threadId: "resume-id-thread", resumeId }, "Alice");
+    expect(result.nodeA).toBe("Alice");
+  });
+
+  it("marks session as resumed after app.resume() is called", async () => {
+    type S = { answer: string };
+
+    const g = new StateGraph<S>({
+      channels: { answer: lastValue(() => "") },
+    });
+
+    g.addNode("ask", async () => {
+      const v = await interrupt<string>("question");
+      return { answer: v };
+    });
+
+    g.addEdge(START, "ask");
+    g.addEdge("ask", END);
+
+    const checkpointer = new MemoryCheckpointer<S>();
+    const app = g.compile({ checkpointer });
+
+    let caught: HITLInterruptException<S> | null = null;
+    try {
+      await app.invoke({}, { threadId: "mark-resumed-thread" });
+    } catch (err) {
+      caught = err as HITLInterruptException<S>;
+    }
+
+    expect(caught).not.toBeNull();
+    const resumeId = caught!.interrupt.resumeId;
+
+    // Before resume — should be pending
+    const pending = app.getPendingInterrupts({ threadId: "mark-resumed-thread" });
+    expect(pending.some((s) => s.resumeId === resumeId && s.status === "pending")).toBe(true);
+
+    // Resume
+    await app.resume({ threadId: "mark-resumed-thread", resumeId }, "42");
+
+    // After resume — pending list should no longer include this session
+    const stillPending = app.getPendingInterrupts({ threadId: "mark-resumed-thread" });
+    expect(stillPending.some((s) => s.resumeId === resumeId)).toBe(false);
+  });
+});
