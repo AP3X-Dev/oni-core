@@ -118,6 +118,10 @@ export class ONIHarness {
       compactor: this.compactor,
       safetyGate: this.safetyGate,
       skillLoader: this.skillLoader,
+      // ── Memory config forwarded to loop ──
+      memoryRoot: this.config.memoryRoot,
+      memoryBudgets: this.config.memoryBudgets,
+      memoryDebug: this.config.memoryDebug,
     };
   }
 
@@ -197,6 +201,19 @@ export class ONIHarness {
 
   getSkillLoader(): SkillLoader {
     return this.skillLoader;
+  }
+
+  /**
+   * Returns tools assembled by this harness instance.
+   * Does NOT include agentConfig.tools (per-run) or memory_query (loop-created).
+   * Used for test assertions and introspection.
+   */
+  getHarnessTools(): import("../tools/types.js").ToolDefinition[] {
+    return [
+      ...this.todoModule.getTools(),
+      this.skillLoader.getSkillTool(),
+      ...(this.config.sharedTools ?? []),
+    ];
   }
 
   // ── Public: Runtime Registration ────────────────────────────────────
