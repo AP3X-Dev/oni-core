@@ -158,12 +158,15 @@ export class StateGraph<S extends Record<string, unknown>> {
       // ---- HITL ----
 
       async resume(cfg, value) {
-        // Inject the resume value into the config so the node receives it
+        const store = runner.hitlSessionStore();
+        const session = store.get(cfg.resumeId);
+        const nodeKey = session?.node ?? runner.getPendingInterrupts(cfg.threadId)[0]?.node ?? "";
+        store.markResumed(cfg.resumeId);
         return runner.invoke(
           {},
           {
             threadId: cfg.threadId,
-            __resumeValues: { [runner.getPendingInterrupts(cfg.threadId)[0]?.node ?? ""]: value },
+            __resumeValues: { [nodeKey]: value },
           } as ONIConfig & { __resumeValues: Record<string, unknown> }
         );
       },

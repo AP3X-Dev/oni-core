@@ -10,7 +10,7 @@ import {
   type ONICheckpointer, type ONICheckpoint, type DynamicInterrupt,
   type NodeReturn, type CachePolicy,
 } from "./types.js";
-import { RecursionLimitError, NodeNotFoundError, ONIInterrupt, NodeTimeoutError, ONIError, NodeExecutionError } from "./errors.js";
+import { RecursionLimitError, NodeNotFoundError, ONIInterrupt, NodeTimeoutError, ONIError, NodeExecutionError, CircuitBreakerOpenError } from "./errors.js";
 import { CircuitBreaker } from "./circuit-breaker.js";
 import { DeadLetterQueue, type DeadLetter } from "./dlq.js";
 import { withRetry } from "./retry.js";
@@ -18,7 +18,7 @@ import { MemoryCheckpointer } from "./checkpoint.js";
 import { NamespacedCheckpointer } from "./checkpointers/namespaced.js";
 import { _runWithContext, type RunContext, type StreamWriter } from "./context.js";
 import type { BaseStore } from "./store/index.js";
-import { StreamWriterImpl, _installTokenHandler, _clearTokenHandler } from "./streaming.js";
+import { StreamWriterImpl, _withTokenHandler } from "./streaming.js";
 import type { CustomStreamEvent, MessageStreamEvent } from "./types.js";
 import {
   NodeInterruptSignal, HITLInterruptException, HITLSessionStore,
@@ -247,11 +247,16 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
         } catch (err) {
           // Pass through interrupt signals (thrown by interrupt() inside nodes)
           if (err instanceof NodeInterruptSignal) throw err;
-          // Pass through structured ONI errors (NodeExecutionError from retry, NodeTimeoutError, etc.)
-          if (err instanceof ONIError) throw err;
-          // Wrap raw errors and non-Error throws in NodeExecutionError
-          const cause = err instanceof Error ? err : new Error(String(err));
-          throw new NodeExecutionError(nodeDef.name, cause);
+          // Circuit breaker open — invoke user fallback with real state + error
+          if (err instanceof CircuitBreakerOpenError && nodeDef.circuitBreaker?.fallback) {
+            result = nodeDef.circuitBreaker.fallback(state, err) as NodeReturn<S>;
+          } else {
+            // Pass through structured ONI errors (NodeExecutionError from retry, NodeTimeoutError, etc.)
+            if (err instanceof ONIError) throw err;
+            // Wrap raw errors and non-Error throws in NodeExecutionError
+            const cause = err instanceof Error ? err : new Error(String(err));
+            throw new NodeExecutionError(nodeDef.name, cause);
+          }
         }
 
         // Store in cache (reuse key computed above)
@@ -452,9 +457,6 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
           );
           nodeWriters.set(name, writerImpl);
 
-          // Install global emitToken handler so emitToken() routes to this node's writer
-          _installTokenHandler((token: string) => writerImpl.token(token));
-
           // Check if this node has a pending resume value
           const resumeValue = resumeMap[name];
           const hasResume   = name in resumeMap;
@@ -469,49 +471,60 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
           let result: NodeReturn<S>;
           let subParentUpdates: Array<Partial<unknown>> = [];
           try {
-            if (nodeDef.subgraph) {
-              // Mark child runner as a subgraph so Command.PARENT works
-              const childRunner = (nodeDef.subgraph as any)._runner as ONIPregelRunner<any> | undefined;
-              if (childRunner) {
-                childRunner._isSubgraph = true;
-                childRunner._parentUpdates = [];
-              }
+            // Scope emitToken to this node's async context via ALS — parallel nodes each
+            // get their own handler so tokens are never dropped or misrouted.
+            result = await _withTokenHandler(
+              (token: string) => writerImpl.token(token),
+              async () => {
+                if (nodeDef.subgraph) {
+                  // Mark child runner as a subgraph so Command.PARENT works
+                  const childRunner = (nodeDef.subgraph as any)._runner as ONIPregelRunner<any> | undefined;
+                  if (childRunner) {
+                    childRunner._isSubgraph = true;
+                    childRunner._parentUpdates = [];
+                  }
 
-              // Namespace the subgraph's checkpointer for isolation
-              if (this.checkpointer && childRunner) {
-                (childRunner as any).checkpointer = new NamespacedCheckpointer(this.checkpointer as any, name);
-              }
+                  // Save original checkpointer before potentially overwriting
+                  const savedChildCheckpointer = childRunner ? (childRunner as any).checkpointer : undefined;
 
-              // Stream the subgraph instead of invoke — buffer events for yielding after Promise.all
-              // Use debug+values so we capture ALL event types AND state_update for final state
-              let subFinalState: Partial<S> | undefined;
-              const childStreamMode: StreamMode[] = ["debug", "values"];
-              for await (const evt of nodeDef.subgraph.stream(state, {
-                ...config,
-                parentRunId: config?.threadId,
-                streamMode: childStreamMode,
-              })) {
-                // Namespace-prefix the node name
-                allSubgraphEvents.push({
-                  ...evt,
-                  node: evt.node ? `${name}:${evt.node}` : name,
-                });
-                // Track the last state_update as the final subgraph state
-                if (evt.event === "state_update") {
-                  subFinalState = evt.data as Partial<S>;
+                  // Namespace the subgraph's checkpointer for isolation
+                  if (this.checkpointer && childRunner) {
+                    (childRunner as any).checkpointer = new NamespacedCheckpointer(this.checkpointer as any, name);
+                  }
+
+                  // Stream the subgraph instead of invoke — buffer events for yielding after Promise.all
+                  // Use debug+values so we capture ALL event types AND state_update for final state
+                  let subFinalState: Partial<S> | undefined;
+                  const childStreamMode: StreamMode[] = ["debug", "values"];
+                  for await (const evt of nodeDef.subgraph.stream(state, {
+                    ...config,
+                    parentRunId: config?.threadId,
+                    streamMode: childStreamMode,
+                  })) {
+                    // Namespace-prefix the node name
+                    allSubgraphEvents.push({
+                      ...evt,
+                      node: evt.node ? `${name}:${evt.node}` : name,
+                    });
+                    // Track the last state_update as the final subgraph state
+                    if (evt.event === "state_update") {
+                      subFinalState = evt.data as Partial<S>;
+                    }
+                  }
+
+                  // Collect parent updates from child and restore checkpointer
+                  if (childRunner) {
+                    subParentUpdates = childRunner._parentUpdates;
+                    childRunner._isSubgraph = false;
+                    childRunner._parentUpdates = [];
+                    (childRunner as any).checkpointer = savedChildCheckpointer;
+                  }
+                  return subFinalState ?? {};
+                } else {
+                  return this.executeNode(nodeDef, state, config, resumeValue, hasResume, writerImpl, step, recursionLimit);
                 }
               }
-
-              // Collect parent updates from child
-              if (childRunner) {
-                subParentUpdates = childRunner._parentUpdates;
-                childRunner._isSubgraph = false;
-                childRunner._parentUpdates = [];
-              }
-              result = subFinalState ?? {};
-            } else {
-              result = await this.executeNode(nodeDef, state, config, resumeValue, hasResume, writerImpl, step, recursionLimit);
-            }
+            );
           } catch (err) {
             // Catch interrupt() signals thrown from inside nodes
             if (err instanceof NodeInterruptSignal) {
@@ -546,12 +559,8 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
               this.tracer.recordError(nodeSpan, telErr);
             }
             this.tracer.endSpan(nodeSpan);
-            _clearTokenHandler();
             throw err;
           }
-
-          // Clear emitToken handler after node completes
-          _clearTokenHandler();
 
           // Telemetry: end node span
           this.tracer.endSpan(nodeSpan);
@@ -786,9 +795,6 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
       cb = new CircuitBreaker({
         threshold: nodeDef.circuitBreaker.threshold,
         resetAfter: nodeDef.circuitBreaker.resetAfter,
-        fallback: nodeDef.circuitBreaker.fallback
-          ? () => nodeDef.circuitBreaker!.fallback!(undefined as any, undefined as any)
-          : undefined,
       }, nodeDef.name);
       this.circuitBreakers.set(nodeDef.name, cb);
     }

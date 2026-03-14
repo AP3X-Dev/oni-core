@@ -5,6 +5,14 @@ All notable changes to @oni.bot/core are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-03-13
+
+### Fixed
+- **Token streaming (parallel nodes):** Replaced module-level `_tokenHandler` global with `AsyncLocalStorage` — each node in a parallel fan-out now gets its own token handler, preventing tokens from being silently dropped or misrouted to the wrong node.
+- **HITL resume:** `resume()` now looks up the session by `resumeId` (not just the first pending interrupt) and calls `markResumed()` so sessions transition from `"pending"` to `"resumed"` after being handled.
+- **Subgraph checkpointer restore:** The child runner's original `checkpointer` is saved before being overwritten with a `NamespacedCheckpointer` and restored after the subgraph completes, preventing the child's checkpointer from leaking across invocations.
+- **Circuit breaker fallback:** The user-supplied `fallback(state, error)` is now called with the real node state and the `CircuitBreakerOpenError` instance rather than `(undefined, undefined)`.
+
 ## [1.0.0] — 2026-03-13
 
 ### Breaking Changes

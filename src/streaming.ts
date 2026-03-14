@@ -6,6 +6,7 @@
 // The Pregel runner pipes tokens through as "token" stream events.
 // ============================================================
 
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { ONIStreamEvent, CustomStreamEvent, MessageStreamEvent } from "./types.js";
 
 // ----------------------------------------------------------------
@@ -27,14 +28,17 @@ export interface TokenStreamEvent {
 
 type TokenHandler = (token: string) => void;
 
-let _tokenHandler: TokenHandler | null = null;
+const tokenHandlerALS = new AsyncLocalStorage<TokenHandler>();
 
-export function _installTokenHandler(handler: TokenHandler): void {
-  _tokenHandler = handler;
-}
-
-export function _clearTokenHandler(): void {
-  _tokenHandler = null;
+/**
+ * Scope a token handler to the current async execution context.
+ * Parallel nodes each get their own handler — no global state conflicts.
+ */
+export async function _withTokenHandler<T>(
+  handler: TokenHandler,
+  fn: () => Promise<T>
+): Promise<T> {
+  return tokenHandlerALS.run(handler, fn);
 }
 
 /**
@@ -52,7 +56,7 @@ export function _clearTokenHandler(): void {
  * });
  */
 export function emitToken(token: string): void {
-  if (_tokenHandler) _tokenHandler(token);
+  tokenHandlerALS.getStore()?.(token);
 }
 
 // ----------------------------------------------------------------

@@ -8,8 +8,8 @@ high-quality pull requests.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/oni-bot/core.git
-   cd core
+   git clone https://github.com/AP3X-Dev/oni-core.git
+   cd oni-core
    ```
 
 2. **Install dependencies**
