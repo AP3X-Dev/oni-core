@@ -68,6 +68,10 @@ function convertMessages(messages: ONIModelMessage[]): {
 } {
   let system: string | undefined;
   const converted: AnthropicMessage[] = [];
+  // Buffer for consecutive tool results — Anthropic requires all tool results
+  // for one assistant turn to be in a single user message as a list of
+  // tool_result blocks. Flushed before any non-tool message is emitted.
+  const pendingToolResults: AnthropicContentBlock[] = [];
 
   for (const msg of messages) {
     if (msg.role === "system") {
@@ -84,21 +88,23 @@ function convertMessages(messages: ONIModelMessage[]): {
     }
 
     if (msg.role === "tool") {
-      // Tool results become user messages with tool_result content blocks
-      converted.push({
-        role: "user",
-        content: [
-          {
-            type: "tool_result" as unknown as "text",
-            tool_use_id: msg.toolCallId,
-            content:
-              typeof msg.content === "string"
-                ? msg.content
-                : JSON.stringify(msg.content),
-          } as unknown as AnthropicContentBlock,
-        ],
-      });
+      // Accumulate — will be emitted as a single user message when the next
+      // non-tool message is encountered or when the loop ends.
+      pendingToolResults.push({
+        type: "tool_result" as unknown as "text",
+        tool_use_id: msg.toolCallId,
+        content:
+          typeof msg.content === "string"
+            ? msg.content
+            : JSON.stringify(msg.content),
+      } as unknown as AnthropicContentBlock);
       continue;
+    }
+
+    // Flush accumulated tool results as one user message before any non-tool message.
+    if (pendingToolResults.length > 0) {
+      converted.push({ role: "user", content: [...pendingToolResults] });
+      pendingToolResults.length = 0;
     }
 
     if (msg.role === "assistant" && msg.toolCalls && msg.toolCalls.length > 0) {
@@ -139,6 +145,11 @@ function convertMessages(messages: ONIModelMessage[]): {
       role: msg.role as "user" | "assistant",
       content,
     });
+  }
+
+  // Flush any trailing tool results (conversation ending on tool messages).
+  if (pendingToolResults.length > 0) {
+    converted.push({ role: "user", content: [...pendingToolResults] });
   }
 
   return { system, converted };
@@ -210,8 +221,9 @@ async function* parseSSE(
       yield* drainSSELines(lines, state);
     }
 
-    // Flush remaining buffer
-    if (buffer.trim()) {
+    // Flush remaining buffer — also flush when buffer is empty but state.data
+    // still holds an event (stream closed without a trailing blank-line delimiter).
+    if (buffer.trim() || state.data) {
       yield* drainSSELines(buffer.split("\n"), state, true);
     }
   } finally {
@@ -409,7 +421,7 @@ export function anthropic(
         const block = parsed["content_block"] as
           | AnthropicContentBlock
           | undefined;
-        if (block?.type === "tool_use") {
+        if (block?.type === "tool_use" && block.id && block.name) {
           yield {
             type: "tool_call_start",
             toolCall: { id: block.id, name: block.name, args: {} },

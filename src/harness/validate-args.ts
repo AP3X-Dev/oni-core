@@ -39,11 +39,11 @@ export function validateToolArgs(
   const obj = args as Record<string, unknown>;
   const errors: string[] = [];
 
-  // Check required properties
+  // Check required properties — null counts as absent (model sent null for a required field = missing)
   const required = schema.required as string[] | undefined;
   if (required && Array.isArray(required)) {
     for (const key of required) {
-      if (obj[key] === undefined || obj[key] === null) {
+      if (!(key in obj) || obj[key] === null) {
         errors.push(`missing required parameter "${key}"`);
       }
     }
@@ -54,7 +54,7 @@ export function validateToolArgs(
   if (properties && typeof properties === "object") {
     for (const [key, propSchema] of Object.entries(properties)) {
       const value = obj[key];
-      if (value === undefined || value === null) continue; // missing handled by required check
+      if (value === undefined || value === null) continue; // null already caught by required check; undefined is absent
 
       const propError = validateValue(value, propSchema, key);
       if (propError) errors.push(propError);
@@ -135,6 +135,23 @@ function validateValue(
       for (let i = 0; i < value.length; i++) {
         const itemError = validateValue(value[i], itemSchema, `${path}[${i}]`);
         if (itemError) return itemError;
+      }
+    }
+  }
+
+  // Nested object properties
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    schema.properties
+  ) {
+    const props = schema.properties as Record<string, JSONSchema>;
+    const obj = value as Record<string, unknown>;
+    for (const [k, propSchema] of Object.entries(props)) {
+      if (k in obj) {
+        const propError = validateValue(obj[k], propSchema, path ? `${path}.${k}` : k);
+        if (propError) return propError;
       }
     }
   }

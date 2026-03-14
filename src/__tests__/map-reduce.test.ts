@@ -12,7 +12,7 @@ describe("Map-reduce Send", () => {
     });
 
     // Fan-out: generate sends for each topic
-    g.addNode("router", async (state) => {
+    g.addNode("router", async (_state) => {
       // Will be routed via conditional edges returning Send[]
       return {};
     });

@@ -8,8 +8,6 @@ import { EventBus } from "../events/bus.js";
 import type {
   SessionCreatedEvent,
   SessionCompactedEvent,
-  SessionCompletedEvent,
-  PermissionAskedEvent,
   PermissionRepliedEvent,
   SwarmStartedEvent,
   SwarmAgentStartedEvent,
@@ -393,7 +391,7 @@ describe("EventBus.handlerCount()", () => {
     expect(bus.handlerCount("session.created")).toBe(0);
 
     const unsub1 = bus.on("session.created", () => {});
-    const unsub2 = bus.on("session.created", () => {});
+    const _unsub2 = bus.on("session.created", () => {});
     bus.on("session.completed", () => {});
 
     expect(bus.handlerCount("session.created")).toBe(2);

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  StateGraph, START, END, lastValue, Command,
+  StateGraph, START, END, lastValue,
 } from "../index.js";
 import { getConfig, getStore, getStreamWriter } from "../context.js";
 import { InMemoryStore } from "../store/index.js";

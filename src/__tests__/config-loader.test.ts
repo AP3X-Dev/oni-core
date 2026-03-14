@@ -12,7 +12,6 @@ import {
   deepMerge,
   loadConfig,
 } from "../config/loader.js";
-import type { ONIConfig } from "../config/types.js";
 
 // ── stripJsonComments ───────────────────────────────────────
 

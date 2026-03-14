@@ -37,7 +37,7 @@ export async function* streamEvents<S>(
 
   for await (const evt of app.stream(input, {
     ...config,
-    streamMode: "debug" as StreamMode,
+    streamMode: ["debug", "values"] as StreamMode[],
   })) {
     const e = evt as ONIStreamEvent<S>;
 
@@ -57,14 +57,9 @@ export async function* streamEvents<S>(
       };
     } else if (e.event === "state_update") {
       finalData = e.data;
-    } else if (e.event === "error") {
-      yield {
-        ...base,
-        event: "on_chain_error",
-        name: e.node,
-        data: { error: e.data },
-      };
     }
+    // Note: stream errors are thrown exceptions from pregel.ts, not yielded
+    // events — there is no "error" event type in the debug stream.
   }
 
   yield { ...base, event: "on_chain_end", data: { output: finalData } };

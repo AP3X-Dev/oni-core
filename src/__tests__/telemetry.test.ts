@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { ONITracer } from "../telemetry.js";
 import type { SpanLike, TracerLike } from "../telemetry.js";
 
@@ -41,7 +41,7 @@ describe("ONITracer", () => {
       const mockTracer = createMockTracer();
       const oni = new ONITracer(mockTracer);
 
-      const span = oni.startNodeSpan("summarize", { threadId: "t-1", step: 3 });
+      const _span = oni.startNodeSpan("summarize", { threadId: "t-1", step: 3 });
 
       expect(mockTracer.spans).toHaveLength(1);
       expect(mockTracer.spans[0].name).toBe("oni.node.summarize");
@@ -108,7 +108,7 @@ describe("ONITracer", () => {
       const mockTracer = createMockTracer();
       const oni = new ONITracer(mockTracer);
 
-      const span = oni.startGraphSpan("invoke", { threadId: "t-5", agentId: "root" });
+      const _span = oni.startGraphSpan("invoke", { threadId: "t-5", agentId: "root" });
 
       expect(mockTracer.spans).toHaveLength(1);
       expect(mockTracer.spans[0].name).toBe("oni.graph.invoke");

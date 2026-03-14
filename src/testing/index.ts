@@ -2,9 +2,9 @@
 // @oni.bot/core/testing — Test Utilities
 // ============================================================
 
-import type { ONIModel, ChatParams, ChatResponse, ChatChunk, ModelCapabilities } from "../models/index.js";
+import type { ONIModel, ChatParams, ChatResponse, ChatChunk } from "../models/index.js";
 import type { StateGraph } from "../graph.js";
-import type { ONIStreamEvent, StreamMode } from "../types.js";
+import type { ONIStreamEvent, CustomStreamEvent, MessageStreamEvent, StreamMode } from "../types.js";
 import { MemoryCheckpointer } from "../checkpoint.js";
 import { InMemoryStore } from "../store/index.js";
 
@@ -117,7 +117,7 @@ export function assertGraph<S extends Record<string, unknown>>(
 
 interface TestHarness<S extends Record<string, unknown>> {
   invoke(input: Partial<S>, config?: Record<string, unknown>): Promise<S>;
-  collectStream(input: Partial<S>, streamMode?: StreamMode): Promise<ONIStreamEvent<S>[]>;
+  collectStream(input: Partial<S>, streamMode?: StreamMode): Promise<(ONIStreamEvent<S> | CustomStreamEvent | MessageStreamEvent)[]>;
 }
 
 export function createTestHarness<S extends Record<string, unknown>>(
@@ -137,7 +137,7 @@ export function createTestHarness<S extends Record<string, unknown>>(
     },
     async collectStream(input, streamMode = "updates") {
       invocationCount++;
-      const events: ONIStreamEvent<S>[] = [];
+      const events: (ONIStreamEvent<S> | CustomStreamEvent | MessageStreamEvent)[] = [];
       for await (const evt of app.stream(input, {
         threadId: `test-stream-${invocationCount}-${Date.now()}`,
         streamMode,

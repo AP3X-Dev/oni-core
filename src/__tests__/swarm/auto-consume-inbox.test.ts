@@ -55,7 +55,7 @@ describe("Auto-consume inbox", () => {
     // Pre-seed a message for "reader"
     const msg = createMessage("system", "reader", "Hello from system");
 
-    const result = await app.invoke({
+    const _result = await app.invoke({
       task: "test inbox",
       swarmMessages: [msg],
     });
@@ -156,7 +156,7 @@ describe("Auto-consume inbox", () => {
     // Broadcast message
     const broadcast = createMessage("system", "*", "Broadcast to all");
 
-    const result = await app.invoke({
+    const _result = await app.invoke({
       task: "broadcast test",
       swarmMessages: [broadcast],
     });

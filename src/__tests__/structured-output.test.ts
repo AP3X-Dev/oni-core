@@ -56,7 +56,7 @@ describe("openai structured output", () => {
     });
 
     const model = openai("gpt-4o", { apiKey: "sk-test" });
-    const result = await model.chat({
+    const _result = await model.chat({
       messages: [{ role: "user", content: "Extract: Alice is 30" }],
       responseFormat: {
         type: "json_schema",

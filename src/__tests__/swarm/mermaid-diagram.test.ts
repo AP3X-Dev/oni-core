@@ -2,11 +2,10 @@ import { describe, it, expect } from "vitest";
 import { SwarmGraph, quickAgent } from "../../swarm/graph.js";
 import { toSwarmMermaid } from "../../swarm/mermaid.js";
 import type { AgentRegistry } from "../../swarm/registry.js";
-import type { SwarmExtensions, BaseSwarmState } from "../../swarm/graph.js";
 
 // ── helpers ──────────────────────────────────────────────────
 
-function mockModel(): any {
+function _mockModel(): any {
   return { generate: async () => ({ content: "pick: a" }) };
 }
 

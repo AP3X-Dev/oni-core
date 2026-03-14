@@ -90,19 +90,25 @@ export class ONIHarness {
   // ── Private: Build Loop Config ──────────────────────────────────────
 
   private buildLoopConfig(agentConfig: AgentNodeConfig): AgentLoopConfig {
+    // Create a per-agent TodoModule so concurrent asNode() agents don't share state
+    const todoModule = new TodoModule();
+
+    // Fork the skill loader — shares the catalog but isolates pendingInjection per agent
+    const skillLoader = this.skillLoader.fork();
+
     // Build systemPrompt from soul fragments + skill descriptions
     const systemPrompt = [
       this.config.soul,
       agentConfig.soul,
-      this.skillLoader.getDescriptionsForContext(),
+      skillLoader.getDescriptionsForContext(),
     ]
       .filter(Boolean)
       .join("\n\n");
 
     // Build tools array
     const tools: ToolDefinition[] = [
-      ...this.todoModule.getTools(),
-      this.skillLoader.getSkillTool(),
+      ...todoModule.getTools(),
+      skillLoader.getSkillTool(),
       ...(this.config.sharedTools ?? []),
       ...(agentConfig.tools ?? []),
     ];
@@ -113,11 +119,11 @@ export class ONIHarness {
       agentName: agentConfig.name,
       systemPrompt,
       maxTurns: agentConfig.maxTurns ?? this.config.maxTurns,
-      todoModule: this.todoModule,
+      todoModule,
       hooksEngine: this.hooksEngine,
       compactor: this.compactor,
       safetyGate: this.safetyGate,
-      skillLoader: this.skillLoader,
+      skillLoader,
       // ── Memory config forwarded to loop ──
       memoryRoot: this.config.memoryRoot,
       memoryBudgets: this.config.memoryBudgets,
@@ -147,11 +153,18 @@ export class ONIHarness {
     agentConfig: AgentNodeConfig | string,
   ): Promise<string> {
     let finalResult = "";
+    let errorMsg: string | undefined;
 
     for await (const msg of this.run(prompt, agentConfig)) {
       if (msg.type === "result") {
         finalResult = msg.content ?? "";
+      } else if (msg.type === "error") {
+        errorMsg = msg.content ?? "Agent loop error";
       }
+    }
+
+    if (errorMsg !== undefined && finalResult === "") {
+      throw new Error(errorMsg);
     }
 
     return finalResult;

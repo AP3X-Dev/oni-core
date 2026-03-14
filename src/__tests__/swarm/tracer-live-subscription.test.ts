@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { SwarmTracer, type SwarmEvent } from "../../swarm/tracer.js";
 
 describe("SwarmTracer live event subscription", () => {

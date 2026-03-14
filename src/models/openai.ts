@@ -250,7 +250,19 @@ export function openai(
     }
 
     const json = (await res.json()) as OpenAIResponseBody;
-    const choice = json.choices[0]!;
+    const choice = json.choices?.[0];
+    if (!choice) {
+      // Empty choices = content policy / moderation block — return gracefully
+      return {
+        content: "",
+        usage: {
+          inputTokens: json.usage?.prompt_tokens ?? 0,
+          outputTokens: json.usage?.completion_tokens ?? 0,
+        },
+        stopReason: "end",
+        raw: json,
+      };
+    }
     const message = choice.message;
 
     // Extract text
@@ -281,8 +293,8 @@ export function openai(
       toolCalls,
       parsed,
       usage: {
-        inputTokens: json.usage.prompt_tokens,
-        outputTokens: json.usage.completion_tokens,
+        inputTokens: json.usage?.prompt_tokens ?? 0,
+        outputTokens: json.usage?.completion_tokens ?? 0,
       },
       stopReason: mapFinishReason(choice.finish_reason),
       raw: json,

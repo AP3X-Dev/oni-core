@@ -11,7 +11,7 @@
 
 import { StateGraph } from "../graph.js";
 import { START, END } from "../types.js";
-import type { ONIMessage, ONIToolCall, MessageState } from "../graph.js";
+import type { ONIMessage, MessageState } from "../graph.js";
 import type { ONIConfig, ONISkeleton, RetryPolicy } from "../types.js";
 import type { ONICheckpointer } from "../types.js";
 import { appendList } from "../types.js";
@@ -148,6 +148,7 @@ export function createReactAgent(
 
       const response = await llm.invoke(messages, {
         tools: llmToolSchemas.length > 0 ? llmToolSchemas : undefined,
+        signal: config?.signal,
       });
 
       return { messages: [response] };

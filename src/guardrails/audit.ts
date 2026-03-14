@@ -1,12 +1,24 @@
 import type { AuditEntry } from "./types.js";
 
 export class AuditLog {
-  private logs: Map<string, AuditEntry[]> = new Map();
+  private readonly logs: Map<string, AuditEntry[]> = new Map();
+  /** Maximum number of thread IDs retained before the oldest is evicted. */
+  private readonly maxThreadIds: number;
+
+  constructor(maxThreadIds = 1_000) {
+    this.maxThreadIds = maxThreadIds;
+  }
 
   record(threadId: string, entry: AuditEntry): void {
     const existing = this.logs.get(threadId) ?? [];
     existing.push(entry);
     this.logs.set(threadId, existing);
+    // Evict the oldest thread entry once the cap is exceeded.
+    // Map preserves insertion order, so the first key is the oldest.
+    if (this.logs.size > this.maxThreadIds) {
+      const oldest = this.logs.keys().next().value as string;
+      this.logs.delete(oldest);
+    }
   }
 
   getLog(threadId: string): AuditEntry[] {
@@ -34,7 +46,14 @@ export class AuditLog {
   }
 
   fromJSON(threadId: string, json: string): void {
-    const entries: AuditEntry[] = JSON.parse(json);
+    let entries: AuditEntry[];
+    try {
+      entries = JSON.parse(json) as AuditEntry[];
+    } catch (err) {
+      throw new Error(
+        `AuditLog.fromJSON: failed to parse log for threadId "${threadId}": ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
     this.logs.set(threadId, entries);
   }
 }

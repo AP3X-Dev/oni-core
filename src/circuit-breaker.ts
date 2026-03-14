@@ -16,6 +16,7 @@ export class CircuitBreaker {
   private _state: CircuitState = "closed";
   private consecutiveFailures = 0;
   private lastFailureTime = 0;
+  private _probeInFlight = false;
   private readonly nodeName: string;
 
   constructor(private readonly config: CircuitBreakerConfig, nodeName?: string) {
@@ -35,6 +36,14 @@ export class CircuitBreaker {
       if (this.config.fallback) return this.config.fallback() as T;
       throw new CircuitBreakerOpenError(this.nodeName, this.config.resetAfter);
     }
+    if (currentState === "half_open") {
+      if (this._probeInFlight) {
+        // Another probe is already in flight — reject additional concurrent callers
+        if (this.config.fallback) return this.config.fallback() as T;
+        throw new CircuitBreakerOpenError(this.nodeName, this.config.resetAfter);
+      }
+      this._probeInFlight = true; // Set synchronously before any await
+    }
     try {
       const result = await fn();
       this.onSuccess();
@@ -48,9 +57,11 @@ export class CircuitBreaker {
   private onSuccess(): void {
     this.consecutiveFailures = 0;
     this._state = "closed";
+    this._probeInFlight = false;
   }
 
   private onFailure(): void {
+    this._probeInFlight = false;
     this.consecutiveFailures++;
     this.lastFailureTime = Date.now();
     if (this._state === "half_open") {
@@ -64,5 +75,6 @@ export class CircuitBreaker {
     this._state = "closed";
     this.consecutiveFailures = 0;
     this.lastFailureTime = 0;
+    this._probeInFlight = false;
   }
 }

@@ -18,7 +18,7 @@ export async function withRetry<T>(
   nodeName: string,
   policy: RetryPolicy
 ): Promise<T> {
-  const maxAttempts       = policy.maxAttempts;
+  const maxAttempts       = policy.maxAttempts ?? DEFAULT_POLICY.maxAttempts;
   const initialDelay      = policy.initialDelay      ?? DEFAULT_POLICY.initialDelay;
   const backoffMultiplier = policy.backoffMultiplier  ?? DEFAULT_POLICY.backoffMultiplier;
   const maxDelay          = policy.maxDelay           ?? DEFAULT_POLICY.maxDelay;
@@ -45,13 +45,14 @@ export async function withRetry<T>(
 
       if (isLast || !shouldRetry) break;
 
-      // Add ±25% jitter to prevent thundering herd
+      // Add ±25% jitter to prevent thundering herd — jitter only affects
+      // the sleep duration, not the base delay used for the next exponential step.
       const jitterEnabled = policy.jitter !== false; // default true
-      if (jitterEnabled) {
-        delay = Math.round(delay * (0.75 + Math.random() * 0.5));
-      }
+      const sleepDuration = jitterEnabled
+        ? Math.round(delay * (0.75 + Math.random() * 0.5))
+        : delay;
 
-      await sleep(delay);
+      await sleep(sleepDuration);
       delay = Math.min(delay * backoffMultiplier, maxDelay);
     }
   }

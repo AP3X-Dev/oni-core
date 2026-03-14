@@ -76,7 +76,7 @@ describe("SwarmGraph.fanOut()", () => {
 
     const swarm = SwarmGraph.fanOut<BaseSwarmState>({
       agents: [makeTracked("a"), makeTracked("b")],
-      reducer: (results) => ({ done: true }),
+      reducer: (_results) => ({ done: true }),
     });
 
     const app = swarm.compile();

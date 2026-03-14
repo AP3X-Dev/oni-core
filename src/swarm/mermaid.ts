@@ -5,18 +5,20 @@
 // agent roles, capabilities, status, and live stats.
 // ============================================================
 
-import type { AgentRegistry, AgentManifestEntry } from "./registry.js";
+import type { AgentRegistry } from "./registry.js";
 import type { AgentStatus } from "./types.js";
 
 // ----------------------------------------------------------------
 // Status → style mapping
 // ----------------------------------------------------------------
+// Note: "terminated" is intentionally absent — AgentRegistry.manifest()
+// filters terminated agents before returning entries, so this function
+// never receives a terminated entry. The Partial type reflects that.
 
-const STATUS_STYLES: Record<AgentStatus, string> = {
-  idle:       "fill:#10b981,color:#fff",   // green
-  busy:       "fill:#3b82f6,color:#fff",   // blue
-  error:      "fill:#ef4444,color:#fff",   // red
-  terminated: "fill:#6b7280,color:#fff",   // gray (excluded by default)
+const STATUS_STYLES: Partial<Record<AgentStatus, string>> = {
+  idle:  "fill:#10b981,color:#fff",   // green
+  busy:  "fill:#3b82f6,color:#fff",   // blue
+  error: "fill:#ef4444,color:#fff",   // red
 };
 
 // ----------------------------------------------------------------
@@ -28,7 +30,8 @@ const STATUS_STYLES: Record<AgentStatus, string> = {
  * Shows agent nodes with role labels, capabilities, status coloring,
  * and live stats (active tasks, errors).
  *
- * Terminated agents are excluded.
+ * Terminated agents are excluded by {@link AgentRegistry.manifest} before
+ * this function receives them.
  */
 export function toSwarmMermaid(registry: AgentRegistry): string {
   const entries = registry.manifest();
@@ -54,7 +57,7 @@ export function toSwarmMermaid(registry: AgentRegistry): string {
       parts.push(stats.join(" | "));
     }
 
-    const label = parts.join("<br/>");
+    const label = parts.join("<br/>").replace(/"/g, "#quot;");
     lines.push(`    ${nodeId}["${label}"]`);
 
     // Style by status

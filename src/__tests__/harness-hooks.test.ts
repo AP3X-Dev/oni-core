@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   HooksEngine,
-  type HookEvent,
   type HookResult,
-  type HookDefinition,
   type HooksConfig,
   type BasePayload,
   type PreToolUsePayload,

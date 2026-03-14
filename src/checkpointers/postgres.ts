@@ -6,6 +6,7 @@
 // ============================================================
 
 import type { ONICheckpoint, ONICheckpointer, CheckpointListOptions } from "../types.js";
+import { CheckpointCorruptError } from "../errors.js";
 
 interface PgPool {
   query(sql: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[] }>;
@@ -16,28 +17,33 @@ export class PostgresCheckpointer<S> implements ONICheckpointer<S> {
   private constructor(private readonly pool: PgPool) {}
 
   static async create<S>(connectionString: string): Promise<PostgresCheckpointer<S>> {
-    // @ts-ignore — pg is an optional peer dependency
+    // @ts-expect-error — pg is an optional peer dependency
     const pg = await import("pg");
     const Pool = pg.Pool ?? (pg.default as any)?.Pool ?? pg;
     const pool = new Pool({ connectionString }) as PgPool;
 
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS oni_checkpoints (
-        thread_id      TEXT    NOT NULL,
-        step           INTEGER NOT NULL,
-        agent_id       TEXT,
-        state          JSONB   NOT NULL,
-        next_nodes     JSONB   NOT NULL,
-        pending_sends  JSONB   NOT NULL DEFAULT '[]',
-        metadata       JSONB,
-        pending_writes JSONB,
-        timestamp      BIGINT  NOT NULL,
-        PRIMARY KEY (thread_id, step)
-      )
-    `);
-    await pool.query(
-      `CREATE INDEX IF NOT EXISTS idx_oni_cp_thread ON oni_checkpoints (thread_id)`
-    );
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS oni_checkpoints (
+          thread_id      TEXT    NOT NULL,
+          step           INTEGER NOT NULL,
+          agent_id       TEXT,
+          state          JSONB   NOT NULL,
+          next_nodes     JSONB   NOT NULL,
+          pending_sends  JSONB   NOT NULL DEFAULT '[]',
+          metadata       JSONB,
+          pending_writes JSONB,
+          timestamp      BIGINT  NOT NULL,
+          PRIMARY KEY (thread_id, step)
+        )
+      `);
+      await pool.query(
+        `CREATE INDEX IF NOT EXISTS idx_oni_cp_thread ON oni_checkpoints (thread_id)`
+      );
+    } catch (err) {
+      await pool.end().catch(() => {});
+      throw err;
+    }
 
     return new PostgresCheckpointer<S>(pool);
   }
@@ -113,18 +119,25 @@ export class PostgresCheckpointer<S> implements ONICheckpointer<S> {
   }
 
   private deserialize(row: Record<string, unknown>): ONICheckpoint<S> {
-    const parse = (val: unknown) =>
-      typeof val === "string" ? JSON.parse(val) : val;
+    const threadId = row.thread_id as string;
+    const safeParse = <T>(field: string, raw: unknown): T => {
+      const val = typeof raw === "string" ? raw : JSON.stringify(raw);
+      try {
+        return JSON.parse(val) as T;
+      } catch {
+        throw new CheckpointCorruptError(threadId, `failed to parse "${field}" — data may be truncated or corrupted`);
+      }
+    };
 
     return {
-      threadId:      row.thread_id as string,
+      threadId,
       step:          row.step as number,
       agentId:       (row.agent_id as string | null) ?? undefined,
-      state:         parse(row.state) as S,
-      nextNodes:     parse(row.next_nodes) as string[],
-      pendingSends:  parse(row.pending_sends) as Array<{ node: string; args: Record<string, unknown> }>,
-      metadata:      row.metadata ? parse(row.metadata) as Record<string, unknown> : undefined,
-      pendingWrites: row.pending_writes ? parse(row.pending_writes) as Array<{ nodeId: string; writes: Record<string, unknown> }> : undefined,
+      state:         safeParse<S>("state", row.state),
+      nextNodes:     safeParse<string[]>("next_nodes", row.next_nodes),
+      pendingSends:  safeParse<Array<{ node: string; args: Record<string, unknown> }>>("pending_sends", row.pending_sends),
+      metadata:      row.metadata ? safeParse<Record<string, unknown>>("metadata", row.metadata) : undefined,
+      pendingWrites: row.pending_writes ? safeParse<Array<{ nodeId: string; writes: Record<string, unknown> }>>("pending_writes", row.pending_writes) : undefined,
       timestamp:     Number(row.timestamp),
     };
   }

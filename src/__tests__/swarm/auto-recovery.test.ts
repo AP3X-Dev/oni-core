@@ -75,7 +75,7 @@ describe("Supervisor auto-recovery", () => {
 
     // Enable auto-recovery on the supervisor config
     // This is tested via the supervisor config option
-    const app = swarm.compile();
+    const _app = swarm.compile();
 
     // Without autoRecover, supervisor rule would route back to "primary" (still error)
     // or END. With autoRecover, supervisor should detect lastAgentError and route to

@@ -38,7 +38,6 @@ export async function devCommand(args: ParsedArgs): Promise<void> {
   // Use tsx --watch for hot-reload
   const child = spawn("npx", ["tsx", "watch", entryFile], {
     stdio: "inherit",
-    shell: true,
     env: { ...process.env, ONI_DEV: "true", ONI_PORT: port },
   });
 

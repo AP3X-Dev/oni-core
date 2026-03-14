@@ -116,6 +116,7 @@ export function defineAgent<S extends Record<string, unknown> = Record<string, u
         messages,
         tools: llmTools.length > 0 ? llmTools : undefined,
         systemPrompt,
+        signal: config?.signal,
       });
       const llmDuration = Date.now() - llmStart;
 
@@ -150,12 +151,17 @@ export function defineAgent<S extends Record<string, unknown> = Record<string, u
       if (response.toolCalls && response.toolCalls.length > 0) {
         assistantMsg.toolCalls = response.toolCalls;
       }
-      messages.push(assistantMsg);
 
-      // Check maxTokens budget
+      // Check maxTokens budget before pushing — if over budget with pending tool calls,
+      // push the assistant message with toolCalls stripped. An assistant+toolCalls message
+      // with no following tool results is rejected by Anthropic and OpenAI APIs, but the
+      // text content is still valid and worth preserving for conversation history continuity.
       if (maxTokens !== undefined && totalTokens >= maxTokens) {
+        messages.push({ role: "assistant", content: assistantMsg.content });
         break;
       }
+
+      messages.push(assistantMsg);
 
       // e. If no tool calls -> done
       if (!response.toolCalls || response.toolCalls.length === 0) {

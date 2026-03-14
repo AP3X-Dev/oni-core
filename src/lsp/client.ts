@@ -35,6 +35,7 @@ const INITIALIZE_TIMEOUT_MS = 30_000;
 const REQUEST_TIMEOUT_MS = 10_000;
 const DIAGNOSTICS_DEBOUNCE_MS = 150;
 const DIAGNOSTICS_TIMEOUT_MS = 3_000;
+const MAX_TRACKED_FILES = 2_000;
 
 // ── Pending Request ──────────────────────────────────────────
 
@@ -74,6 +75,9 @@ export class LSPClient {
   private diagnosticsCache = new Map<string, LSPDiagnostic[]>();
   private diagnosticsWaiters = new Map<string, DiagnosticsWaiter[]>();
 
+  // Coalescing lock — concurrent start() callers share one in-flight Promise
+  private _startPromise: Promise<void> | null = null;
+
   constructor(config: LSPServerConfig, rootDir: string) {
     this.config = config;
     this.rootDir = rootDir;
@@ -89,7 +93,17 @@ export class LSPClient {
     if (this.state === "broken") {
       throw new Error(`LSP server "${this.config.id}" is marked as broken`);
     }
+    // Coalescing lock: if a start is already in progress, join it instead of
+    // spawning a second language server process.
+    if (this._startPromise) return this._startPromise;
 
+    this._startPromise = this._doStart().finally(() => {
+      this._startPromise = null;
+    });
+    return this._startPromise;
+  }
+
+  private async _doStart(): Promise<void> {
     this.state = "connecting";
 
     try {
@@ -112,9 +126,11 @@ export class LSPClient {
         this.handleProcessExit();
       });
 
-      this.process.on("error", () => {
+      this.process.on("error", (err) => {
         this.state = "broken";
-        this.rejectAllPending("LSP server process error");
+        this.rejectAllPending(`LSP server process error: ${err.message}`);
+        this.clearAllWaiters();
+        this.process = null;
       });
 
       // Send initialize request
@@ -154,8 +170,17 @@ export class LSPClient {
 
       this.state = "ready";
     } catch (err) {
+      // Capture state BEFORE stop() — stop() always overwrites to "disconnected".
+      // If an external stop() already ran during the async connect (e.g. during
+      // sendRequest("initialize")), it would have set state to "disconnected"
+      // before this catch fires. In that case keep it "disconnected" so the
+      // client remains restartable. Assigned to `string` to escape TypeScript's
+      // control-flow narrowing, which does not model concurrent async mutations.
+      const stateAtCatch: string = this.state;
       this.stop();
-      this.state = "broken"; // Set AFTER stop() so it isn't overwritten
+      if (stateAtCatch !== "disconnected") {
+        this.state = "broken";
+      }
       throw err;
     }
   }
@@ -211,7 +236,11 @@ export class LSPClient {
       : undefined;
 
     if (version === undefined) {
-      // First time — didOpen
+      // First time — didOpen; evict oldest entry if at cap
+      if (this.fileVersions.size >= MAX_TRACKED_FILES) {
+        const oldest = this.fileVersions.keys().next().value as string;
+        this.fileVersions.delete(oldest);
+      }
       this.fileVersions.set(filePath, 0);
       this.sendNotification("textDocument/didOpen", {
         textDocument: {
@@ -321,6 +350,7 @@ export class LSPClient {
       for (const w of waiters) {
         clearTimeout(w.overallTimer);
         if (w.debounceTimer) clearTimeout(w.debounceTimer);
+        w.resolve();
       }
     }
     this.diagnosticsWaiters.clear();
@@ -413,19 +443,9 @@ export class LSPClient {
   }
 
   private handleMessage(message: Record<string, unknown>): void {
-    // Response (has id)
-    if ("id" in message && message.id !== null) {
-      const id = message.id as number;
-      const pending = this.pending.get(id);
-      if (pending) {
-        clearTimeout(pending.timer);
-        this.pending.delete(id);
-        pending.resolve(message as unknown as JsonRpcResponse);
-      }
-      return;
-    }
-
-    // Server → client request (has id + method, needs response)
+    // Server → client request (has id + method, needs response) — must be
+    // checked BEFORE the response branch because requests also have a non-null
+    // id; the response branch would otherwise capture them and return early.
     if ("id" in message && "method" in message) {
       const method = message.method as string;
       // Handle common server requests with empty responses
@@ -447,6 +467,26 @@ export class LSPClient {
           id: message.id,
           result: items.map(() => this.config.initializationOptions ?? {}),
         });
+      } else {
+        // LSP spec requires a response to every server-initiated request.
+        // Reply with MethodNotFound so the server is not left waiting.
+        this.writeMessage({
+          jsonrpc: "2.0",
+          id: message.id,
+          error: { code: -32601, message: `Method not supported: ${method}` },
+        });
+      }
+      return;
+    }
+
+    // Response (has id but no method)
+    if ("id" in message && message.id !== null) {
+      const id = message.id as number;
+      const pending = this.pending.get(id);
+      if (pending) {
+        clearTimeout(pending.timer);
+        this.pending.delete(id);
+        pending.resolve(message as unknown as JsonRpcResponse);
       }
       return;
     }
@@ -461,6 +501,13 @@ export class LSPClient {
     if (notification.method === "textDocument/publishDiagnostics") {
       const params = notification.params as PublishDiagnosticsParams;
       const filePath = this.uriToPath(params.uri);
+      if (
+        !this.diagnosticsCache.has(filePath) &&
+        this.diagnosticsCache.size >= MAX_TRACKED_FILES
+      ) {
+        const oldest = this.diagnosticsCache.keys().next().value as string;
+        this.diagnosticsCache.delete(oldest);
+      }
       this.diagnosticsCache.set(filePath, params.diagnostics);
       this.notifyDiagnosticsWaiters(filePath);
     }
@@ -498,7 +545,7 @@ export class LSPClient {
   }
 
   private rejectAllPending(reason: string): void {
-    for (const [id, req] of this.pending) {
+    for (const [_id, req] of this.pending) {
       clearTimeout(req.timer);
       req.reject(new Error(reason));
     }

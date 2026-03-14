@@ -9,20 +9,25 @@
 // ============================================================
 
 import { StateGraph } from "../graph.js";
+import type { ONISkeletonV3 } from "../graph.js";
 import { START, END, appendList, lastValue, mergeObject } from "../types.js";
 import { Command, Send } from "../types.js";
 import type {
   NodeFn, ONIConfig, ONISkeleton, ONICheckpointer, ChannelSchema, NodeReturn,
 } from "../types.js";
+import type { BaseStore } from "../store/index.js";
+import type { GuardrailsConfig } from "../guardrails/types.js";
+import type { EventListeners } from "../events/types.js";
+import type { TracerLike } from "../telemetry.js";
 import type { ONIModel } from "../models/types.js";
 import type {
-  SwarmAgentDef, SupervisorConfig, SwarmMeta, HandoffRecord, SwarmMessage,
+  SwarmAgentDef, SupervisorConfig, HandoffRecord, SwarmMessage,
   AgentCapability,
 } from "./types.js";
 import { Handoff } from "./types.js";
 import { AgentRegistry } from "./registry.js";
 import { createSupervisorNode, type SupervisorState } from "./supervisor.js";
-import { createMessage, getInbox } from "./mailbox.js";
+import { getInbox } from "./mailbox.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
 import { PubSub } from "../coordination/pubsub.js";
 import { runWithTimeout } from "../internal/timeout.js";
@@ -751,7 +756,6 @@ export class SwarmGraph<S extends BaseSwarmState> {
     },
   ): SwarmGraph<S> {
     const swarm = new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>);
-    const agentIds = config.agents.map((a) => a.id);
     const accept = config.accept ?? (() => true);
     const timeoutMs = config.timeoutMs;
 
@@ -795,7 +799,13 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
         for (const p of agentPromises) {
           p.then((r) => {
-            if (!r.error && accept(r.result)) {
+            let accepted = false;
+            try {
+              accepted = !r.error && accept(r.result);
+            } catch {
+              // accept() threw — treat as not accepted to keep remaining decrement working
+            }
+            if (accepted) {
               resolve(r);
             } else {
               remaining--;
@@ -843,7 +853,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
     const agentMap = new Map(config.agents.map((a) => [a.id, a]));
 
     // Validate dependencies
-    for (const [node, deps] of Object.entries(config.dependencies)) {
+    for (const [_node, deps] of Object.entries(config.dependencies)) {
       for (const dep of deps) {
         if (!agentMap.has(dep)) {
           throw new Error(`Dependency "${dep}" not found in agents list.`);
@@ -880,8 +890,8 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // Group agents into layers based on dependencies
     const deps = config.dependencies;
-    const rootIds = config.agents.filter((a) => !deps[a.id]?.length).map((a) => a.id);
-    const nonRootIds = config.agents.filter((a) => deps[a.id]?.length).map((a) => a.id);
+    const _rootIds = config.agents.filter((a) => !deps[a.id]?.length).map((a) => a.id);
+    const _nonRootIds = config.agents.filter((a) => deps[a.id]?.length).map((a) => a.id);
 
     // For DAG execution: use a single orchestrator node
     swarm.inner.addNode("__dag_runner__", async (state: S, cfg?) => {
@@ -976,7 +986,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
         targetId: poolIds[idx % poolIds.length]!,
       }));
 
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve, _reject) => {
         let completed = 0;
         const total = queue.length;
 
@@ -1188,7 +1198,6 @@ export class SwarmGraph<S extends BaseSwarmState> {
               [def.id]: result,
             },
             handoffHistory: [
-              ...(state.handoffHistory ?? []),
               {
                 from:      def.id,
                 to:        "__completed__",
@@ -1200,7 +1209,6 @@ export class SwarmGraph<S extends BaseSwarmState> {
           } as Partial<S>;
         } catch (err) {
           lastError = err;
-          this.registry.markError(def.id);
           if (attempt < maxRetries) {
             // Backoff delay between retries — clamped to remaining deadline
             if (retryDelayMs > 0) {
@@ -1218,7 +1226,8 @@ export class SwarmGraph<S extends BaseSwarmState> {
         }
       }
 
-      // All retries exhausted — fire onError hook
+      // All retries exhausted — mark error once, then fire onError hook
+      this.registry.markError(def.id);
       await def.hooks?.onError?.(def.id, lastError);
 
       // Keep agent in error status (don't reset to idle)
@@ -1368,24 +1377,48 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
   // ---- Compile ----
 
-  compile(opts: SwarmCompileOpts<S> = {}): ONISkeleton<S> & SwarmExtensions<S> {
+  compile(opts: SwarmCompileOpts<S> = {}): ONISkeletonV3<S> & SwarmExtensions<S> {
     const skeleton = this.inner.compile({
-      ...(opts.checkpointer    ? { checkpointer:    opts.checkpointer }    : {}),
-      ...(opts.interruptBefore ? { interruptBefore: opts.interruptBefore } : {}),
-      ...(opts.interruptAfter  ? { interruptAfter:  opts.interruptAfter }  : {}),
+      ...(opts.checkpointer    !== undefined ? { checkpointer:    opts.checkpointer }    : {}),
+      ...(opts.interruptBefore !== undefined ? { interruptBefore: opts.interruptBefore } : {}),
+      ...(opts.interruptAfter  !== undefined ? { interruptAfter:  opts.interruptAfter }  : {}),
+      ...(opts.store           !== undefined ? { store:           opts.store }           : {}),
+      ...(opts.guardrails      !== undefined ? { guardrails:      opts.guardrails }      : {}),
+      ...(opts.listeners       !== undefined ? { listeners:       opts.listeners }       : {}),
+      ...(opts.defaults        !== undefined ? { defaults:        opts.defaults }        : {}),
+      ...(opts.deadLetterQueue !== undefined ? { deadLetterQueue: opts.deadLetterQueue } : {}),
+      ...(opts.tracer          !== undefined ? { tracer:          opts.tracer }          : {}),
     } as any);
 
     const registry = this.registry;
     const inner = this.inner;
     const hasSupervisor = this.hasSupervisor;
     const supervisorNodeName = this.supervisorNodeName;
-    const self = this;
 
     // Attach swarm-specific extensions
     const extensions: SwarmExtensions<S> = {
       registry,
       agentStats: () => registry.stats(),
-      toMermaid:  () => inner.toMermaid(),
+      toMermaid: () => {
+        // Read from the live runner's edge map so the diagram reflects
+        // agents added/removed via spawnAgent()/removeAgent() after compile.
+        const runner = (skeleton as any)._runner;
+        const edgesBySource = runner?._edgesBySource as
+          | Map<string, Array<{ type: string; to?: string }>>
+          | undefined;
+        if (!edgesBySource) return inner.toMermaid(); // safe fallback
+        const lines: string[] = ["graph TD"];
+        for (const [from, edges] of edgesBySource) {
+          for (const edge of edges) {
+            if (edge.type === "static" && edge.to !== undefined) {
+              lines.push(`    ${from} --> ${edge.to}`);
+            } else {
+              lines.push(`    ${from} -->|?| conditional_${from}`);
+            }
+          }
+        }
+        return lines.join("\n");
+      },
 
       spawnAgent(def: SwarmAgentDef<S>) {
         // spawnAgent requires a supervisor to route the spawned agent back into the graph.
@@ -1485,6 +1518,14 @@ export interface SwarmCompileOpts<S> {
   checkpointer?:    ONICheckpointer<S>;
   interruptBefore?: string[];
   interruptAfter?:  string[];
+  store?:           BaseStore;
+  guardrails?:      GuardrailsConfig;
+  listeners?:       EventListeners;
+  defaults?: {
+    nodeTimeout?: number;
+  };
+  deadLetterQueue?: boolean;
+  tracer?:          TracerLike;
 }
 
 export interface SwarmExtensions<S extends Record<string, unknown>> {

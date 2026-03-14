@@ -7,15 +7,13 @@ import {
   START, END,
   type NodeName, type NodeFn, type NodeDefinition, type Edge,
   type ChannelSchema, type ONIConfig, type ONISkeleton,
-  type ONICheckpointer, type RetryPolicy, type CachePolicy, type ONICheckpoint,
-  type ONIStreamEvent, type StreamMode,
+  type ONICheckpointer, type RetryPolicy, type CachePolicy,
   appendList,
 } from "./types.js";
 import { InvalidSkeletonError, EdgeConflictError, NodeNotFoundError } from "./errors.js";
 import { DeadLetterQueue } from "./dlq.js";
 import type { AgentNode } from "./agents/types.js";
 import { ONIPregelRunner } from "./pregel.js";
-import { NoopCheckpointer } from "./checkpoint.js";
 import type { HITLSession } from "./hitl/index.js";
 import type { BaseStore } from "./store/index.js";
 import type { GuardrailsConfig } from "./guardrails/types.js";
@@ -174,14 +172,17 @@ export class StateGraph<S extends Record<string, unknown>> {
           );
         }
         const nodeKey = session.node;
-        store.markResumed(cfg.resumeId);
-        return runner.invoke(
+        const result = await runner.invoke(
           {},
           {
             threadId: cfg.threadId,
             __resumeValues: { [nodeKey]: value },
           } as ONIConfig & { __resumeValues: Record<string, unknown> }
         );
+        // Mark as resumed only after a successful invoke — if invoke throws,
+        // the session remains in "pending" so the caller can retry.
+        store.markResumed(cfg.resumeId);
+        return result;
       },
 
       getPendingInterrupts(cfg) {
@@ -261,6 +262,7 @@ import { buildGraphDescriptor, toMermaidDetailed } from "./inspect.js";
 
 // Extend StateGraph with getGraph
 declare module "./graph.js" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface StateGraph<S> {
     getGraph(): import("./inspect.js").GraphDescriptor;
     toMermaidDetailed(): string;

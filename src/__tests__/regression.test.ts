@@ -135,7 +135,7 @@ describe("Bug 3 regression — subgraph checkpointer restore", () => {
 
     // Child's checkpointer must be restored to null despite the throw
     expect(childRunner.checkpointer).toBeNull();
-    expect(childRunner._isSubgraph).toBe(false);
+    expect(childRunner._subgraphRefCount).toBe(0);
   });
 });
 

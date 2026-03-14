@@ -57,7 +57,8 @@ export function createSupervisorNode<S extends SupervisorState>(
     // On subsequent rounds, read it from context. This ensures each invoke() gets a fresh deadline.
     let deadlineAbsolute: number | null = null;
     if (deadlineMs != null) {
-      const ctx = (state.context ?? {}) as Record<string, unknown>;
+      const ctxField = config.contextField ?? "context";
+      const ctx = ((state[ctxField] ?? {}) as Record<string, unknown>);
       if (round === 0 || ctx.__deadlineAbsolute === undefined) {
         deadlineAbsolute = Date.now() + deadlineMs;
       } else {
@@ -73,7 +74,7 @@ export function createSupervisorNode<S extends SupervisorState>(
       });
     }
 
-    // Guard: max rounds
+    // Guard: max rounds or task completion
     if (round >= maxRounds || state.done) {
       return new Command<S>({
         update: { supervisorRound: round } as Partial<S>,
@@ -81,12 +82,7 @@ export function createSupervisorNode<S extends SupervisorState>(
       });
     }
 
-    // Check if last agent marked task as done
-    if (state.done) {
-      return new Command<S>({ update: {} as Partial<S>, goto: END });
-    }
-
-    const rawCtx = (config.contextField ? state[config.contextField] : {}) as Record<string, unknown>;
+    const rawCtx = (state[config.contextField ?? "context"] ?? {}) as Record<string, unknown>;
     // Enrich context with supervisorRound so rules/LLM can inspect the current round
     const ctx: Record<string, unknown> = { ...rawCtx, supervisorRound: round };
 
@@ -108,7 +104,7 @@ export function createSupervisorNode<S extends SupervisorState>(
               update: {
                 supervisorRound: round + 1,
                 currentAgent: match.def.id,
-                context: { ...(rawCtx as any), lastAgentError: undefined },
+                [config.contextField ?? "context"]: { ...(rawCtx as any), lastAgentError: undefined },
                 messages: [
                   ...state.messages,
                   { role: "system", content: `Supervisor auto-recovering to: ${match.def.role}` },
@@ -126,7 +122,11 @@ export function createSupervisorNode<S extends SupervisorState>(
 
     switch (config.strategy) {
       case "llm":
-        targetAgentId = await routeViaLLM(task, ctx, registry, config.model!, config.systemPrompt);
+        try {
+          targetAgentId = await routeViaLLM(task, ctx, registry, config.model!, config.systemPrompt);
+        } catch {
+          targetAgentId = null; // transient model error — fall through to graceful END
+        }
         break;
       case "rule":
         targetAgentId = routeViaRules(task, ctx, config.rules ?? []);
@@ -152,7 +152,7 @@ export function createSupervisorNode<S extends SupervisorState>(
       update: {
         supervisorRound: round + 1,
         currentAgent:    targetAgentId,
-        ...(deadlineAbsolute != null ? { context: { ...(rawCtx as any), __deadlineAbsolute: deadlineAbsolute } } : {}),
+        ...(deadlineAbsolute != null ? { [config.contextField ?? "context"]: { ...(rawCtx as any), __deadlineAbsolute: deadlineAbsolute } } : {}),
         messages: [
           ...state.messages,
           { role: "system", content: `Supervisor routing to: ${agentDef.role}` },
@@ -201,8 +201,13 @@ async function routeViaLLM<S extends Record<string, unknown>>(
   // Validate the LLM returned a real agent ID
   if (agentIds.includes(cleaned)) return cleaned;
 
-  // Fuzzy: find the first agent ID that appears in the response
-  return agentIds.find((id) => response.content.includes(id)) ?? null;
+  // Fuzzy: find the longest agent ID that appears in the response.
+  // Longest-match prevents "agent" from winning when "agent-advanced" is also
+  // a substring of the response — the more-specific ID takes precedence.
+  const matches = agentIds.filter((id) => response.content.includes(id));
+  if (matches.length === 0) return null;
+  matches.sort((a, b) => b.length - a.length);
+  return matches[0]!;
 }
 
 function routeViaRules(

@@ -17,6 +17,7 @@ export interface InjectedToolOptions<S, Args extends Record<string, unknown>> {
   fn: (args: Args, injected: { state: S; store: BaseStore | null }) => Promise<unknown> | unknown;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export interface InjectedTool<S, Args extends Record<string, unknown>> {
   name: string;
   description: string;

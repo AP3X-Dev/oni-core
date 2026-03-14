@@ -12,26 +12,34 @@ export interface TopicMessage {
   timestamp: number;
 }
 
+const DEFAULT_MAX_BUFFER_SIZE = 1000;
+
 export class PubSub {
   private subscribers = new Map<string, Set<(msg: TopicMessage) => void>>();
   private buffer: TopicMessage[] = [];
-  private maxBufferSize: number | undefined;
+  private maxBufferSize: number;
 
   constructor(opts?: { maxBufferSize?: number }) {
-    this.maxBufferSize = opts?.maxBufferSize;
+    this.maxBufferSize = opts?.maxBufferSize ?? DEFAULT_MAX_BUFFER_SIZE;
   }
 
   /** Publish a message to a topic, notifying all matching subscribers. */
   publish(from: string, topic: string, data: unknown): void {
     const msg: TopicMessage = { topic, data, from, timestamp: Date.now() };
     this.buffer.push(msg);
-    // Enforce buffer bounds by dropping oldest
-    if (this.maxBufferSize != null && this.buffer.length > this.maxBufferSize) {
+    // Enforce buffer bounds by dropping oldest entries
+    if (this.buffer.length > this.maxBufferSize) {
       this.buffer = this.buffer.slice(this.buffer.length - this.maxBufferSize);
     }
     for (const [pattern, handlers] of this.subscribers) {
       if (topicMatches(pattern, topic)) {
-        for (const handler of handlers) handler(msg);
+        for (const handler of handlers) {
+          try {
+            handler(msg);
+          } catch {
+            // Isolate subscriber errors — delivery continues to remaining handlers
+          }
+        }
       }
     }
   }
@@ -73,22 +81,28 @@ export class PubSub {
  * - Global wildcard: "*" matches any topic
  * - Single-segment wildcard: "a.*" matches "a.b" but not "a.b.c"
  * - Deep wildcard: "a.**" matches "a.b", "a.b.c", "a.b.c.d", etc.
+ *   `**` may appear anywhere in the pattern — "a.**.b" matches "a.x.b", "a.x.y.b", etc.
  */
 export function topicMatches(pattern: string, topic: string): boolean {
   if (pattern === topic) return true;
   if (pattern === "*") return true;
+  return matchSegments(pattern.split("."), 0, topic.split("."), 0);
+}
 
-  const pp = pattern.split(".");
-  const tp = topic.split(".");
-
-  for (let i = 0; i < pp.length; i++) {
-    if (pp[i] === "**") return true;
-    if (pp[i] === "*") {
-      if (i === pp.length - 1) return tp.length === pp.length;
-      continue;
+function matchSegments(pp: string[], pi: number, tp: string[], ti: number): boolean {
+  while (pi < pp.length) {
+    const seg = pp[pi]!;
+    if (seg === "**") {
+      // ** matches zero or more topic segments; try each possible consumption length
+      for (let skip = 0; skip <= tp.length - ti; skip++) {
+        if (matchSegments(pp, pi + 1, tp, ti + skip)) return true;
+      }
+      return false;
     }
-    if (pp[i] !== tp[i]) return false;
+    if (ti >= tp.length) return false;
+    if (seg !== "*" && seg !== tp[ti]) return false;
+    pi++;
+    ti++;
   }
-
-  return pp.length === tp.length;
+  return ti === tp.length;
 }

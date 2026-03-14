@@ -98,7 +98,7 @@ describe("Deadline computed at invoke-time (not factory-time)", () => {
     // have expired by now. With the fix, the deadline starts fresh at invoke().
     await new Promise((r) => setTimeout(r, 400));
 
-    const invokeStart = Date.now();
+    const _invokeStart = Date.now();
     timestamps.length = 0;
 
     const result = await app.invoke({ task: "late invoke" });

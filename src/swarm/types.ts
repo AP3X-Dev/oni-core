@@ -2,7 +2,7 @@
 // @oni.bot/core/swarm — Swarm Types
 // ============================================================
 
-import type { ONISkeleton, ONIConfig, ONICheckpointer } from "../types.js";
+import type { ONISkeleton } from "../types.js";
 import type { ONIModel } from "../models/types.js";
 
 // ----------------------------------------------------------------
@@ -167,16 +167,6 @@ export interface AgentPoolConfig<S extends Record<string, unknown>> {
   strategy?:     "round-robin" | "least-busy" | "random";
   /** Max queue depth before backpressure kicks in */
   maxQueueDepth?: number;
-}
-
-// ----------------------------------------------------------------
-// SwarmGraph compile options
-// ----------------------------------------------------------------
-
-export interface SwarmCompileOptions<S extends Record<string, unknown>> {
-  checkpointer?:    ONICheckpointer<S>;
-  interruptBefore?: string[];
-  interruptAfter?:  string[];
 }
 
 // ----------------------------------------------------------------

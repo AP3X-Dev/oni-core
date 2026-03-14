@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { EventBus } from "../events/bus.js";
-import type { LifecycleEvent, AgentStartEvent, AgentEndEvent } from "../events/types.js";
+import type { LifecycleEvent, AgentStartEvent } from "../events/types.js";
 
 describe("EventBus", () => {
   it("emits events to typed handlers", () => {

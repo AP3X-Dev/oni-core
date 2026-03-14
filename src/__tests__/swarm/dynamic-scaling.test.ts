@@ -144,13 +144,14 @@ describe("DynamicScalingMonitor", () => {
       });
 
       // Simulate: 3 starts, 2 errors, 1 complete → 67% error rate
+      const now = Date.now();
       monitor.setCurrentAgentCount(3);
-      tracer.record({ type: "agent_start", agentId: "a1", timestamp: 1000 });
-      tracer.record({ type: "agent_start", agentId: "a2", timestamp: 1001 });
-      tracer.record({ type: "agent_start", agentId: "a3", timestamp: 1002 });
-      tracer.record({ type: "agent_error", agentId: "a1", timestamp: 2000 });
-      tracer.record({ type: "agent_error", agentId: "a2", timestamp: 2001 });
-      tracer.record({ type: "agent_complete", agentId: "a3", timestamp: 2002 });
+      tracer.record({ type: "agent_start", agentId: "a1", timestamp: now - 5000 });
+      tracer.record({ type: "agent_start", agentId: "a2", timestamp: now - 4999 });
+      tracer.record({ type: "agent_start", agentId: "a3", timestamp: now - 4998 });
+      tracer.record({ type: "agent_error", agentId: "a1", timestamp: now - 4000 });
+      tracer.record({ type: "agent_error", agentId: "a2", timestamp: now - 3999 });
+      tracer.record({ type: "agent_complete", agentId: "a3", timestamp: now - 3998 });
 
       const decision = monitor.evaluate();
       expect(decision.action).toBe("scale_up");
@@ -166,8 +167,9 @@ describe("DynamicScalingMonitor", () => {
       });
       monitor.setCurrentAgentCount(2);
 
-      tracer.record({ type: "agent_start", agentId: "a1", timestamp: 1000 });
-      tracer.record({ type: "agent_complete", agentId: "a1", timestamp: 3000 }); // 2000ms > 1000ms
+      const now = Date.now();
+      tracer.record({ type: "agent_start", agentId: "a1", timestamp: now - 5000 });
+      tracer.record({ type: "agent_complete", agentId: "a1", timestamp: now - 3000 }); // 2000ms > 1000ms
 
       const decision = monitor.evaluate();
       expect(decision.action).toBe("scale_up");
@@ -184,9 +186,10 @@ describe("DynamicScalingMonitor", () => {
       monitor.setCurrentAgentCount(4);
 
       // Many errors to trigger scale-up
+      const now = Date.now();
       for (let i = 0; i < 10; i++) {
-        tracer.record({ type: "agent_start", agentId: `a${i}`, timestamp: i * 100 });
-        tracer.record({ type: "agent_error", agentId: `a${i}`, timestamp: i * 100 + 50 });
+        tracer.record({ type: "agent_start", agentId: `a${i}`, timestamp: now - 5000 + i * 10 });
+        tracer.record({ type: "agent_error", agentId: `a${i}`, timestamp: now - 4950 + i * 10 });
       }
 
       const decision = monitor.evaluate();
@@ -243,9 +246,10 @@ describe("DynamicScalingMonitor", () => {
       monitor.setCurrentAgentCount(2);
 
       // Trigger a scale-up
+      const now = Date.now();
       for (let i = 0; i < 5; i++) {
-        tracer.record({ type: "agent_start", agentId: `a${i}`, timestamp: 1000 + i });
-        tracer.record({ type: "agent_error", agentId: `a${i}`, timestamp: 2000 + i });
+        tracer.record({ type: "agent_start", agentId: `a${i}`, timestamp: now - 5000 + i });
+        tracer.record({ type: "agent_error", agentId: `a${i}`, timestamp: now - 4000 + i });
       }
 
       const first = monitor.evaluate();
@@ -278,10 +282,11 @@ describe("DynamicScalingMonitor", () => {
       monitor.enableReactive();
 
       // Fire events that should trigger scale-up
-      tracer.record({ type: "agent_start", agentId: "a1", timestamp: 1000 });
-      tracer.record({ type: "agent_start", agentId: "a2", timestamp: 1001 });
-      tracer.record({ type: "agent_error", agentId: "a1", timestamp: 2000 });
-      tracer.record({ type: "agent_error", agentId: "a2", timestamp: 2001 });
+      const now = Date.now();
+      tracer.record({ type: "agent_start", agentId: "a1", timestamp: now - 5000 });
+      tracer.record({ type: "agent_start", agentId: "a2", timestamp: now - 4999 });
+      tracer.record({ type: "agent_error", agentId: "a1", timestamp: now - 4000 });
+      tracer.record({ type: "agent_error", agentId: "a2", timestamp: now - 3999 });
 
       // Should have fired at least one scale-up decision
       const scaleUps = decisions.filter((d) => d.action === "scale_up");
@@ -301,8 +306,9 @@ describe("DynamicScalingMonitor", () => {
       monitor.disableReactive();
 
       // Fire error events after disabling
-      tracer.record({ type: "agent_start", agentId: "a1", timestamp: 1000 });
-      tracer.record({ type: "agent_error", agentId: "a1", timestamp: 2000 });
+      const now = Date.now();
+      tracer.record({ type: "agent_start", agentId: "a1", timestamp: now - 5000 });
+      tracer.record({ type: "agent_error", agentId: "a1", timestamp: now - 4000 });
 
       expect(decisions).toHaveLength(0);
     });
@@ -356,11 +362,12 @@ describe("DynamicScalingMonitor", () => {
       monitor.setCurrentAgentCount(4);
 
       // 100 starts, 24 errors → 24% error rate
+      const now = Date.now();
       for (let i = 0; i < 100; i++) {
-        tracer.record({ type: "agent_start", agentId: `a${i % 4}`, timestamp: i * 10 });
+        tracer.record({ type: "agent_start", agentId: `a${i % 4}`, timestamp: now - 50000 + i * 10 });
       }
       for (let i = 0; i < 24; i++) {
-        tracer.record({ type: "agent_error", agentId: `a${i % 4}`, timestamp: 1000 + i * 10 });
+        tracer.record({ type: "agent_error", agentId: `a${i % 4}`, timestamp: now - 49000 + i * 10 });
       }
 
       const decision = monitor.evaluate();
@@ -379,11 +386,12 @@ describe("DynamicScalingMonitor", () => {
       monitor.setCurrentAgentCount(4);
 
       // 100 starts, 25 errors → 25% error rate
+      const now = Date.now();
       for (let i = 0; i < 100; i++) {
-        tracer.record({ type: "agent_start", agentId: `a${i % 4}`, timestamp: i * 10 });
+        tracer.record({ type: "agent_start", agentId: `a${i % 4}`, timestamp: now - 50000 + i * 10 });
       }
       for (let i = 0; i < 25; i++) {
-        tracer.record({ type: "agent_error", agentId: `a${i % 4}`, timestamp: 1000 + i * 10 });
+        tracer.record({ type: "agent_error", agentId: `a${i % 4}`, timestamp: now - 49000 + i * 10 });
       }
 
       const decision = monitor.evaluate();
@@ -407,8 +415,9 @@ describe("DynamicScalingMonitor", () => {
       });
       monitor.setCurrentAgentCount(3);
 
-      tracer.record({ type: "agent_start", agentId: "a1", timestamp: 1000 });
-      tracer.record({ type: "agent_complete", agentId: "a1", timestamp: 15000 }); // 14s
+      const now = Date.now();
+      tracer.record({ type: "agent_start", agentId: "a1", timestamp: now - 18000 });
+      tracer.record({ type: "agent_complete", agentId: "a1", timestamp: now - 4000 }); // 14s
 
       const decision = monitor.evaluate();
       expect(decision.action).not.toBe("scale_up");
@@ -425,8 +434,9 @@ describe("DynamicScalingMonitor", () => {
       });
       monitor.setCurrentAgentCount(3);
 
-      tracer.record({ type: "agent_start", agentId: "a1", timestamp: 1000 });
-      tracer.record({ type: "agent_complete", agentId: "a1", timestamp: 17000 }); // 16s
+      const now = Date.now();
+      tracer.record({ type: "agent_start", agentId: "a1", timestamp: now - 20000 });
+      tracer.record({ type: "agent_complete", agentId: "a1", timestamp: now - 4000 }); // 16s
 
       const decision = monitor.evaluate();
       expect(decision.action).toBe("scale_up");
@@ -469,6 +479,9 @@ describe("DynamicScalingMonitor", () => {
 
       const now = Date.now();
       tracer.record({ type: "agent_start", agentId: "a1", timestamp: now - 61000 });
+      // Agent completed shortly after starting — inFlight drops to 0.
+      // lastActivity is now - 61000 + 100 ≈ 60.9s ago, still over the 60s threshold.
+      tracer.record({ type: "agent_complete", agentId: "a1", timestamp: now - 61000 + 100 });
 
       const decision = monitor.evaluate();
       expect(decision.action).toBe("scale_down");
@@ -490,9 +503,10 @@ describe("DynamicScalingMonitor", () => {
       monitor.setCurrentAgentCount(3);
 
       // Trigger initial scale-up
+      const now = Date.now();
       for (let i = 0; i < 10; i++) {
-        tracer.record({ type: "agent_start", agentId: `a${i}`, timestamp: 1000 + i });
-        tracer.record({ type: "agent_error", agentId: `a${i}`, timestamp: 2000 + i });
+        tracer.record({ type: "agent_start", agentId: `a${i}`, timestamp: now - 5000 + i });
+        tracer.record({ type: "agent_error", agentId: `a${i}`, timestamp: now - 4000 + i });
       }
       const first = monitor.evaluate();
       expect(first.action).toBe("scale_up");
@@ -537,15 +551,17 @@ describe("DynamicScalingMonitor", () => {
       monitor.setCurrentAgentCount(5);
 
       // Generate a large timeline: 200 starts, 80 errors (40% error rate > 30%)
+      // Use Date.now()-relative timestamps so all events fall within the rolling window.
+      const now = Date.now();
       for (let i = 0; i < 200; i++) {
-        tracer.record({ type: "agent_start", agentId: `a${i % 5}`, timestamp: i * 100 });
+        tracer.record({ type: "agent_start", agentId: `a${i % 5}`, timestamp: now - 55000 + i * 100 });
       }
       for (let i = 0; i < 80; i++) {
-        tracer.record({ type: "agent_error", agentId: `a${i % 5}`, timestamp: 20000 + i * 100 });
+        tracer.record({ type: "agent_error", agentId: `a${i % 5}`, timestamp: now - 35000 + i * 100 });
       }
       // Sprinkle non-matching events
       for (let i = 0; i < 50; i++) {
-        tracer.record({ type: "agent_complete", agentId: `a${i % 5}`, timestamp: 28000 + i * 100 });
+        tracer.record({ type: "agent_complete", agentId: `a${i % 5}`, timestamp: now - 27000 + i * 100 });
       }
 
       const decision = monitor.evaluate();

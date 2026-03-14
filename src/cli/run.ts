@@ -38,7 +38,6 @@ export async function runCommand(args: ParsedArgs): Promise<void> {
   // Spawn tsx to run the file
   const child = spawn("npx", ["tsx", entryFile], {
     stdio: "inherit",
-    shell: true,
     env: { ...process.env },
   });
 

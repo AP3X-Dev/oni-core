@@ -20,7 +20,7 @@ function makeChannels() {
 
 function buildTrackedAgent(id: string, order: string[]) {
   const g = new StateGraph<BaseSwarmState>({ channels: makeChannels() });
-  g.addNode("work", async (state) => {
+  g.addNode("work", async (_state) => {
     order.push(id);
     return {
       messages: [{ role: "assistant", content: `${id} done` }],

@@ -78,7 +78,7 @@ describe("Agent retry backoff", () => {
     });
 
     const app = swarm.compile();
-    const result = await app.invoke({ task: "deadline vs backoff" });
+    const _result = await app.invoke({ task: "deadline vs backoff" });
 
     // Agent should have retried but the long delay gets clamped or skipped
     // due to deadline pressure. The exact behavior depends on timing,

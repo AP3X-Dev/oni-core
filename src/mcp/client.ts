@@ -39,6 +39,7 @@ export class MCPClient {
   private tools: MCPToolDefinition[] = [];
   private error: string | undefined;
   private onToolsChanged: (() => void) | undefined;
+  private _connectLock: Promise<void> | null = null;
 
   constructor(
     private config: MCPServerConfig,
@@ -59,22 +60,47 @@ export class MCPClient {
   async connect(): Promise<void> {
     if (this.state === "ready") return;
 
+    // Coalesce concurrent connect calls — wait for the in-flight attempt and
+    // share its result rather than each spawning their own transport process.
+    if (this._connectLock !== null) {
+      return this._connectLock;
+    }
+
     this.state = "connecting";
     this.error = undefined;
 
+    // Set the lock synchronously before the first await so no concurrent
+    // caller can slip through the guard above.
+    const connecting = this._runConnect();
+    this._connectLock = connecting;
     try {
-      this.transport = new StdioTransport({
-        command: this.config.command,
-        args: this.config.args,
-        env: this.config.env,
-        cwd: this.config.cwd,
-        onNotification: (n) => this.handleNotification(n),
-      });
+      await connecting;
+    } finally {
+      if (this._connectLock === connecting) {
+        this._connectLock = null;
+      }
+    }
+  }
 
-      await this.transport.start();
+  private async _runConnect(): Promise<void> {
+    const transport = new StdioTransport({
+      command: this.config.command,
+      args: this.config.args,
+      env: this.config.env,
+      cwd: this.config.cwd,
+      onNotification: (n) => this.handleNotification(n),
+    });
+    this.transport = transport;
+
+    try {
+      await transport.start();
+
+      // Abort gracefully if disconnect() was called while suspended.
+      // Cast required: TS narrowing can't see external mutation via disconnect().
+      if ((this.state as MCPClientState) === "disconnected") return;
 
       // Initialize handshake
-      const initResponse = await this.transport.send("initialize", {
+      const initResponse = await transport.send("initialize", {
         protocolVersion: MCP_PROTOCOL_VERSION,
         capabilities: {},
         clientInfo: {
@@ -82,6 +108,8 @@ export class MCPClient {
           version: CLIENT_VERSION,
         },
       });
+
+      if ((this.state as MCPClientState) === "disconnected") return;
 
       if (initResponse.error) {
         throw new Error(
@@ -93,19 +121,23 @@ export class MCPClient {
       this.serverInfo = initResult.serverInfo;
 
       // Send initialized notification
-      this.transport.notify("notifications/initialized");
+      transport.notify("notifications/initialized");
 
       // Discover tools
       await this.refreshTools();
+
+      if ((this.state as MCPClientState) === "disconnected") return;
 
       this.state = "ready";
     } catch (err) {
       this.state = "error";
       this.error =
         err instanceof Error ? err.message : String(err);
-      // Clean up on failure
-      this.transport?.stop();
-      this.transport = null;
+      // Clean up on failure — only if disconnect() hasn't already done so
+      if (this.transport === transport) {
+        transport.stop();
+        this.transport = null;
+      }
       throw err;
     }
   }

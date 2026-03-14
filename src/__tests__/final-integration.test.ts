@@ -1,15 +1,15 @@
 import { describe, it, expect } from "vitest";
 import {
-  StateGraph, START, END, lastValue, appendList, Send,
+  StateGraph, START, END, lastValue,
   MemoryCheckpointer, InMemoryStore,
 } from "../../src/index.js";
-import { getRemainingSteps, getCurrentState, getStreamWriter } from "../../src/context.js";
+import { getRemainingSteps } from "../../src/context.js";
 import { streamEvents } from "../../src/stream-events.js";
 
 describe("Final integration — all features", () => {
   it("static fan-out + cache + remaining steps", async () => {
     type S = { value: string; a: string; b: string; remaining: number };
-    let aCalls = 0;
+    let _aCalls = 0;
 
     const g = new StateGraph<S>({
       channels: {
@@ -24,7 +24,7 @@ describe("Final integration — all features", () => {
       return { remaining: getRemainingSteps() };
     });
     g.addNode("nodeA", async (s) => {
-      aCalls++;
+      _aCalls++;
       return { a: `a:${s.value}` };
     }, { cache: true });
     g.addNode("nodeB", async (s) => ({ b: `b:${s.value}` }));
