@@ -27,8 +27,10 @@ import {
 } from "./hitl/index.js";
 import { EventBus } from "./events/bus.js";
 import type { GuardrailsConfig, ContentFilter } from "./guardrails/types.js";
-import type { EventListeners } from "./events/types.js";
+import type { ToolPermissions } from "./tools/types.js";
+import type { EventListeners, LifecycleEvent } from "./events/types.js";
 import { AuditLog } from "./guardrails/audit.js";
+import type { AuditEntry } from "./guardrails/types.js";
 import { BudgetTracker } from "./guardrails/budget.js";
 import { runFilters } from "./guardrails/filters.js";
 import { ONITracer, type TracerLike, type SpanLike } from "./telemetry.js";
@@ -53,6 +55,7 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
   readonly auditLog: AuditLog | null;
   readonly budgetTracker: BudgetTracker | null;
   private readonly contentFilters: ContentFilter[];
+  private readonly toolPermissions: ToolPermissions | undefined;
   readonly tracer: ONITracer;
 
   /** Pre-indexed edges by source node — O(1) lookup instead of O(n) filter */
@@ -77,6 +80,7 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
     this.auditLog = guardrails?.audit ? new AuditLog() : null;
     this.budgetTracker = guardrails?.budget ? new BudgetTracker(guardrails.budget) : null;
     this.contentFilters = guardrails?.filters ?? [];
+    this.toolPermissions = guardrails?.toolPermissions;
     this.tracer = new ONITracer(tracer ?? null);
 
     // Pre-index edges by source for O(1) lookups in getNextNodes
@@ -189,15 +193,24 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
       }
     }
 
+    const _tid = config?.threadId ?? "unknown";
     const ctx: RunContext = {
-      config:        config ?? {},
-      store:         this.store,
-      writer:        writer ?? null,
-      state:         state,
-      parentGraph:   null,
-      parentUpdates: [],
-      step:           step ?? 0,
-      recursionLimit: recursionLimit ?? DEFAULT_RECURSION_LIMIT,
+      config:          config ?? {},
+      store:           this.store,
+      writer:          writer ?? null,
+      state:           state,
+      parentGraph:     null,
+      parentUpdates:   [],
+      step:            step ?? 0,
+      recursionLimit:  recursionLimit ?? DEFAULT_RECURSION_LIMIT,
+      toolPermissions: this.toolPermissions,
+      _recordUsage: (agentName, modelId, usage) => {
+        if (!this.budgetTracker) return;
+        const entries = this.budgetTracker.record(agentName, modelId, usage);
+        for (const e of entries) this.auditLog?.record(_tid, e);
+      },
+      _emitEvent: (event) => this.eventBus.emit(event as LifecycleEvent),
+      _auditRecord: (entry) => this.auditLog?.record(_tid, entry as AuditEntry),
     };
 
     return _runWithContext(ctx, async () => {
@@ -210,11 +223,19 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
       try {
         // Content filter — input direction
         if (this.contentFilters.length > 0) {
-          const inputCheck = runFilters(this.contentFilters, JSON.stringify(state), "input");
+          const inputStr = JSON.stringify(state);
+          const inputCheck = runFilters(this.contentFilters, inputStr, "input");
           if (!inputCheck.passed) {
+            const threadId = config?.threadId ?? "unknown";
+            this.eventBus.emit({ type: "filter.blocked", filter: inputCheck.blockedBy!, agent: nodeDef.name, direction: "input", reason: inputCheck.reason!, timestamp: Date.now() });
+            this.auditLog?.record(threadId, { timestamp: Date.now(), agent: nodeDef.name, action: "filter.blocked", data: { filter: inputCheck.blockedBy, direction: "input", reason: inputCheck.reason } });
             throw new Error(
               `Content blocked by filter "${inputCheck.blockedBy}" on input to node "${nodeDef.name}": ${inputCheck.reason}`,
             );
+          }
+          // Apply redaction if content was rewritten by a redacting filter
+          if (inputCheck.content !== inputStr) {
+            try { state = JSON.parse(inputCheck.content) as S; } catch { /* leave state unchanged on parse failure */ }
           }
         }
 
@@ -274,11 +295,19 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
 
         // Content filter — output direction
         if (this.contentFilters.length > 0 && result != null) {
-          const outputCheck = runFilters(this.contentFilters, JSON.stringify(result), "output");
+          const outputStr = JSON.stringify(result);
+          const outputCheck = runFilters(this.contentFilters, outputStr, "output");
           if (!outputCheck.passed) {
+            const threadId = config?.threadId ?? "unknown";
+            this.eventBus.emit({ type: "filter.blocked", filter: outputCheck.blockedBy!, agent: nodeDef.name, direction: "output", reason: outputCheck.reason!, timestamp: Date.now() });
+            this.auditLog?.record(threadId, { timestamp: Date.now(), agent: nodeDef.name, action: "filter.blocked", data: { filter: outputCheck.blockedBy, direction: "output", reason: outputCheck.reason } });
             throw new Error(
               `Content blocked by filter "${outputCheck.blockedBy}" on output of node "${nodeDef.name}": ${outputCheck.reason}`,
             );
+          }
+          // Apply redaction if content was rewritten by a redacting filter
+          if (outputCheck.content !== outputStr) {
+            try { result = JSON.parse(outputCheck.content) as NodeReturn<S>; } catch { /* leave result unchanged on parse failure */ }
           }
         }
 
@@ -587,6 +616,11 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
               this.tracer.recordError(nodeSpan, telErr);
             }
             this.tracer.endSpan(nodeSpan);
+
+            // Lifecycle event: emit error for non-interrupt failures
+            if (err instanceof Error) {
+              this.eventBus.emit({ type: "error", agent: name, error: err, timestamp: Date.now() });
+            }
             throw err;
           }
 
