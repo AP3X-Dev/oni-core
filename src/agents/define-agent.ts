@@ -16,6 +16,8 @@
 import type { ONIModelMessage, LLMToolDef, ToolResult } from "../models/types.js";
 import type { ONIConfig } from "../types.js";
 import type { DefineAgentOptions, AgentNode } from "./types.js";
+import { _getRunContext } from "../context.js";
+import { checkToolPermission } from "../guardrails/permissions.js";
 
 /**
  * defineAgent — create a declarative ReAct agent
@@ -97,6 +99,12 @@ export function defineAgent<S extends Record<string, unknown> = Record<string, u
               result: `Tool "${call.name}" not found`,
               isError: true,
             };
+          }
+          // Check tool permissions before execution — must be outside try/catch
+          // so ToolPermissionError propagates as a real failure, not an isError result
+          const runCtx = _getRunContext();
+          if (runCtx?.toolPermissions) {
+            checkToolPermission(runCtx.toolPermissions, name, call.name);
           }
           try {
             const toolCtx = {
