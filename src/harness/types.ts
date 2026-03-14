@@ -58,6 +58,14 @@ export interface ToolMetadataUpdate {
   [key: string]: unknown;
 }
 
+// ─── Session Outcome ──────────────────────────────────────────────────────────
+
+export type SessionOutcome =
+  | 'completed'       // agent reached END cleanly
+  | 'budget-exceeded' // maxTurns hit; task may be incomplete
+  | 'interrupted'     // abort signal fired
+  | 'error';          // unhandled throw
+
 // ─── Agent Loop Config ───────────────────────────────────────────────────────
 
 export interface AgentLoopConfig {
@@ -89,6 +97,9 @@ export interface AgentLoopConfig {
     gitBranch?: string;
     gitStatus?: string;
   };
+  memoryRoot?: string;
+  memoryBudgets?: Partial<Record<0 | 1 | 2 | 3, number>>;
+  memoryDebug?: boolean;
 }
 
 // ─── Harness Config ──────────────────────────────────────────────────────────
@@ -114,6 +125,9 @@ export interface HarnessConfig {
   maxTurns?: number;
   maxTokens?: number;
   debug?: boolean;
+  memoryRoot?: string;
+  memoryBudgets?: Partial<Record<0 | 1 | 2 | 3, number>>;
+  memoryDebug?: boolean;
 }
 
 export interface AgentNodeConfig {
