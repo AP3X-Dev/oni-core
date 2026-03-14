@@ -22,6 +22,18 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # Smoke-test the built package so src/dist drift is caught in CI
+      - name: Smoke test dist
+        run: node --input-type=module <<'EOF'
+          import { StateGraph, START, END, lastValue } from "./dist/index.js";
+          const g = new StateGraph({ channels: { v: lastValue(() => 0) } });
+          g.addNode("n", async () => ({ v: 1 }));
+          g.addEdge(START, "n");
+          g.addEdge("n", END);
+          const result = await g.compile().invoke({});
+          if (result.v !== 1) throw new Error("smoke test failed: got " + result.v);
+          console.log("dist smoke test passed");
+        EOF
 
   lint:
     runs-on: ubuntu-latest
@@ -33,3 +45,4 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint
