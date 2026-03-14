@@ -46,7 +46,7 @@ export async function* agentLoop(
     : null;
 
   let memoryContext = "";
-  if (memoryLoader) {
+  if (memoryLoader && !config.signal?.aborted) {
     memoryLoader.wake();
     memoryLoader.orient();
     const t2 = memoryLoader.match(prompt);
