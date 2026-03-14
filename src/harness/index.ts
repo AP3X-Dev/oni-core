@@ -31,6 +31,16 @@ export type { SafetyGateConfig, SafetyCheckResult } from "./safety-gate.js";
 export { SkillLoader } from "./skill-loader.js";
 export type { SkillDefinition } from "./skill-loader.js";
 
+// Memory loader
+export { MemoryLoader } from "./memory-loader.js";
+export type {
+  MemoryUnit,
+  MemoryLoaderConfig,
+  MemoryTier,
+  MemoryType,
+  LoadResult,
+} from "./memory-loader.js";
+
 // Integration layer
 export { ONIHarness } from "./harness.js";
 export type { SwarmAgentCompat } from "./harness.js";
@@ -40,6 +50,7 @@ export type {
   HarnessToolContext, LoopMessage, LoopMessageType, LoopToolResult,
   ToolMetadataUpdate,
   AgentLoopConfig, HarnessConfig, AgentNodeConfig,
+  SessionOutcome,
 } from "./types.js";
 export { generateId } from "./types.js";
 
