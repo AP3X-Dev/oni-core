@@ -33,9 +33,11 @@ import { AuditLog } from "./guardrails/audit.js";
 import type { AuditEntry } from "./guardrails/types.js";
 import { BudgetTracker } from "./guardrails/budget.js";
 import { runFilters } from "./guardrails/filters.js";
-import { ONITracer, type TracerLike, type SpanLike } from "./telemetry.js";
+import { ONITracer, type TracerLike } from "./telemetry.js";
 
 const DEFAULT_RECURSION_LIMIT = 25;
+/** Maximum entries in the node result cache — oldest entries evicted FIFO when full. */
+const NODE_CACHE_MAX_SIZE = 256;
 
 interface PendingSend {
   node: string;
@@ -46,10 +48,12 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
   private hitlStore = new HITLSessionStore<S>();
   private nodeCache = new Map<string, { result: NodeReturn<S>; timestamp: number }>();
   private circuitBreakers = new Map<string, CircuitBreaker>();
-  /** Set to true when this runner is being invoked as a subgraph */
-  private _isSubgraph = false;
-  /** Accumulated parent updates from Command.PARENT during subgraph execution */
-  _parentUpdates: Array<Partial<unknown>> = [];
+  /** Count of concurrent subgraph invocations active on this runner. >0 means running as subgraph. */
+  private _subgraphRefCount = 0;
+  /** Per-invocation parent updates from Command.PARENT, keyed by parent threadId. */
+  private readonly _perInvocationParentUpdates = new Map<string, Array<Partial<unknown>>>();
+  /** Per-invocation checkpointer override for subgraph isolation, keyed by threadId. */
+  private readonly _perInvocationCheckpointer = new Map<string, unknown>();
 
   readonly eventBus: EventBus;
   readonly auditLog: AuditLog | null;
@@ -215,9 +219,8 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
 
     return _runWithContext(ctx, async () => {
       _installInterruptContext({
-        nodeName:    nodeDef.name,
-        resumeValue: resumeValue,
-        hasResume:   hasResume ?? false,
+        nodeName:     nodeDef.name,
+        resumeValues: hasResume ? [resumeValue] : [],
       });
 
       try {
@@ -311,8 +314,12 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
           }
         }
 
-        // Store in cache (reuse key computed above)
+        // Store in cache (reuse key computed above); evict oldest entry when full
         if (nodeDef.cache && cacheKey) {
+          if (this.nodeCache.size >= NODE_CACHE_MAX_SIZE) {
+            const oldest = this.nodeCache.keys().next().value;
+            if (oldest !== undefined) this.nodeCache.delete(oldest);
+          }
           this.nodeCache.set(cacheKey, { result, timestamp: Date.now() });
         }
 
@@ -345,14 +352,15 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
     input:      Partial<S>,
     config?:    ONIConfig,
     streamMode: StreamMode | StreamMode[] = "updates"
-  ): AsyncGenerator<ONIStreamEvent<S>> {
+  ): AsyncGenerator<ONIStreamEvent<S> | CustomStreamEvent | MessageStreamEvent> {
     const threadId       = config?.threadId ?? `oni-${Date.now()}`;
     const recursionLimit = config?.recursionLimit ?? DEFAULT_RECURSION_LIMIT;
     const agentId        = config?.agentId;
     const modes = new Set(Array.isArray(streamMode) ? streamMode : [streamMode]);
     const isMultiMode = Array.isArray(streamMode);
-    const tag = (evt: ONIStreamEvent<S>, mode: StreamMode): ONIStreamEvent<S> =>
-      isMultiMode ? { ...evt, mode } : evt;
+    type AnyEvt = ONIStreamEvent<S> | CustomStreamEvent | MessageStreamEvent;
+    const tag = (evt: AnyEvt, mode: StreamMode): AnyEvt =>
+      isMultiMode ? { ...evt, mode } as AnyEvt : evt;
 
     // Pre-compute mode flags — eliminates ~20 Set.has() lookups per superstep
     const modeDebug    = modes.has("debug");
@@ -375,8 +383,9 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
     let pendingNodes: NodeName[] = [];
     let pendingSends: PendingSend[] = [];
 
-    if (this.checkpointer && config?.threadId) {
-      const cp = await this.checkpointer.get(threadId);
+    const effectiveCheckpointer = (this._perInvocationCheckpointer.get(threadId) ?? this.checkpointer) as typeof this.checkpointer;
+    if (effectiveCheckpointer && config?.threadId) {
+      const cp = await effectiveCheckpointer.get(threadId);
       if (cp) {
         state        = this.applyUpdate(cp.state, input);
         step         = cp.step;
@@ -411,6 +420,10 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
         sendGroups.get(send.node)!.push(send);
         if (modeDebug) yield tag(this.evt("send", send as unknown as Partial<S>, step, agentId, send.node), "debug");
       }
+
+      // Recursion limit guard — must fire before any sends execute so that
+      // node side-effects are not applied to a step that will be discarded.
+      if (step >= recursionLimit) throw new RecursionLimitError(recursionLimit);
 
       // Execute fan-out sends (each Send → separate node execution with its own state)
       if (sendGroups.size > 0) {
@@ -462,7 +475,6 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
       // Filter executable nodes (non-END), excluding nodes already handled by sends
       const executableNodes = pendingNodes.filter((n) => n !== END && !sendGroups.has(n as string));
       if (executableNodes.length === 0 && sendGroups.size === 0) break;
-      if (step >= recursionLimit) throw new RecursionLimitError(recursionLimit);
 
       // Emit debug node_start events before parallel execution
       if (modeDebug) {
@@ -480,10 +492,17 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
       // Execute all active nodes in parallel
       const allCustomEvents: CustomStreamEvent[] = [];
       const allMessageEvents: MessageStreamEvent[] = [];
-      const allSubgraphEvents: ONIStreamEvent<any>[] = [];
+      const allSubgraphEvents: (ONIStreamEvent<any> | CustomStreamEvent | MessageStreamEvent)[] = [];
       const nodeWriters: Map<string, StreamWriterImpl> = new Map();
 
-      const nodeResults = await Promise.all(
+      // Track the first HITL interrupt across all parallel nodes. We use
+      // allSettled (not Promise.all) so that when one node raises an interrupt,
+      // all other in-flight nodes complete before the interrupt is surfaced.
+      // This prevents orphaned background executions that would apply side
+      // effects without being checkpointed, causing double-application on resume.
+      let pendingInterrupt: HITLInterruptException<S> | null = null;
+
+      const allSettledResults = await Promise.allSettled(
         executableNodes.map(async (nodeName) => {
           const name    = nodeName as string;
           const nodeDef = this.nodes.get(name);
@@ -502,7 +521,7 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
           const messageEvents: MessageStreamEvent[] = [];
           const writerImpl = new StreamWriterImpl(
             (evt) => customEvents.push(evt),
-            (token) => { /* legacy token callback — handled via writer.token() below */ },
+            (_token) => { /* legacy token callback — handled via writer.token() below */ },
             (evt) => messageEvents.push(evt),
             name,
             step,
@@ -531,27 +550,33 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
               (token: string) => writerImpl.token(token),
               async () => {
                 if (nodeDef.subgraph) {
-                  // Mark child runner as a subgraph so Command.PARENT works
                   const childRunner = (nodeDef.subgraph as any)._runner as ONIPregelRunner<any> | undefined;
+                  // Per-invocation key for concurrent-safe state isolation
+                  const invocationKey = threadId;
+
                   if (childRunner) {
-                    childRunner._isSubgraph = true;
-                    childRunner._parentUpdates = [];
+                    childRunner._subgraphRefCount++;
+                    childRunner._perInvocationParentUpdates.set(invocationKey, []);
                   }
 
-                  // Save original checkpointer before potentially overwriting
-                  const savedChildCheckpointer = childRunner ? (childRunner as any).checkpointer : undefined;
-
-                  // Namespace the subgraph's checkpointer for isolation
+                  // Install a namespaced checkpointer per invocation instead of swapping a shared field
                   if (this.checkpointer && childRunner) {
-                    (childRunner as any).checkpointer = new NamespacedCheckpointer(this.checkpointer as any, name);
+                    childRunner._perInvocationCheckpointer.set(
+                      invocationKey,
+                      new NamespacedCheckpointer(this.checkpointer as any, name),
+                    );
                   }
 
-                  // Stream the subgraph — always restore child runner state, even on throw/interrupt
+                  // Stream the subgraph — always clean up per-invocation state, even on throw/interrupt
                   let subFinalState: Partial<S> | undefined;
                   try {
                     const childStreamMode: StreamMode[] = ["debug", "values"];
                     for await (const evt of nodeDef.subgraph.stream(state, {
                       ...config,
+                      // Pass the parent's effective threadId explicitly so the child's
+                      // _perInvocationParentUpdates lookup at Command.PARENT time uses
+                      // the same key that was registered in invocationKey above.
+                      threadId: invocationKey,
                       parentRunId: config?.threadId,
                       streamMode: childStreamMode,
                     })) {
@@ -566,14 +591,14 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
                       }
                     }
                     if (childRunner) {
-                      subParentUpdates = childRunner._parentUpdates;
+                      subParentUpdates = childRunner._perInvocationParentUpdates.get(invocationKey) ?? [];
                     }
                   } finally {
-                    // Restore regardless of success, throw, or interrupt
+                    // Clean up per-invocation state — decrement ref count, remove Maps entries
                     if (childRunner) {
-                      childRunner._isSubgraph = false;
-                      childRunner._parentUpdates = [];
-                      (childRunner as any).checkpointer = savedChildCheckpointer;
+                      childRunner._subgraphRefCount--;
+                      childRunner._perInvocationParentUpdates.delete(invocationKey);
+                      childRunner._perInvocationCheckpointer.delete(invocationKey);
                     }
                   }
                   return subFinalState ?? {};
@@ -592,16 +617,28 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
                 timestamp: Date.now(),
               };
 
-              // Save checkpoint before surfacing interrupt
-              await this.saveCheckpoint(threadId, step, state, [name], pendingSends, agentId, config?.metadata);
+              const exc = new HITLInterruptException<S>(threadId, iv, state);
+              // Claim the first-interrupt slot SYNCHRONOUSLY before any await.
+              // Both concurrent interrupt handlers check this flag before yielding,
+              // so whichever catch block runs first exclusively owns the checkpoint
+              // save. Without this guard, the last saveCheckpoint wins and its
+              // nextNodes diverge from pendingInterrupt's node, corrupting resume().
+              const isFirstInterrupt = !pendingInterrupt;
+              if (isFirstInterrupt) pendingInterrupt = exc;
 
-              // Record HITL session if checkpointer exists
-              if (this.checkpointer) {
-                const cp = await this.checkpointer.get(threadId);
-                if (cp) this.hitlStore.record(threadId, iv, cp);
+              // Only save checkpoint for the first interrupt — the stored nextNodes
+              // must match pendingInterrupt's node so resume() restores correctly.
+              if (isFirstInterrupt) {
+                await this.saveCheckpoint(threadId, step, state, [name], pendingSends, agentId, config?.metadata);
+
+                // Record HITL session if checkpointer exists
+                if (effectiveCheckpointer) {
+                  const cp = await effectiveCheckpointer.get(threadId);
+                  if (cp) this.hitlStore.record(threadId, iv, cp);
+                }
               }
 
-              throw new HITLInterruptException<S>(threadId, iv, state);
+              throw exc; // marks this node's settled result as rejected
             }
 
             // Record to DLQ before re-throwing — use original cause if wrapped
@@ -638,6 +675,19 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
         })
       );
 
+      // Extract results now that all nodes have settled.
+      // Re-throw the first non-interrupt error (DLQ/telemetry already handled
+      // inside each node's catch block), then surface any HITL interrupt.
+      const nodeResults: Array<{ name: string; result: NodeReturn<S>; subParentUpdates: Array<Partial<unknown>> }> = [];
+      for (const settled of allSettledResults) {
+        if (settled.status === "fulfilled") {
+          nodeResults.push(settled.value);
+        } else if (!(settled.reason instanceof HITLInterruptException)) {
+          throw settled.reason; // first non-interrupt error
+        }
+      }
+      if (pendingInterrupt) throw pendingInterrupt;
+
       // Yield buffered subgraph events — filtered by parent's active modes
       for (const evt of allSubgraphEvents) {
         const e = evt as ONIStreamEvent<S>;
@@ -663,10 +713,13 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
         if (result instanceof Command) {
           if (result.graph === Command.PARENT) {
             // Push update to parent — do NOT apply locally
-            if (!this._isSubgraph) {
+            if (!this._subgraphRefCount) {
               throw new Error("Command.PARENT used but graph is not running as a subgraph");
             }
-            if (result.update) this._parentUpdates.push(result.update);
+            if (result.update) {
+              const myParentUpdates = this._perInvocationParentUpdates.get(threadId);
+              if (myParentUpdates) myParentUpdates.push(result.update);
+            }
             // Still resolve next nodes normally
             const { nodes, sends } = this.getNextNodes(name, state, config);
             nextNodes.push(...nodes);
@@ -721,21 +774,21 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
       // Yield buffered custom/message events based on stream mode
       if (modeCustom || modeDebug) {
         for (const evt of allCustomEvents) {
-          if (modeCustom) yield tag(evt as unknown as ONIStreamEvent<S>, "custom");
-          if (modeDebug) yield tag(evt as unknown as ONIStreamEvent<S>, "debug");
+          if (modeCustom) yield tag(evt, "custom");
+          if (modeDebug) yield tag(evt, "debug");
         }
       }
       if (modeMessages || modeDebug) {
         for (const evt of allMessageEvents) {
-          if (modeMessages) yield tag(evt as unknown as ONIStreamEvent<S>, "messages");
-          if (modeDebug) yield tag(evt as unknown as ONIStreamEvent<S>, "debug");
+          if (modeMessages) yield tag(evt, "messages");
+          if (modeDebug) yield tag(evt, "debug");
         }
         // Emit messages/complete for each node that produced tokens
         for (const [, writer] of nodeWriters) {
           const complete = writer._complete();
           if (complete) {
-            if (modeMessages) yield tag(complete as unknown as ONIStreamEvent<S>, "messages");
-            if (modeDebug) yield tag(complete as unknown as ONIStreamEvent<S>, "debug");
+            if (modeMessages) yield tag(complete, "messages");
+            if (modeDebug) yield tag(complete, "debug");
           }
         }
       }
@@ -785,7 +838,7 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
   async *stream(
     input: Partial<S>,
     config?: ONIConfig & { streamMode?: StreamMode | StreamMode[] }
-  ): AsyncGenerator<ONIStreamEvent<S>> {
+  ): AsyncGenerator<ONIStreamEvent<S> | CustomStreamEvent | MessageStreamEvent> {
     yield* this._stream(input, config, config?.streamMode ?? "updates");
   }
 
@@ -879,10 +932,11 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
     metadata?: Record<string, unknown>,
     pendingWrites?: Array<{ nodeId: string; writes: Record<string, unknown> }>,
   ): Promise<void> {
-    if (!this.checkpointer) return;
+    const cp = (this._perInvocationCheckpointer.get(threadId) ?? this.checkpointer) as typeof this.checkpointer;
+    if (!cp) return;
     const cpSpan = this.tracer.startCheckpointSpan("put", { threadId });
     try {
-      await this.checkpointer.put({
+      await cp.put({
         threadId, step, state, agentId, metadata, pendingWrites,
         nextNodes:    nextNodes.map(String),
         pendingSends: pendingSends,

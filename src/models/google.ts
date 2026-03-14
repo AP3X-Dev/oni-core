@@ -284,7 +284,19 @@ export function google(
     }
 
     const json = (await res.json()) as GeminiResponseBody;
-    const candidate = json.candidates[0]!;
+    const candidate = json.candidates?.[0];
+    if (!candidate) {
+      // Empty candidates = safety filter / blocked response — return gracefully
+      return {
+        content: "",
+        usage: {
+          inputTokens: json.usageMetadata?.promptTokenCount ?? 0,
+          outputTokens: json.usageMetadata?.candidatesTokenCount ?? 0,
+        },
+        stopReason: "end",
+        raw: json,
+      };
+    }
     const parts = candidate.content.parts;
 
     // Extract text
@@ -293,8 +305,8 @@ export function google(
 
     // Extract function calls → tool calls
     const functionCalls = parts.filter((p) => p.functionCall !== undefined);
-    const toolCalls: ONIModelToolCall[] = functionCalls.map((p, i) => ({
-      id: `call_${i}`,
+    const toolCalls: ONIModelToolCall[] = functionCalls.map((p) => ({
+      id: `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       name: p.functionCall!.name,
       args: p.functionCall!.args,
     }));
@@ -357,7 +369,7 @@ export function google(
       }
 
       const candidate = parsed.candidates?.[0];
-      if (!candidate) continue;
+      if (!candidate || !candidate.content) continue;
 
       for (const part of candidate.content.parts) {
         if (part.text !== undefined) {
@@ -404,10 +416,10 @@ export function google(
 
     for (const text of texts) {
       const res = await fetch(
-        `${baseUrl}/models/${modelId}:embedContent?key=${apiKey}`,
+        `${baseUrl}/models/${modelId}:embedContent`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
           body: JSON.stringify({
             content: { parts: [{ text }] },
           }),
@@ -419,8 +431,12 @@ export function google(
         throwModelHttpError("Google Gemini", res.status, errText, res.headers);
       }
 
-      const json = (await res.json()) as { embedding: { values: number[] } };
-      results.push(json.embedding.values);
+      const json = (await res.json()) as { embedding?: { values?: number[] } };
+      const values = json.embedding?.values;
+      if (!values) {
+        throw new Error("Google Gemini embed: unexpected response shape — missing embedding.values");
+      }
+      results.push(values);
     }
 
     return results;

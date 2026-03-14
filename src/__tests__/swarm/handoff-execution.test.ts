@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   SwarmGraph, Handoff,
   type BaseSwarmState,
@@ -58,7 +58,7 @@ describe("Handoff execution", () => {
 
     // Wire: START → agentA, agentA/agentB → END (via conditional)
     swarm.addEdge(START, "agentA");
-    swarm.addConditionalHandoff("agentB", (state) => END);
+    swarm.addConditionalHandoff("agentB", (_state) => END);
 
     const app = swarm.compile();
     const result = await app.invoke({ task: "test handoff" });

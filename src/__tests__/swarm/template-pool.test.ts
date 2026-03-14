@@ -116,7 +116,7 @@ describe("SwarmGraph.pool()", () => {
       agent: template,
       poolSize: 2,        // 2 pool slots
       inputField: "items",
-      reducer: (results) => ({
+      reducer: (_results) => ({
         summary: `Done`,
         done: true,
       }),
@@ -135,12 +135,12 @@ describe("SwarmGraph.pool()", () => {
   });
 
   it("handles partial failures — reducer gets error markers for failed tasks", async () => {
-    let callCount = 0;
+    let _callCount = 0;
 
     const makeFlakyWorker = (id: string) => {
       const g = new StateGraph<PoolState>({ channels: makeChannels() as any });
       g.addNode("work", async (state) => {
-        callCount++;
+        _callCount++;
         if (state.task === "bad_item") {
           throw new Error("Worker crashed on bad item");
         }

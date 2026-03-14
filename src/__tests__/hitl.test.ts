@@ -25,8 +25,7 @@ describe("interrupt() throws NodeInterruptSignal", () => {
   it("throws NodeInterruptSignal with correct value and resumeId when no resume is available", async () => {
     _installInterruptContext({
       nodeName: "test-node",
-      resumeValue: undefined,
-      hasResume: false,
+      resumeValues: [],
     });
 
     try {
@@ -46,8 +45,7 @@ describe("interrupt() throws NodeInterruptSignal", () => {
   it("returns the resume value when hasResume is true", async () => {
     _installInterruptContext({
       nodeName: "test-node",
-      resumeValue: "user-response-123",
-      hasResume: true,
+      resumeValues: ["user-response-123"],
     });
 
     try {
@@ -64,8 +62,7 @@ describe("interrupt() throws NodeInterruptSignal", () => {
     for (let i = 0; i < 3; i++) {
       _installInterruptContext({
         nodeName: "multi-node",
-        resumeValue: undefined,
-        hasResume: false,
+        resumeValues: [],
       });
 
       try {
@@ -91,8 +88,7 @@ describe("getUserInput() throws with correct metadata", () => {
   it("includes prompt and inputType in the interrupt value", async () => {
     _installInterruptContext({
       nodeName: "input-node",
-      resumeValue: undefined,
-      hasResume: false,
+      resumeValues: [],
     });
 
     try {
@@ -117,8 +113,7 @@ describe("getUserInput() throws with correct metadata", () => {
   it("defaults inputType to 'text' when not provided", async () => {
     _installInterruptContext({
       nodeName: "input-node",
-      resumeValue: undefined,
-      hasResume: false,
+      resumeValues: [],
     });
 
     try {
@@ -136,8 +131,7 @@ describe("getUserInput() throws with correct metadata", () => {
   it("sets hasValidator to true when validate function is provided", async () => {
     _installInterruptContext({
       nodeName: "input-node",
-      resumeValue: undefined,
-      hasResume: false,
+      resumeValues: [],
     });
 
     try {
@@ -160,8 +154,7 @@ describe("getUserInput() throws with correct metadata", () => {
   it("includes the field name when provided", async () => {
     _installInterruptContext({
       nodeName: "input-node",
-      resumeValue: undefined,
-      hasResume: false,
+      resumeValues: [],
     });
 
     try {
@@ -189,8 +182,7 @@ describe("getUserApproval() throws with correct metadata", () => {
   it("creates a boolean approval request", async () => {
     _installInterruptContext({
       nodeName: "approval-node",
-      resumeValue: undefined,
-      hasResume: false,
+      resumeValues: [],
     });
 
     try {
@@ -217,8 +209,7 @@ describe("getUserSelection() throws with correct metadata", () => {
   it("includes choices in the interrupt value", async () => {
     _installInterruptContext({
       nodeName: "selection-node",
-      resumeValue: undefined,
-      hasResume: false,
+      resumeValues: [],
     });
 
     try {
@@ -509,8 +500,7 @@ describe("interrupt() outside context throws", () => {
   it("context is properly cleared after _clearInterruptContext", () => {
     _installInterruptContext({
       nodeName: "temp",
-      resumeValue: undefined,
-      hasResume: false,
+      resumeValues: [],
     });
     expect(_getInterruptContext()).not.toBeNull();
 

@@ -1,8 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   SwarmGraph, quickAgent, type BaseSwarmState,
 } from "../../swarm/index.js";
-import type { ONIModel } from "../../models/types.js";
 
 describe("SwarmGraph.compose()", () => {
   it("chains sub-swarms as pipeline stages", async () => {

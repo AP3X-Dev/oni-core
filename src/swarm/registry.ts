@@ -47,6 +47,14 @@ export class AgentRegistry<S extends Record<string, unknown> = Record<string, un
   }
 
   deregister(agentId: string): boolean {
+    const rec = this.agents.get(agentId);
+    if (!rec) return false;
+    if (rec.activeTasks > 0) {
+      throw new Error(
+        `Cannot deregister agent "${agentId}": ${rec.activeTasks} active task(s) still in flight. ` +
+          `Wait for tasks to complete (markIdle/markError) before deregistering.`,
+      );
+    }
     return this.agents.delete(agentId);
   }
 

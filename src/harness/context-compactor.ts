@@ -56,7 +56,6 @@ export class ContextCompactor {
   private readonly maxTokens: number;
   private readonly charsPerToken: number;
   private readonly compactInstructions?: string;
-
   constructor(config: CompactorConfig) {
     this.summaryModel = config.summaryModel;
     this.threshold = config.threshold ?? 0.68;
@@ -135,6 +134,10 @@ export class ContextCompactor {
       return messages;
     }
 
+    return this._runCompaction(messages);
+  }
+
+  private async _runCompaction(messages: ONIModelMessage[]): Promise<ONIModelMessage[]> {
     // Stage 1: clear old tool results
     const cleaned = this.clearOldToolResults(messages);
     if (!this.shouldCompact(cleaned)) {
@@ -168,7 +171,47 @@ export class ContextCompactor {
     const olderPortion = messages.slice(0, cutoff);
     const recentPortion = messages.slice(cutoff);
 
-    const filteredOlder = olderPortion.filter((m) => m.role !== "tool");
+    // Collect IDs of tool-result messages that are in olderPortion (being removed).
+    const removedToolCallIds = new Set<string>();
+    for (const m of olderPortion) {
+      if (m.role === "tool" && m.toolCallId) {
+        removedToolCallIds.add(m.toolCallId);
+      }
+    }
+
+    // For assistant+toolCalls messages whose results span both portions:
+    // the assistant must be kept (some results survive in recentPortion), and
+    // its tool results in olderPortion must also be kept to avoid producing an
+    // incomplete tool-call sequence that both Anthropic and OpenAI reject.
+    //
+    // keptToolCallIds: tool result IDs in olderPortion that must be retained
+    // because their parent assistant message will be kept.
+    const keptToolCallIds = new Set<string>();
+    for (const m of olderPortion) {
+      if (m.role === "assistant" && m.toolCalls && m.toolCalls.length > 0) {
+        const allRemoved = m.toolCalls.every((tc) => removedToolCallIds.has(tc.id));
+        if (!allRemoved) {
+          // This assistant message is kept — retain its olderPortion tool results too.
+          for (const tc of m.toolCalls) {
+            if (removedToolCallIds.has(tc.id)) {
+              keptToolCallIds.add(tc.id);
+            }
+          }
+        }
+      }
+    }
+
+    // Filter: remove tool messages unless their parent assistant is kept,
+    // and remove assistant messages only when ALL their results are removed.
+    const filteredOlder = olderPortion.filter((m) => {
+      if (m.role === "tool") {
+        return m.toolCallId ? keptToolCallIds.has(m.toolCallId) : false;
+      }
+      if (m.role === "assistant" && m.toolCalls && m.toolCalls.length > 0) {
+        if (m.toolCalls.every((tc) => removedToolCallIds.has(tc.id))) return false;
+      }
+      return true;
+    });
 
     return [...filteredOlder, ...recentPortion];
   }

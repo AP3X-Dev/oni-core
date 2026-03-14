@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { buildAgentContext } from "../agents/context.js";
-import type { ONIModel, ChatResponse, ONIModelMessage } from "../models/types.js";
+import type { ONIModel, ONIModelMessage } from "../models/types.js";
 import type { ToolDefinition } from "../tools/types.js";
 
 // ---- Helpers ----

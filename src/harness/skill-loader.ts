@@ -93,7 +93,9 @@ export class SkillLoader {
   private loadDirectory(dir: string): void {
     try {
       // Dynamic require to avoid bundler issues in non-Node envs
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const fs = require("fs") as typeof import("fs");
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const path = require("path") as typeof import("path");
       this.scanDirectory(dir, fs, path);
     } catch {
@@ -128,13 +130,13 @@ export class SkillLoader {
     }
   }
 
-  private loadSkillFile(filePath: string, fs: typeof import("fs")): void {
+  private loadSkillFile(filePath: string, fs: typeof import("fs")): boolean {
     try {
       const raw = fs.readFileSync(filePath, "utf-8");
       const { meta, body } = parseFrontmatter(raw);
 
       const name = (meta.name as string) || "";
-      if (!name) return;
+      if (!name) return false;
 
       const skill: SkillDefinition = {
         name,
@@ -162,9 +164,24 @@ export class SkillLoader {
 
       this.skills.set(name, skill);
       this.version++;
+      return true;
     } catch {
       // Skip unreadable files
+      return false;
     }
+  }
+
+  /**
+   * Create a fork that shares the skill catalog but has its own isolated
+   * pendingInjection state. Use when multiple concurrent agents share the
+   * same SkillLoader to prevent one agent's skill invocation from being
+   * consumed by another agent.
+   */
+  fork(): SkillLoader {
+    const forked = new SkillLoader();
+    forked.skills = this.skills; // shared read-only catalog — no filesystem re-scan
+    forked.version = this.version;
+    return forked;
   }
 
   // ── Programmatic Registration ────────────────────────────────────────
@@ -183,10 +200,10 @@ export class SkillLoader {
    */
   loadSkillFromFile(filePath: string): boolean {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const fs = require("fs") as typeof import("fs");
-      this.loadSkillFile(filePath, fs);
-      this.version++;
-      return true;
+      // Note: loadSkillFile already increments this.version on success.
+      return this.loadSkillFile(filePath, fs);
     } catch {
       return false;
     }
@@ -217,9 +234,12 @@ export class SkillLoader {
   getDescriptionsForContext(): string {
     if (this.skills.size === 0) return "";
 
+    const escXml = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
     const lines: string[] = ["<available-skills>"];
     for (const skill of this.skills.values()) {
-      lines.push(`  <skill name="${skill.name}">${skill.description}</skill>`);
+      lines.push(`  <skill name="${escXml(skill.name)}">${escXml(skill.description)}</skill>`);
     }
     lines.push("</available-skills>");
     return lines.join("\n");
@@ -261,7 +281,6 @@ export class SkillLoader {
    * This tool allows the agent to invoke skills by name.
    */
   getSkillTool(): ToolDefinition<{ name: string }, string> {
-    const self = this;
     return {
       name: "Skill",
       description:
@@ -278,8 +297,8 @@ export class SkillLoader {
         required: ["name"],
         additionalProperties: false,
       },
-      execute(input: { name: string }): string {
-        const found = self.invoke(input.name);
+      execute: (input: { name: string }): string => {
+        const found = this.invoke(input.name);
         if (found) {
           return JSON.stringify({ success: true, skill: input.name });
         }

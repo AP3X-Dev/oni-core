@@ -109,9 +109,13 @@ function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
 ): Promise<T | null> {
+  let handle: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    handle = setTimeout(() => resolve(null), ms);
+  });
   return Promise.race([
-    promise,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+    promise.finally(() => clearTimeout(handle)),
+    timeout,
   ]);
 }
 
@@ -246,14 +250,12 @@ export class HooksEngine {
       const input = (payload as PreToolUsePayload).input;
       if (!input) return false;
 
-      // Check the first string value in input against the arg pattern
+      // Check only the FIRST string value in input against the arg pattern.
+      // Scanning all fields would match on unrelated fields (e.g. a description
+      // field starting with the same prefix as a different primary argument).
       const argPrefix = argPattern.replace(/:\*$/, "");
-      for (const val of Object.values(input)) {
-        if (typeof val === "string" && val.startsWith(argPrefix)) {
-          return true;
-        }
-      }
-      return false;
+      const firstStringVal = Object.values(input).find((v) => typeof v === "string") as string | undefined;
+      return firstStringVal !== undefined && firstStringVal.startsWith(argPrefix);
     }
 
     // Pipe-separated OR patterns: "Write|Edit"
@@ -267,7 +269,7 @@ export class HooksEngine {
     const engine = new HooksEngine();
 
     const dangerousBashPatterns = [
-      /rm\s+(-[a-zA-Z]*)?r[a-zA-Z]*f/,  // rm -rf
+      /rm\b(?=[^\n]*-[a-zA-Z]*[rR])(?=[^\n]*-[a-zA-Z]*[fF])/,  // rm -rf, rm -fr, rm -Rf, rm -r -f, etc.
       /mkfs/,
       /dd\s+if=/,
       /chmod\s+777/,

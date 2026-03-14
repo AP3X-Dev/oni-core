@@ -3,7 +3,6 @@ import { AgentRegistry } from "../../swarm/registry.js";
 import { StateGraph } from "../../graph.js";
 import { START, END } from "../../types.js";
 import type { SwarmAgentDef } from "../../swarm/types.js";
-import type { AgentManifestEntry } from "../../swarm/registry.js";
 
 // ── helpers ──────────────────────────────────────────────────
 

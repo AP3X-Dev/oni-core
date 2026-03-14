@@ -4,8 +4,6 @@ import type {
   ChatParams,
   ChatResponse,
   ChatChunk,
-  TokenUsage,
-  ModelCapabilities,
 } from "../models/index.js";
 
 describe("ONIModel interface", () => {
@@ -19,14 +17,14 @@ describe("ONIModel interface", () => {
         streaming: true,
         embeddings: false,
       },
-      async chat(params: ChatParams): Promise<ChatResponse> {
+      async chat(_params: ChatParams): Promise<ChatResponse> {
         return {
           content: "hello",
           usage: { inputTokens: 10, outputTokens: 5 },
           stopReason: "end",
         };
       },
-      async *stream(params: ChatParams): AsyncGenerator<ChatChunk> {
+      async *stream(_params: ChatParams): AsyncGenerator<ChatChunk> {
         yield { type: "text", text: "hello" };
       },
     };
@@ -49,7 +47,7 @@ describe("ONIModel interface", () => {
         streaming: false,
         embeddings: false,
       },
-      async chat(params: ChatParams): Promise<ChatResponse> {
+      async chat(_params: ChatParams): Promise<ChatResponse> {
         return {
           content: "response",
           usage: { inputTokens: 100, outputTokens: 50 },
@@ -81,7 +79,7 @@ describe("ONIModel interface", () => {
         streaming: false,
         embeddings: true,
       },
-      async chat(params: ChatParams): Promise<ChatResponse> {
+      async chat(_params: ChatParams): Promise<ChatResponse> {
         return {
           content: "",
           usage: { inputTokens: 0, outputTokens: 0 },

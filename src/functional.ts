@@ -22,9 +22,8 @@
 
 import { StateGraph } from "./graph.js";
 import { START, END } from "./types.js";
-import type { ChannelSchema, ONIConfig, ONISkeleton, ONICheckpointer } from "./types.js";
+import type { ChannelSchema, ONIConfig, ONICheckpointer } from "./types.js";
 import type { ONISkeletonV3 } from "./graph.js";
-import { interrupt } from "./hitl/interrupt.js";
 
 // ----------------------------------------------------------------
 // task() — wraps an async function as a named, reusable task unit
@@ -117,6 +116,10 @@ export function pipe<S extends Record<string, unknown>>(
   opts:  EntrypointOptions<S>,
   ...tasks: Array<(state: S, config?: ONIConfig) => Promise<Partial<S>> | Partial<S>>
 ): ONISkeletonV3<S> {
+  if (tasks.length === 0) {
+    throw new Error("pipe() requires at least one task function");
+  }
+
   const graph = new StateGraph<S>({ channels: opts.channels });
 
   const names = tasks.map((_, i) => `step_${i}`);

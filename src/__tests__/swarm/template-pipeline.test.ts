@@ -21,7 +21,7 @@ function makeChannels() {
 
 type PipeState = BaseSwarmState & { revisions: number };
 
-function buildAgent(id: string, response: string): SwarmAgentDef<PipeState> {
+function _buildAgent(id: string, response: string): SwarmAgentDef<PipeState> {
   const g = new StateGraph<PipeState>({ channels: makeChannels() as any });
   g.addNode("work", async () => ({
     messages: [{ role: "assistant", content: response }],

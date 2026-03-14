@@ -21,6 +21,12 @@ export interface ScalingConfig {
   /** Maximum number of agents allowed (default: 10) */
   maxAgents?: number;
   /**
+   * Clock function returning current time in milliseconds (default: Date.now).
+   * Injectable for testing with synthetic/replayed traces so evaluation windows
+   * are computed relative to the trace timeline rather than wall-clock time.
+   */
+  clockFn?: () => number;
+  /**
    * Error rate threshold to trigger scale-up (0-1, default: 0.25 = 25%).
    * Rationale: 25% catches systemic issues (API degradation, bad prompts)
    * early without over-reacting to transient single-agent failures.
@@ -66,9 +72,21 @@ export interface ScalingHistoryEntry {
 
 type ScalingCallback = (decision: ScalingDecision) => void;
 
+// ── Constants ─────────────────────────────────────────────
+
+/**
+ * Time window (ms) used when computing the error rate for scale-up decisions.
+ * Only tracer events within the last ERROR_RATE_WINDOW_MS are considered,
+ * so a past burst of errors does not permanently inflate the rate after the
+ * error condition has resolved.
+ */
+const ERROR_RATE_WINDOW_MS = 60_000;
+
 // ── Defaults ──────────────────────────────────────────────
 
-const DEFAULT_CONFIG: Required<ScalingConfig> = {
+type ScalingConfigCore = Required<Omit<ScalingConfig, "clockFn">>;
+
+const DEFAULT_CONFIG: ScalingConfigCore = {
   minAgents: 1,
   maxAgents: 10,
   scaleUpErrorRate: 0.25,
@@ -81,16 +99,19 @@ const DEFAULT_CONFIG: Required<ScalingConfig> = {
 
 export class DynamicScalingMonitor {
   private readonly tracer: SwarmTracer;
-  private readonly config: Required<ScalingConfig>;
+  private readonly config: ScalingConfigCore;
+  private readonly clockFn: () => number;
   private currentAgentCount = 0;
   private lastDecision: ScalingDecision | null = null;
   private lastDecisionTime = 0;
   private history: ScalingHistoryEntry[] = [];
+  private static readonly MAX_HISTORY = 500;
   private callbacks: Set<ScalingCallback> = new Set();
   private unsubscribeTracer: (() => void) | null = null;
 
   constructor(tracer: SwarmTracer, config?: ScalingConfig) {
     this.tracer = tracer;
+    this.clockFn = config?.clockFn ?? (() => Date.now());
     this.config = {
       minAgents: config?.minAgents ?? DEFAULT_CONFIG.minAgents,
       maxAgents: config?.maxAgents ?? DEFAULT_CONFIG.maxAgents,
@@ -103,7 +124,7 @@ export class DynamicScalingMonitor {
 
   // ── Configuration ─────────────────────────────────────
 
-  getConfig(): Readonly<Required<ScalingConfig>> {
+  getConfig(): Readonly<ScalingConfigCore> {
     return this.config;
   }
 
@@ -125,9 +146,11 @@ export class DynamicScalingMonitor {
    * Call this periodically or after significant events.
    */
   evaluate(): ScalingDecision {
+    const now = this.clockFn();
+
     // Check cooldown
     if (this.lastDecisionTime > 0) {
-      const elapsed = Date.now() - this.lastDecisionTime;
+      const elapsed = now - this.lastDecisionTime;
       if (elapsed < this.config.cooldownMs) {
         return { action: "idle", count: 0, reason: "cooldown active" };
       }
@@ -143,21 +166,74 @@ export class DynamicScalingMonitor {
       return { action: "idle", count: 0, reason: "no events to evaluate" };
     }
 
-    // Single-pass count of starts and errors (used by checkScaleUp)
+    // Count starts and errors within the recent time window only.
+    // Using all historical events would permanently inflate the error rate
+    // after a past burst — even after the error condition fully resolves.
+    const windowStart = now - ERROR_RATE_WINDOW_MS;
     let starts = 0;
     let errors = 0;
     for (const e of timeline) {
+      if (e.timestamp < windowStart) continue;
       if (e.type === "agent_start") starts++;
       else if (e.type === "agent_error") errors++;
     }
 
+    // Compute max latency from runs that STARTED within the window.
+    // Using the all-time tracer.metrics().maxLatencyMs would keep the latency
+    // threshold permanently breached after a single historically slow agent.
+    const recentStartTimes = new Map<string, number[]>();
+    let recentMaxLatencyMs = 0;
+    for (const e of timeline) {
+      if (e.type === "agent_start" && e.timestamp >= windowStart) {
+        const stack = recentStartTimes.get(e.agentId) ?? [];
+        stack.push(e.timestamp);
+        recentStartTimes.set(e.agentId, stack);
+      } else if (e.type === "agent_complete") {
+        const stack = recentStartTimes.get(e.agentId);
+        if (stack && stack.length > 0) {
+          const start = stack.shift()!;
+          const latency = e.timestamp - start;
+          if (latency > recentMaxLatencyMs) recentMaxLatencyMs = latency;
+        }
+      }
+    }
+
     // Check scale-up conditions first (more urgent than scale-down)
-    const scaleUp = this.checkScaleUp(starts, errors);
+    const scaleUp = this.checkScaleUp(starts, errors, recentMaxLatencyMs);
     if (scaleUp) return scaleUp;
+
+    // Don't scale down while agents are actively in-flight.
+    // Tracer emits no events during execution, so lastActivity alone is insufficient.
+    //
+    // Staleness cutoff: an agent_start with no matching completion that is older
+    // than STALE_AGENT_MS is assumed crashed and is excluded from the in-flight
+    // count so it cannot permanently block scale-down decisions.
+    const STALE_AGENT_MS = 60_000;
+    // Track unmatched start timestamps per agent (stack: FIFO via shift).
+    const startStacks = new Map<string, number[]>();
+    for (const e of timeline) {
+      if (e.type === "agent_start") {
+        if (!startStacks.has(e.agentId)) startStacks.set(e.agentId, []);
+        startStacks.get(e.agentId)!.push(e.timestamp);
+      } else if (e.type === "agent_complete" || e.type === "agent_error") {
+        const stack = startStacks.get(e.agentId);
+        if (stack && stack.length > 0) stack.shift();
+      }
+    }
+    // Count only unmatched starts that are fresh (within STALE_AGENT_MS).
+    let inFlight = 0;
+    for (const timestamps of startStacks.values()) {
+      for (const ts of timestamps) {
+        if (now - ts < STALE_AGENT_MS) inFlight++;
+      }
+    }
+    if (inFlight > 0) {
+      return { action: "idle", count: 0, reason: `${inFlight} agent(s) currently in-flight` };
+    }
 
     // Check scale-down — last event is most recent (timeline is append-only)
     const lastActivity = timeline[timeline.length - 1]!.timestamp;
-    const scaleDown = this.checkScaleDown(lastActivity);
+    const scaleDown = this.checkScaleDown(lastActivity, now);
     if (scaleDown) return scaleDown;
 
     return { action: "idle", count: 0, reason: "metrics within normal range" };
@@ -165,7 +241,7 @@ export class DynamicScalingMonitor {
 
   // ── Scale-up checks ───────────────────────────────────
 
-  private checkScaleUp(starts: number, errors: number): ScalingDecision | null {
+  private checkScaleUp(starts: number, errors: number, recentMaxLatencyMs: number): ScalingDecision | null {
     // Already at max
     if (this.currentAgentCount >= this.config.maxAgents) return null;
 
@@ -187,9 +263,8 @@ export class DynamicScalingMonitor {
       }
     }
 
-    // Latency check
-    const metrics = this.tracer.metrics();
-    if (metrics.maxLatencyMs > this.config.scaleUpLatencyMs) {
+    // Latency check — use windowed max, not all-time max from tracer.metrics()
+    if (recentMaxLatencyMs > this.config.scaleUpLatencyMs) {
       const headroom = this.config.maxAgents - this.currentAgentCount;
       const addCount = Math.min(
         Math.max(1, Math.ceil(this.currentAgentCount * 0.25)),
@@ -198,7 +273,7 @@ export class DynamicScalingMonitor {
       return {
         action: "scale_up",
         count: addCount,
-        reason: `max latency ${metrics.maxLatencyMs}ms exceeds ${this.config.scaleUpLatencyMs}ms threshold`,
+        reason: `max latency ${recentMaxLatencyMs}ms exceeds ${this.config.scaleUpLatencyMs}ms threshold`,
       };
     }
 
@@ -207,12 +282,11 @@ export class DynamicScalingMonitor {
 
   // ── Scale-down checks ─────────────────────────────────
 
-  private checkScaleDown(lastActivity: number): ScalingDecision | null {
+  private checkScaleDown(lastActivity: number, now: number): ScalingDecision | null {
     // Already at minimum
     if (this.currentAgentCount <= this.config.minAgents) return null;
 
     // Check if all agents have been idle for scaleDownIdleSeconds
-    const now = Date.now();
     const idleThresholdMs = this.config.scaleDownIdleSeconds * 1000;
 
     if (lastActivity > 0 && now - lastActivity > idleThresholdMs) {
@@ -241,10 +315,14 @@ export class DynamicScalingMonitor {
    */
   recordDecision(decision: ScalingDecision): void {
     this.lastDecision = decision;
+    const now = this.clockFn();
     if (decision.action !== "idle") {
-      this.lastDecisionTime = Date.now();
+      this.lastDecisionTime = now;
     }
-    this.history.push({ decision, timestamp: Date.now() });
+    this.history.push({ decision, timestamp: now });
+    if (this.history.length > DynamicScalingMonitor.MAX_HISTORY) {
+      this.history.shift();
+    }
   }
 
   getHistory(): ScalingHistoryEntry[] {

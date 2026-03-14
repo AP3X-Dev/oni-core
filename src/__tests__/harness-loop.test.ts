@@ -1,17 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import type {
   ONIModel,
   ONIModelMessage,
   ONIModelToolCall,
   ChatResponse,
-  ChatParams,
 } from "../models/types.js";
-import type { ToolDefinition, ToolContext } from "../tools/types.js";
+import type { ToolDefinition } from "../tools/types.js";
 import type {
   AgentLoopConfig,
   LoopMessage,
-  LoopToolResult,
-  HarnessToolContext,
 } from "../harness/types.js";
 import { agentLoop, wrapWithAgentLoop } from "../harness/agent-loop.js";
 import { HooksEngine } from "../harness/hooks-engine.js";
@@ -198,14 +195,14 @@ describe("agentLoop", () => {
     const fired: string[] = [];
 
     engine.on("SessionStart", {
-      handler: async (payload) => {
+      handler: async (_payload) => {
         fired.push("SessionStart");
         return { decision: "allow" };
       },
     });
 
     engine.on("SessionEnd", {
-      handler: async (payload) => {
+      handler: async (_payload) => {
         fired.push("SessionEnd");
         return { decision: "allow" };
       },
@@ -256,7 +253,7 @@ describe("agentLoop", () => {
     const engine = new HooksEngine();
 
     engine.on("PreToolUse", {
-      handler: async (payload) => {
+      handler: async (_payload) => {
         return { decision: "deny", reason: "Blocked by policy" };
       },
     });

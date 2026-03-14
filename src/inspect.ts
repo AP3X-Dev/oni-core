@@ -6,7 +6,7 @@
 // ============================================================
 
 import { START, END } from "./types.js";
-import type { NodeName, Edge } from "./types.js";
+import type { Edge } from "./types.js";
 
 // ----------------------------------------------------------------
 // Graph descriptor types
@@ -62,13 +62,24 @@ export function buildGraphDescriptor<S>(
     });
   }
 
-  // Build edge list
-  const graphEdges: GraphEdge[] = edges.map((e) => ({
-    from:  e.from as string,
-    to:    e.type === "static" ? (e.to as string) : "conditional",
-    type:  e.type,
-    label: e.type === "conditional" ? "condition" : undefined,
-  }));
+  // Build edge list — expand conditional edges that have a pathMap into
+  // individual edges per possible destination so cycle detection can traverse them.
+  const graphEdges: GraphEdge[] = [];
+  for (const e of edges) {
+    if (e.type === "static") {
+      graphEdges.push({ from: e.from as string, to: e.to as string, type: "static" });
+    } else {
+      const pathMap = (e as { pathMap?: Record<string, string> }).pathMap;
+      if (pathMap && Object.keys(pathMap).length > 0) {
+        for (const target of Object.values(pathMap)) {
+          graphEdges.push({ from: e.from as string, to: target, type: "conditional", label: "condition" });
+        }
+      } else {
+        // No pathMap — single placeholder; cycle detection treats this conservatively
+        graphEdges.push({ from: e.from as string, to: "conditional", type: "conditional", label: "condition" });
+      }
+    }
+  }
 
   // Find terminal nodes
   const nodeIds = new Set(nodes.map((n) => n.id));
@@ -97,7 +108,13 @@ function detectCycles(
   const adj = new Map<string, string[]>();
   for (const id of nodes) adj.set(id, []);
   for (const e of edges) {
-    if (e.to !== "conditional") adj.get(e.from)?.push(e.to);
+    if (e.to === "conditional") {
+      // Unknown routing (no pathMap) — conservatively add edges to all nodes
+      // to prevent false-negative cycle detection.
+      for (const target of nodes) adj.get(e.from)?.push(target);
+    } else {
+      adj.get(e.from)?.push(e.to);
+    }
   }
 
   const cycles: string[][] = [];

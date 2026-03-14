@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   SwarmGraph, type BaseSwarmState,
 } from "../../swarm/index.js";
@@ -39,7 +39,7 @@ describe("Coordination auto-wiring", () => {
   });
 
   it("agents in swarm can publish and subscribe via shared pubsub", async () => {
-    const published: string[] = [];
+    const _published: string[] = [];
 
     const swarm = new SwarmGraph<BaseSwarmState>();
 

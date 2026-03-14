@@ -5,12 +5,10 @@ import type {
   ChatParams,
 } from "../models/types.js";
 import type { ToolDefinition } from "../tools/types.js";
-import type { LoopMessage, AgentNodeConfig } from "../harness/types.js";
+import type { LoopMessage } from "../harness/types.js";
 import { ONIHarness } from "../harness/harness.js";
-import type { SwarmAgentCompat } from "../harness/harness.js";
 import { TodoModule } from "../harness/todo-module.js";
 import { HooksEngine } from "../harness/hooks-engine.js";
-import { SkillLoader } from "../harness/skill-loader.js";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 

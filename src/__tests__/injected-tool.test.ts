@@ -33,7 +33,7 @@ describe("createInjectedTool", () => {
       },
     });
 
-    g.addNode("tool-runner", async (state) => {
+    g.addNode("tool-runner", async (_state) => {
       // Simulate calling the tool (in real usage, createToolNode would call this)
       const output = await myTool.fn({ query: "hello" });
       return { result: String(output) };

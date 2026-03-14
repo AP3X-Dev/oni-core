@@ -102,6 +102,17 @@ export class AgentPool<S extends Record<string, unknown>> {
     for (const a of agents) {
       this.slots.push({ agent: a, activeTasks: 0, totalRuns: 0 });
     }
+    // Drain queued requests onto newly available slots so callers are not
+    // blocked waiting for an in-flight task to finish when idle capacity
+    // already exists.
+    while (this.queue.length > 0) {
+      const slot = this.pickSlot();
+      if (!slot) break;
+      const next = this.queue.shift()!;
+      Promise.resolve()
+        .then(() => this.runOnSlot(slot, next.input, next.config))
+        .then(next.resolve, next.reject);
+    }
   }
 
   /** Remove agent slots by ID. Cannot remove the last agent. */
@@ -146,6 +157,7 @@ export class AgentPool<S extends Record<string, unknown>> {
     const agent = slot.agent;
     const maxRetries = (agent as any).maxRetries ?? 0;
     const timeout = (agent as any).timeout as number | undefined;
+    const retryDelayMs = (agent as any).retryDelayMs as number | undefined;
 
     try {
       // Fire onStart hook
@@ -167,7 +179,12 @@ export class AgentPool<S extends Record<string, unknown>> {
           return result;
         } catch (err) {
           lastError = err;
-          if (attempt < maxRetries) continue;
+          if (attempt < maxRetries) {
+            if (retryDelayMs && retryDelayMs > 0) {
+              await new Promise<void>((resolve) => setTimeout(resolve, retryDelayMs));
+            }
+            continue;
+          }
         }
       }
 

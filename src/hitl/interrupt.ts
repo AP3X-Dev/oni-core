@@ -16,7 +16,6 @@
 // ============================================================
 
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { ONIConfig } from "../types.js";
 
 // ----------------------------------------------------------------
 // The interrupt value surfaced to the caller
@@ -58,9 +57,9 @@ export class NodeInterruptSignal {
 // ----------------------------------------------------------------
 
 interface InterruptContext {
-  nodeName:    string;
-  resumeValue: unknown | undefined;
-  hasResume:   boolean;
+  nodeName:     string;
+  /** Queue of resume values — one per interrupt() call in this execution. */
+  resumeValues: unknown[];
 }
 
 // AsyncLocalStorage slot — isolates concurrent executions
@@ -108,12 +107,14 @@ export async function interrupt<T = unknown>(value: unknown): Promise<T> {
     );
   }
 
-  // If we already have a resume value for this execution, return it
-  if (ctx.hasResume) {
-    return ctx.resumeValue as T;
+  // If a resume value is queued for this interrupt() call, consume and return it.
+  // Using shift() ensures each call gets exactly one value — the same value is
+  // never returned twice, preventing stale-data on multi-interrupt nodes.
+  if (ctx.resumeValues.length > 0) {
+    return ctx.resumeValues.shift() as T;
   }
 
-  // No resume yet — throw the interrupt signal to pause execution
+  // Queue exhausted (or first run) — throw to pause execution
   const resumeId = `${ctx.nodeName}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   throw new NodeInterruptSignal(value, resumeId);
 }

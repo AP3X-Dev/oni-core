@@ -47,7 +47,9 @@ interface OllamaEmbeddingsRequestBody {
 }
 
 interface OllamaEmbeddingsResponseBody {
-  embedding: number[];
+  embedding?: number[];
+  /** Newer Ollama versions use plural "embeddings" */
+  embeddings?: number[][];
 }
 
 /* ------------------------------------------------------------------ */
@@ -199,6 +201,13 @@ export function ollama(
     }
 
     const json = (await res.json()) as OllamaChatResponseBody;
+    if (!json.message) {
+      // Ollama returns {"error":"...","done":true} with no message field on errors
+      const errMsg = (json as unknown as Record<string, unknown>)["error"];
+      throw new Error(
+        `Ollama error: ${typeof errMsg === "string" ? errMsg : "no message in response"}`
+      );
+    }
 
     return {
       content: json.message.content,
@@ -280,7 +289,12 @@ export function ollama(
       }
 
       const json = (await res.json()) as OllamaEmbeddingsResponseBody;
-      results.push(json.embedding);
+      // Support both legacy "embedding" (single vector) and newer "embeddings" (array)
+      const vec = json.embedding ?? json.embeddings?.[0];
+      if (!vec) {
+        throw new Error("Ollama embed: unexpected response shape — missing embedding field");
+      }
+      results.push(vec);
     }
 
     return results;

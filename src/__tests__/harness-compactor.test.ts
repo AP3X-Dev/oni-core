@@ -39,7 +39,7 @@ function buildMessages(count: number, charsPer: number): ONIModelMessage[] {
   return msgs;
 }
 
-function buildToolMessages(toolCount: number, userCount: number): ONIModelMessage[] {
+function _buildToolMessages(toolCount: number, userCount: number): ONIModelMessage[] {
   const msgs: ONIModelMessage[] = [];
   for (let i = 0; i < toolCount; i++) {
     msgs.push({
