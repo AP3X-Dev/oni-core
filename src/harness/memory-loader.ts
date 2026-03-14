@@ -6,8 +6,7 @@
 // Uses dynamic require('fs') — safe in non-Node environments.
 // ============================================================
 
-import type { ToolDefinition } from "../tools/types.js";
-import type { ToolContext } from "../tools/types.js";
+import type { ToolDefinition, ToolContext } from "../tools/types.js";
 
 // ─── Lazy fs/path helpers ─────────────────────────────────────────────────
 
@@ -92,7 +91,8 @@ interface Frontmatter {
 }
 
 function parseFrontmatter(content: string): { meta: Frontmatter; body: string } {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  const normalized = content.replace(/\r\n/g, "\n");
+  const match = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!match) return { meta: {}, body: content };
 
   const raw = match[1]!;
@@ -108,7 +108,11 @@ function parseFrontmatter(content: string): { meta: Frontmatter; body: string } 
 
     switch (key) {
       case "type":     meta.type = val as MemoryType; break;
-      case "tier":     meta.tier = parseInt(val, 10) as MemoryTier; break;
+      case "tier": {
+        const parsed = parseInt(val, 10);
+        if (parsed >= 0 && parsed <= 3) meta.tier = parsed as MemoryTier;
+        break;
+      }
       case "tags":     meta.tags = val.split(",").map((t) => t.trim()).filter(Boolean); break;
       case "summary":  meta.summary = val; break;
       case "triggers": meta.triggers = val.split(",").map((t) => t.trim()).filter(Boolean); break;
@@ -469,15 +473,30 @@ export class MemoryLoader {
     const absPath = path.join(folder, filename);
     const relPath = path.relative(this.config.root, absPath);
 
-    const finalContent = content.startsWith("---")
+    const finalContent = /^---\r?\n/.test(content)
       ? content
       : this.injectFrontmatter(content, type, relPath);
 
     fs.writeFileSync(absPath, finalContent, "utf-8");
     this.registerFile(absPath, relPath);
 
-    const unit = this.units.get(relPath)!;
-    unit.content = finalContent; // populate content on return
+    const unit = this.units.get(relPath);
+    if (!unit) {
+      // registerFile silently failed (e.g. post-write permission error) — return minimal stub
+      return {
+        key: relPath,
+        path: absPath,
+        type,
+        tier: inferTierFromPath(relPath, type),
+        tags: [],
+        summary: "",
+        tokenCost: estimateTokens(finalContent),
+        triggers: [],
+        updatedAt: new Date().toISOString(),
+        content: finalContent,
+      };
+    }
+    unit.content = finalContent;
 
     if (this.config.autoIndex && !skipAutoIndex) {
       this.rebuildIndex(path.dirname(absPath));
@@ -576,10 +595,11 @@ export class MemoryLoader {
 
   /** rebuildAllIndexes() — Rebuild every INDEX.md in the tree. */
   rebuildAllIndexes(): void {
+    const path = getPath();
+    if (!path) return;
     const dirs = new Set<string>();
     for (const unit of this.units.values()) {
-      const path = getPath();
-      if (path) dirs.add(path.dirname(unit.path));
+      dirs.add(path.dirname(unit.path));
     }
     for (const dir of dirs) {
       this.rebuildIndex(dir);
@@ -689,7 +709,7 @@ Returns: matching memory units or empty if nothing found.`,
 
     for (const unit of units) {
       if (used + unit.tokenCost <= budget) {
-        selected.push(this.hydrate(unit));
+        selected.push({ ...this.hydrate(unit) });
         this.loaded.add(unit.key);
         used += unit.tokenCost;
       } else {
@@ -718,7 +738,8 @@ Returns: matching memory units or empty if nothing found.`,
     const overlap = taskTags.filter((t) => unitTagSet.has(t)).length;
     const tagScore = overlap / Math.max(taskTags.length, 1);
 
-    const ageMs = Date.now() - new Date(unit.updatedAt).getTime();
+    const rawAge = Date.now() - new Date(unit.updatedAt).getTime();
+    const ageMs = isNaN(rawAge) ? 0 : rawAge;
     const ageDays = ageMs / (1000 * 60 * 60 * 24);
     const recencyScore = unit.type === "episodic" ? Math.max(0, 1 - ageDays / 30) : 0;
 
