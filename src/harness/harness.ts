@@ -11,6 +11,7 @@ import { ContextCompactor } from "./context-compactor.js";
 import { SafetyGate } from "./safety-gate.js";
 import { SkillLoader } from "./skill-loader.js";
 import type { SkillDefinition } from "./skill-loader.js";
+import { MemoryLoader } from "./memory-loader.js";
 import type {
   HarnessConfig,
   AgentNodeConfig,
@@ -107,6 +108,14 @@ export class ONIHarness {
       ...(agentConfig.tools ?? []),
     ];
 
+    // ── Memory: instantiate MemoryLoader when memoryRoot is configured ──
+    if (this.config.memoryRoot) {
+      MemoryLoader.fromRoot(this.config.memoryRoot, {
+        budgets: this.config.memoryBudgets,
+        debug: this.config.memoryDebug,
+      });
+    }
+
     return {
       model: this.config.model,
       tools,
@@ -118,6 +127,10 @@ export class ONIHarness {
       compactor: this.compactor,
       safetyGate: this.safetyGate,
       skillLoader: this.skillLoader,
+      // ── Memory config forwarded to loop ──
+      memoryRoot: this.config.memoryRoot,
+      memoryBudgets: this.config.memoryBudgets,
+      memoryDebug: this.config.memoryDebug,
     };
   }
 
@@ -197,6 +210,19 @@ export class ONIHarness {
 
   getSkillLoader(): SkillLoader {
     return this.skillLoader;
+  }
+
+  /**
+   * Returns tools assembled by this harness instance.
+   * Does NOT include agentConfig.tools (per-run) or memory_query (loop-created).
+   * Used for test assertions and introspection.
+   */
+  getHarnessTools(): import("../tools/types.js").ToolDefinition[] {
+    return [
+      ...this.todoModule.getTools(),
+      this.skillLoader.getSkillTool(),
+      ...(this.config.sharedTools ?? []),
+    ];
   }
 
   // ── Public: Runtime Registration ────────────────────────────────────
