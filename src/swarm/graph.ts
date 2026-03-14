@@ -178,6 +178,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
   private agentIds  = new Set<string>();
   private supervisorNodeName = "__supervisor__";
   private hasSupervisor = false;
+  private onErrorPolicy: "fallback" | "throw" = "fallback";
 
   private _broker?: RequestReplyBroker;
   private _pubsub?: PubSub;
@@ -227,6 +228,8 @@ export class SwarmGraph<S extends BaseSwarmState> {
       deadlineMs: config.supervisor.deadlineMs,
       autoRecover: config.supervisor.autoRecover,
     } as SupervisorConfig<S>);
+
+    swarm.onErrorPolicy = config.onError ?? "fallback";
 
     return swarm;
   }
@@ -327,6 +330,9 @@ export class SwarmGraph<S extends BaseSwarmState> {
   static pipeline<S extends BaseSwarmState>(
     config: PipelineConfig<S>,
   ): SwarmGraph<S> {
+    if (config.stages.length === 0) {
+      throw new Error("SwarmGraph.pipeline: stages must contain at least one agent.");
+    }
     const swarm = new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>);
     const ids = config.stages.map((a) => a.id);
 
@@ -393,8 +399,11 @@ export class SwarmGraph<S extends BaseSwarmState> {
   static mapReduce<S extends BaseSwarmState>(
     config: MapReduceConfig<S>,
   ): SwarmGraph<S> {
-    const swarm = new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>);
     const poolSize = config.poolSize ?? 1;
+    if (poolSize < 1) {
+      throw new Error("SwarmGraph.mapReduce: poolSize must be at least 1.");
+    }
+    const swarm = new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>);
 
     // Register poolSize copies of the mapper agent
     const mapperIds: string[] = [];
@@ -454,6 +463,9 @@ export class SwarmGraph<S extends BaseSwarmState> {
   static debate<S extends BaseSwarmState>(
     config: DebateConfig<S>,
   ): SwarmGraph<S> {
+    if (config.debaters.length === 0) {
+      throw new Error("SwarmGraph.debate: debaters must contain at least one agent.");
+    }
     const swarm = new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>);
     const debaterIds = config.debaters.map((d) => d.id);
     const consensusKeyword = config.judge.consensusKeyword ?? "CONSENSUS";
@@ -656,6 +668,23 @@ export class SwarmGraph<S extends BaseSwarmState> {
           update: { supervisorRound: round + 1 } as Partial<S>,
           goto: target,
         });
+      }
+
+      // Rule-based strategy: evaluate rules in order, route to the first match
+      if (config.coordinator.strategy === "rule") {
+        const rules = config.coordinator.rules ?? [];
+        const task = String((state as Record<string, unknown>).task ?? "");
+        const ctx = ((state as Record<string, unknown>).context ?? {}) as Record<string, unknown>;
+        for (const rule of rules) {
+          if (rule.condition(task, ctx)) {
+            return new Command<S>({
+              update: { supervisorRound: round + 1, currentAgent: rule.agentId } as Partial<S>,
+              goto: rule.agentId,
+            });
+          }
+        }
+        // No matching rule — done
+        return { done: true, supervisorRound: round + 1 } as Partial<S>;
       }
 
       return { done: true } as Partial<S>;
@@ -929,11 +958,25 @@ export class SwarmGraph<S extends BaseSwarmState> {
         function processNext() {
           while (running < poolSize && queue.length > 0) {
             const work = queue.shift()!;
+
+            // Respect removeAgent() — if the assigned slot was removed, redirect
+            // to an active pool slot; if none remain, mark the item as failed.
+            let agentDef = (swarm as any).registry.getDef(work.targetId) as SwarmAgentDef<S> | undefined;
+            if (!agentDef) {
+              const activeIds = poolIds.filter((id) => !!(swarm as any).registry.getDef(id));
+              if (activeIds.length > 0) {
+                work.targetId = activeIds[work.idx % activeIds.length]!;
+                agentDef = (swarm as any).registry.getDef(work.targetId) as SwarmAgentDef<S>;
+              } else {
+                results[`item_${work.idx}`] = { _error: `Pool slot removed; no active agents remain` };
+                completed++;
+                if (completed === total) resolve();
+                continue;
+              }
+            }
+
             running++;
-            const agent = (swarm as any).registry.getDef(work.targetId)
-              ?? config.agent;
-            const skeleton = (agent as SwarmAgentDef<S>).skeleton;
-            skeleton.invoke(
+            agentDef.skeleton.invoke(
               { ...state, task: String(work.item) } as any,
               { ...cfg, agentId: work.targetId },
             ).then(
@@ -979,6 +1022,9 @@ export class SwarmGraph<S extends BaseSwarmState> {
   static compose<S extends BaseSwarmState>(
     config: { stages: Array<{ id: string; swarm: SwarmGraph<S> }>; channels?: Partial<ChannelSchema<S>> },
   ): SwarmGraph<S> {
+    if (config.stages.length === 0) {
+      throw new Error("SwarmGraph.compose: stages must contain at least one sub-swarm.");
+    }
     const swarm = new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>);
     const stageIds = config.stages.map((s) => s.id);
 
@@ -1153,7 +1199,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
         errStr.includes("tool") ? "tool_error" :
         "unknown";
 
-      if (this.hasSupervisor) {
+      if (this.hasSupervisor && this.onErrorPolicy !== "throw") {
         return new Command<S>({
           update: {
             context: {
@@ -1171,7 +1217,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
         });
       }
 
-      // No supervisor — rethrow
+      // No supervisor, or onError: "throw" — rethrow
       throw lastError;
     };
 

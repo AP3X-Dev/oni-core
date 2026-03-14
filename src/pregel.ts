@@ -312,12 +312,14 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
     // Telemetry: graph-level span
     const graphSpan = this.tracer.startGraphSpan("invoke", { threadId, agentId });
 
+    let step = 0; // declared before try so finally can read it for setAttribute
+    try {
+
     // Load resume values from config (set by resume() call)
     const resumeMap = (config as ONIConfig & { __resumeValues?: Record<string, unknown> })?.__resumeValues ?? {};
 
     // Load or init state
     let state: S;
-    let step = 0;
     let pendingNodes: NodeName[] = [];
     let pendingSends: PendingSend[] = [];
 
@@ -704,9 +706,11 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
 
     if (modeValues) yield tag(this.evt("state_update", state, step, agentId), "values");
 
-    // Telemetry: end graph span
-    graphSpan.setAttribute("oni.steps", step);
-    this.tracer.endSpan(graphSpan);
+    } finally {
+      // Telemetry: end graph span — always runs, even on error or interrupt
+      graphSpan.setAttribute("oni.steps", step);
+      this.tracer.endSpan(graphSpan);
+    }
   }
 
   // ----------------------------------------------------------------
@@ -820,13 +824,16 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
   ): Promise<void> {
     if (!this.checkpointer) return;
     const cpSpan = this.tracer.startCheckpointSpan("put", { threadId });
-    await this.checkpointer.put({
-      threadId, step, state, agentId, metadata, pendingWrites,
-      nextNodes:    nextNodes.map(String),
-      pendingSends: pendingSends,
-      timestamp:    Date.now(),
-    });
-    this.tracer.endSpan(cpSpan);
+    try {
+      await this.checkpointer.put({
+        threadId, step, state, agentId, metadata, pendingWrites,
+        nextNodes:    nextNodes.map(String),
+        pendingSends: pendingSends,
+        timestamp:    Date.now(),
+      });
+    } finally {
+      this.tracer.endSpan(cpSpan);
+    }
   }
 
   private evt(
