@@ -603,4 +603,57 @@ describe("resume() bug regression", () => {
     const stillPending = app.getPendingInterrupts({ threadId: "mark-resumed-thread" });
     expect(stillPending.some((s) => s.resumeId === resumeId)).toBe(false);
   });
+
+  it("rejects a resumeId that belongs to a different thread (cross-thread guard)", async () => {
+    type S = { value: string };
+    const channels = { value: lastValue(() => "") };
+
+    const makeApp = () => {
+      const g = new StateGraph<S>({ channels });
+      g.addNode("ask", async () => {
+        const v = await interrupt<string>("?");
+        return { value: v };
+      });
+      g.addEdge(START, "ask");
+      g.addEdge("ask", END);
+      return g.compile({ checkpointer: new MemoryCheckpointer<S>() });
+    };
+
+    // Two independent apps, each interrupted on different threads
+    const appA = makeApp();
+    const appB = makeApp();
+
+    let interruptA: HITLInterruptException<S> | null = null;
+    try { await appA.invoke({}, { threadId: "thread-a" }); } catch (e) { interruptA = e as HITLInterruptException<S>; }
+
+    let interruptB: HITLInterruptException<S> | null = null;
+    try { await appB.invoke({}, { threadId: "thread-b" }); } catch (e) { interruptB = e as HITLInterruptException<S>; }
+
+    expect(interruptA).not.toBeNull();
+    expect(interruptB).not.toBeNull();
+
+    // Attempting to resume thread-a with thread-b's resumeId should throw
+    await expect(
+      appA.resume({ threadId: "thread-a", resumeId: interruptB!.interrupt.resumeId }, "bad")
+    ).rejects.toThrow(/not found or does not belong to thread/);
+
+    // thread-a's session should still be pending (untouched)
+    const pendingA = appA.getPendingInterrupts({ threadId: "thread-a" });
+    expect(pendingA.some((s) => s.resumeId === interruptA!.interrupt.resumeId && s.status === "pending")).toBe(true);
+  });
+
+  it("rejects a completely unknown resumeId", async () => {
+    type S = { value: string };
+    const g = new StateGraph<S>({ channels: { value: lastValue(() => "") } });
+    g.addNode("ask", async () => { await interrupt("?"); return { value: "x" }; });
+    g.addEdge(START, "ask");
+    g.addEdge("ask", END);
+    const app = g.compile({ checkpointer: new MemoryCheckpointer<S>() });
+
+    try { await app.invoke({}, { threadId: "bad-id-thread" }); } catch { /* expected */ }
+
+    await expect(
+      app.resume({ threadId: "bad-id-thread", resumeId: "nonexistent-resume-id" }, "value")
+    ).rejects.toThrow(/not found or does not belong to thread/);
+  });
 });

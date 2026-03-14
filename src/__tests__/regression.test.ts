@@ -108,6 +108,35 @@ describe("Bug 3 regression — subgraph checkpointer restore", () => {
     const result = await child.invoke({});
     expect(result.value).toBe("child-result");
   });
+
+  it("child runner checkpointer is restored even when subgraph throws", async () => {
+    type S = { value: string };
+    const channels = { value: lastValue(() => "") };
+
+    // Child that always throws
+    const childGraph = new StateGraph<S>({ channels });
+    childGraph.addNode("bad", async () => { throw new Error("child failure"); });
+    childGraph.addEdge(START, "bad");
+    childGraph.addEdge("bad", END);
+    const child = childGraph.compile();
+
+    const childRunner = (child as any)._runner;
+    expect(childRunner.checkpointer).toBeNull();
+
+    const parentGraph = new StateGraph<S>({ channels });
+    parentGraph.addSubgraph("sub", child);
+    parentGraph.addEdge(START, "sub");
+    parentGraph.addEdge("sub", END);
+
+    const parent = parentGraph.compile({ checkpointer: new MemoryCheckpointer<S>() });
+
+    // Parent invoke should propagate the child's error
+    await expect(parent.invoke({}, { threadId: "throw-thread" })).rejects.toThrow("child failure");
+
+    // Child's checkpointer must be restored to null despite the throw
+    expect(childRunner.checkpointer).toBeNull();
+    expect(childRunner._isSubgraph).toBe(false);
+  });
 });
 
 // ----------------------------------------------------------------
