@@ -5,6 +5,18 @@ All notable changes to @oni.bot/core are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] — 2026-03-13
+
+### Fixed
+- **Budget guardrails:** `BudgetTracker.record()` is now called from `defineAgent` after each `model.chat()` via a RunContext callback; throws `BudgetExceededError` when `maxTokensPerRun`/`maxTokensPerAgent`/`maxCostPerRun` is exceeded.
+- **defineAgent ToolContext:** `store` and stream `emit` now read from the live RunContext instead of being hard-coded to `null`/noop, so tools receive the real store and can emit custom stream events.
+- **parallelSafe enforcement:** `parallelSafe: false` is now preserved through `ToolDefinition` and respected by `defineAgent` — when any tool in a batch has `parallelSafe: false` all calls in that step execute sequentially.
+- **pathMap compile-time validation:** `StateGraph.compile()` now validates conditional edge `pathMap` targets at compile time, throwing `NodeNotFoundError` instead of failing silently at runtime.
+- **spawnAgent in unsupervised swarms:** `spawnAgent()` now throws a clear error when called on a swarm without a supervisor, rather than silently adding an agent that never executes.
+- **removeAgent edge cleanup:** `removeAgent()` now removes stale static edges pointing to the removed node from `_edgesBySource`, preventing `NodeNotFoundError` when Pregel tries to route to a removed agent.
+- **Lifecycle events from defineAgent:** `llm.request`, `llm.response`, `tool.call`, and `tool.result` events are now emitted and audit entries written for every model call and tool execution inside `defineAgent`.
+- **toolPermissions enforcement:** `checkToolPermission()` is called before each tool execution in `defineAgent`, outside the tool's try/catch, so `ToolPermissionError` propagates as a real graph failure.
+
 ## [1.0.1] — 2026-03-13
 
 ### Fixed
