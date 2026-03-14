@@ -8,6 +8,7 @@ export function defineTool<TInput = any, TOutput = any>(
     name: opts.name,
     description: opts.description,
     schema: opts.schema,
+    parallelSafe: opts.parallelSafe,
     execute: opts.execute,
   };
 }

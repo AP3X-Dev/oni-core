@@ -120,6 +120,12 @@ export class StateGraph<S extends Record<string, unknown>> {
       } else {
         // Conditional edge: validate 'from' node exists
         if (edge.from !== START && !this.nodes.has(edge.from as string)) throw new NodeNotFoundError(edge.from as string);
+        // Validate pathMap targets — catches typos at compile time rather than at runtime
+        if (edge.pathMap) {
+          for (const target of Object.values(edge.pathMap)) {
+            if (target !== END && !this.nodes.has(target as string)) throw new NodeNotFoundError(target as string);
+          }
+        }
       }
     }
     if (!hasStartEdge)

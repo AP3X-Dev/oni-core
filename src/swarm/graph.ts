@@ -1388,6 +1388,15 @@ export class SwarmGraph<S extends BaseSwarmState> {
       toMermaid:  () => inner.toMermaid(),
 
       spawnAgent(def: SwarmAgentDef<S>) {
+        // spawnAgent requires a supervisor to route the spawned agent back into the graph.
+        // In unsupervised topologies there is no return path, so the agent would never execute.
+        if (!hasSupervisor) {
+          throw new Error(
+            `spawnAgent() requires a supervisor node. ` +
+            `Use SwarmGraph.hierarchical() to add a supervisor, or call addAgent() before compile() for static topologies.`,
+          );
+        }
+
         // Register in the registry
         registry.register(def as SwarmAgentDef<Record<string, unknown>> as any);
 
@@ -1453,7 +1462,18 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
       removeAgent(agentId: string) {
         registry.deregister(agentId);
-        (skeleton as any)._runner?.nodes?.delete(agentId);
+        const runner = (skeleton as any)._runner;
+        if (runner?.nodes) runner.nodes.delete(agentId);
+        // Remove stale edges pointing TO the removed agent so Pregel doesn't try to route to it.
+        // Also remove edges FROM the agent (it won't execute, but keeps _edgesBySource clean).
+        if (runner?._edgesBySource) {
+          const edgesBySource = runner._edgesBySource as Map<string, Array<{ type: string; to?: string }>>;
+          for (const [from, edges] of edgesBySource) {
+            const filtered = edges.filter((e) => !(e.type === "static" && e.to === agentId));
+            if (filtered.length !== edges.length) edgesBySource.set(from, filtered);
+          }
+          edgesBySource.delete(agentId);
+        }
       },
     };
 

@@ -13,6 +13,8 @@ export interface ToolDefinition<TInput = any, TOutput = any> {
   name: string;
   description: string;
   schema: JSONSchema;
+  /** When false, this tool must not run concurrently with other calls in the same step. Default: true (parallel-safe). */
+  parallelSafe?: boolean;
   execute: (input: TInput, ctx: ToolContext) => Promise<TOutput> | TOutput;
 }
 

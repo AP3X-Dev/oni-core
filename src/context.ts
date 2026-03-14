@@ -8,6 +8,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { ONIConfig } from "./types.js";
 import type { BaseStore } from "./store/index.js";
+import type { ToolPermissions } from "./tools/types.js";
 
 // Forward-declare StreamWriter interface — avoids circular dep with streaming.ts
 export interface StreamWriter {
@@ -24,6 +25,14 @@ export interface RunContext {
   parentUpdates: Array<Partial<unknown>>;
   step: number;
   recursionLimit: number;
+  /** Tool permissions from guardrails config — checked by defineAgent before executing tools. */
+  toolPermissions?: ToolPermissions;
+  /** Record model token usage into the budget tracker — may throw BudgetExceededError */
+  _recordUsage?: (agentName: string, modelId: string, usage: { inputTokens: number; outputTokens: number }) => void;
+  /** Emit a lifecycle event from within a node execution */
+  _emitEvent?: (event: { type: string; [key: string]: unknown }) => void;
+  /** Record an audit entry from within a node execution */
+  _auditRecord?: (entry: { timestamp: number; agent: string; action: string; data: Record<string, unknown> }) => void;
 }
 
 const storage = new AsyncLocalStorage<RunContext>();
