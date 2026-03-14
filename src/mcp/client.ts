@@ -28,7 +28,7 @@ import type {
 
 const MCP_PROTOCOL_VERSION = "2024-11-05";
 const CLIENT_NAME = "oni-core";
-const CLIENT_VERSION = "0.8.1";
+const CLIENT_VERSION = "1.0.1";
 
 // ── MCPClient ─────────────────────────────────────────────────
 

@@ -59,7 +59,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   return { command, positional, flags };
 }
 
-const VERSION = "0.8.1";
+const VERSION = "1.0.1";
 
 export function getVersionText(): string {
   return `@oni.bot/core v${VERSION}`;

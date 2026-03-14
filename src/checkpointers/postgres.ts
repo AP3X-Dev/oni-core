@@ -83,19 +83,19 @@ export class PostgresCheckpointer<S> implements ONICheckpointer<S> {
 
     sql += " ORDER BY step ASC";
 
-    if (opts?.limit !== undefined) {
-      sql += ` LIMIT $${paramIdx++}`;
-      params.push(opts.limit);
-    }
-
     const { rows } = await this.pool.query(sql, params);
     let items = rows.map(r => this.deserialize(r));
 
+    // Apply filter before limit so limit counts post-filter rows (matches MemoryCheckpointer)
     if (opts?.filter) {
       items = items.filter(c => {
         if (!c.metadata) return false;
         return Object.entries(opts.filter!).every(([k, v]) => c.metadata![k] === v);
       });
+    }
+
+    if (opts?.limit !== undefined) {
+      items = items.slice(0, opts.limit);
     }
 
     return items;
