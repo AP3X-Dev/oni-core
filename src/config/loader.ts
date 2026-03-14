@@ -14,7 +14,7 @@ import type { ONIConfig, LoadConfigOptions } from "./types.js";
  * Strip comments from JSONC text.
  * Handles:
  * - `//` line comments
- * - `/* ... *​/` block comments
+ * - `/* ... * /` block comments
  * - Preserves comments inside quoted strings
  * - Handles escaped quotes within strings
  */
@@ -233,15 +233,22 @@ function mergeConfig(
 async function loadSingleConfig(
   path: string,
 ): Promise<Partial<ONIConfig> | null> {
+  let text: string;
   try {
-    const text = await readFile(path, "utf-8");
+    text = await readFile(path, "utf-8");
+  } catch {
+    // File doesn't exist or can't be read — skip silently
+    return null;
+  }
+  try {
     const parsed = parseJsonc(text);
     if (isPlainObject(parsed)) {
       return expandEnvVars(parsed) as Partial<ONIConfig>;
     }
     return null;
-  } catch {
-    // File doesn't exist or can't be read — skip silently
+  } catch (err) {
+    // Parse error — log so the user knows their config was ignored
+    console.warn(`[oni] Config parse error in "${path}": ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }

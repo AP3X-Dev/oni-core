@@ -67,7 +67,7 @@ function formatContent(content: MCPContent): string {
     case "text":
       return content.text;
     case "image":
-      return `[Image: ${content.mimeType}, ${content.data.length} bytes base64]`;
+      return `[Image: ${content.mimeType ?? "unknown"}, ${content.data?.length ?? 0} bytes base64]`;
     default:
       return "[Unknown content type]";
   }

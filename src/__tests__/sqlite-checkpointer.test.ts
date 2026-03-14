@@ -15,11 +15,10 @@ class FakeDatabase {
   private rows: Record<string, unknown>[] = [];
 
   prepare(_sql: string): FakeStatement {
-    const self = this;
     return {
       run: () => {},
-      get: () => self.rows[0] ?? undefined,
-      all: () => self.rows,
+      get: () => this.rows[0] ?? undefined,
+      all: () => this.rows,
     };
   }
 

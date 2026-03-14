@@ -81,7 +81,7 @@ describe("fan-out maxConcurrency", () => {
 
     const swarm = SwarmGraph.fanOut({
       agents,
-      reducer: (results) => ({ done: true }),
+      reducer: (_results) => ({ done: true }),
       maxConcurrency: 2,
     });
 
@@ -178,7 +178,7 @@ describe("fan-out maxConcurrency", () => {
 
     const swarm = SwarmGraph.fanOut({
       agents,
-      reducer: (results) => ({ done: true }),
+      reducer: (_results) => ({ done: true }),
       // No maxConcurrency — default behavior
     });
 

@@ -46,9 +46,9 @@ Respond ONLY with the JSON object, no other text.`;
 // ─── Fallback result ────────────────────────────────────────────────────────
 
 const FALLBACK_RESULT: SafetyCheckResult = {
-  approved: true,
-  reason: "Safety check skipped (timeout/error)",
-  riskScore: 0.1,
+  approved: false,
+  reason: "Safety check unavailable (timeout/error) — failing closed",
+  riskScore: 1.0,
 };
 
 // ─── SafetyGate ─────────────────────────────────────────────────────────────
@@ -73,6 +73,7 @@ export class SafetyGate {
 
   /** Sends tool call info to the safety model and returns the check result. */
   async check(call: { id: string; name: string; args: Record<string, unknown> }): Promise<SafetyCheckResult> {
+    let response: Awaited<ReturnType<typeof this.model.chat>>;
     try {
       const userMessage = `Tool: ${call.name}\nArguments: ${JSON.stringify(call.args, null, 2)}`;
 
@@ -82,21 +83,41 @@ export class SafetyGate {
         maxTokens: 256,
       });
 
+      let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error("Safety check timeout")), this.timeout);
+        timeoutHandle = setTimeout(() => reject(new Error("Safety check timeout")), this.timeout);
       });
 
-      const response = await Promise.race([responsePromise, timeoutPromise]);
-      const parsed = JSON.parse(response.content as string);
+      response = await Promise.race([responsePromise, timeoutPromise]);
+      clearTimeout(timeoutHandle);
+    } catch {
+      // Fail-closed for network errors and timeouts — block destructive tools
+      // when the safety service is unavailable.
+      return { ...FALLBACK_RESULT };
+    }
 
+    // Safely extract text — content is typed as string but guard defensively
+    // against adapters that return a content-block array at runtime.
+    const text = typeof response.content === "string"
+      ? response.content
+      : (response.content as Array<{ text?: string }>).map((p) => p.text ?? "").join("");
+
+    try {
+      const parsed = JSON.parse(text) as Record<string, unknown>;
       return {
-        approved: Boolean(parsed.approved),
-        reason: parsed.reason,
-        riskScore: parsed.riskScore,
-        suggestion: parsed.suggestion,
+        approved: Boolean(parsed["approved"]),
+        reason: parsed["reason"] as string | undefined,
+        riskScore: parsed["riskScore"] as number | undefined,
+        suggestion: parsed["suggestion"] as string | undefined,
       };
     } catch {
-      return { ...FALLBACK_RESULT };
+      // Model returned non-JSON content — fail-closed. A safety model that
+      // cannot produce a parseable response must not silently approve.
+      return {
+        approved: false,
+        reason: "Safety check failed: model returned non-JSON response",
+        riskScore: 1.0,
+      };
     }
   }
 }

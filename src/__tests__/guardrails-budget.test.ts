@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { BudgetTracker, BudgetExceededError, DEFAULT_PRICING } from "../guardrails/budget.js";
+import { BudgetTracker, BudgetExceededError } from "../guardrails/budget.js";
 import type { TokenUsage } from "../models/types.js";
 
 describe("guardrails — budget tracker", () => {

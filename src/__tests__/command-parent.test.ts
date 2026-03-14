@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  StateGraph, START, END, lastValue, appendList, Command,
+  StateGraph, START, END, lastValue, Command,
 } from "../index.js";
 
 describe("Command.PARENT", () => {

@@ -63,10 +63,18 @@ export class SwarmSnapshotStore {
     opts?: SnapshotCaptureOptions,
   ): string {
     const id = `snap_${Date.now()}_${++_counter}`;
+    // Fall back to JSON round-trip if state contains non-cloneable values
+    // (functions, WeakRefs, etc.); JSON silently drops them rather than throwing.
+    let clonedState: Record<string, unknown>;
+    try {
+      clonedState = structuredClone(state);
+    } catch {
+      clonedState = JSON.parse(JSON.stringify(state)) as Record<string, unknown>;
+    }
     const snapshot: SwarmSnapshot = {
       id,
       timestamp: Date.now(),
-      state: structuredClone(state),
+      state: clonedState,
     };
 
     if (opts?.registry) {

@@ -168,6 +168,12 @@ export function filterByRole(messages: Message[], role: Message["role"]): Messag
 export function trimMessages(messages: Message[], maxMessages: number): Message[] {
   const systemMsgs = messages.filter((m) => m.role === "system");
   const nonSystem  = messages.filter((m) => m.role !== "system");
-  const trimmed    = nonSystem.slice(-maxMessages);
+  let trimmed = nonSystem.slice(-maxMessages);
+  // If the slice boundary fell inside an assistant-toolCalls / tool-result pair,
+  // the trimmed array may start with orphaned tool messages. Drop them so the
+  // history always starts at a clean turn boundary.
+  while (trimmed.length > 0 && trimmed[0]!.role === "tool") {
+    trimmed = trimmed.slice(1);
+  }
   return [...systemMsgs, ...trimmed];
 }

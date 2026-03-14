@@ -78,12 +78,14 @@ export class TodoModule {
   // ── Update single todo status ───────────────────────────────────────────
 
   updateStatus(id: string, status: TodoStatus): boolean {
-    const todo = this.state.todos.find((t) => t.id === id);
-    if (!todo) return false;
+    const idx = this.state.todos.findIndex((t) => t.id === id);
+    if (idx === -1) return false;
 
-    todo.status = status;
-    todo.updatedAt = Date.now();
-    this.state.lastUpdated = todo.updatedAt;
+    const now = Date.now();
+    const updatedTodo = { ...this.state.todos[idx]!, status, updatedAt: now };
+    const todos = [...this.state.todos];
+    todos[idx] = updatedTodo;
+    this.state = { ...this.state, todos, lastUpdated: now };
     this.notify();
     return true;
   }
@@ -116,7 +118,11 @@ export class TodoModule {
 
   private notify(): void {
     for (const cb of this.listeners) {
-      cb(this.state);
+      try {
+        cb(this.state);
+      } catch {
+        // Isolate listener errors — delivery continues to remaining listeners
+      }
     }
   }
 

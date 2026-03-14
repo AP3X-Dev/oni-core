@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SwarmTracer, type SwarmEvent } from "../../swarm/tracer.js";
+import { SwarmTracer } from "../../swarm/tracer.js";
 
 describe("SwarmTracer.metrics()", () => {
   it("computes duration, agent counts, and per-agent latency", () => {

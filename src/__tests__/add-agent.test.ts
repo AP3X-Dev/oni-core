@@ -44,7 +44,7 @@ describe("addAgent on StateGraph", () => {
   });
 
   it("addAgent accepts functional agent() result", async () => {
-    const a = agent("processor", async (ctx) => {
+    const a = agent("processor", async (_ctx) => {
       return { output: "processed" };
     });
 

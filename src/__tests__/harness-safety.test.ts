@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   SafetyGate,
-  type SafetyGateConfig,
-  type SafetyCheckResult,
 } from "../harness/safety-gate.js";
 import type { ONIModel, ChatResponse } from "../models/types.js";
 
@@ -121,9 +119,9 @@ describe("SafetyGate", () => {
     expect(result.suggestion).toBe("Use a more targeted rm command");
   });
 
-  // ── 6. check() defaults to approved on timeout ─────────────────────
+  // ── 6. check() fails closed on timeout ─────────────────────────────
 
-  it("check() defaults to approved on timeout", async () => {
+  it("check() fails closed on timeout (blocks destructive tools)", async () => {
     const slowModel = createMockModel({
       chatImpl: () =>
         new Promise((resolve) =>
@@ -149,14 +147,14 @@ describe("SafetyGate", () => {
       args: { command: "echo hello" },
     });
 
-    expect(result.approved).toBe(true);
-    expect(result.reason).toBe("Safety check skipped (timeout/error)");
-    expect(result.riskScore).toBe(0.1);
+    expect(result.approved).toBe(false);
+    expect(result.reason).toBe("Safety check unavailable (timeout/error) — failing closed");
+    expect(result.riskScore).toBe(1.0);
   });
 
   // ── 7. check() defaults to approved on parse error ─────────────────
 
-  it("check() defaults to approved on parse error", async () => {
+  it("check() fails closed on parse error (does not silently approve)", async () => {
     const badModel = createMockModel({
       chatResponse: {
         content: "this is not valid JSON at all {{{",
@@ -170,9 +168,9 @@ describe("SafetyGate", () => {
       args: { file_path: "/tmp/test.txt", content: "hello" },
     });
 
-    expect(result.approved).toBe(true);
-    expect(result.reason).toBe("Safety check skipped (timeout/error)");
-    expect(result.riskScore).toBe(0.1);
+    expect(result.approved).toBe(false);
+    expect(result.reason).toBe("Safety check failed: model returned non-JSON response");
+    expect(result.riskScore).toBe(1.0);
   });
 
   // ── 8. check() passes tool call info to the safety model ───────────
@@ -194,9 +192,9 @@ describe("SafetyGate", () => {
     expect(chatArgs.systemPrompt).toBeDefined();
   });
 
-  // ── 9. check() defaults to approved when model throws ──────────────
+  // ── 9. check() fails closed when model throws ──────────────────────
 
-  it("check() defaults to approved when model throws", async () => {
+  it("check() fails closed when model throws (blocks destructive tools)", async () => {
     const errorModel = createMockModel({
       chatImpl: () => Promise.reject(new Error("API error")),
     });
@@ -208,9 +206,9 @@ describe("SafetyGate", () => {
       args: { command: "echo test" },
     });
 
-    expect(result.approved).toBe(true);
-    expect(result.reason).toBe("Safety check skipped (timeout/error)");
-    expect(result.riskScore).toBe(0.1);
+    expect(result.approved).toBe(false);
+    expect(result.reason).toBe("Safety check unavailable (timeout/error) — failing closed");
+    expect(result.riskScore).toBe(1.0);
   });
 
   // ── 10. custom safety system prompt is used ────────────────────────

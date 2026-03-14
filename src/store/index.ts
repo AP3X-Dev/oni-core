@@ -36,11 +36,14 @@ export interface SearchResult<T = unknown> {
 export type EmbedFn = (text: string) => Promise<number[]>;
 
 function cosine(a: number[], b: number[]): number {
+  if (a.length !== b.length) {
+    throw new Error(`cosine: vector dimension mismatch (${a.length} vs ${b.length})`);
+  }
   let dot = 0, magA = 0, magB = 0;
   for (let i = 0; i < a.length; i++) {
-    dot  += a[i] * b[i];
-    magA += a[i] * a[i];
-    magB += b[i] * b[i];
+    dot  += a[i]! * b[i]!;
+    magA += a[i]! * a[i]!;
+    magB += b[i]! * b[i]!;
   }
   const denom = Math.sqrt(magA) * Math.sqrt(magB);
   return denom === 0 ? 0 : dot / denom;
@@ -100,7 +103,7 @@ export class InMemoryStore extends BaseStore {
   }
 
   private key(namespace: Namespace, key: StoreKey): string {
-    return `${namespace.join("/")}::${key}`;
+    return `${JSON.stringify(namespace)}::${key}`;
   }
 
   private isExpired(item: StoreItem): boolean {
@@ -128,18 +131,37 @@ export class InMemoryStore extends BaseStore {
         throw new Error(`InMemoryStore: max capacity reached (${this.maxItems} items). Set maxItems or add TTLs.`);
       }
     }
-    this.data.set(k, {
+    const item: StoreItem = {
       namespace,
       key,
       value,
       createdAt: existing?.createdAt ?? Date.now(),
       updatedAt: Date.now(),
       ttl:       opts?.ttl,
-    });
-    // Compute embedding if configured
+    };
+    this.data.set(k, item);
+    // Compute embedding if configured — guard against concurrent delete() or
+    // put() that may have changed or removed the key during the async gap.
     if (this.embedFn) {
       const text = typeof value === "string" ? value : JSON.stringify(value);
-      this.vectors.set(k, await this.embedFn(text));
+      let embedding: number[];
+      try {
+        embedding = await this.embedFn(text);
+      } catch (err) {
+        // Roll back the data write — but only if no concurrent put()/delete()
+        // has since replaced our entry (same reference guard as the success path).
+        if (this.data.get(k) === item) {
+          if (existing) {
+            this.data.set(k, existing);
+          } else {
+            this.data.delete(k);
+          }
+        }
+        throw err;
+      }
+      if (this.data.get(k) === item) {
+        this.vectors.set(k, embedding);
+      }
     }
   }
 
@@ -150,7 +172,7 @@ export class InMemoryStore extends BaseStore {
   }
 
   async list(namespace: Namespace): Promise<StoreItem[]> {
-    const prefix = namespace.join("/");
+    const prefix = JSON.stringify(namespace);
     const result: StoreItem[] = [];
     for (const [k, item] of this.data) {
       if (this.isExpired(item)) {
@@ -158,7 +180,7 @@ export class InMemoryStore extends BaseStore {
         this.vectors.delete(k);
         continue;
       }
-      if (item.namespace.join("/") === prefix) result.push(item);
+      if (JSON.stringify(item.namespace) === prefix) result.push(item);
     }
     return result;
   }
@@ -171,8 +193,10 @@ export class InMemoryStore extends BaseStore {
     let items = await this.list(namespace);
     if (opts?.filter) {
       items = items.filter((item) => {
-        const val = item.value as Record<string, unknown>;
-        return Object.entries(opts.filter!).every(([k, v]) => val[k] === v);
+        const val = item.value;
+        if (typeof val !== "object" || val === null || Array.isArray(val)) return false;
+        const obj = val as Record<string, unknown>;
+        return Object.entries(opts.filter!).every(([k, v]) => obj[k] === v);
       });
     }
     const limit = opts?.limit ?? 10;
@@ -227,7 +251,7 @@ export class InMemoryStore extends BaseStore {
       const effective = maxDepth !== undefined
         ? ns.slice(0, prefix.length + maxDepth)
         : ns;
-      const key = effective.join("/");
+      const key = JSON.stringify(effective);
       if (!seen.has(key)) {
         seen.add(key);
         result.push(effective);

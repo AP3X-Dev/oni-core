@@ -18,8 +18,8 @@
 
 import { extname } from "node:path";
 import { LSPClient } from "./client.js";
-import { findServersForExtension, getLanguageId } from "./servers.js";
-import type { LSPServerConfig, LSPDiagnostic, LSPClientInfo, DiagnosticSeverity } from "./types.js";
+import { findServersForExtension } from "./servers.js";
+import type { LSPServerConfig, LSPDiagnostic, LSPClientInfo } from "./types.js";
 
 export { LSPClient } from "./client.js";
 export {

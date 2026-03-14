@@ -199,6 +199,8 @@ export interface ONIConfig {
   tags?:           string[];
   agentId?:        string;
   parentRunId?:    string;
+  /** Abort signal — propagated to LLM calls and async operations inside nodes */
+  signal?:         AbortSignal;
   /** Dynamic runtime interrupt conditions */
   dynamicInterrupts?: DynamicInterrupt<unknown>[];
 }
@@ -297,7 +299,7 @@ export interface ONISkeleton<S> {
   stream(
     input: Partial<S>,
     config?: ONIConfig & { streamMode?: StreamMode | StreamMode[] }
-  ): AsyncGenerator<ONIStreamEvent<S>>;
+  ): AsyncGenerator<ONIStreamEvent<S> | CustomStreamEvent | MessageStreamEvent>;
   batch(inputs: Partial<S>[], config?: ONIConfig): Promise<S[]>;
   getState(config: { threadId: string }):                              Promise<S | null>;
   updateState(config: { threadId: string }, update: Partial<S>):      Promise<void>;

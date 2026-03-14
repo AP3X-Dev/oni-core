@@ -33,9 +33,16 @@ export interface SwarmEvent {
 
 export type SwarmEventListener = (event: SwarmEvent) => void;
 
+const MAX_EVENTS_DEFAULT = 10_000;
+
 export class SwarmTracer {
   private events: SwarmEvent[] = [];
   private listeners: Set<SwarmEventListener> = new Set();
+  private readonly maxEvents: number;
+
+  constructor(maxEvents: number = MAX_EVENTS_DEFAULT) {
+    this.maxEvents = maxEvents;
+  }
 
   /**
    * Subscribe to live events. The callback fires synchronously on each
@@ -55,9 +62,9 @@ export class SwarmTracer {
    * Generate lifecycle hooks for a specific agent that record events
    * into this tracer's timeline.
    */
-  hooksFor(agentId: string): AgentLifecycleHooks {
+  hooksFor(_agentId: string): AgentLifecycleHooks {
     return {
-      onStart: (id: string, state?: Record<string, unknown>) => {
+      onStart: (id: string, _state?: Record<string, unknown>) => {
         this.record({ type: "agent_start", agentId: id, timestamp: Date.now() });
       },
       onComplete: (id: string, result: unknown) => {
@@ -76,15 +83,37 @@ export class SwarmTracer {
   instrument<S extends Record<string, unknown>>(
     agents: SwarmAgentDef<S>[],
   ): SwarmAgentDef<S>[] {
-    return agents.map((a) => ({
-      ...a,
-      hooks: this.hooksFor(a.id),
-    }));
+    return agents.map((a) => {
+      const tracerHooks = this.hooksFor(a.id);
+      const existing = a.hooks;
+      if (!existing) return { ...a, hooks: tracerHooks };
+      // Merge: existing hooks run first, tracer hooks always run after
+      return {
+        ...a,
+        hooks: {
+          onStart: async (id, state) => {
+            await existing.onStart?.(id, state);
+            await tracerHooks.onStart!(id, state);
+          },
+          onComplete: async (id, result) => {
+            await existing.onComplete?.(id, result);
+            await tracerHooks.onComplete!(id, result);
+          },
+          onError: async (id, error) => {
+            await existing.onError?.(id, error);
+            await tracerHooks.onError!(id, error);
+          },
+        },
+      };
+    });
   }
 
   /** Record a custom event into the timeline. Notifies all live subscribers. */
   record(event: SwarmEvent): void {
     this.events.push(event);
+    if (this.events.length > this.maxEvents) {
+      this.events.splice(0, this.events.length - this.maxEvents);
+    }
     for (const listener of this.listeners) {
       try {
         listener(event);
@@ -122,7 +151,11 @@ export class SwarmTracer {
     let completed = 0;
     let errored = 0;
 
-    const startTimes = new Map<string, number>();
+    // Stack-based start times: each agent_start pushes a timestamp so that
+    // multiple runs of the same agent are tracked independently.
+    const startTimeStacks = new Map<string, number[]>();
+    // Accumulate all run latencies per agent to compute true aggregate avg/max.
+    const allRunLatencies = new Map<string, number[]>();
     const agentLatency: Record<string, number> = {};
 
     for (const e of this.events) {
@@ -132,24 +165,39 @@ export class SwarmTracer {
       switch (e.type) {
         case "agent_start":
           started++;
-          startTimes.set(e.agentId, e.timestamp);
+          if (!startTimeStacks.has(e.agentId)) startTimeStacks.set(e.agentId, []);
+          startTimeStacks.get(e.agentId)!.push(e.timestamp);
           break;
-        case "agent_complete":
+        case "agent_complete": {
           completed++;
-          if (startTimes.has(e.agentId)) {
-            agentLatency[e.agentId] = e.timestamp - startTimes.get(e.agentId)!;
+          const stack = startTimeStacks.get(e.agentId);
+          if (stack && stack.length > 0) {
+            const runLatency = e.timestamp - stack.shift()!;
+            agentLatency[e.agentId] = runLatency;
+            if (!allRunLatencies.has(e.agentId)) allRunLatencies.set(e.agentId, []);
+            allRunLatencies.get(e.agentId)!.push(runLatency);
           }
           break;
-        case "agent_error":
+        }
+        case "agent_error": {
           errored++;
-          if (startTimes.has(e.agentId)) {
-            agentLatency[e.agentId] = e.timestamp - startTimes.get(e.agentId)!;
+          const stack = startTimeStacks.get(e.agentId);
+          if (stack && stack.length > 0) {
+            const runLatency = e.timestamp - stack.shift()!;
+            agentLatency[e.agentId] = runLatency;
+            if (!allRunLatencies.has(e.agentId)) allRunLatencies.set(e.agentId, []);
+            allRunLatencies.get(e.agentId)!.push(runLatency);
           }
           break;
+        }
       }
     }
 
-    const latencies = Object.values(agentLatency);
+    // Flatten all per-agent run latencies for true aggregate avg/max.
+    const latencies: number[] = [];
+    for (const runs of allRunLatencies.values()) {
+      for (const l of runs) latencies.push(l);
+    }
     const avgLatencyMs = latencies.length > 0
       ? latencies.reduce((a, b) => a + b, 0) / latencies.length
       : 0;

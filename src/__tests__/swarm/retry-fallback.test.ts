@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   SwarmGraph,
   type BaseSwarmState,
 } from "../../swarm/index.js";
-import { StateGraph, START, END, lastValue, appendList, mergeObject, Command } from "../../index.js";
+import { StateGraph, START, END, lastValue, appendList, mergeObject } from "../../index.js";
 
 function makeChannels() {
   return {

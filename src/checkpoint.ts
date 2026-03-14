@@ -22,8 +22,14 @@ export class MemoryCheckpointer<S> implements ONICheckpointer<S> {
     const existing = this.store.get(checkpoint.threadId) ?? [];
     // Overwrite if same step exists (idempotent)
     const idx = existing.findIndex((c) => c.step === checkpoint.step);
-    if (idx >= 0) existing[idx] = { ...checkpoint };
-    else existing.push({ ...checkpoint });
+    if (idx >= 0) {
+      existing[idx] = { ...checkpoint };
+    } else {
+      existing.push({ ...checkpoint });
+      // Keep sorted by step so get() (which returns the last element) always
+      // returns the highest step even when steps are written out of order.
+      existing.sort((a, b) => a.step - b.step);
+    }
     this.store.set(checkpoint.threadId, existing);
   }
 

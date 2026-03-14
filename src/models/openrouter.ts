@@ -324,7 +324,18 @@ export function openrouter(
     }
 
     const json = (await res.json()) as OpenAIResponseBody;
-    const choice = json.choices[0]!;
+    const choice = json.choices?.[0];
+    if (!choice) {
+      return {
+        content: "",
+        usage: {
+          inputTokens: json.usage?.prompt_tokens ?? 0,
+          outputTokens: json.usage?.completion_tokens ?? 0,
+        },
+        stopReason: "end",
+        raw: json,
+      };
+    }
     const message = choice.message;
 
     const content = message.content ?? "";
@@ -342,8 +353,8 @@ export function openrouter(
       content,
       toolCalls,
       usage: {
-        inputTokens: json.usage.prompt_tokens,
-        outputTokens: json.usage.completion_tokens,
+        inputTokens: json.usage?.prompt_tokens ?? 0,
+        outputTokens: json.usage?.completion_tokens ?? 0,
       },
       stopReason: mapFinishReason(choice.finish_reason),
       raw: json,

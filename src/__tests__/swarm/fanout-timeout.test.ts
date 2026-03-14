@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { SwarmGraph, baseSwarmChannels, type BaseSwarmState } from "../../swarm/graph.js";
 import { StateGraph } from "../../graph.js";
-import { START, END, lastValue } from "../../types.js";
+import { START, END } from "../../types.js";
 import type { SwarmAgentDef } from "../../swarm/types.js";
 
 // ── helpers ──────────────────────────────────────────────────
@@ -89,7 +89,7 @@ describe("fan-out timeout", () => {
 
     const swarm = SwarmGraph.fanOut({
       agents: [a],
-      reducer: (results) => ({ done: true }),
+      reducer: (_results) => ({ done: true }),
     });
 
     const app = swarm.compile();
@@ -104,7 +104,7 @@ describe("fan-out timeout", () => {
 
     const swarm = SwarmGraph.fanOut({
       agents: [agent],
-      reducer: (results) => ({ done: true }),
+      reducer: (_results) => ({ done: true }),
       timeoutMs: 500,
     });
 

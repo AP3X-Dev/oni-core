@@ -19,6 +19,7 @@ export interface PendingRequest {
 export class RequestReplyBroker {
   private pending   = new Map<string, PendingRequest>();
   private resolvers = new Map<string, (value: unknown) => void>();
+  private rejectors = new Map<string, (err: Error) => void>();
   private timeouts  = new Map<string, ReturnType<typeof setTimeout>>();
 
   /**
@@ -33,6 +34,18 @@ export class RequestReplyBroker {
     opts?: { timeoutMs?: number },
   ): { requestId: string; promise: Promise<unknown>; message: any } {
     const id = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    // Serialize before mutating state — throw early if payload is non-serializable
+    // so no orphaned pending entry is left behind.
+    let content: string;
+    try {
+      content = JSON.stringify({ _type: "request", payload });
+    } catch (err) {
+      throw new Error(
+        `RequestReply.request: payload for request ${id} is not JSON-serializable: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+
     const req: PendingRequest = {
       id,
       from,
@@ -45,26 +58,29 @@ export class RequestReplyBroker {
 
     const promise = new Promise<unknown>((resolve, reject) => {
       this.resolvers.set(id, resolve);
+      this.rejectors.set(id, reject);
 
-      if (opts?.timeoutMs != null) {
-        const handle = setTimeout(() => {
-          if (!req.resolved) {
-            req.resolved = true;
-            this.resolvers.delete(id);
-            this.pending.delete(id);
-            this.timeouts.delete(id);
-            reject(new Error(`Request ${id} timed out after ${opts.timeoutMs}ms`));
-          }
-        }, opts.timeoutMs);
-        this.timeouts.set(id, handle);
-      }
+      // Apply a timeout to prevent permanent leaks when no reply ever arrives.
+      // Callers may override; the default 60s covers a full agent lifecycle.
+      const timeoutMs = opts?.timeoutMs ?? 60_000;
+      const handle = setTimeout(() => {
+        if (!req.resolved) {
+          req.resolved = true;
+          this.resolvers.delete(id);
+          this.rejectors.delete(id);
+          this.pending.delete(id);
+          this.timeouts.delete(id);
+          reject(new Error(`Request ${id} timed out after ${timeoutMs}ms`));
+        }
+      }, timeoutMs);
+      this.timeouts.set(id, handle);
     });
 
     const message = {
       id,
       from,
       to,
-      content: JSON.stringify({ _type: "request", payload }),
+      content,
       metadata: { requestId: id },
       timestamp: Date.now(),
     };
@@ -94,16 +110,23 @@ export class RequestReplyBroker {
     if (resolver) {
       resolver(payload);
       this.resolvers.delete(requestId);
+      this.rejectors.delete(requestId);
     }
 
     // Remove from pending — completed requests must not accumulate
     this.pending.delete(requestId);
 
+    let replyContent: string;
+    try {
+      replyContent = JSON.stringify({ _type: "reply", requestId, payload });
+    } catch {
+      replyContent = JSON.stringify({ _type: "reply", requestId, payload: "[non-serializable]" });
+    }
     return {
       id: `reply_${requestId}`,
       from: req.to,
       to: req.from,
-      content: JSON.stringify({ _type: "reply", requestId, payload }),
+      content: replyContent,
       metadata: { requestId, isReply: true },
       timestamp: Date.now(),
     };
@@ -122,5 +145,27 @@ export class RequestReplyBroker {
     return [...this.pending.values()].filter(
       (r) => r.to === agentId && !r.resolved,
     );
+  }
+
+  /**
+   * Cancel all pending request timeouts and clear internal state.
+   * Call when the broker is no longer needed to allow GC.
+   */
+  dispose(): void {
+    for (const handle of this.timeouts.values()) {
+      clearTimeout(handle);
+    }
+    this.timeouts.clear();
+    // Reject all pending promises before clearing so callers don't hang forever.
+    for (const [id, reject] of this.rejectors) {
+      const req = this.pending.get(id);
+      if (req && !req.resolved) {
+        req.resolved = true;
+        reject(new Error(`Request ${id} cancelled: broker disposed`));
+      }
+    }
+    this.rejectors.clear();
+    this.resolvers.clear();
+    this.pending.clear();
   }
 }

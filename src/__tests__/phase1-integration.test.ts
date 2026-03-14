@@ -116,7 +116,7 @@ describe("Phase 1 integration", () => {
       model,
     });
 
-    const formatter = agent("formatter", async (ctx) => {
+    const formatter = agent("formatter", async (_ctx) => {
       return { formatted: "FORMATTED" };
     });
 

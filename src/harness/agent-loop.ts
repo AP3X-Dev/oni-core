@@ -4,13 +4,11 @@
 // ============================================================
 
 import type {
-  ONIModel,
   ONIModelMessage,
-  ONIModelToolCall,
   ChatResponse,
   LLMToolDef,
 } from "../models/types.js";
-import type { ToolDefinition, ToolContext } from "../tools/types.js";
+import type { ToolDefinition } from "../tools/types.js";
 import type {
   AgentLoopConfig,
   LoopMessage,
@@ -172,6 +170,16 @@ export async function* agentLoop(
               percentUsedAfter,
             },
           });
+
+          if (config.hooksEngine) {
+            await config.hooksEngine.fire("PostCompact", {
+              sessionId,
+              beforeCount,
+              afterCount,
+              estimatedTokensAfter,
+              summarized,
+            });
+          }
         } catch (err) {
           const errorMsg = err instanceof Error ? err.message : String(err);
           yield makeMessage("system", sessionId, turn, {
@@ -231,15 +239,25 @@ export async function* agentLoop(
     const maxRetries = 3;
     let lastInferenceError: unknown = null;
     let succeeded = false;
+    const inferenceTimeoutMs = config.inferenceTimeoutMs ?? 120_000;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        response = await config.model.chat({
-          messages,
-          tools: llmTools.length > 0 ? llmTools : undefined,
-          systemPrompt,
-          maxTokens: config.maxTokens ?? 8192,
-        });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`Inference timeout after ${inferenceTimeoutMs}ms`)),
+            inferenceTimeoutMs,
+          ),
+        );
+        response = await Promise.race([
+          config.model.chat({
+            messages,
+            tools: llmTools.length > 0 ? llmTools : undefined,
+            systemPrompt,
+            maxTokens: config.maxTokens ?? 8192,
+          }),
+          timeoutPromise,
+        ]);
         succeeded = true;
         break;
       } catch (err) {
@@ -267,11 +285,16 @@ export async function* agentLoop(
         if (delayMs > 0) {
           // Abort-aware delay: resolve early if signal fires
           await new Promise<void>((resolve) => {
-            const timer = setTimeout(resolve, delayMs);
             if (config.signal) {
               const onAbort = () => { clearTimeout(timer); resolve(); };
-              if (config.signal.aborted) { clearTimeout(timer); resolve(); return; }
+              if (config.signal.aborted) { resolve(); return; }
               config.signal.addEventListener("abort", onAbort, { once: true });
+              const timer = setTimeout(() => {
+                config.signal!.removeEventListener("abort", onAbort);
+                resolve();
+              }, delayMs);
+            } else {
+              setTimeout(resolve, delayMs);
             }
           });
         }
@@ -454,17 +477,8 @@ export async function* agentLoop(
         const durationMs = Date.now() - startTime;
         const content = typeof rawResult === "string" ? rawResult : JSON.stringify(rawResult);
 
-        // Fire PostToolUse
-        if (config.hooksEngine) {
-          await config.hooksEngine.fire("PostToolUse", {
-            sessionId,
-            toolName: toolCall.name,
-            input: toolCall.args,
-            output: rawResult,
-            durationMs,
-          });
-        }
-
+        // Push the successful result first — before the hook — so a hook
+        // throw cannot retroactively mark this tool call as failed.
         toolResults.push({
           toolCallId: toolCall.id,
           toolName: toolCall.name,
@@ -483,17 +497,39 @@ export async function* agentLoop(
             },
           });
         }
+
+        // Fire PostToolUse — in its own try/catch so a hook error does not
+        // corrupt the conversation history by triggering PostToolUseFailure
+        // for a tool that actually succeeded.
+        if (config.hooksEngine) {
+          try {
+            await config.hooksEngine.fire("PostToolUse", {
+              sessionId,
+              toolName: toolCall.name,
+              input: toolCall.args,
+              output: rawResult,
+              durationMs,
+            });
+          } catch {
+            // Hook errors are non-fatal — the tool result is already recorded.
+          }
+        }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
 
-        // Fire PostToolUseFailure
+        // Fire PostToolUseFailure — in its own try/catch so a hook error does not
+        // drop the error result from toolResults or corrupt conversation history.
         if (config.hooksEngine) {
-          await config.hooksEngine.fire("PostToolUseFailure", {
-            sessionId,
-            toolName: toolCall.name,
-            input: toolCall.args,
-            error: err instanceof Error ? err : errorMsg,
-          });
+          try {
+            await config.hooksEngine.fire("PostToolUseFailure", {
+              sessionId,
+              toolName: toolCall.name,
+              input: toolCall.args,
+              error: err instanceof Error ? err : errorMsg,
+            });
+          } catch {
+            // Hook errors are non-fatal — the tool error result is still recorded.
+          }
         }
 
         toolResults.push({

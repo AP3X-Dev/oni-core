@@ -45,9 +45,10 @@ export class StdioTransport {
   private process: ChildProcess | null = null;
   private nextId = 1;
   private pending = new Map<number, PendingRequest>();
-  private buffer = "";
+  private buffer = Buffer.alloc(0);
   private onNotification: NotificationHandler;
   private connected = false;
+  private _startPromise: Promise<void> | null = null;
 
   constructor(private config: StdioTransportConfig) {
     this.onNotification = config.onNotification ?? (() => {});
@@ -61,7 +62,15 @@ export class StdioTransport {
    */
   async start(): Promise<void> {
     if (this.connected) return;
+    // Coalescing lock: concurrent callers share the in-flight Promise
+    if (this._startPromise) return this._startPromise;
+    this._startPromise = this._doStart().finally(() => {
+      this._startPromise = null;
+    });
+    return this._startPromise;
+  }
 
+  private async _doStart(): Promise<void> {
     const timeout = this.config.spawnTimeout ?? 10_000;
 
     return new Promise<void>((resolve, reject) => {
@@ -90,7 +99,15 @@ export class StdioTransport {
       this.process.on("error", (err) => {
         clearTimeout(timer);
         this.connected = false;
-        reject(new Error(`MCP server process error: ${err.message}`));
+        const msg = `MCP server process error: ${err.message}`;
+        // Reject all in-flight requests immediately — don't wait for their
+        // individual timeouts to drain the pending map.
+        for (const [id, req] of this.pending) {
+          req.reject(new Error(msg));
+          clearTimeout(req.timer);
+          this.pending.delete(id);
+        }
+        reject(new Error(msg));
       });
 
       this.process.on("exit", (code) => {
@@ -105,7 +122,7 @@ export class StdioTransport {
 
       if (this.process.stdout) {
         this.process.stdout.on("data", (chunk: Buffer) => {
-          this.buffer += chunk.toString("utf-8");
+          this.buffer = Buffer.concat([this.buffer, chunk]);
           this.processBuffer();
         });
       }
@@ -140,7 +157,7 @@ export class StdioTransport {
       this.process = null;
     }
 
-    this.buffer = "";
+    this.buffer = Buffer.alloc(0);
   }
 
   isConnected(): boolean {
@@ -205,18 +222,23 @@ export class StdioTransport {
 
     const payload = JSON.stringify(notification);
     const frame = `Content-Length: ${Buffer.byteLength(payload)}\r\n\r\n${payload}`;
-    this.process.stdin.write(frame);
+    this.process.stdin.write(frame, (err) => {
+      if (err) {
+        // Notifications are fire-and-forget; silently swallow write errors
+        // to prevent broken-pipe failures from reaching the uncaught-exception handler.
+      }
+    });
   }
 
   // ── Buffer processing ───────────────────────────────────────
 
   private processBuffer(): void {
     while (true) {
-      // Look for Content-Length header
+      // Look for Content-Length header (byte-level search)
       const headerEnd = this.buffer.indexOf("\r\n\r\n");
       if (headerEnd === -1) break;
 
-      const header = this.buffer.slice(0, headerEnd);
+      const header = this.buffer.slice(0, headerEnd).toString("utf-8");
       const match = header.match(/Content-Length:\s*(\d+)/i);
       if (!match) {
         // Invalid header — skip to next potential header
@@ -224,6 +246,7 @@ export class StdioTransport {
         continue;
       }
 
+      // contentLength is a byte count (per LSP/MCP wire spec)
       const contentLength = parseInt(match[1]!, 10);
       const bodyStart = headerEnd + 4;
       const bodyEnd = bodyStart + contentLength;
@@ -233,7 +256,8 @@ export class StdioTransport {
         break;
       }
 
-      const body = this.buffer.slice(bodyStart, bodyEnd);
+      // Decode body bytes to string only after correct byte-level slicing
+      const body = this.buffer.slice(bodyStart, bodyEnd).toString("utf-8");
       this.buffer = this.buffer.slice(bodyEnd);
 
       try {

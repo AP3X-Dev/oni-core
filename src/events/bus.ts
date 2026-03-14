@@ -4,6 +4,7 @@ export class EventBus {
   private handlers = new Map<string, Set<EventHandler<any>>>();
   private allHandlers = new Set<EventHandler<LifecycleEvent>>();
   private disposed = false;
+  private pendingTimers = new Set<ReturnType<typeof setTimeout>>();
 
   constructor(listeners?: EventListeners) {
     if (listeners) {
@@ -26,6 +27,7 @@ export class EventBus {
   }
 
   onAll(handler: EventHandler<LifecycleEvent>): () => void {
+    if (this.disposed) return () => {};
     this.allHandlers.add(handler);
     return () => {
       this.allHandlers.delete(handler);
@@ -66,21 +68,20 @@ export class EventBus {
 
   waitFor<T extends EventType>(
     type: T,
-    timeoutMs?: number,
+    timeoutMs = 60_000,
   ): Promise<Extract<LifecycleEvent, { type: T }>> {
     return new Promise((resolve, reject) => {
-      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timer = setTimeout(() => {
+        this.pendingTimers.delete(timer);
+        unsub();
+        reject(new Error(`waitFor("${type}") timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+      this.pendingTimers.add(timer);
       const unsub = this.once(type, ((event: Extract<LifecycleEvent, { type: T }>) => {
-        if (timer) clearTimeout(timer);
+        clearTimeout(timer);
+        this.pendingTimers.delete(timer);
         resolve(event);
       }) as EventHandler<Extract<LifecycleEvent, { type: T }>>);
-
-      if (timeoutMs != null) {
-        timer = setTimeout(() => {
-          unsub();
-          reject(new Error(`waitFor("${type}") timed out after ${timeoutMs}ms`));
-        }, timeoutMs);
-      }
     });
   }
 
@@ -91,6 +92,10 @@ export class EventBus {
   removeAll(): void {
     this.handlers.clear();
     this.allHandlers.clear();
+    for (const timer of this.pendingTimers) {
+      clearTimeout(timer);
+    }
+    this.pendingTimers.clear();
   }
 
   dispose(): void {

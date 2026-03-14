@@ -12,6 +12,7 @@ import type { ToolDefinition, ToolContext } from "../tools/types.js";
 
 function getFs(): typeof import("fs") | null {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require("fs") as typeof import("fs");
   } catch {
     return null;
@@ -20,6 +21,7 @@ function getFs(): typeof import("fs") | null {
 
 function getPath(): typeof import("path") | null {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require("path") as typeof import("path");
   } catch {
     return null;
@@ -416,9 +418,12 @@ export class MemoryLoader {
       .join("\n");
   }
 
-  /** resetSession() — Clear loaded set. Does not remove files. */
+  /** resetSession() — Clear loaded set and release hydrated content. Does not remove files. */
   resetSession(): void {
     this.loaded.clear();
+    for (const unit of this.units.values()) {
+      unit.content = undefined;
+    }
     this.log("Session reset");
   }
 
@@ -468,8 +473,6 @@ export class MemoryLoader {
       ? path.join(this.config.root, type, subfolder)
       : path.join(this.config.root, type);
 
-    fs.mkdirSync(folder, { recursive: true });
-
     const absPath = path.join(folder, filename);
     const relPath = path.relative(this.config.root, absPath);
 
@@ -477,7 +480,24 @@ export class MemoryLoader {
       ? content
       : this.injectFrontmatter(content, type, relPath);
 
-    fs.writeFileSync(absPath, finalContent, "utf-8");
+    try {
+      fs.mkdirSync(folder, { recursive: true });
+      fs.writeFileSync(absPath, finalContent, "utf-8");
+    } catch {
+      // Must NOT throw: called from finally blocks — return a stub on I/O failure.
+      return {
+        key: relPath,
+        path: absPath,
+        type,
+        tier: inferTierFromPath(relPath, type),
+        tags: [],
+        summary: "",
+        tokenCost: estimateTokens(finalContent),
+        triggers: [],
+        updatedAt: new Date().toISOString(),
+        content: finalContent,
+      };
+    }
     this.registerFile(absPath, relPath);
 
     const unit = this.units.get(relPath);
@@ -644,7 +664,6 @@ export class MemoryLoader {
    * `_ctx` is typed as ToolContext (base); MemoryLoader needs no harness-specific context.
    */
   getQueryTool(): ToolDefinition<{ topic: string; reason: string }, object> {
-    const self = this;
     return {
       name: "memory_query",
       description: `Retrieve deep knowledge from memory when you hit a gap mid-task.
@@ -666,9 +685,9 @@ Returns: matching memory units or empty if nothing found.`,
         required: ["topic", "reason"],
         additionalProperties: false,
       },
-      execute(input: { topic: string; reason: string }, _ctx: ToolContext): object {
+      execute: (input: { topic: string; reason: string }, _ctx: ToolContext): object => {
         // reason intentionally unused — prompting-only
-        const result = self.query(input.topic);
+        const result = this.query(input.topic);
         if (result.units.length === 0) {
           return {
             found: false,
@@ -799,7 +818,11 @@ Returns: matching memory units or empty if nothing found.`,
       const dateMatch = file.match(/^(\d{4}-\d{2}-\d{2})/);
       if (!dateMatch) continue;
 
-      const fileDate = new Date(dateMatch[1]!);
+      // Parse as local-time midnight to match the local-time cutoff.
+      // new Date("YYYY-MM-DD") parses as UTC midnight which is off by up to
+      // ±24h relative to the local-time cutoff in non-UTC timezones.
+      const [y, m, d] = dateMatch[1]!.split("-").map(Number);
+      const fileDate = new Date(y!, m! - 1, d!);
       if (fileDate < cutoff) {
         try {
           const src = path.join(recentDir, file);

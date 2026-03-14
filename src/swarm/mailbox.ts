@@ -34,7 +34,9 @@ export function getInbox(messages: SwarmMessage[], agentId: string): SwarmMessag
 
 /** Mark messages as consumed — returns messages NOT consumed by agentId */
 export function consumeInbox(messages: SwarmMessage[], agentId: string): SwarmMessage[] {
-  return messages.filter((m) => m.to !== agentId && m.to !== "*");
+  // Only remove direct messages addressed to this agent.
+  // Broadcasts (to === "*") are preserved so subsequent agents can still read them.
+  return messages.filter((m) => m.to !== agentId);
 }
 
 /** Format inbox as readable string for LLM context */

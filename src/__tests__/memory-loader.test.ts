@@ -1,9 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fsSync from "fs";
 import * as pathSync from "path";
 import * as os from "os";
 import { MemoryLoader } from "../harness/memory-loader.js";
-import type { MemoryUnit } from "../harness/memory-loader.js";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
