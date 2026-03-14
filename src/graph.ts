@@ -160,7 +160,14 @@ export class StateGraph<S extends Record<string, unknown>> {
       async resume(cfg, value) {
         const store = runner.hitlSessionStore();
         const session = store.get(cfg.resumeId);
-        const nodeKey = session?.node ?? runner.getPendingInterrupts(cfg.threadId)[0]?.node ?? "";
+        // Validate: session must exist and belong to the given threadId.
+        // Falling back to "first pending" would silently misapply a cross-thread resumeId.
+        if (!session || session.threadId !== cfg.threadId) {
+          throw new Error(
+            `resumeId "${cfg.resumeId}" not found or does not belong to thread "${cfg.threadId}"`
+          );
+        }
+        const nodeKey = session.node;
         store.markResumed(cfg.resumeId);
         return runner.invoke(
           {},

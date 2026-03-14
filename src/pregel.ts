@@ -492,32 +492,35 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
                     (childRunner as any).checkpointer = new NamespacedCheckpointer(this.checkpointer as any, name);
                   }
 
-                  // Stream the subgraph instead of invoke — buffer events for yielding after Promise.all
-                  // Use debug+values so we capture ALL event types AND state_update for final state
+                  // Stream the subgraph — always restore child runner state, even on throw/interrupt
                   let subFinalState: Partial<S> | undefined;
-                  const childStreamMode: StreamMode[] = ["debug", "values"];
-                  for await (const evt of nodeDef.subgraph.stream(state, {
-                    ...config,
-                    parentRunId: config?.threadId,
-                    streamMode: childStreamMode,
-                  })) {
-                    // Namespace-prefix the node name
-                    allSubgraphEvents.push({
-                      ...evt,
-                      node: evt.node ? `${name}:${evt.node}` : name,
-                    });
-                    // Track the last state_update as the final subgraph state
-                    if (evt.event === "state_update") {
-                      subFinalState = evt.data as Partial<S>;
+                  try {
+                    const childStreamMode: StreamMode[] = ["debug", "values"];
+                    for await (const evt of nodeDef.subgraph.stream(state, {
+                      ...config,
+                      parentRunId: config?.threadId,
+                      streamMode: childStreamMode,
+                    })) {
+                      // Namespace-prefix the node name
+                      allSubgraphEvents.push({
+                        ...evt,
+                        node: evt.node ? `${name}:${evt.node}` : name,
+                      });
+                      // Track the last state_update as the final subgraph state
+                      if (evt.event === "state_update") {
+                        subFinalState = evt.data as Partial<S>;
+                      }
                     }
-                  }
-
-                  // Collect parent updates from child and restore checkpointer
-                  if (childRunner) {
-                    subParentUpdates = childRunner._parentUpdates;
-                    childRunner._isSubgraph = false;
-                    childRunner._parentUpdates = [];
-                    (childRunner as any).checkpointer = savedChildCheckpointer;
+                    if (childRunner) {
+                      subParentUpdates = childRunner._parentUpdates;
+                    }
+                  } finally {
+                    // Restore regardless of success, throw, or interrupt
+                    if (childRunner) {
+                      childRunner._isSubgraph = false;
+                      childRunner._parentUpdates = [];
+                      (childRunner as any).checkpointer = savedChildCheckpointer;
+                    }
                   }
                   return subFinalState ?? {};
                 } else {
