@@ -20,6 +20,8 @@ import type {
 } from "./types.js";
 import { generateId } from "./types.js";
 import { validateToolArgs } from "./validate-args.js";
+import { MemoryLoader } from "./memory-loader.js";
+import type { SessionOutcome } from "./types.js";
 
 // ─── agentLoop ─────────────────────────────────────────────────────────────
 
@@ -34,6 +36,31 @@ export async function* agentLoop(
     ? [...config.initialMessages]
     : [];
   let turn = 0;
+
+  // ── 0. Memory init ───────────────────────────────────────────────────────
+  const memoryLoader = config.memoryRoot
+    ? MemoryLoader.fromRoot(config.memoryRoot, {
+        budgets: config.memoryBudgets,
+        debug: config.memoryDebug,
+      })
+    : null;
+
+  let memoryContext = "";
+  if (memoryLoader) {
+    memoryLoader.wake();
+    memoryLoader.orient();
+    const t2 = memoryLoader.match(prompt);
+    if (config.memoryDebug && t2.dropped.length > 0) {
+      console.log(`[MemoryLoader] match() dropped ${t2.dropped.length} units over T2 budget`);
+    }
+    memoryContext = memoryLoader.buildSystemPrompt([0, 1, 2]);
+  }
+
+  const effectiveSystemPrompt = memoryContext
+    ? [memoryContext, config.systemPrompt].filter(Boolean).join("\n\n")
+    : config.systemPrompt;
+
+  let sessionOutcome: SessionOutcome = "completed";
 
   // ── 1. Session Init ──────────────────────────────────────────────────
 
@@ -50,6 +77,13 @@ export async function* agentLoop(
     }
   }
 
+  // ── 1b. Build allTools (base tools + memory_query if memory is active) ──
+  // Note: config.tools is used in SessionStart hooks (intentional — memory_query
+  // is a runtime capability, not a base tool). allTools is used for llmTools/toolMap.
+  const allTools = memoryLoader
+    ? [...config.tools, memoryLoader.getQueryTool()]
+    : config.tools;
+
   // Push user prompt
   messages.push({ role: "user", content: prompt });
 
@@ -60,7 +94,7 @@ export async function* agentLoop(
 
   // ── 2. Build LLMToolDef[] ────────────────────────────────────────────
 
-  const llmTools: LLMToolDef[] = config.tools.map((t) => ({
+  const llmTools: LLMToolDef[] = allTools.map((t) => ({
     name: t.name,
     description: t.description,
     parameters: t.schema,
@@ -68,15 +102,17 @@ export async function* agentLoop(
 
   // Tool lookup map
   const toolMap = new Map<string, ToolDefinition>();
-  for (const t of config.tools) {
+  for (const t of allTools) {
     toolMap.set(t.name, t);
   }
 
   // ── 3. Main Loop ─────────────────────────────────────────────────────
 
-  while (turn < maxTurns) {
+  try {
+    while (turn < maxTurns) {
     // ── 3a. Check AbortSignal ────────────────────────────────────────
     if (config.signal?.aborted) {
+      sessionOutcome = "interrupted";
       yield makeMessage("error", sessionId, turn, {
         content: "Agent loop aborted by signal",
       });
@@ -156,7 +192,7 @@ export async function* agentLoop(
     }
 
     // ── 3c. Build system prompt ──────────────────────────────────────
-    let systemPrompt = config.systemPrompt;
+    let systemPrompt = effectiveSystemPrompt;
 
     // Inject remaining turns so the model knows its budget
     const remaining = maxTurns - turn;
@@ -243,6 +279,7 @@ export async function* agentLoop(
     }
 
     if (!succeeded) {
+      sessionOutcome = "error";
       yield makeMessage("error", sessionId, turn, {
         content: `Inference error: ${lastInferenceError instanceof Error ? lastInferenceError.message : String(lastInferenceError)}`,
         metadata: { finalMessages: messages },
@@ -462,7 +499,9 @@ export async function* agentLoop(
         toolResults.push({
           toolCallId: toolCall.id,
           toolName: toolCall.name,
-          content: `Tool error: ${errorMsg}`,
+          content: memoryLoader
+            ? `Tool error: ${errorMsg}\n\nMemory query may help — call memory_query with a specific topic if this failure suggests a knowledge gap.`
+            : `Tool error: ${errorMsg}`,
           isError: true,
         });
       }
@@ -505,13 +544,27 @@ export async function* agentLoop(
     });
 
     turn++;
-  }
+    }
 
-  // ── 4. maxTurns exceeded ─────────────────────────────────────────────
-  yield makeMessage("error", sessionId, turn, {
-    content: `Agent loop exceeded maxTurns (${maxTurns})`,
-    metadata: { finalMessages: messages },
-  });
+    // Post-loop: maxTurns exhausted
+    sessionOutcome = "budget-exceeded";
+    yield makeMessage("error", sessionId, turn, {
+      content: `Agent loop exceeded maxTurns (${maxTurns})`,
+      metadata: { finalMessages: messages },
+    });
+  } catch (err) {
+    sessionOutcome = "error";
+    yield makeMessage("error", sessionId, turn, {
+      content: `Agent loop error: ${err instanceof Error ? err.message : String(err)}`,
+      metadata: { finalMessages: messages },
+    });
+  } finally {
+    if (memoryLoader) {
+      const log = buildEpisodicLog(sessionId, prompt, turn, sessionOutcome, config.compactor);
+      memoryLoader.persistEpisodic(sessionId, log);
+      memoryLoader.resetSession();
+    }
+  }
 }
 
 // ─── wrapWithAgentLoop ─────────────────────────────────────────────────────
@@ -602,4 +655,58 @@ function getRetryDelay(err: unknown, attempt: number): number {
     }
   }
   return Math.min(1000 * Math.pow(2, attempt), 10_000);
+}
+
+// ─── Memory helpers ────────────────────────────────────────────────────────
+
+/** Cast interface for optional ContextCompactor methods not yet implemented. */
+interface CompactorWithSummary {
+  getLastSummary?(): string | null;
+  getOpenThreads?(): string | null;
+}
+
+/**
+ * buildEpisodicLog — Assemble session log for persistEpisodic().
+ *
+ * When compactor.getLastSummary() is unavailable (not yet implemented),
+ * ## What Happened falls back to the raw task description.
+ */
+function buildEpisodicLog(
+  sessionId: string,
+  taskDescription: string,
+  turnCount: number,
+  outcome: SessionOutcome,
+  compactor?: import("./context-compactor.js").ContextCompactor,
+): string {
+  const c = compactor as unknown as CompactorWithSummary | undefined;
+  const summary = c?.getLastSummary?.() ?? null;
+  const openThreads = c?.getOpenThreads?.() ?? "none";
+
+  const outcomeNote =
+    outcome === "budget-exceeded"
+      ? "Session ended at turn limit. Task may be incomplete — check Open Threads before assuming prior work is done."
+      : "";
+
+  return [
+    `---`,
+    `type: episodic`,
+    `session: ${sessionId}`,
+    `outcome: ${outcome}`,
+    `turns: ${turnCount}`,
+    `created: ${new Date().toISOString()}`,
+    `---`,
+    ``,
+    `## What Happened`,
+    summary ?? taskDescription,
+    ``,
+    `## Turns`,
+    String(turnCount),
+    ``,
+    `## Outcome`,
+    outcome,
+    ...(outcomeNote ? [``, outcomeNote] : []),
+    ``,
+    `## Open Threads`,
+    openThreads,
+  ].join("\n");
 }
