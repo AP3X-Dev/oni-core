@@ -78,19 +78,19 @@ export class SqliteCheckpointer<S> implements ONICheckpointer<S> {
 
     sql += " ORDER BY step ASC";
 
-    if (opts?.limit !== undefined) {
-      sql += " LIMIT ?";
-      params.push(opts.limit);
-    }
-
     let items = (this.db.prepare(sql).all(...params) as Record<string, unknown>[])
       .map(r => this.deserialize(r));
 
+    // Apply filter before limit so limit counts post-filter rows (matches MemoryCheckpointer)
     if (opts?.filter) {
       items = items.filter(c => {
         if (!c.metadata) return false;
         return Object.entries(opts.filter!).every(([k, v]) => c.metadata![k] === v);
       });
+    }
+
+    if (opts?.limit !== undefined) {
+      items = items.slice(0, opts.limit);
     }
 
     return items;
