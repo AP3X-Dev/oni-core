@@ -12,7 +12,7 @@ import { StateGraph } from "../graph.js";
 import { START, END, appendList, lastValue, mergeObject } from "../types.js";
 import { Command, Send } from "../types.js";
 import type {
-  NodeFn, ONIConfig, ONISkeleton, ONICheckpointer, ChannelSchema,
+  NodeFn, ONIConfig, ONISkeleton, ONICheckpointer, ChannelSchema, NodeReturn,
 } from "../types.js";
 import type { ONIModel } from "../models/types.js";
 import type {
@@ -429,15 +429,38 @@ export class SwarmGraph<S extends BaseSwarmState> {
     // Wiring: START → __splitter__
     swarm.inner.addEdge(START, "__splitter__");
 
-    // __splitter__ → Send to mapper agents round-robin across pool
+    // __splitter__ → Send to mapper agents using the configured poolStrategy
     const inputField = config.inputField;
+    const strategy = config.poolStrategy ?? "round-robin";
     swarm.inner.addConditionalEdges("__splitter__", ((state: S) => {
       const items = state[inputField];
       if (!Array.isArray(items) || items.length === 0) {
         return "__reducer__";
       }
+
+      // Per-batch assignment counts — used by least-busy strategy
+      const assignCounts = new Map(mapperIds.map((id) => [id, 0]));
+
       return items.map((item: unknown, idx: number) => {
-        const targetId = mapperIds[idx % mapperIds.length]!;
+        let targetId: string;
+
+        if (strategy === "random") {
+          targetId = mapperIds[Math.floor(Math.random() * mapperIds.length)]!;
+        } else if (strategy === "least-busy") {
+          // Pick the mapper with fewest assignments in this batch so far
+          let minCount = Infinity;
+          let minId = mapperIds[0]!;
+          for (const id of mapperIds) {
+            const c = assignCounts.get(id) ?? 0;
+            if (c < minCount) { minCount = c; minId = id; }
+          }
+          targetId = minId;
+        } else {
+          // round-robin (default)
+          targetId = mapperIds[idx % mapperIds.length]!;
+        }
+
+        assignCounts.set(targetId, (assignCounts.get(targetId) ?? 0) + 1);
         return new Send(targetId, { ...state, task: String(item) });
       });
     }) as any);
@@ -616,15 +639,17 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
       const teamSkeleton = teamSwarm.compile();
 
-      // Mount team as a single node in the outer graph
+      // Mount team as a single node in the outer graph.
+      // Spread all top-level fields from teamResult (including done, context)
+      // so they propagate to the outer coordinator state.
       swarm.inner.addNode(teamId, async (state: S, cfg?) => {
         const teamResult = await teamSkeleton.invoke(state as any, cfg);
         return {
+          ...(teamResult as object),
           agentResults: {
             ...((state as any).agentResults ?? {}),
             [teamId]: teamResult,
           },
-          messages: (teamResult as any).messages ?? [],
         } as Partial<S>;
       });
     }
@@ -976,10 +1001,17 @@ export class SwarmGraph<S extends BaseSwarmState> {
             }
 
             running++;
-            agentDef.skeleton.invoke(
-              { ...state, task: String(work.item) } as any,
-              { ...cfg, agentId: work.targetId },
-            ).then(
+            // Use the full wrapped agentNode (hooks, retries, timeout) stored
+            // by addAgent() in swarm.inner.nodes rather than raw skeleton.invoke.
+            const wrappedFn = (swarm.inner as any).nodes.get(work.targetId)?.fn as
+              ((state: S, cfg?: ONIConfig) => Promise<NodeReturn<S>>) | undefined;
+            const invocation = wrappedFn
+              ? wrappedFn({ ...state, task: String(work.item) } as S, { ...cfg, agentId: work.targetId })
+              : agentDef.skeleton.invoke(
+                  { ...state, task: String(work.item) } as any,
+                  { ...cfg, agentId: work.targetId },
+                );
+            invocation.then(
               (result: unknown) => {
                 results[`item_${work.idx}`] = result;
                 running--;
