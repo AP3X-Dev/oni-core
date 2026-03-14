@@ -1,6 +1,6 @@
 {
   "name": "@oni.bot/core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "The graph execution engine for agent swarms — production-grade orchestration with zero dependencies",
   "type": "module",
   "sideEffects": false,
@@ -99,6 +99,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts",
     "verify": "npm run typecheck && npm test",
     "demo": "tsx examples/demo-content-pipeline.ts",
     "bench": "tsx benchmarks/index.ts"
@@ -152,9 +154,13 @@
   "author": "CJ — ONI Platform",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^9.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.4.0",
+    "typescript-eslint": "^8.0.0",
     "vitest": "^4.0.18"
   }
 }
