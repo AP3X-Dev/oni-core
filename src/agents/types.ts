@@ -44,11 +44,7 @@ export interface AgentContext<S = Record<string, unknown>> {
   // ---- Coordination ----
   send(agent: string, payload: unknown): void;
   inbox(): SwarmMessageView[];
-  /** @unsupported Throws at runtime — not yet wired. Reserved for a future release. */
-  request(agent: string, payload: unknown): Promise<unknown>;
   reply(msg: SwarmMessageView, payload: unknown): void;
-  /** @unsupported No-op at runtime — not yet wired. Reserved for a future release. */
-  publish(topic: string, data: unknown): void;
 
   // ---- Runtime context ----
   config: ONIConfig;

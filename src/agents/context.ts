@@ -39,9 +39,7 @@ export interface BuildAgentContextOptions<S = Record<string, unknown>> {
   // Coordination callbacks
   onSend: (agent: string, payload: unknown) => void;
   getInbox: () => SwarmMessageView[];
-  onRequest: (agent: string, payload: unknown) => Promise<unknown>;
   onReply: (msg: SwarmMessageView, payload: unknown) => void;
-  onPublish: (topic: string, data: unknown) => void;
 }
 
 // ----------------------------------------------------------------
@@ -63,9 +61,7 @@ export function buildAgentContext<S = Record<string, unknown>>(
     remainingSteps,
     onSend,
     getInbox,
-    onRequest,
     onReply,
-    onPublish,
   } = opts;
 
   // Convert ToolDefinition[] to LLMToolDef[] for model.chat/stream
@@ -151,9 +147,7 @@ export function buildAgentContext<S = Record<string, unknown>>(
 
     send: onSend,
     inbox: getInbox,
-    request: onRequest,
     reply: onReply,
-    publish: onPublish,
 
     // ---- Runtime context ----
 

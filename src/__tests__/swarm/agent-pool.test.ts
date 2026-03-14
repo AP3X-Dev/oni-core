@@ -220,4 +220,42 @@ describe("AgentPool", () => {
     // Clean up
     await Promise.allSettled([p1, p2]);
   });
+
+  it("queued tasks are rerouted to remaining slots when the draining slot is removed", async () => {
+    const ran: string[] = [];
+
+    // Agent "a" is slow (holds the slot) — agent "b" will receive the queued work after "a" is removed
+    const a = makeAgent("a", async (inp: any) => {
+      await new Promise((r) => setTimeout(r, 30));
+      ran.push(`a:${inp.task}`);
+      return inp;
+    }, 1);
+
+    const b = makeAgent("b", async (inp: any) => {
+      ran.push(`b:${inp.task}`);
+      return inp;
+    }, 1);
+
+    const pool = new AgentPool([a, b]);
+
+    // Fill both slots so queued work builds up, then remove "a" while it's still running
+    const p1 = pool.invoke({ task: "1" } as any);  // goes to a (slow)
+    const p2 = pool.invoke({ task: "2" } as any);  // goes to b (fast, completes quickly)
+
+    // Immediately queue a third task — slot "a" is busy, slot "b" is busy initially
+    // After "b" finishes p2 it will drain from the queue
+    const p3 = pool.invoke({ task: "3" } as any);
+
+    // Remove slot "a" while p1 is still running
+    pool.removeSlots(["a"]);
+
+    await Promise.all([p1, p2, p3]);
+
+    // p1 must have run on "a" (already in-flight when removed)
+    expect(ran).toContain("a:1");
+    // p3 must NOT have run on "a" (a was removed before it drained)
+    expect(ran.some((r) => r.startsWith("a:") && r !== "a:1")).toBe(false);
+    // p3 should have been routed to "b"
+    expect(ran).toContain("b:3");
+  });
 });

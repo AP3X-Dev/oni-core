@@ -99,19 +99,10 @@ export function agent<S extends Record<string, unknown> = Record<string, unknown
         ) as SwarmMessageView[];
       },
 
-      onRequest: async (_agent: string, _payload: unknown) => {
-        // Request/response coordination will be fully wired in Task 12
-        throw new Error("request() is not yet wired — see Task 12 (enhanced coordination).");
-      },
-
       onReply: (msg: SwarmMessageView, payload: unknown) => {
         if (msg._replyChannel) {
           msg._replyChannel(payload);
         }
-      },
-
-      onPublish: (_topic: string, _data: unknown) => {
-        // Pub/sub coordination will be fully wired in Task 12
       },
     });
 

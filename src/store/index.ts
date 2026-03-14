@@ -151,9 +151,16 @@ export class InMemoryStore extends BaseStore {
 
   async list(namespace: Namespace): Promise<StoreItem[]> {
     const prefix = namespace.join("/");
-    return [...this.data.values()].filter(
-      (item) => item.namespace.join("/") === prefix && !this.isExpired(item)
-    );
+    const result: StoreItem[] = [];
+    for (const [k, item] of this.data) {
+      if (this.isExpired(item)) {
+        this.data.delete(k);
+        this.vectors.delete(k);
+        continue;
+      }
+      if (item.namespace.join("/") === prefix) result.push(item);
+    }
+    return result;
   }
 
   async search<T = unknown>(
@@ -204,8 +211,12 @@ export class InMemoryStore extends BaseStore {
     const prefix = opts?.prefix ?? [];
     const maxDepth = opts?.maxDepth;
 
-    for (const item of this.data.values()) {
-      if (this.isExpired(item)) continue;
+    for (const [k, item] of this.data) {
+      if (this.isExpired(item)) {
+        this.data.delete(k);
+        this.vectors.delete(k);
+        continue;
+      }
       const ns = item.namespace;
       // Check prefix match
       if (prefix.length > 0) {
@@ -230,9 +241,18 @@ export class InMemoryStore extends BaseStore {
     return this.put(namespace, key, value, opts);
   }
 
-  /** Number of non-expired items */
+  /** Number of non-expired items — also purges expired entries from memory */
   size(): number {
-    return [...this.data.values()].filter((i) => !this.isExpired(i)).length;
+    let count = 0;
+    for (const [k, item] of this.data) {
+      if (this.isExpired(item)) {
+        this.data.delete(k);
+        this.vectors.delete(k);
+      } else {
+        count++;
+      }
+    }
+    return count;
   }
 
   clear(): void { this.data.clear(); this.vectors.clear(); }

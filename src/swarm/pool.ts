@@ -177,12 +177,19 @@ export class AgentPool<S extends Record<string, unknown>> {
       throw lastError;
     } finally {
       slot.activeTasks--;
-      // Drain queue
       if (this.queue.length > 0) {
         const next = this.queue.shift()!;
-        Promise.resolve()
-          .then(() => this.runOnSlot(slot, next.input, next.config))
-          .then(next.resolve, next.reject);
+        if (this.slots.includes(slot)) {
+          // Slot still active — drain directly for efficiency
+          Promise.resolve()
+            .then(() => this.runOnSlot(slot, next.input, next.config))
+            .then(next.resolve, next.reject);
+        } else {
+          // Slot was removed — route through normal dispatch so removed agents
+          // never execute queued work
+          this.invoke(next.input, next.config, next.priority)
+            .then(next.resolve, next.reject);
+        }
       }
     }
   }
