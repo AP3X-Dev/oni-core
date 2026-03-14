@@ -26,10 +26,11 @@ import {
   type InterruptValue,
 } from "./hitl/index.js";
 import { EventBus } from "./events/bus.js";
-import type { GuardrailsConfig } from "./guardrails/types.js";
+import type { GuardrailsConfig, ContentFilter } from "./guardrails/types.js";
 import type { EventListeners } from "./events/types.js";
 import { AuditLog } from "./guardrails/audit.js";
 import { BudgetTracker } from "./guardrails/budget.js";
+import { runFilters } from "./guardrails/filters.js";
 import { ONITracer, type TracerLike, type SpanLike } from "./telemetry.js";
 
 const DEFAULT_RECURSION_LIMIT = 25;
@@ -51,6 +52,7 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
   readonly eventBus: EventBus;
   readonly auditLog: AuditLog | null;
   readonly budgetTracker: BudgetTracker | null;
+  private readonly contentFilters: ContentFilter[];
   readonly tracer: ONITracer;
 
   /** Pre-indexed edges by source node — O(1) lookup instead of O(n) filter */
@@ -74,6 +76,7 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
     this.eventBus = new EventBus(listeners);
     this.auditLog = guardrails?.audit ? new AuditLog() : null;
     this.budgetTracker = guardrails?.budget ? new BudgetTracker(guardrails.budget) : null;
+    this.contentFilters = guardrails?.filters ?? [];
     this.tracer = new ONITracer(tracer ?? null);
 
     // Pre-index edges by source for O(1) lookups in getNextNodes
@@ -205,6 +208,16 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
       });
 
       try {
+        // Content filter — input direction
+        if (this.contentFilters.length > 0) {
+          const inputCheck = runFilters(this.contentFilters, JSON.stringify(state), "input");
+          if (!inputCheck.passed) {
+            throw new Error(
+              `Content blocked by filter "${inputCheck.blockedBy}" on input to node "${nodeDef.name}": ${inputCheck.reason}`,
+            );
+          }
+        }
+
         const run = () => Promise.resolve(nodeDef.fn(state, config));
 
         // Core execute call: retry-aware
@@ -256,6 +269,16 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
             // Wrap raw errors and non-Error throws in NodeExecutionError
             const cause = err instanceof Error ? err : new Error(String(err));
             throw new NodeExecutionError(nodeDef.name, cause);
+          }
+        }
+
+        // Content filter — output direction
+        if (this.contentFilters.length > 0 && result != null) {
+          const outputCheck = runFilters(this.contentFilters, JSON.stringify(result), "output");
+          if (!outputCheck.passed) {
+            throw new Error(
+              `Content blocked by filter "${outputCheck.blockedBy}" on output of node "${nodeDef.name}": ${outputCheck.reason}`,
+            );
           }
         }
 
