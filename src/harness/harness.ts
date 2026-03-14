@@ -11,7 +11,6 @@ import { ContextCompactor } from "./context-compactor.js";
 import { SafetyGate } from "./safety-gate.js";
 import { SkillLoader } from "./skill-loader.js";
 import type { SkillDefinition } from "./skill-loader.js";
-import { MemoryLoader } from "./memory-loader.js";
 import type {
   HarnessConfig,
   AgentNodeConfig,
@@ -107,14 +106,6 @@ export class ONIHarness {
       ...(this.config.sharedTools ?? []),
       ...(agentConfig.tools ?? []),
     ];
-
-    // ── Memory: instantiate MemoryLoader when memoryRoot is configured ──
-    if (this.config.memoryRoot) {
-      MemoryLoader.fromRoot(this.config.memoryRoot, {
-        budgets: this.config.memoryBudgets,
-        debug: this.config.memoryDebug,
-      });
-    }
 
     return {
       model: this.config.model,
