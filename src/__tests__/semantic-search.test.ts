@@ -55,3 +55,54 @@ describe("Semantic search", () => {
     expect(results.length).toBe(3);
   });
 });
+
+describe("InMemoryStore TTL cleanup regression", () => {
+  it("list() purges expired entries from the internal map (no memory leak)", async () => {
+    const store = new InMemoryStore();
+    const ns = ["ttl-test"];
+
+    await store.put(ns, "short", "value", { ttl: 1 });   // expires in 1ms
+    await store.put(ns, "long",  "value", { ttl: 60_000 }); // far future
+
+    // Wait for the short-lived entry to expire
+    await new Promise((r) => setTimeout(r, 10));
+
+    const visible = await store.list(ns);
+    expect(visible.length).toBe(1);
+    expect(visible[0].key).toBe("long");
+
+    // The underlying data map must have been pruned — expired entry deleted
+    expect((store as any).data.size).toBe(1);
+  });
+
+  it("size() purges expired entries from the internal map", async () => {
+    const store = new InMemoryStore();
+    const ns = ["size-test"];
+
+    await store.put(ns, "a", "val", { ttl: 1 });
+    await store.put(ns, "b", "val", { ttl: 60_000 });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(store.size()).toBe(1);
+    expect((store as any).data.size).toBe(1); // expired entry removed
+  });
+
+  it("list() purges expired vectors when embeddings are enabled", async () => {
+    const store = new InMemoryStore({ embedFn: async (t) => mockEmbed(t) });
+    const ns = ["vec-test"];
+
+    await store.put(ns, "soon", "expires", { ttl: 1 });
+    await store.put(ns, "later", "persists", { ttl: 60_000 });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    await store.list(ns);
+
+    // vectors map must not retain the expired entry
+    const vectors = (store as any).vectors as Map<string, unknown>;
+    const keys = [...vectors.keys()];
+    expect(keys.every((k) => !k.includes("soon"))).toBe(true);
+    expect(keys.some((k) => k.includes("later"))).toBe(true);
+  });
+});

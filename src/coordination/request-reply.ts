@@ -17,8 +17,9 @@ export interface PendingRequest {
 }
 
 export class RequestReplyBroker {
-  private pending = new Map<string, PendingRequest>();
+  private pending   = new Map<string, PendingRequest>();
   private resolvers = new Map<string, (value: unknown) => void>();
+  private timeouts  = new Map<string, ReturnType<typeof setTimeout>>();
 
   /**
    * Create a request from one agent to another.
@@ -46,13 +47,16 @@ export class RequestReplyBroker {
       this.resolvers.set(id, resolve);
 
       if (opts?.timeoutMs != null) {
-        setTimeout(() => {
+        const handle = setTimeout(() => {
           if (!req.resolved) {
             req.resolved = true;
             this.resolvers.delete(id);
+            this.pending.delete(id);
+            this.timeouts.delete(id);
             reject(new Error(`Request ${id} timed out after ${opts.timeoutMs}ms`));
           }
         }, opts.timeoutMs);
+        this.timeouts.set(id, handle);
       }
     });
 
@@ -76,6 +80,13 @@ export class RequestReplyBroker {
     const req = this.pending.get(requestId);
     if (!req) throw new Error(`No pending request with id ${requestId}`);
 
+    // Clear the timeout handle before doing anything else
+    const handle = this.timeouts.get(requestId);
+    if (handle !== undefined) {
+      clearTimeout(handle);
+      this.timeouts.delete(requestId);
+    }
+
     req.resolved = true;
     req.response = payload;
 
@@ -84,6 +95,9 @@ export class RequestReplyBroker {
       resolver(payload);
       this.resolvers.delete(requestId);
     }
+
+    // Remove from pending — completed requests must not accumulate
+    this.pending.delete(requestId);
 
     return {
       id: `reply_${requestId}`,

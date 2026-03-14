@@ -36,3 +36,52 @@ describe("Request/reply timeout", () => {
     expect(result).toBe("late reply");
   });
 });
+
+describe("Request/reply cleanup regression", () => {
+  it("completed requests are removed from pending so memory does not accumulate", async () => {
+    const broker = new RequestReplyBroker();
+
+    // Complete 3 request/reply cycles
+    for (let i = 0; i < 3; i++) {
+      const { requestId, promise } = broker.request("a", "b", { i });
+      broker.reply(requestId, `resp-${i}`);
+      await promise;
+    }
+
+    // Internal pending map must be empty — no accumulation
+    expect((broker as any).pending.size).toBe(0);
+  });
+
+  it("timeout clears the timer so the process is not held open", async () => {
+    const broker = new RequestReplyBroker();
+    const { requestId, promise } = broker.request("a", "b", {}, { timeoutMs: 30 });
+
+    // Reply before timeout fires
+    broker.reply(requestId, "fast");
+    await promise;
+
+    // Timer handle must have been cleared (timeouts map is empty)
+    expect((broker as any).timeouts.size).toBe(0);
+  });
+
+  it("pending map is cleared on timeout as well as on reply", async () => {
+    const broker = new RequestReplyBroker();
+    const { promise } = broker.request("a", "b", {}, { timeoutMs: 20 });
+
+    await expect(promise).rejects.toThrow("timed out");
+
+    // Timed-out entry must not remain in pending
+    expect((broker as any).pending.size).toBe(0);
+    expect((broker as any).timeouts.size).toBe(0);
+  });
+
+  it("late reply after timeout does not throw (pending is gone)", async () => {
+    const broker = new RequestReplyBroker();
+    const { requestId, promise } = broker.request("a", "b", {}, { timeoutMs: 20 });
+
+    await expect(promise).rejects.toThrow("timed out");
+
+    // A late reply on an already-cleaned-up request should throw (no pending entry)
+    expect(() => broker.reply(requestId, "late")).toThrow("No pending request");
+  });
+});
