@@ -127,7 +127,7 @@ describe("MCPClient", () => {
       const initResp = await transport.send("initialize", {
         protocolVersion: "2024-11-05",
         capabilities: {},
-        clientInfo: { name: "oni-core", version: "0.8.1" },
+        clientInfo: { name: "oni-core", version: "1.0.1" },
       });
       expect(initResp.result).toBeDefined();
       const initResult = initResp.result as any;

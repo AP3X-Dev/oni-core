@@ -138,6 +138,32 @@ function isPlainObject(val: unknown): val is Record<string, unknown> {
   return val !== null && typeof val === "object" && !Array.isArray(val);
 }
 
+// ─── Env-var Expansion ─────────────────────────────────────────────────────
+
+/**
+ * Recursively expand `${VAR}` references in string values using process.env.
+ * Unresolved variables are left as-is (e.g. `${MISSING}` stays `${MISSING}`).
+ * Non-string values pass through unchanged.
+ */
+function expandEnvVars(value: unknown): unknown {
+  if (typeof value === "string") {
+    return value.replace(/\$\{([^}]+)\}/g, (match, varName: string) =>
+      process.env[varName] ?? match,
+    );
+  }
+  if (Array.isArray(value)) {
+    return value.map(expandEnvVars);
+  }
+  if (isPlainObject(value)) {
+    const result: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) {
+      result[k] = expandEnvVars(v);
+    }
+    return result;
+  }
+  return value;
+}
+
 // ─── Config Loading ────────────────────────────────────────────────────────
 
 /**
@@ -211,7 +237,7 @@ async function loadSingleConfig(
     const text = await readFile(path, "utf-8");
     const parsed = parseJsonc(text);
     if (isPlainObject(parsed)) {
-      return parsed as Partial<ONIConfig>;
+      return expandEnvVars(parsed) as Partial<ONIConfig>;
     }
     return null;
   } catch {

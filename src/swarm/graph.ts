@@ -707,46 +707,55 @@ export class SwarmGraph<S extends BaseSwarmState> {
       swarm.agentIds.add(agentDef.id);
     }
 
-    // Single node that races all agents
+    // Single node that races all agents — resolves as soon as one produces
+    // an acceptable result (true Promise.race semantics, not Promise.all).
     swarm.inner.addNode("__race__", async (state: S, cfg?) => {
-      const promises = config.agents.map(async (agent) => {
-        try {
-          const result = await agent.skeleton.invoke(
-            { ...state } as any,
-            { ...cfg, agentId: agent.id },
+      type RaceResult = { id: string; result: unknown; error: unknown | null };
+
+      const agentPromises: Promise<RaceResult>[] = config.agents.map((agent) => {
+        const p: Promise<RaceResult> = agent.skeleton
+          .invoke({ ...state } as any, { ...cfg, agentId: agent.id })
+          .then(
+            (result) => ({ id: agent.id, result, error: null } as RaceResult),
+            (err)    => ({ id: agent.id, result: null, error: err } as RaceResult),
           );
-          return { id: agent.id, result, error: null };
-        } catch (err) {
-          return { id: agent.id, result: null, error: err };
+
+        if (timeoutMs != null) {
+          return Promise.race([
+            p,
+            new Promise<RaceResult>((resolve) =>
+              setTimeout(
+                () => resolve({ id: agent.id, result: null, error: new Error("timeout") }),
+                timeoutMs,
+              ),
+            ),
+          ]);
+        }
+        return p;
+      });
+
+      // Resolve as soon as the first acceptable result arrives.
+      const winner = await new Promise<RaceResult | null>((resolve) => {
+        let remaining = agentPromises.length;
+        if (remaining === 0) { resolve(null); return; }
+
+        for (const p of agentPromises) {
+          p.then((r) => {
+            if (!r.error && accept(r.result)) {
+              resolve(r);
+            } else {
+              remaining--;
+              if (remaining === 0) resolve(null);
+            }
+          });
         }
       });
 
-      type RaceResult = { id: string; result: any; error: unknown | null };
-      let allResults: RaceResult[];
-
-      if (timeoutMs != null) {
-        // Wrap each promise with a timeout
-        const timedPromises = promises.map((p) =>
-          Promise.race([
-            p,
-            new Promise<RaceResult>((resolve) =>
-              setTimeout(() => resolve({ id: "?", result: null, error: new Error("timeout") }), timeoutMs),
-            ),
-          ]),
-        );
-        allResults = await Promise.all(timedPromises);
-      } else {
-        allResults = await Promise.all(promises);
-      }
-
-      // Find the first acceptable result (in order of agent definition)
-      for (const { id, result, error } of allResults) {
-        if (!error && accept(result)) {
-          return {
-            agentResults: { [id]: result },
-            context: { ...(state.context ?? {}), raceWinner: id },
-          } as unknown as Partial<S>;
-        }
+      if (winner) {
+        return {
+          agentResults: { [winner.id]: winner.result },
+          context: { ...(state.context ?? {}), raceWinner: winner.id },
+        } as unknown as Partial<S>;
       }
 
       // No acceptable result
@@ -1247,8 +1256,12 @@ export class SwarmGraph<S extends BaseSwarmState> {
       if (edge.type === "static") {
         edgeTargets.add(edge.to as string);
       }
-      // Conditional edges: the 'from' node is reachable if it has incoming edges
-      edgeTargets.add(edge.from as string);
+      // Conditional edges also declare a reachable target
+      if (edge.type === "conditional" && edge.pathMap) {
+        for (const target of Object.values(edge.pathMap as Record<string, string>)) {
+          edgeTargets.add(target);
+        }
+      }
     }
 
     for (const agentId of this.agentIds) {
@@ -1344,10 +1357,25 @@ export class SwarmGraph<S extends BaseSwarmState> {
         if (runner?.nodes) {
           runner.nodes.set(def.id, { name: def.id, fn: agentNode });
         }
+
+        // In supervised swarms, add a conditional return edge so the runner
+        // knows to send this agent's output back to the supervisor (or END).
+        if (hasSupervisor && runner) {
+          const returnEdge = {
+            type: "conditional" as const,
+            from: def.id,
+            condition: (st: S) => (st as Record<string, unknown>).done ? END : supervisorNodeName,
+          };
+          const edgesBySource = (runner as any)._edgesBySource as Map<string, unknown[]>;
+          const list = edgesBySource.get(def.id) ?? [];
+          list.push(returnEdge);
+          edgesBySource.set(def.id, list);
+        }
       },
 
       removeAgent(agentId: string) {
         registry.deregister(agentId);
+        (skeleton as any)._runner?.nodes?.delete(agentId);
       },
     };
 
