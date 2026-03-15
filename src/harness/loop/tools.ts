@@ -9,27 +9,11 @@ import type {
   LoopToolResult,
   HarnessToolContext,
   LoopMessage,
-  LoopMessageType,
   AgentLoopConfig,
 } from "../types.js";
 import { validateToolArgs } from "../validate-args.js";
-
-// ─── makeMessage helper (local) ─────────────────────────────────────────────
-
-function makeMessage(
-  type: LoopMessageType,
-  sessionId: string,
-  turn: number,
-  overrides: Partial<LoopMessage> = {},
-): LoopMessage {
-  return {
-    type,
-    sessionId,
-    turn,
-    timestamp: Date.now(),
-    ...overrides,
-  };
-}
+import { makeMessage } from "./types.js";
+import { checkSafety } from "./safety.js";
 
 // ─── buildLLMTools ──────────────────────────────────────────────────────────
 
@@ -100,22 +84,15 @@ export async function executeTools(
     }
 
     // Safety gate check
-    if (config.safetyGate && config.safetyGate.requiresCheck(toolCall.name)) {
-      const safetyResult = await config.safetyGate.check({
-        id: toolCall.id,
-        name: toolCall.name,
-        args: toolCall.args,
+    const safetyResult = await checkSafety(config.safetyGate, toolCall.id, toolCall.name, toolCall.args);
+    if (safetyResult !== null && !safetyResult.approved) {
+      toolResults.push({
+        toolCallId: toolCall.id,
+        toolName: toolCall.name,
+        content: `Tool blocked by safety gate: ${safetyResult.reason ?? "unsafe operation"}`,
+        isError: true,
       });
-
-      if (!safetyResult.approved) {
-        toolResults.push({
-          toolCallId: toolCall.id,
-          toolName: toolCall.name,
-          content: `Tool blocked by safety gate: ${safetyResult.reason ?? "unsafe operation"}`,
-          isError: true,
-        });
-        continue;
-      }
+      continue;
     }
 
     // Find tool
