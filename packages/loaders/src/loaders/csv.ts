@@ -1,0 +1,55 @@
+import { readFile } from "node:fs/promises";
+import { DocumentLoader, type Document } from "../types.js";
+
+export class CsvLoader extends DocumentLoader {
+  supports(ext: string): boolean {
+    return [".csv", ".tsv"].includes(ext.toLowerCase());
+  }
+
+  async load(source: string): Promise<Document[]> {
+    const raw = await readFile(source, "utf-8");
+    const separator = source.endsWith(".tsv") ? "\t" : ",";
+    const rows = parseCSV(raw, separator);
+    const [header, ...data] = rows;
+    const content = data
+      .map((row) => header!.map((h, i) => `${h}: ${row[i] ?? ""}`).join(", "))
+      .join("\n");
+    return [
+      {
+        content,
+        metadata: { type: "csv", rows: data.length, columns: header?.length ?? 0 },
+        source,
+      },
+    ];
+  }
+}
+
+function parseCSV(text: string, sep: string): string[][] {
+  const rows: string[][] = [];
+  const lines = text.split("\n");
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const fields: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i]!;
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === sep && !inQuotes) {
+        fields.push(current.trim());
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+    fields.push(current.trim());
+    rows.push(fields);
+  }
+  return rows;
+}

@@ -1,0 +1,41 @@
+{
+  "name": "@oni.bot/tools",
+  "version": "0.1.0",
+  "description": "Prebuilt ToolDefinition-conforming tools for @oni.bot/core agents",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@oni.bot/core": "^1.1.0",
+    "@e2b/sdk": ">=0.16.0",
+    "@slack/web-api": ">=6.0.0",
+    "stripe": ">=14.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@e2b/sdk": {
+      "optional": true
+    },
+    "@slack/web-api": {
+      "optional": true
+    },
+    "stripe": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@oni.bot/core": "workspace:*",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}

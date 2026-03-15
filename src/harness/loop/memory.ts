@@ -42,17 +42,11 @@ export function initMemory(prompt: string, config: AgentLoopConfig): MemoryInitR
 
 // ─── finalizeMemory ─────────────────────────────────────────────────────────
 
-/** Cast interface for optional ContextCompactor methods not yet implemented. */
-interface CompactorWithSummary {
-  getLastSummary?(): string | null;
-  getOpenThreads?(): string | null;
-}
-
 /**
  * buildEpisodicLog — Assemble session log for persistEpisodic().
  *
- * When compactor.getLastSummary() is unavailable (not yet implemented),
- * ## What Happened falls back to the raw task description.
+ * Uses compactor.getLastSummary() for ## What Happened when available,
+ * falling back to the raw task description.
  */
 export function buildEpisodicLog(
   sessionId: string,
@@ -61,9 +55,8 @@ export function buildEpisodicLog(
   outcome: SessionOutcome,
   compactor?: import("../context-compactor.js").ContextCompactor,
 ): string {
-  const c = compactor as unknown as CompactorWithSummary | undefined;
-  const summary = c?.getLastSummary?.() ?? null;
-  const openThreads = c?.getOpenThreads?.() ?? "none";
+  const sessionContext = compactor?.getLastSummary() ?? null;
+  const openThreads = compactor?.getOpenThreads().join("\n") ?? "none";
 
   const outcomeNote =
     outcome === "budget-exceeded"
@@ -80,7 +73,7 @@ export function buildEpisodicLog(
     `---`,
     ``,
     `## What Happened`,
-    summary ?? taskDescription,
+    sessionContext ?? taskDescription,
     ``,
     `## Turns`,
     String(turnCount),

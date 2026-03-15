@@ -101,6 +101,12 @@ export type {
   ScalingConfig, ScalingDecision, ScalingHistoryEntry,
 } from "./swarm/index.js";
 
+// -- Self-improvement
+export { ExperimentLog, parseManifest, loadManifest, identifyPatterns, suggestNext, SkillEvolver } from "./swarm/self-improvement/index.js";
+export type { ExperimentRecord, ObjectiveManifest, ManifestGoal, Pattern, DecisionContext, SkillPerformanceReport, SkillUsageRecord } from "./swarm/self-improvement/index.js";
+export { ExperimentalExecutor } from "./harness/loop/experimental-executor.js";
+export type { ExperimentResult, ExperimentOptions } from "./harness/loop/experimental-executor.js";
+
 // -- Prebuilt nodes
 export { createToolNode, toolsCondition, createReactAgent } from "./prebuilt/index.js";
 export type { ONITool, CreateReactAgentOptions, ONILanguageModel, LLMToolSchema } from "./prebuilt/index.js";

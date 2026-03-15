@@ -1,0 +1,147 @@
+// ============================================================
+// @oni.bot/core/swarm/self-improvement — SkillEvolver
+// Autonomous skill improvement loop (inspired by autoresearch).
+// Observes skill performance, proposes revisions, tests, commits or reverts.
+// ============================================================
+
+import type { ExperimentResult } from "../../harness/loop/experimental-executor.js";
+
+export interface SkillUsageRecord {
+  skillName: string;
+  outcome: "success" | "failure";
+  context: string;
+  timestamp: string;
+}
+
+export interface SkillPerformanceReport {
+  skillName: string;
+  successRate: number;
+  usageCount: number;
+  recentFailures: SkillUsageRecord[];
+}
+
+export interface SkillEvolverConfig {
+  /** Minimum success rate before a skill is considered for improvement */
+  weaknessThreshold?: number;
+  /** Minimum usage samples before proposing improvement */
+  minSamples?: number;
+  /** Root path for reading/writing SKILL.md files */
+  skillsRoot?: string;
+}
+
+export class SkillEvolver {
+  private readonly usageHistory: SkillUsageRecord[] = [];
+  private readonly weaknessThreshold: number;
+  private readonly minSamples: number;
+  private readonly skillsRoot: string;
+
+  constructor(config: SkillEvolverConfig = {}) {
+    this.weaknessThreshold = config.weaknessThreshold ?? 0.7;
+    this.minSamples = config.minSamples ?? 5;
+    this.skillsRoot = config.skillsRoot ?? "memory/skills";
+  }
+
+  recordSkillUsage(skillName: string, outcome: "success" | "failure", context: string): void {
+    this.usageHistory.push({
+      skillName,
+      outcome,
+      context,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  identifyWeakSkills(threshold?: number): SkillPerformanceReport[] {
+    const limit = threshold ?? this.weaknessThreshold;
+    const grouped = new Map<string, SkillUsageRecord[]>();
+
+    for (const record of this.usageHistory) {
+      const group = grouped.get(record.skillName) ?? [];
+      group.push(record);
+      grouped.set(record.skillName, group);
+    }
+
+    const reports: SkillPerformanceReport[] = [];
+    for (const [skillName, records] of grouped) {
+      if (records.length < this.minSamples) continue;
+      const successes = records.filter(r => r.outcome === "success").length;
+      const successRate = successes / records.length;
+      if (successRate >= limit) continue;
+
+      reports.push({
+        skillName,
+        successRate,
+        usageCount: records.length,
+        recentFailures: records.filter(r => r.outcome === "failure").slice(-5),
+      });
+    }
+
+    return reports.sort((a, b) => a.successRate - b.successRate);
+  }
+
+  async proposeSkillImprovement(
+    skillName: string,
+    llm: { chat: (opts: { messages: Array<{ role: string; content: string }>; maxTokens?: number }) => Promise<{ content: string }> },
+  ): Promise<string> {
+    const { readFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+
+    const skillPath = join(this.skillsRoot, skillName, "SKILL.md");
+    let currentContent = "";
+    try {
+      currentContent = await readFile(skillPath, "utf-8");
+    } catch {
+      currentContent = `# ${skillName}\n\n(No skill file found)`;
+    }
+
+    const failures = this.usageHistory
+      .filter(r => r.skillName === skillName && r.outcome === "failure")
+      .slice(-5)
+      .map(r => `- ${r.context}`)
+      .join("\n");
+
+    const response = await llm.chat({
+      messages: [
+        {
+          role: "user",
+          content:
+            `You are improving an agent skill. Here is the current SKILL.md:\n\n${currentContent}\n\n` +
+            `Recent failure contexts:\n${failures || "(none)"}\n\n` +
+            `Propose an improved version of SKILL.md that addresses the failure patterns. ` +
+            `Return ONLY the new SKILL.md content, no explanation.`,
+        },
+      ],
+      maxTokens: 2048,
+    });
+
+    return response.content.trim();
+  }
+
+  async testSkillRevision(
+    _skillName: string,
+    _revisedContent: string,
+    _testTask: string,
+  ): Promise<ExperimentResult> {
+    // Placeholder: in a full implementation, this would spin up a sandboxed
+    // agent session with the revised skill and measure success rate.
+    // For now, return a result indicating manual review is needed.
+    return {
+      hypothesis: `Skill revision for ${_skillName}`,
+      success: false,
+      metricBefore: 0,
+      metricAfter: null,
+      rolledBack: false,
+      reason: "Automated skill testing requires an ONI harness instance — invoke SkillEvolver with a runTest callback",
+    };
+  }
+
+  async commitOrRevert(skillName: string, experiment: ExperimentResult, revisedContent: string): Promise<void> {
+    if (!experiment.success) return; // Don't commit regressions
+
+    const { writeFile, mkdir } = await import("node:fs/promises");
+    const { join, dirname } = await import("node:path");
+
+    const skillPath = join(this.skillsRoot, skillName, "SKILL.md");
+    await mkdir(dirname(skillPath), { recursive: true });
+    await writeFile(skillPath, revisedContent, "utf-8");
+  }
+}
