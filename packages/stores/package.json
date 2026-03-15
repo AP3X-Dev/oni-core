@@ -1,0 +1,27 @@
+{
+  "name": "@oni.bot/stores",
+  "version": "0.1.0",
+  "description": "Persistent KV store backends (Redis, Postgres) for @oni.bot/core agents",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@oni.bot/core": "^1.1.0"
+  },
+  "devDependencies": {
+    "@oni.bot/core": "workspace:*",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}

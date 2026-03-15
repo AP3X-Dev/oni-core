@@ -18,7 +18,11 @@ export type HookEvent =
   | "Stop"
   | "Notification"
   | "PreCompact"
-  | "PostCompact";
+  | "PostCompact"
+  | "AgentBeforeDecision"
+  | "AgentAfterOutcome"
+  | "SkillUsed"
+  | "SkillRevised";
 
 // ─── Payload Interfaces ─────────────────────────────────────────────────────
 
@@ -78,6 +82,33 @@ export interface PostCompactPayload extends BasePayload {
 export interface SubagentPayload extends BasePayload {
   agentName: string;
   parentSessionId?: string;
+}
+
+export interface AgentBeforeDecisionPayload extends BasePayload {
+  agentId: string;
+  currentMetrics: Record<string, number>;
+  recentHistory: import("../swarm/self-improvement/experiment-log.js").ExperimentRecord[];
+}
+
+export interface AgentAfterOutcomePayload extends BasePayload {
+  agentId: string;
+  hypothesis: string;
+  success: boolean;
+  metricBefore: number;
+  metricAfter: number | null;
+}
+
+export interface SkillUsedPayload extends BasePayload {
+  skillName: string;
+  outcome: "success" | "failure";
+  context: string;
+}
+
+export interface SkillRevisedPayload extends BasePayload {
+  skillName: string;
+  previousSuccessRate: number;
+  newSuccessRate: number | null;
+  committed: boolean;
 }
 
 // ─── HookResult ─────────────────────────────────────────────────────────────

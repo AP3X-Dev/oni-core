@@ -56,6 +56,8 @@ export class ContextCompactor {
   private readonly maxTokens: number;
   private readonly charsPerToken: number;
   private readonly compactInstructions?: string;
+  private _lastSummary: string | null = null;
+
   constructor(config: CompactorConfig) {
     this.summaryModel = config.summaryModel;
     this.threshold = config.threshold ?? 0.68;
@@ -120,6 +122,34 @@ export class ContextCompactor {
       threshold: this.threshold,
       maxTokens: this.maxTokens,
     };
+  }
+
+  /**
+   * Returns the text of the last compaction summary, or null if compaction
+   * has not been run in this session.
+   */
+  getLastSummary(): string | null {
+    return this._lastSummary;
+  }
+
+  /**
+   * Extracts open threads / unresolved tasks from the last summary.
+   * Looks for lines containing open-ended markers (TODO, WIP, pending, unresolved,
+   * open, in progress) and returns them as a deduplicated string array.
+   * Returns [] if no summary has been produced.
+   */
+  getOpenThreads(): string[] {
+    if (!this._lastSummary) return [];
+    const markers = /\b(TODO|WIP|pending|unresolved|open|in[- ]progress|incomplete|blocked)\b/i;
+    const lines = this._lastSummary.split("\n");
+    const threads: string[] = [];
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && markers.test(trimmed)) {
+        threads.push(trimmed);
+      }
+    }
+    return [...new Set(threads)];
   }
 
   /**
@@ -258,6 +288,8 @@ export class ContextCompactor {
     const summaryText = summaryMatch
       ? summaryMatch[1].trim()
       : response.content.trim();
+
+    this._lastSummary = summaryText;
 
     return [
       {
