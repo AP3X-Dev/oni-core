@@ -171,6 +171,9 @@ export function openai(
   opts?: ModelOptions,
 ): ONIModel {
   const apiKey = opts?.apiKey ?? process.env["OPENAI_API_KEY"] ?? "";
+  if (!apiKey) {
+    throw new Error('OpenAI API key not configured. Set OPENAI_API_KEY environment variable or pass apiKey in options.');
+  }
   const baseUrl = (opts?.baseUrl ?? "https://api.openai.com").replace(
     /\/$/,
     "",
@@ -334,71 +337,73 @@ export function openai(
       }
 
       const choices = parsed["choices"] as Array<Record<string, unknown>> | undefined;
-      if (!choices || choices.length === 0) continue;
+      if ((!choices || choices.length === 0) && !parsed["usage"]) continue;
 
-      const choice = choices[0]!;
-      const delta = choice["delta"] as Record<string, unknown> | undefined;
-      if (!delta) continue;
+      if (choices && choices.length > 0) {
+        const choice = choices[0]!;
+        const delta = choice["delta"] as Record<string, unknown> | undefined;
+        if (delta) {
+          // Text content
+          if (delta["content"] && typeof delta["content"] === "string") {
+            yield { type: "text", text: delta["content"] };
+          }
 
-      // Text content
-      if (delta["content"] && typeof delta["content"] === "string") {
-        yield { type: "text", text: delta["content"] };
-      }
+          // Tool calls
+          const toolCalls = delta["tool_calls"] as Array<Record<string, unknown>> | undefined;
+          if (toolCalls) {
+            for (const tc of toolCalls) {
+              const index = tc["index"] as number;
+              const fn = tc["function"] as Record<string, unknown> | undefined;
 
-      // Tool calls
-      const toolCalls = delta["tool_calls"] as Array<Record<string, unknown>> | undefined;
-      if (toolCalls) {
-        for (const tc of toolCalls) {
-          const index = tc["index"] as number;
-          const fn = tc["function"] as Record<string, unknown> | undefined;
+              if (tc["id"]) {
+                // New tool call starting
+                activeToolCalls.set(index, {
+                  id: tc["id"] as string,
+                  name: fn?.["name"] as string ?? "",
+                  args: (fn?.["arguments"] as string) ?? "",
+                });
+                yield {
+                  type: "tool_call_start",
+                  toolCall: {
+                    id: tc["id"] as string,
+                    name: fn?.["name"] as string ?? "",
+                    args: {},
+                  },
+                };
+              } else if (fn?.["arguments"]) {
+                // Delta for existing tool call
+                const active = activeToolCalls.get(index);
+                if (active) {
+                  active.args += fn["arguments"] as string;
+                }
+                yield {
+                  type: "tool_call_delta",
+                  toolCall: {
+                    args: { __partial: fn["arguments"] as string } as unknown as Record<string, unknown>,
+                  },
+                };
+              }
+            }
+          }
+        }
 
-          if (tc["id"]) {
-            // New tool call starting
-            activeToolCalls.set(index, {
-              id: tc["id"] as string,
-              name: fn?.["name"] as string ?? "",
-              args: (fn?.["arguments"] as string) ?? "",
-            });
-            yield {
-              type: "tool_call_start",
-              toolCall: {
-                id: tc["id"] as string,
-                name: fn?.["name"] as string ?? "",
-                args: {},
-              },
-            };
-          } else if (fn?.["arguments"]) {
-            // Delta for existing tool call
-            const active = activeToolCalls.get(index);
-            if (active) {
-              active.args += fn["arguments"] as string;
+        // Check for finish_reason to emit tool_call_end
+        const finishReason = choice["finish_reason"] as string | null;
+        if (finishReason === "tool_calls") {
+          for (const [, active] of activeToolCalls) {
+            let args: Record<string, unknown> = {};
+            try {
+              args = JSON.parse(active.args) as Record<string, unknown>;
+            } catch {
+              // partial args
             }
             yield {
-              type: "tool_call_delta",
-              toolCall: {
-                args: { __partial: fn["arguments"] as string } as unknown as Record<string, unknown>,
-              },
+              type: "tool_call_end",
+              toolCall: { id: active.id, name: active.name, args },
             };
           }
+          activeToolCalls.clear();
         }
-      }
-
-      // Check for finish_reason to emit tool_call_end
-      const finishReason = choice["finish_reason"] as string | null;
-      if (finishReason === "tool_calls") {
-        for (const [, active] of activeToolCalls) {
-          let args: Record<string, unknown> = {};
-          try {
-            args = JSON.parse(active.args) as Record<string, unknown>;
-          } catch {
-            // partial args
-          }
-          yield {
-            type: "tool_call_end",
-            toolCall: { id: active.id, name: active.name, args },
-          };
-        }
-        activeToolCalls.clear();
       }
 
       // Usage (OpenAI sends usage in the final chunk when stream_options.include_usage is set)

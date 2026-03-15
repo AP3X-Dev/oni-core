@@ -42,6 +42,7 @@ export class RedisStore extends BaseStore {
         zrem:     (k, mem)        => r.zrem(k, mem),
         keys:     (p)             => r.keys(p),
         pexpire:  (k, ms)         => r.pexpire(k, ms),
+        eval:     (script, numkeys, ...args) => r.eval(script, numkeys, ...args),
         disconnect: ()            => r.disconnect(),
       };
     } catch {
@@ -98,6 +99,32 @@ export class RedisStore extends BaseStore {
     return item;
   }
 
+  // Lua script: atomically GET existing createdAt, then SET with preserved or new createdAt.
+  // KEYS[1] = data key
+  // ARGV[1] = new item JSON (with createdAt = now as default)
+  // ARGV[2] = TTL in ms (0 = no TTL)
+  // Returns "OK"
+  private static readonly PUT_SCRIPT = `
+    local existing = redis.call('GET', KEYS[1])
+    local newItem = ARGV[1]
+    if existing then
+      local ok, parsed = pcall(cjson.decode, existing)
+      if ok and parsed and parsed.createdAt then
+        local ok2, newParsed = pcall(cjson.decode, newItem)
+        if ok2 and newParsed then
+          newParsed.createdAt = parsed.createdAt
+          newItem = cjson.encode(newParsed)
+        end
+      end
+    end
+    redis.call('SET', KEYS[1], newItem)
+    local ttl = tonumber(ARGV[2])
+    if ttl > 0 then
+      redis.call('PEXPIRE', KEYS[1], ttl)
+    end
+    return 'OK'
+  `;
+
   async put<T = unknown>(
     namespace: Namespace,
     key: StoreKey,
@@ -106,34 +133,26 @@ export class RedisStore extends BaseStore {
   ): Promise<void> {
     const now = Date.now();
 
-    // Preserve createdAt if item already exists
-    let createdAt = now;
-    const existing = await this.client.get(this.dataKey(namespace, key));
-    if (existing != null) {
-      try {
-        const parsed = JSON.parse(existing) as StoreItem;
-        createdAt = parsed.createdAt;
-      } catch {
-        // Use now if parsing fails
-      }
-    }
-
     const item: StoreItem<T> = {
       namespace,
       key,
       value,
-      createdAt,
+      createdAt: now,
       updatedAt: now,
       ttl: opts?.ttl,
     };
 
     const dk = this.dataKey(namespace, key);
-    await this.client.set(dk, JSON.stringify(item));
+    const ttlMs = opts?.ttl ?? 0;
 
-    // Apply TTL via PEXPIRE if set
-    if (opts?.ttl != null && this.client.pexpire) {
-      await this.client.pexpire(dk, opts.ttl);
-    }
+    // Atomic GET + conditional createdAt preservation + SET via Lua script
+    await this.client.eval(
+      RedisStore.PUT_SCRIPT,
+      1,
+      dk,
+      JSON.stringify(item),
+      ttlMs,
+    );
 
     // Update the namespace index (sorted set, score = updatedAt)
     await this.client.zadd(this.idxKey(namespace), now, key);

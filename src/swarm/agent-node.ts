@@ -35,8 +35,14 @@ export function createAgentNode<S extends BaseSwarmState>(
   return async (state: S, config?: ONIConfig) => {
     registry.markBusy(def.id);
 
-    // Fire onStart hook
-    await def.hooks?.onStart?.(def.id, state as Record<string, unknown>);
+    // Fire onStart hook — if it throws, mark the agent as errored so it
+    // doesn't stay permanently busy (BUG-0037).
+    try {
+      await def.hooks?.onStart?.(def.id, state as Record<string, unknown>);
+    } catch (onStartErr) {
+      registry.markError(def.id);
+      throw onStartErr;
+    }
 
     const maxRetries = def.maxRetries ?? 2;
     const retryDelayMs = def.retryDelayMs ?? 0;

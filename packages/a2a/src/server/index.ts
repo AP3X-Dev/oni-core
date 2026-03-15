@@ -33,6 +33,21 @@ export class A2AServer {
         return createSSEResponse(result.stream, result.taskId ?? "");
       }
 
+      if (result.stream) {
+        // Client does not accept SSE but the handler returned a stream.
+        // Close the AsyncGenerator to prevent a resource leak, then return
+        // a 406 so the client knows it must use Accept: text/event-stream.
+        await result.stream.return(undefined);
+        return new Response(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            id: (body as Record<string, unknown>)?.id ?? null,
+            error: { code: -32600, message: "This method requires Accept: text/event-stream" },
+          }),
+          { status: 406, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
       return new Response(JSON.stringify(result.response), {
         headers: { "Content-Type": "application/json" },
       });

@@ -23,9 +23,10 @@ export function createSSEResponse(
       } catch (err) {
         const errEvent = JSON.stringify({ error: { code: -32603, message: String(err) } });
         controller.enqueue(encoder.encode(`data: ${errEvent}\n\n`));
-      } finally {
-        controller.close();
+        controller.error(err);
+        return;
       }
+      controller.close();
     },
   });
   return new Response(readable, {

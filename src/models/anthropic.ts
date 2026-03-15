@@ -88,6 +88,12 @@ function convertMessages(messages: ONIModelMessage[]): {
     }
 
     if (msg.role === "tool") {
+      if (!msg.toolCallId) {
+        throw new Error(
+          "Tool result message is missing required toolCallId. " +
+          "Anthropic's API requires a valid tool_use_id for every tool_result block."
+        );
+      }
       // Accumulate — will be emitted as a single user message when the next
       // non-tool message is encountered or when the loop ends.
       pendingToolResults.push({
@@ -368,7 +374,7 @@ export function anthropic(
       }
     }
 
-    const stopReason = rfName ? "end" : mapStopReason(json.stop_reason);
+    const stopReason = mapStopReason(json.stop_reason);
 
     return {
       content,

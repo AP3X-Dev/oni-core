@@ -163,7 +163,7 @@ export class ONIHarness {
       }
     }
 
-    if (errorMsg !== undefined && finalResult === "") {
+    if (errorMsg !== undefined) {
       throw new Error(errorMsg);
     }
 

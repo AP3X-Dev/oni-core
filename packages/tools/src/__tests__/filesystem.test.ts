@@ -67,4 +67,38 @@ describe("fileSystemTools", () => {
     const writeTool = tools.find((t) => t.name === "fs_write_file")!;
     expect(writeTool.parallelSafe).toBe(false);
   });
+
+  it("no-args call defaults to cwd and rejects paths outside it", async () => {
+    const tools = fileSystemTools();
+    const readTool = tools.find((t) => t.name === "fs_read_file")!;
+    await expect(
+      readTool.execute({ path: "/etc/passwd" }, {} as never)
+    ).rejects.toThrow("Access denied");
+  });
+
+  it("allowedPaths: [] disables restriction and allows any path", async () => {
+    const tools = fileSystemTools({ allowedPaths: [] });
+    const readTool = tools.find((t) => t.name === "fs_read_file")!;
+    // Should not throw Access denied — it will attempt actual fs read,
+    // which may fail with ENOENT or succeed, but must NOT throw Access denied.
+    await expect(
+      readTool.execute({ path: "/etc/hostname" }, {} as never)
+    ).resolves.toEqual(expect.objectContaining({ path: "/etc/hostname" }));
+  });
+
+  it("explicit allowedPaths allows listed paths and rejects others", async () => {
+    const tools = fileSystemTools({ allowedPaths: ["/tmp"] });
+    const readTool = tools.find((t) => t.name === "fs_read_file")!;
+    // Path outside /tmp must be rejected
+    await expect(
+      readTool.execute({ path: "/etc/passwd" }, {} as never)
+    ).rejects.toThrow("Access denied");
+    // Path inside /tmp must pass the allowedPaths check (may fail with ENOENT, not Access denied)
+    try {
+      await readTool.execute({ path: "/tmp/.oni-test-nonexistent-file" }, {} as never);
+    } catch (err: unknown) {
+      const msg = (err as Error).message;
+      expect(msg).not.toContain("Access denied");
+    }
+  });
 });

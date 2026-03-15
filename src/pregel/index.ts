@@ -138,9 +138,12 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
   // ----------------------------------------------------------------
 
   async invoke(input: Partial<S>, config?: ONIConfig): Promise<S> {
-    let finalState!: S;
+    let finalState: S | undefined = undefined;
     for await (const evt of this._stream(input, config, "values")) {
       if (evt.event === "state_update") finalState = evt.data as S;
+    }
+    if (finalState === undefined) {
+      throw new Error("Graph execution produced no state updates");
     }
     return finalState;
   }

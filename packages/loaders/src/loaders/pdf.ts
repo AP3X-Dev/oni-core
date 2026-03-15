@@ -1,9 +1,10 @@
+import { readFileSync } from "node:fs";
 import { DocumentLoader, type Document } from "../types.js";
 
 type PdfTextItem = { str: string };
 type PdfPage = { getTextContent: () => Promise<{ items: PdfTextItem[] }> };
 type PdfDocument = { numPages: number; getPage: (n: number) => Promise<PdfPage> };
-type PdfjsLib = { getDocument: (opts: { url: string }) => { promise: Promise<PdfDocument> } };
+type PdfjsLib = { getDocument: (opts: { data: Uint8Array }) => { promise: Promise<PdfDocument> } };
 
 export class PdfLoader extends DocumentLoader {
   supports(ext: string): boolean {
@@ -20,7 +21,8 @@ export class PdfLoader extends DocumentLoader {
       throw new Error("PdfLoader requires 'pdfjs-dist'. Install it: pnpm add pdfjs-dist");
     }
 
-    const loadingTask = pdfjsLib.getDocument({ url: source });
+    const data = new Uint8Array(readFileSync(source));
+    const loadingTask = pdfjsLib.getDocument({ data });
     const pdf = await loadingTask.promise;
     const pages: string[] = [];
 

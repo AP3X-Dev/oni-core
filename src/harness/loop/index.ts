@@ -146,7 +146,7 @@ export async function* agentLoop(
 
       // ── 3c. Build system prompt ────────────────────────────────────
       let systemPrompt = effectiveSystemPrompt;
-      const remaining = maxTurns - turn;
+      const remaining = maxTurns - turn - 1;
       systemPrompt += `\n\nYou have ${remaining} turns remaining. Each turn lets you call multiple tools. Do NOT stop early — use your tools and complete the task autonomously.`;
       if (config.env) {
         const envLines: string[] = [];
@@ -295,8 +295,19 @@ export function wrapWithAgentLoop<
       "";
 
     let finalResult = "";
+    let hasResult = false;
+    let lastError = "";
     for await (const msg of agentLoop(prompt, config)) {
-      if (msg.type === "result") finalResult = msg.content ?? "";
+      if (msg.type === "result") {
+        finalResult = msg.content ?? "";
+        hasResult = true;
+      } else if (msg.type === "error") {
+        lastError = msg.content ?? "Unknown agent loop error";
+      }
+    }
+
+    if (!hasResult && lastError) {
+      throw new Error(`Agent "${config.agentName}" failed: ${lastError}`);
     }
 
     return {

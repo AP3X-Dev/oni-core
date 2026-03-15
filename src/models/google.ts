@@ -305,8 +305,8 @@ export function google(
 
     // Extract function calls → tool calls
     const functionCalls = parts.filter((p) => p.functionCall !== undefined);
-    const toolCalls: ONIModelToolCall[] = functionCalls.map((p) => ({
-      id: `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    const toolCalls: ONIModelToolCall[] = functionCalls.map((p, i) => ({
+      id: `call_${Date.now()}_${i}`,
       name: p.functionCall!.name,
       args: p.functionCall!.args,
     }));

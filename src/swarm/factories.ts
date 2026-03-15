@@ -124,7 +124,7 @@ export function buildFanOut<S extends BaseSwarmState>(
 
     // Run reducer with weights
     const reduced = config.reducer(agentResults, weights);
-    return { ...reduced, agentResults } as Partial<S>;
+    return { agentResults, ...reduced } as Partial<S>;
   });
 
   swarm.inner.addEdge(START, "__fanout_runner__");
@@ -368,7 +368,7 @@ export function buildDebate<S extends BaseSwarmState>(
     const nextRound = round + 1;
 
     // Force done if consensus or max rounds exhausted
-    const isDone = isConsensus || nextRound > config.judge.maxRounds;
+    const isDone = isConsensus || nextRound >= config.judge.maxRounds;
 
     const updatedScores = roundScores
       ? [...existingScores, { round, scores: roundScores }]
@@ -701,6 +701,11 @@ export function buildDag<S extends BaseSwarmState>(
         if (idDeps.every((d) => completed.has(d))) {
           ready.push(id);
         }
+      }
+
+      if (ready.length === 0) {
+        const stuck = [...remaining].join(', ');
+        throw new Error(`buildDag: circular or unsatisfiable dependency detected. Stuck nodes: ${stuck}`);
       }
 
       // Execute ready nodes in parallel

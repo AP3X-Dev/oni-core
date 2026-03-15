@@ -124,16 +124,21 @@ export async function executeNode<S extends Record<string, unknown>>(
           const ac = new AbortController();
           const timer = setTimeout(() => ac.abort(), timeoutMs);
           try {
-            return await Promise.race([
-              executeCall(),
-              new Promise<never>((_, reject) => {
-                ac.signal.addEventListener("abort", () => {
-                  reject(new NodeTimeoutError(nodeDef.name, timeoutMs));
-                });
-              }),
-            ]);
+            const timeoutPromise = new Promise<never>((_, reject) => {
+              ac.signal.addEventListener("abort", () => {
+                reject(new NodeTimeoutError(nodeDef.name, timeoutMs));
+              }, { once: true });
+            });
+            // Attach a no-op catch so the abort() in `finally` doesn't
+            // trigger an unhandled-rejection when executeCall wins the race.
+            timeoutPromise.catch(() => {});
+            return await Promise.race([executeCall(), timeoutPromise]);
           } finally {
             clearTimeout(timer);
+            // Abort to release any remaining signal listeners.  The
+            // rejection this triggers is harmless — Promise.race has
+            // already settled, so the rejected branch is simply ignored.
+            ac.abort();
           }
         }
         return executeCall();
