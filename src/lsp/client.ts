@@ -78,6 +78,9 @@ export class LSPClient {
   // Coalescing lock — concurrent start() callers share one in-flight Promise
   private _startPromise: Promise<void> | null = null;
 
+  // Stored listener reference for clean removal in stop()
+  private _onStdoutData: ((chunk: Buffer) => void) | null = null;
+
   constructor(config: LSPServerConfig, rootDir: string) {
     this.config = config;
     this.rootDir = rootDir;
@@ -114,9 +117,10 @@ export class LSPClient {
       });
 
       // Wire up stdout for JSON-RPC responses
-      this.process.stdout?.on("data", (chunk: Buffer) => {
+      this._onStdoutData = (chunk: Buffer) => {
         this.processBuffer(chunk.toString());
-      });
+      };
+      this.process.stdout?.on("data", this._onStdoutData);
 
       // Ignore stderr (server logs)
       this.process.stderr?.on("data", () => {});
@@ -193,6 +197,16 @@ export class LSPClient {
     this.clearAllWaiters();
 
     if (this.process) {
+      // Remove the stdout data listener before killing to prevent the closure
+      // (which captures `this`) from preventing GC of the LSPClient instance.
+      if (this._onStdoutData) {
+        this.process.stdout?.removeListener("data", this._onStdoutData);
+        this._onStdoutData = null;
+      }
+      this.process.stdout?.removeAllListeners("data");
+      this.process.stderr?.removeAllListeners("data");
+      this.process.removeAllListeners("exit");
+      this.process.removeAllListeners("error");
       try {
         this.process.kill();
       } catch {

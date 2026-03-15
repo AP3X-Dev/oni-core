@@ -22,6 +22,13 @@ export interface SkillDefinition {
   disableModelInvocation?: boolean;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Escape a string for safe interpolation inside XML attributes / text. */
+function escXml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 // ─── Frontmatter Parser ──────────────────────────────────────────────────────
 
 function parseFrontmatter(raw: string): { meta: Record<string, string | string[]>; body: string } {
@@ -179,7 +186,7 @@ export class SkillLoader {
    */
   fork(): SkillLoader {
     const forked = new SkillLoader();
-    forked.skills = this.skills; // shared read-only catalog — no filesystem re-scan
+    forked.skills = new Map(this.skills); // shallow copy — isolates mutations between fork and original
     forked.version = this.version;
     return forked;
   }
@@ -234,9 +241,6 @@ export class SkillLoader {
   getDescriptionsForContext(): string {
     if (this.skills.size === 0) return "";
 
-    const escXml = (s: string) =>
-      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
     const lines: string[] = ["<available-skills>"];
     for (const skill of this.skills.values()) {
       lines.push(`  <skill name="${escXml(skill.name)}">${escXml(skill.description)}</skill>`);
@@ -256,7 +260,7 @@ export class SkillLoader {
     if (!skill) return false;
 
     const argsBlock = args ? `\n\n## Input\n\n${args}` : "";
-    this.pendingInjection = `<skill-instructions name="${name}">\n${skill.content}${argsBlock}\n</skill-instructions>`;
+    this.pendingInjection = `<skill-instructions name="${escXml(name)}">\n${skill.content}${argsBlock}\n</skill-instructions>`;
     return true;
   }
 

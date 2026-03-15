@@ -51,6 +51,8 @@ export interface SnapshotCaptureOptions {
 
 let _counter = 0;
 
+const MAX_SNAPSHOTS = 100;
+
 export class SwarmSnapshotStore {
   private snapshots = new Map<string, SwarmSnapshot>();
 
@@ -88,6 +90,12 @@ export class SwarmSnapshotStore {
     }
 
     this.snapshots.set(id, snapshot);
+
+    // Evict oldest snapshot when cap is exceeded
+    if (this.snapshots.size > MAX_SNAPSHOTS) {
+      this.snapshots.delete(this.snapshots.keys().next().value!);
+    }
+
     return id;
   }
 
@@ -155,8 +163,9 @@ function deepEqual(a: unknown, b: unknown, seen = new WeakSet<object>()): boolea
 
   // Cycle guard: if we've already started comparing this object, assume equal
   // (the non-cyclic portions have already matched at earlier recursion levels)
-  if (seen.has(a as object)) return true;
+  if (seen.has(a as object) || seen.has(b as object)) return true;
   seen.add(a as object);
+  seen.add(b as object);
 
   if (Array.isArray(a)) {
     if (!Array.isArray(b)) return false;

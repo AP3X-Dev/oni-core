@@ -281,12 +281,13 @@ export class HooksEngine {
       const input = (payload as PreToolUsePayload).input;
       if (!input) return false;
 
-      // Check only the FIRST string value in input against the arg pattern.
-      // Scanning all fields would match on unrelated fields (e.g. a description
-      // field starting with the same prefix as a different primary argument).
+      // Check ALL string values in input against the arg pattern.
+      // Previously only the first string value (by insertion order) was checked,
+      // which allowed bypassing the pattern by reordering keys (BUG-0028).
       const argPrefix = argPattern.replace(/:\*$/, "");
-      const firstStringVal = Object.values(input).find((v) => typeof v === "string") as string | undefined;
-      return firstStringVal !== undefined && firstStringVal.startsWith(argPrefix);
+      return Object.values(input).some(
+        (v) => typeof v === "string" && v.startsWith(argPrefix),
+      );
     }
 
     // Pipe-separated OR patterns: "Write|Edit"
@@ -308,6 +309,15 @@ export class HooksEngine {
       /curl[^|]*\|\s*bash/,
       /wget[^|]*\|\s*sh/,
       /wget[^|]*\|\s*bash/,
+      // Shell indirection: eval with dangerous commands in any quoting style
+      /eval\s+.*rm\b/,
+      /eval\s+.*mkfs/,
+      /eval\s+.*dd\s+if=/,
+      /eval\s+.*chmod\s+777/,
+      // Variable expansion executing commands: $VAR, ${VAR}, or $(...)
+      /=\s*["']?\s*rm\b(?=[^\n]*-[a-zA-Z]*[rR])(?=[^\n]*-[a-zA-Z]*[fF])/,  // CMD="rm -rf ..."
+      /\$\(.*rm\b(?=[^\n]*-[a-zA-Z]*[rR])(?=[^\n]*-[a-zA-Z]*[fF])/,         // $(rm -rf ...)
+      /`.*rm\b(?=[^\n]*-[a-zA-Z]*[rR])(?=[^\n]*-[a-zA-Z]*[fF])/,             // `rm -rf ...`
     ];
 
     const sensitiveFilePatterns = [
