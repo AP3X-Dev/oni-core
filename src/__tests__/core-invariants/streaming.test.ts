@@ -71,6 +71,7 @@ describe('core invariant: streaming and invoke', () => {
     g.addEdge(START, 'slow');
     g.addEdge('slow', END);
 
-    await expect(g.compile().invoke({ done: false })).rejects.toThrow();
+    const { NodeTimeoutError } = await import('../../index.js');
+    await expect(g.compile().invoke({ done: false })).rejects.toThrow(NodeTimeoutError);
   });
 });
