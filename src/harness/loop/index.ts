@@ -1,0 +1,408 @@
+// ============================================================
+// @oni.bot/core/harness/loop — Index
+// agentLoop() + wrapWithAgentLoop() assembling all sub-modules.
+// ============================================================
+
+import type {
+  ONIModelMessage,
+  ChatResponse,
+  LLMToolDef,
+} from "../../models/types.js";
+import type {
+  AgentLoopConfig,
+  LoopMessage,
+  LoopMessageType,
+  LoopToolResult,
+} from "../types.js";
+import { generateId } from "../types.js";
+import type { SessionOutcome } from "../types.js";
+import type { ToolDefinition } from "../../tools/types.js";
+import type { HarnessToolContext } from "../types.js";
+import { validateToolArgs } from "../validate-args.js";
+
+// Sub-module imports
+import { runInference } from "./inference.js";
+import { buildLLMTools, buildToolMap } from "./tools.js";
+import { initMemory, finalizeMemory } from "./memory.js";
+import {
+  fireSessionStart,
+  fireSessionEnd,
+  fireStop,
+  firePreCompact,
+  firePostCompact,
+} from "./hooks.js";
+
+// ─── makeMessage helper ─────────────────────────────────────────────────────
+
+function makeMessage(
+  type: LoopMessageType,
+  sessionId: string,
+  turn: number,
+  overrides: Partial<LoopMessage> = {},
+): LoopMessage {
+  return { type, sessionId, turn, timestamp: Date.now(), ...overrides };
+}
+
+// ─── agentLoop ─────────────────────────────────────────────────────────────
+
+export async function* agentLoop(
+  prompt: string,
+  config: AgentLoopConfig,
+): AsyncGenerator<LoopMessage> {
+  const sessionId = generateId("ses");
+  const threadId = config.threadId ?? generateId("thr");
+  const maxTurns = config.maxTurns ?? 10;
+  const messages: ONIModelMessage[] = config.initialMessages ? [...config.initialMessages] : [];
+  let turn = 0;
+
+  // ── 0. Memory init ───────────────────────────────────────────────────────
+  const { memoryLoader, memoryContext } = initMemory(prompt, config);
+
+  const effectiveSystemPrompt = memoryContext
+    ? [memoryContext, config.systemPrompt].filter(Boolean).join("\n\n")
+    : config.systemPrompt;
+
+  let sessionOutcome: SessionOutcome = "completed";
+
+  // ── 1. Session Init ──────────────────────────────────────────────────
+  if (config.hooksEngine) {
+    const hookResult = await fireSessionStart(
+      config.hooksEngine, sessionId, config.agentName, config.tools.map((t) => t.name),
+    );
+    if (hookResult?.additionalContext) {
+      messages.push({ role: "user", content: hookResult.additionalContext });
+      messages.push({ role: "assistant", content: "Context loaded." });
+    }
+  }
+
+  // ── 1b. Build allTools ───────────────────────────────────────────────
+  const allTools: ToolDefinition[] = memoryLoader
+    ? [...config.tools, memoryLoader.getQueryTool()]
+    : config.tools;
+
+  messages.push({ role: "user", content: prompt });
+
+  yield makeMessage("system", sessionId, turn, {
+    subtype: "init",
+    content: `Session ${sessionId} started for agent "${config.agentName}"`,
+  });
+
+  // ── 2. Build LLMToolDef[] ────────────────────────────────────────────
+  const llmTools: LLMToolDef[] = buildLLMTools(allTools);
+  const toolMap = buildToolMap(allTools);
+
+  // ── 3. Main Loop ─────────────────────────────────────────────────────
+  try {
+    while (turn < maxTurns) {
+      // ── 3a. Check AbortSignal ──────────────────────────────────────
+      if (config.signal?.aborted) {
+        sessionOutcome = "interrupted";
+        yield makeMessage("error", sessionId, turn, { content: "Agent loop aborted by signal" });
+        return;
+      }
+
+      // ── 3b. Context Compaction ─────────────────────────────────────
+      if (config.compactor) {
+        const compactionCheck = config.compactor.checkCompaction(messages);
+        if (compactionCheck.needed) {
+          const beforeCount = messages.length;
+          yield makeMessage("system", sessionId, turn, {
+            subtype: "compact_start",
+            content: "Context compaction starting",
+            metadata: {
+              beforeCount,
+              estimatedTokens: compactionCheck.estimatedTokens,
+              threshold: compactionCheck.threshold,
+              maxTokens: compactionCheck.maxTokens,
+              percentUsed: compactionCheck.percentUsed,
+            },
+          });
+          try {
+            if (config.hooksEngine) {
+              await firePreCompact(config.hooksEngine, sessionId, beforeCount, compactionCheck.estimatedTokens);
+            }
+            const compacted = await config.compactor.compact(messages, { skipInitialCheck: true });
+            const estimatedTokensAfter = config.compactor.estimateTokens(compacted);
+            const percentUsedAfter = compactionCheck.maxTokens > 0
+              ? estimatedTokensAfter / compactionCheck.maxTokens : 0;
+            const afterCount = compacted.length;
+            const summarized = afterCount <= 2 && beforeCount > 2;
+            messages.length = 0;
+            messages.push(...compacted);
+            yield makeMessage("system", sessionId, turn, {
+              subtype: "compact_boundary",
+              content: "Context compacted",
+              metadata: {
+                beforeCount, afterCount, summarized,
+                estimatedTokensBefore: compactionCheck.estimatedTokens, estimatedTokensAfter,
+                threshold: compactionCheck.threshold, maxTokens: compactionCheck.maxTokens,
+                percentUsedBefore: compactionCheck.percentUsed, percentUsedAfter,
+              },
+            });
+            if (config.hooksEngine) {
+              await firePostCompact(config.hooksEngine, sessionId, beforeCount, afterCount, estimatedTokensAfter, summarized);
+            }
+          } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            yield makeMessage("system", sessionId, turn, {
+              subtype: "compact_error",
+              content: `Context compaction failed: ${errorMsg}`,
+              metadata: {
+                beforeCount, afterCount: beforeCount,
+                estimatedTokensBefore: compactionCheck.estimatedTokens,
+                threshold: compactionCheck.threshold, maxTokens: compactionCheck.maxTokens,
+                percentUsedBefore: compactionCheck.percentUsed, error: errorMsg,
+              },
+            });
+          }
+        }
+      }
+
+      // ── 3c. Build system prompt ────────────────────────────────────
+      let systemPrompt = effectiveSystemPrompt;
+      const remaining = maxTurns - turn;
+      systemPrompt += `\n\nYou have ${remaining} turns remaining. Each turn lets you call multiple tools. Do NOT stop early — use your tools and complete the task autonomously.`;
+      if (config.env) {
+        const envLines: string[] = [];
+        if (config.env.cwd) envLines.push(`Working directory: ${config.env.cwd}`);
+        if (config.env.platform) envLines.push(`Platform: ${config.env.platform}`);
+        if (config.env.date) envLines.push(`Date: ${config.env.date}`);
+        if (config.env.gitBranch) envLines.push(`Git branch: ${config.env.gitBranch}`);
+        if (config.env.gitStatus) envLines.push(`Git status: ${config.env.gitStatus}`);
+        if (envLines.length > 0) systemPrompt += `\n\n<env>\n${envLines.join("\n")}\n</env>`;
+      }
+
+      // ── 3d. Skill injection ────────────────────────────────────────
+      if (config.skillLoader) {
+        const pending = config.skillLoader.getPendingInjection();
+        if (pending) {
+          messages.push({ role: "user", content: pending });
+          messages.push({ role: "assistant", content: "Skill instructions loaded." });
+          config.skillLoader.clearPendingInjection();
+        }
+      }
+
+      // ── 3e. Yield step_start ───────────────────────────────────────
+      const stepStartTime = Date.now();
+      yield makeMessage("step_start", sessionId, turn, { metadata: { step: turn } });
+
+      // ── 3f. Inference ──────────────────────────────────────────────
+      const inferenceResult = await runInference(messages, llmTools, systemPrompt, config, sessionId, turn);
+      for (const evt of inferenceResult.events) yield evt;
+
+      if (!inferenceResult.succeeded) {
+        sessionOutcome = "error";
+        yield makeMessage("error", sessionId, turn, {
+          content: `Inference error: ${inferenceResult.lastError instanceof Error ? inferenceResult.lastError.message : String(inferenceResult.lastError)}`,
+          metadata: { finalMessages: messages },
+        });
+        return;
+      }
+
+      const response = inferenceResult.response as ChatResponse;
+
+      // ── 3g. Yield assistant message ────────────────────────────────
+      yield makeMessage("assistant", sessionId, turn, {
+        content: response.content,
+        toolCalls: response.toolCalls,
+        metadata: { usage: response.usage, stopReason: response.stopReason },
+      });
+
+      // ── 3g2. Yield step_finish ─────────────────────────────────────
+      yield makeMessage("step_finish", sessionId, turn, {
+        metadata: {
+          stepDurationMs: Date.now() - stepStartTime,
+          usage: response.usage,
+          stopReason: response.stopReason,
+          toolCount: response.toolCalls?.length ?? 0,
+        },
+      });
+
+      // ── 3h. Stop condition ─────────────────────────────────────────
+      if (!response.toolCalls || response.toolCalls.length === 0) {
+        if (config.hooksEngine) {
+          const stopResult = await fireStop(config.hooksEngine, sessionId, response.content);
+          if (stopResult?.decision === "block") {
+            const feedback = stopResult.reason ?? "Please provide a more complete response.";
+            messages.push({ role: "assistant", content: response.content });
+            messages.push({ role: "user", content: feedback });
+            turn++;
+            continue;
+          }
+        }
+        if (config.hooksEngine) {
+          await fireSessionEnd(config.hooksEngine, sessionId, "completed", turn + 1);
+        }
+        messages.push({ role: "assistant", content: response.content });
+        yield makeMessage("result", sessionId, turn, {
+          content: response.content,
+          metadata: { totalTurns: turn + 1, finalMessages: messages },
+        });
+        return;
+      }
+
+      // ── 3i. Tool execution ─────────────────────────────────────────
+      const toolResults: LoopToolResult[] = [];
+
+      for (const toolCall of response.toolCalls) {
+        // Fire PreToolUse hook
+        if (config.hooksEngine) {
+          const preResult = await config.hooksEngine.fire("PreToolUse", {
+            sessionId, toolName: toolCall.name, input: toolCall.args,
+          });
+          if (preResult?.decision === "deny") {
+            toolResults.push({
+              toolCallId: toolCall.id, toolName: toolCall.name,
+              content: `Tool use denied: ${preResult.reason ?? "blocked by hook"}`, isError: true,
+            });
+            continue;
+          }
+          if (preResult?.modifiedInput) Object.assign(toolCall.args, preResult.modifiedInput);
+        }
+
+        // Safety gate check
+        if (config.safetyGate && config.safetyGate.requiresCheck(toolCall.name)) {
+          const safetyResult = await config.safetyGate.check({ id: toolCall.id, name: toolCall.name, args: toolCall.args });
+          if (!safetyResult.approved) {
+            toolResults.push({
+              toolCallId: toolCall.id, toolName: toolCall.name,
+              content: `Tool blocked by safety gate: ${safetyResult.reason ?? "unsafe operation"}`, isError: true,
+            });
+            continue;
+          }
+        }
+
+        // Find tool
+        const toolDef = toolMap.get(toolCall.name);
+        if (!toolDef) {
+          toolResults.push({ toolCallId: toolCall.id, toolName: toolCall.name, content: `Unknown tool: ${toolCall.name}`, isError: true });
+          continue;
+        }
+
+        // Validate args
+        if (toolDef.schema) {
+          const validationError = validateToolArgs(toolCall.args, toolDef.schema, toolCall.name);
+          if (validationError) {
+            toolResults.push({
+              toolCallId: toolCall.id, toolName: toolCall.name,
+              content: `${validationError}. Please retry with correct arguments.`, isError: true,
+            });
+            continue;
+          }
+        }
+
+        yield makeMessage("tool_start", sessionId, turn, {
+          metadata: { toolName: toolCall.name, toolArgs: toolCall.args, toolCallId: toolCall.id },
+        });
+
+        const metadataUpdates: Array<{ title?: string; metadata?: Record<string, unknown> }> = [];
+        const toolCtx: HarnessToolContext = {
+          config: {}, store: null, state: {}, emit: () => {},
+          sessionId, threadId, agentName: config.agentName, turn, signal: config.signal,
+          metadata: (update: { title?: string; metadata?: Record<string, unknown> }) => { metadataUpdates.push(update); },
+        };
+
+        try {
+          const startTime = Date.now();
+          const rawResult = await toolDef.execute(toolCall.args, toolCtx);
+          const durationMs = Date.now() - startTime;
+          const content = typeof rawResult === "string" ? rawResult : JSON.stringify(rawResult);
+
+          toolResults.push({ toolCallId: toolCall.id, toolName: toolCall.name, content, durationMs });
+
+          for (const mu of metadataUpdates) {
+            yield makeMessage("tool_metadata", sessionId, turn, {
+              metadata: { toolCallId: toolCall.id, toolName: toolCall.name, title: mu.title, data: mu.metadata },
+            });
+          }
+
+          if (config.hooksEngine) {
+            try {
+              await config.hooksEngine.fire("PostToolUse", {
+                sessionId, toolName: toolCall.name, input: toolCall.args, output: rawResult, durationMs,
+              });
+            } catch { /* Hook errors are non-fatal */ }
+          }
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          if (config.hooksEngine) {
+            try {
+              await config.hooksEngine.fire("PostToolUseFailure", {
+                sessionId, toolName: toolCall.name, input: toolCall.args, error: err instanceof Error ? err : errorMsg,
+              });
+            } catch { /* Hook errors are non-fatal */ }
+          }
+          toolResults.push({
+            toolCallId: toolCall.id, toolName: toolCall.name,
+            content: memoryLoader
+              ? `Tool error: ${errorMsg}\n\nMemory query may help — call memory_query with a specific topic if this failure suggests a knowledge gap.`
+              : `Tool error: ${errorMsg}`,
+            isError: true,
+          });
+        }
+      }
+
+      // ── 3j. Update messages ────────────────────────────────────────
+      messages.push({ role: "assistant", content: response.content, toolCalls: response.toolCalls });
+      for (const tr of toolResults) {
+        messages.push({ role: "tool", content: tr.content, toolCallId: tr.toolCallId, name: tr.toolName });
+      }
+
+      // ── 3j. TODO reminder ──────────────────────────────────────────
+      if (config.todoModule) {
+        const todoState = config.todoModule.getState();
+        if (todoState.todos.length > 0) {
+          const reminder = config.todoModule.toContextString();
+          messages.push({ role: "user", content: `<system-reminder>\n${reminder}\n</system-reminder>` });
+          messages.push({ role: "assistant", content: "Noted." });
+          yield makeMessage("system", sessionId, turn, { subtype: "todo_reminder", content: reminder });
+        }
+      }
+
+      // ── 3k. Yield tool_result, increment turn ──────────────────────
+      yield makeMessage("tool_result", sessionId, turn, { toolResults });
+      turn++;
+    }
+
+    // Post-loop: maxTurns exhausted
+    sessionOutcome = "budget-exceeded";
+    yield makeMessage("error", sessionId, turn, {
+      content: `Agent loop exceeded maxTurns (${maxTurns})`,
+      metadata: { finalMessages: messages },
+    });
+  } catch (err) {
+    sessionOutcome = "error";
+    yield makeMessage("error", sessionId, turn, {
+      content: `Agent loop error: ${err instanceof Error ? err.message : String(err)}`,
+      metadata: { finalMessages: messages },
+    });
+  } finally {
+    finalizeMemory(memoryLoader, sessionId, prompt, turn, sessionOutcome, config);
+  }
+}
+
+// ─── wrapWithAgentLoop ─────────────────────────────────────────────────────
+
+export function wrapWithAgentLoop<
+  S extends Record<string, unknown> & {
+    task?: string;
+    context?: string;
+    agentResults?: Record<string, string>;
+  },
+>(config: AgentLoopConfig): (state: S) => Promise<Partial<S>> {
+  return async (state: S): Promise<Partial<S>> => {
+    const prompt =
+      (state.task as string | undefined) ??
+      (state.context as string | undefined) ??
+      "";
+
+    let finalResult = "";
+    for await (const msg of agentLoop(prompt, config)) {
+      if (msg.type === "result") finalResult = msg.content ?? "";
+    }
+
+    return {
+      agentResults: { ...(state.agentResults ?? {}), [config.agentName]: finalResult },
+    } as Partial<S>;
+  };
+}
