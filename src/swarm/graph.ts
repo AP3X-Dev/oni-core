@@ -189,13 +189,13 @@ export interface HierarchicalMeshConfig<S extends BaseSwarmState> {
 // ----------------------------------------------------------------
 
 export class SwarmGraph<S extends BaseSwarmState> {
-  private inner:    StateGraph<S>;
-  private registry: AgentRegistry<S>;
-  private channels: ChannelSchema<S>;
-  private agentIds  = new Set<string>();
-  private supervisorNodeName = "__supervisor__";
-  private hasSupervisor = false;
-  private onErrorPolicy: "fallback" | "throw" = "fallback";
+  /** @internal */ inner:    StateGraph<S>;
+  /** @internal */ registry: AgentRegistry<S>;
+  /** @internal */ channels: ChannelSchema<S>;
+  /** @internal */ agentIds  = new Set<string>();
+  /** @internal */ supervisorNodeName = "__supervisor__";
+  /** @internal */ hasSupervisor = false;
+  /** @internal */ onErrorPolicy: "fallback" | "throw" = "fallback";
 
   private _broker?: RequestReplyBroker;
   private _pubsub?: PubSub;
