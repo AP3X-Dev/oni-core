@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  SwarmGraph, quickAgent, type BaseSwarmState,
+  SwarmGraph, quickAgent, Handoff, type BaseSwarmState,
 } from "../../swarm/index.js";
 
 describe("Dynamic agent spawning", () => {
@@ -73,6 +73,85 @@ describe("Dynamic agent spawning", () => {
     // After spawning: 2 agents
     expect(app.registry.getAll().length).toBe(2);
     expect(app.registry.getDef("dynamic-agent")).toBeDefined();
+  });
+
+  it("spawned agent that returns a Handoff routes to the handoff target", async () => {
+    // Static agents handle Handoff via createAgentNode; spawnAgent must use the same path.
+    // Without the fix the inline executor returns the Handoff object as raw state, so no
+    // Command.goto is emitted and the handoff target is never reached.
+    const invoked: string[] = [];
+
+    const swarm = SwarmGraph.hierarchical<BaseSwarmState>({
+      supervisor: {
+        strategy: "rule",
+        rules: [
+          { condition: () => true, agentId: "agent-a" },
+        ],
+        maxRounds: 3,
+      },
+      agents: [
+        quickAgent("agent-b", async () => {
+          invoked.push("agent-b");
+          return { messages: [{ role: "assistant", content: "b done" }], done: true };
+        }),
+      ],
+    });
+
+    const app = swarm.compile();
+
+    // Spawn agent-a dynamically — it will hand off to agent-b
+    app.spawnAgent(
+      quickAgent("agent-a", async () => {
+        invoked.push("agent-a");
+        return new Handoff({ to: "agent-b", message: "passing to b" }) as unknown as Partial<BaseSwarmState>;
+      }),
+    );
+
+    const result = await app.invoke({ task: "test handoff" });
+
+    expect(result.done).toBe(true);
+    expect(invoked).toContain("agent-a");
+    expect(invoked).toContain("agent-b");
+  });
+
+  it("spawned agent error context includes structured type and attempt fields", async () => {
+    // createAgentNode produces { agent, error, type, attempt, maxRetries } in lastAgentError.
+    // The inline spawnAgent executor only sets { agent, error } — missing type and attempt.
+    const swarm = SwarmGraph.hierarchical<BaseSwarmState>({
+      supervisor: {
+        strategy: "rule",
+        rules: [
+          { condition: (_, ctx) => !(ctx as Record<string, unknown>).lastAgentError, agentId: "crashing-dynamic" },
+          { condition: () => true, agentId: "inspector" },
+        ],
+        maxRounds: 4,
+      },
+      agents: [
+        quickAgent("inspector", async (state) => ({
+          messages: [{ role: "assistant", content: "inspected" }],
+          context: { ...state.context, errorSeen: state.context?.lastAgentError },
+          done: true,
+        })),
+      ],
+    });
+
+    const app = swarm.compile();
+
+    app.spawnAgent(
+      quickAgent("crashing-dynamic", async () => {
+        throw new Error("deliberate crash");
+      }, { maxRetries: 0 }),
+    );
+
+    const result = await app.invoke({ task: "error test" });
+
+    // The error context written by the spawned agent must match createAgentNode format
+    const err = result.context?.errorSeen as Record<string, unknown> | undefined;
+    expect(err).toBeDefined();
+    expect(err?.agent).toBe("crashing-dynamic");
+    expect(err?.type).toBeDefined();     // "unknown" — missing from inline executor
+    expect(err?.attempt).toBeDefined();  // 0 — missing from inline executor
+    expect(err?.maxRetries).toBeDefined(); // 0 — missing from inline executor
   });
 
   it("dynamic agent errors fall back to supervisor like pre-compiled agents", async () => {
