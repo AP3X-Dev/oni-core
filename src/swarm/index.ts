@@ -47,3 +47,6 @@ export type { AgentManifestEntry }            from "./registry.js";
 
 export { DynamicScalingMonitor }              from "./scaling.js";
 export type { ScalingConfig, ScalingDecision, ScalingHistoryEntry } from "./scaling.js";
+
+export { ExperimentLog, parseManifest, loadManifest, identifyPatterns, suggestNext, SkillEvolver } from "./self-improvement/index.js";
+export type { ExperimentRecord, ObjectiveManifest, ManifestGoal, Pattern, DecisionContext, SkillPerformanceReport, SkillUsageRecord } from "./self-improvement/index.js";

@@ -1,0 +1,36 @@
+{
+  "name": "@oni.bot/loaders",
+  "version": "0.1.0",
+  "description": "Simple document loaders (markdown, JSON, CSV, PDF, HTML, DOCX) for @oni.bot/core agents",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@oni.bot/core": "^1.1.0",
+    "pdfjs-dist": ">=3.0.0",
+    "node-html-parser": ">=6.0.0",
+    "mammoth": ">=1.6.0"
+  },
+  "peerDependenciesMeta": {
+    "@oni.bot/core": { "optional": true },
+    "pdfjs-dist": { "optional": true },
+    "node-html-parser": { "optional": true },
+    "mammoth": { "optional": true }
+  },
+  "devDependencies": {
+    "@oni.bot/core": "workspace:*",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}

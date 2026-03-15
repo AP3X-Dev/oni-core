@@ -1,0 +1,7 @@
+{
+  "name": "@oni.bot/community",
+  "version": "0.0.1",
+  "description": "ActivePieces community integrations source library (not published)",
+  "type": "module",
+  "private": true
+}
