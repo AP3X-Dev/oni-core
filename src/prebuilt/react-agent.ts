@@ -41,8 +41,10 @@ function isONIModel(obj: unknown): obj is ONIModel {
   return (
     typeof obj === "object" &&
     obj !== null &&
-    typeof (obj as any).chat === "function" &&
-    typeof (obj as any).provider === "string"
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    typeof (obj as any).chat === "function" && // SAFE: external boundary — duck-typing unknown input to detect ONIModel shape
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    typeof (obj as any).provider === "string" // SAFE: external boundary — duck-typing unknown input to detect ONIModel shape
   );
 }
 
@@ -158,7 +160,8 @@ export function createReactAgent(
 
   // ---- Tool node (only if tools provided) ----
   if (tools.length > 0) {
-    graph.addNode("tools", createToolNode(tools) as any, {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    graph.addNode("tools", createToolNode(tools) as any, { // SAFE: external boundary — createToolNode returns NodeFn<ToolState> which is compatible with ReactAgentState
       retry: toolRetry,
     });
 

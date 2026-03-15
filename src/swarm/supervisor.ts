@@ -104,7 +104,7 @@ export function createSupervisorNode<S extends SupervisorState>(
               update: {
                 supervisorRound: round + 1,
                 currentAgent: match.def.id,
-                [config.contextField ?? "context"]: { ...(rawCtx as any), lastAgentError: undefined },
+                [config.contextField ?? "context"]: { ...rawCtx, lastAgentError: undefined },
                 messages: [
                   ...state.messages,
                   { role: "system", content: `Supervisor auto-recovering to: ${match.def.role}` },
@@ -152,7 +152,7 @@ export function createSupervisorNode<S extends SupervisorState>(
       update: {
         supervisorRound: round + 1,
         currentAgent:    targetAgentId,
-        ...(deadlineAbsolute != null ? { [config.contextField ?? "context"]: { ...(rawCtx as any), __deadlineAbsolute: deadlineAbsolute } } : {}),
+        ...(deadlineAbsolute != null ? { [config.contextField ?? "context"]: { ...rawCtx, __deadlineAbsolute: deadlineAbsolute } } : {}),
         messages: [
           ...state.messages,
           { role: "system", content: `Supervisor routing to: ${agentDef.role}` },
@@ -228,7 +228,7 @@ function routeRoundRobin<S extends Record<string, unknown>>(
   const agents = registry.findIdle();
   if (!agents.length) {
     // Fall back to all agents if none idle
-    const all = registry.getAll().filter((a) => (a as any).status !== "terminated");
+    const all = registry.getAll().filter((a) => a.status !== "terminated");
     if (!all.length) return null;
     return all[round % all.length]!.def.id;
   }

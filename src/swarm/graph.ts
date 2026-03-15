@@ -9,7 +9,7 @@
 // ============================================================
 
 import { StateGraph } from "../graph.js";
-import type { ONISkeletonV3 } from "../graph.js";
+import type { ONISkeletonV3, CompiledGraphInternals } from "../graph.js";
 import { START, END, appendList, lastValue, mergeObject } from "../types.js";
 import { Command, Send } from "../types.js";
 import type {
@@ -31,6 +31,17 @@ import { getInbox } from "./mailbox.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
 import { PubSub } from "../coordination/pubsub.js";
 import { runWithTimeout } from "../internal/timeout.js";
+import type { Edge } from "../types.js";
+
+// ----------------------------------------------------------------
+// PregelRunnerInternals — typed access to private ONIPregelRunner fields
+// used by spawnAgent/removeAgent/toMermaid after compile().
+// ----------------------------------------------------------------
+
+interface PregelRunnerInternals<S extends Record<string, unknown>> {
+  nodes: Map<string, { name: string; fn: NodeFn<S> }>;
+  _edgesBySource: Map<string, Edge<S>[]>;
+}
 
 // ----------------------------------------------------------------
 // Default swarm state channels
@@ -256,7 +267,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // Register agents in registry (but don't use addAgent — we wire manually)
     for (const agentDef of config.agents) {
-      swarm.registry.register(agentDef as SwarmAgentDef<Record<string, unknown>> as any);
+      swarm.registry.register(agentDef as SwarmAgentDef<Record<string, unknown>> as any); // SAFE: external boundary — generic registry accepts narrower S
       swarm.agentIds.add(agentDef.id);
     }
 
@@ -264,13 +275,13 @@ export class SwarmGraph<S extends BaseSwarmState> {
     swarm.inner.addNode("__fanout_runner__", async (state: S, cfg?) => {
       const agentMap = new Map(config.agents.map((a) => [a.id, a]));
 
-      async function runAgent(id: string): Promise<{ id: string; result: any; error: unknown | null }> {
+      async function runAgent(id: string): Promise<{ id: string; result: unknown; error: unknown | null }> {
         const agent = agentMap.get(id)!;
         try {
           await agent.hooks?.onStart?.(id, state as Record<string, unknown>);
           const result = await runWithTimeout(
             () => agent.skeleton.invoke(
-              { ...state } as any,
+              { ...state } as S,
               { ...cfg, agentId: id },
             ),
             timeoutMs,
@@ -284,7 +295,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
         }
       }
 
-      let allResults: Array<{ id: string; result: any; error: unknown | null }>;
+      let allResults: Array<{ id: string; result: unknown; error: unknown | null }>;
 
       if (maxConcurrency != null && maxConcurrency > 0) {
         // Batched execution with concurrency limit
@@ -428,7 +439,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // Reducer node: collects agentResults and applies user reducer
     swarm.inner.addNode("__reducer__", (state: S) => {
-      return config.reducer((state as any).agentResults ?? {});
+      return config.reducer(state.agentResults ?? {});
     });
 
     // Wiring: START → __splitter__
@@ -468,7 +479,8 @@ export class SwarmGraph<S extends BaseSwarmState> {
         assignCounts.set(targetId, (assignCounts.get(targetId) ?? 0) + 1);
         return new Send(targetId, { ...state, task: String(item) });
       });
-    }) as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any); // SAFE: external boundary — Send[] return is valid but not in addConditionalEdges overload signature
 
     // Each mapper → __reducer__
     for (const id of mapperIds) {
@@ -507,10 +519,10 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // Judge node: evaluates arguments, decides continue or consensus
     swarm.inner.addNode("__judge__", async (state: S) => {
-      const round = (state as any).supervisorRound ?? 0;
+      const round = state.supervisorRound ?? 0;
 
       // If no agent results yet (first round), just kick off debaters
-      const results = (state as any).agentResults ?? {};
+      const results = state.agentResults ?? {};
       if (round === 0 && Object.keys(results).length === 0) {
         return {
           supervisorRound: round + 1,
@@ -597,14 +609,15 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // __judge__ → conditional (done → END, else → __fanout__)
     swarm.inner.addConditionalEdges("__judge__", (state: S) => {
-      if ((state as any).done) return END;
+      if (state.done) return END;
       return "__fanout__";
     });
 
     // __fanout__ → Send to all debaters in parallel
     swarm.inner.addConditionalEdges("__fanout__", ((state: S) =>
       debaterIds.map((id) => new Send(id, { ...state }))
-    ) as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ) as any); // SAFE: external boundary — Send[] return is valid but not in addConditionalEdges overload signature
 
     // Each debater → __judge__
     for (const id of debaterIds) {
@@ -648,11 +661,11 @@ export class SwarmGraph<S extends BaseSwarmState> {
       // Spread all top-level fields from teamResult (including done, context)
       // so they propagate to the outer coordinator state.
       swarm.inner.addNode(teamId, async (state: S, cfg?) => {
-        const teamResult = await teamSkeleton.invoke(state as any, cfg);
+        const teamResult = await teamSkeleton.invoke(state as S, cfg);
         return {
           ...(teamResult as object),
           agentResults: {
-            ...((state as any).agentResults ?? {}),
+            ...(state.agentResults ?? {}),
             [teamId]: teamResult,
           },
         } as Partial<S>;
@@ -661,9 +674,9 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // Coordinator node: routes to teams
     swarm.inner.addNode("__coordinator__", async (state: S) => {
-      const round = (state as any).supervisorRound ?? 0;
+      const round = state.supervisorRound ?? 0;
 
-      if (round >= maxRounds || (state as any).done) {
+      if (round >= maxRounds || state.done) {
         return { done: true } as Partial<S>;
       }
 
@@ -672,7 +685,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
         const response = await config.coordinator.model.chat({
           messages: [{
             role: "user",
-            content: `Task: ${(state as any).task}\n\nAvailable teams:\n${teamList}\n\nRespond with the team name to route to, or "DONE" if complete.`,
+            content: `Task: ${state.task}\n\nAvailable teams:\n${teamList}\n\nRespond with the team name to route to, or "DONE" if complete.`,
           }],
           systemPrompt: config.coordinator.systemPrompt ?? "You coordinate teams.",
         });
@@ -726,14 +739,14 @@ export class SwarmGraph<S extends BaseSwarmState> {
     // Each team → coordinator (loop back unless done)
     for (const teamId of teamIds) {
       swarm.inner.addConditionalEdges(teamId, (state: S) => {
-        if ((state as any).done) return END;
+        if (state.done) return END;
         return "__coordinator__";
       });
     }
 
     // Coordinator → conditional (done → END, else handled by Command.goto)
     swarm.inner.addConditionalEdges("__coordinator__", (state: S) => {
-      if ((state as any).done) return END;
+      if (state.done) return END;
       // Command.goto handles routing — this is the fallback
       return END;
     });
@@ -761,7 +774,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // Register agents so they appear in the registry
     for (const agentDef of config.agents) {
-      swarm.registry.register(agentDef as SwarmAgentDef<Record<string, unknown>> as any);
+      swarm.registry.register(agentDef as SwarmAgentDef<Record<string, unknown>> as any); // SAFE: external boundary — generic registry accepts narrower S
       swarm.agentIds.add(agentDef.id);
     }
 
@@ -772,7 +785,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
       const agentPromises: Promise<RaceResult>[] = config.agents.map((agent) => {
         const p: Promise<RaceResult> = agent.skeleton
-          .invoke({ ...state } as any, { ...cfg, agentId: agent.id })
+          .invoke({ ...state } as S, { ...cfg, agentId: agent.id })
           .then(
             (result) => ({ id: agent.id, result, error: null } as RaceResult),
             (err)    => ({ id: agent.id, result: null, error: err } as RaceResult),
@@ -916,7 +929,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
           ready.map(async (id) => {
             const agent = agentMap.get(id)!;
             const result = await agent.skeleton.invoke(
-              { ...state, agentResults: { ...(state.agentResults ?? {}), ...results } } as any,
+              { ...state, agentResults: { ...(state.agentResults ?? {}), ...results } } as S,
               { ...cfg, agentId: id },
             );
             return { id, result };
@@ -936,8 +949,9 @@ export class SwarmGraph<S extends BaseSwarmState> {
     });
 
     // Wire: START → __dag_runner__ → END
-    // Remove any edges added by addAgent
-    (swarm.inner as any).edges = [];
+    // Remove any edges added by addAgent — reset private edges field
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (swarm.inner as any).edges = []; // SAFE: external boundary — clearing private StateGraph.edges to rewire DAG topology
     swarm.inner.addEdge(START, "__dag_runner__");
     swarm.inner.addEdge("__dag_runner__", END);
 
@@ -996,12 +1010,15 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
             // Respect removeAgent() — if the assigned slot was removed, redirect
             // to an active pool slot; if none remain, mark the item as failed.
-            let agentDef = (swarm as any).registry.getDef(work.targetId) as SwarmAgentDef<S> | undefined;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let agentDef = (swarm as any).registry.getDef(work.targetId) as SwarmAgentDef<S> | undefined; // SAFE: external boundary — accessing private registry field
             if (!agentDef) {
-              const activeIds = poolIds.filter((id) => !!(swarm as any).registry.getDef(id));
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const activeIds = poolIds.filter((id) => !!(swarm as any).registry.getDef(id)); // SAFE: external boundary — private registry access
               if (activeIds.length > 0) {
                 work.targetId = activeIds[work.idx % activeIds.length]!;
-                agentDef = (swarm as any).registry.getDef(work.targetId) as SwarmAgentDef<S>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                agentDef = (swarm as any).registry.getDef(work.targetId) as SwarmAgentDef<S>; // SAFE: external boundary — private registry access
               } else {
                 results[`item_${work.idx}`] = { _error: `Pool slot removed; no active agents remain` };
                 completed++;
@@ -1013,12 +1030,13 @@ export class SwarmGraph<S extends BaseSwarmState> {
             running++;
             // Use the full wrapped agentNode (hooks, retries, timeout) stored
             // by addAgent() in swarm.inner.nodes rather than raw skeleton.invoke.
-            const wrappedFn = (swarm.inner as any).nodes.get(work.targetId)?.fn as
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const wrappedFn = (swarm.inner as any).nodes.get(work.targetId)?.fn as // SAFE: external boundary — accessing private StateGraph.nodes map
               ((state: S, cfg?: ONIConfig) => Promise<NodeReturn<S>>) | undefined;
             const invocation = wrappedFn
               ? wrappedFn({ ...state, task: String(work.item) } as S, { ...cfg, agentId: work.targetId })
               : agentDef.skeleton.invoke(
-                  { ...state, task: String(work.item) } as any,
+                  { ...state, task: String(work.item) } as S,
                   { ...cfg, agentId: work.targetId },
                 );
             invocation.then(
@@ -1048,7 +1066,8 @@ export class SwarmGraph<S extends BaseSwarmState> {
     });
 
     // Wire: START → __pool_runner__ → END (bypass agent edges)
-    (swarm.inner as any).edges = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (swarm.inner as any).edges = []; // SAFE: external boundary — clearing private StateGraph.edges to rewire pool topology
     swarm.inner.addEdge(START, "__pool_runner__");
     swarm.inner.addEdge("__pool_runner__", END);
 
@@ -1073,11 +1092,11 @@ export class SwarmGraph<S extends BaseSwarmState> {
     for (const stage of config.stages) {
       const compiled = stage.swarm.compile();
       swarm.inner.addNode(stage.id, async (state: S, cfg?) => {
-        const stageResult = await compiled.invoke(state as any, cfg);
+        const stageResult = await compiled.invoke(state as S, cfg);
         return {
           ...stageResult,
           agentResults: {
-            ...((state as any).agentResults ?? {}),
+            ...(state.agentResults ?? {}),
             [stage.id]: stageResult,
           },
         } as Partial<S>;
@@ -1160,10 +1179,12 @@ export class SwarmGraph<S extends BaseSwarmState> {
           this.registry.markIdle(def.id);
 
           // ---- Handoff detection ----
-          if (result instanceof Handoff || (result && (result as any).isHandoff)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (result instanceof Handoff || (result && (result as any).isHandoff)) { // SAFE: duck-typing unknown agent return value
             const handoff = result instanceof Handoff
               ? result
-              : new Handoff((result as any).opts);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              : new Handoff((result as any).opts); // SAFE: duck-typing unknown agent return value
             // Fire onComplete for handoffs too
             await def.hooks?.onComplete?.(def.id, result);
             return new Command<S>({
@@ -1190,7 +1211,8 @@ export class SwarmGraph<S extends BaseSwarmState> {
           return {
             ...result,
             context: {
-              ...((result as any).context ?? {}),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ...((result as any).context ?? {}), // SAFE: spreading unknown result context field
               __consumedMsgIds: newConsumedIds,
             },
             agentResults: {
@@ -1339,7 +1361,8 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // For non-supervised swarms, check that every agent has at least one incoming edge
     const edgeTargets = new Set<string>();
-    for (const edge of (this.inner as any).edges) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const edge of (this.inner as any).edges) { // SAFE: external boundary — accessing private StateGraph.edges for topology validation
       if (edge.type === "static") {
         edgeTargets.add(edge.to as string);
       }
@@ -1388,7 +1411,8 @@ export class SwarmGraph<S extends BaseSwarmState> {
       ...(opts.defaults        !== undefined ? { defaults:        opts.defaults }        : {}),
       ...(opts.deadLetterQueue !== undefined ? { deadLetterQueue: opts.deadLetterQueue } : {}),
       ...(opts.tracer          !== undefined ? { tracer:          opts.tracer }          : {}),
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any); // SAFE: CompileOptions conditional spread — TypeScript can't narrow the intersection type
 
     const registry = this.registry;
     const inner = this.inner;
@@ -1402,10 +1426,8 @@ export class SwarmGraph<S extends BaseSwarmState> {
       toMermaid: () => {
         // Read from the live runner's edge map so the diagram reflects
         // agents added/removed via spawnAgent()/removeAgent() after compile.
-        const runner = (skeleton as any)._runner;
-        const edgesBySource = runner?._edgesBySource as
-          | Map<string, Array<{ type: string; to?: string }>>
-          | undefined;
+        const runner = (skeleton as unknown as CompiledGraphInternals<S>)._runner as unknown as PregelRunnerInternals<S> | undefined;
+        const edgesBySource = runner?._edgesBySource;
         if (!edgesBySource) return inner.toMermaid(); // safe fallback
         const lines: string[] = ["graph TD"];
         for (const [from, edges] of edgesBySource) {
@@ -1431,7 +1453,8 @@ export class SwarmGraph<S extends BaseSwarmState> {
         }
 
         // Register in the registry
-        registry.register(def as SwarmAgentDef<Record<string, unknown>> as any);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        registry.register(def as SwarmAgentDef<Record<string, unknown>> as any); // SAFE: external boundary — generic registry accepts narrower S
 
         // Create the agent node function (same logic as addAgent)
         const agentNode: NodeFn<S> = async (state: S, config?: ONIConfig) => {
@@ -1444,7 +1467,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
           for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
               const result = await def.skeleton.invoke(
-                { ...state, context: { ...(state.context ?? {}), inbox: getInbox(state.swarmMessages ?? [], def.id) } } as any,
+                { ...state, context: { ...(state.context ?? {}), inbox: getInbox(state.swarmMessages ?? [], def.id) } } as S,
                 { ...config, agentId: def.id },
               );
               registry.markIdle(def.id);
@@ -1473,7 +1496,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
         };
 
         // Add node to the compiled runner's nodes map
-        const runner = (skeleton as any)._runner;
+        const runner = (skeleton as unknown as CompiledGraphInternals<S>)._runner as unknown as PregelRunnerInternals<S> | undefined;
         if (runner?.nodes) {
           runner.nodes.set(def.id, { name: def.id, fn: agentNode });
         }
@@ -1481,12 +1504,12 @@ export class SwarmGraph<S extends BaseSwarmState> {
         // In supervised swarms, add a conditional return edge so the runner
         // knows to send this agent's output back to the supervisor (or END).
         if (hasSupervisor && runner) {
-          const returnEdge = {
+          const returnEdge: Edge<S> = {
             type: "conditional" as const,
             from: def.id,
             condition: (st: S) => (st as Record<string, unknown>).done ? END : supervisorNodeName,
           };
-          const edgesBySource = (runner as any)._edgesBySource as Map<string, unknown[]>;
+          const edgesBySource = runner._edgesBySource;
           const list = edgesBySource.get(def.id) ?? [];
           list.push(returnEdge);
           edgesBySource.set(def.id, list);
@@ -1495,12 +1518,12 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
       removeAgent(agentId: string) {
         registry.deregister(agentId);
-        const runner = (skeleton as any)._runner;
+        const runner = (skeleton as unknown as CompiledGraphInternals<S>)._runner as unknown as PregelRunnerInternals<S> | undefined;
         if (runner?.nodes) runner.nodes.delete(agentId);
         // Remove stale edges pointing TO the removed agent so Pregel doesn't try to route to it.
         // Also remove edges FROM the agent (it won't execute, but keeps _edgesBySource clean).
         if (runner?._edgesBySource) {
-          const edgesBySource = runner._edgesBySource as Map<string, Array<{ type: string; to?: string }>>;
+          const edgesBySource = runner._edgesBySource;
           for (const [from, edges] of edgesBySource) {
             const filtered = edges.filter((e) => !(e.type === "static" && e.to === agentId));
             if (filtered.length !== edges.length) edgesBySource.set(from, filtered);

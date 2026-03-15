@@ -155,9 +155,9 @@ export class AgentPool<S extends Record<string, unknown>> {
     slot.totalRuns++;
 
     const agent = slot.agent;
-    const maxRetries = (agent as any).maxRetries ?? 0;
-    const timeout = (agent as any).timeout as number | undefined;
-    const retryDelayMs = (agent as any).retryDelayMs as number | undefined;
+    const maxRetries = agent.maxRetries ?? 0;
+    const timeout = agent.timeout;
+    const retryDelayMs = agent.retryDelayMs;
 
     try {
       // Fire onStart hook
