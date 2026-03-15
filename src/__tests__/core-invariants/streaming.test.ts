@@ -48,8 +48,11 @@ describe('core invariant: streaming and invoke', () => {
     // At least one state_update event should be present
     const stateEvents = chunks.filter(
       (c) => typeof c === 'object' && c !== null && (c as Record<string, unknown>).event === 'state_update'
-    );
+    ) as Array<{ event: string; data: Partial<S>; step: number }>;
     expect(stateEvents.length).toBeGreaterThan(0);
+    // The last state_update chunk reflects the fully accumulated state: a adds 1, b adds 10 → step === 11
+    const lastStateEvent = stateEvents[stateEvents.length - 1];
+    expect(lastStateEvent.data.step).toBe(11);
   });
 
   it('node timeout throws an error', async () => {
