@@ -416,7 +416,8 @@ export function anthropic(
       let parsed: Record<string, unknown>;
       try {
         parsed = JSON.parse(data) as Record<string, unknown>;
-      } catch {
+      } catch (err) {
+        console.warn("[oni-core] Anthropic SSE: failed to parse JSON chunk", { error: err, rawData: data });
         continue;
       }
 

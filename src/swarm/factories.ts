@@ -368,7 +368,7 @@ export function buildDebate<S extends BaseSwarmState>(
     const nextRound = round + 1;
 
     // Force done if consensus or max rounds exhausted
-    const isDone = isConsensus || nextRound >= config.judge.maxRounds;
+    const isDone = isConsensus || nextRound > config.judge.maxRounds;
 
     const updatedScores = roundScores
       ? [...existingScores, { round, scores: roundScores }]

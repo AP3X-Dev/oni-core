@@ -240,10 +240,10 @@ export class MCPClient {
   private handleNotification(notification: JsonRpcNotification): void {
     if (notification.method === "notifications/tools/list_changed") {
       // Server says tools have changed — refresh
-      void this.refreshTools().then(() => {
-        this.onToolsChanged?.();
-      }).catch(() => {
+      void this.refreshTools().catch(() => {
         // Silently ignore refresh failures from notifications
+      }).then(() => {
+        this.onToolsChanged?.();
       });
     }
   }
