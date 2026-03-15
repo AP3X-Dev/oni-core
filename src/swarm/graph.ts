@@ -367,6 +367,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
       this.inner,
       this.hasSupervisor,
       this.supervisorNodeName,
+      this.onErrorPolicy,
     );
 
     return Object.assign(skeleton, extensions);
