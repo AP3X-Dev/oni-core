@@ -3,7 +3,7 @@
 // ============================================================
 
 import {
-  START, Send,
+  Send,
   type NodeName, type Edge, type ChannelSchema,
   type ONIConfig, type ONIStreamEvent, type DynamicInterrupt,
 } from "../types.js";

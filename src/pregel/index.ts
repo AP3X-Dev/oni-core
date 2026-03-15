@@ -4,11 +4,10 @@
 // ============================================================
 
 import {
-  START, END, Send, Command,
-  type NodeName, type NodeDefinition, type Edge, type ChannelSchema,
+  type NodeDefinition, type Edge, type ChannelSchema,
   type ONIConfig, type ONIStreamEvent, type StreamMode, type InterruptConfig,
-  type ONICheckpointer, type ONICheckpoint, type DynamicInterrupt,
-  type NodeReturn, type CachePolicy,
+  type ONICheckpointer, type ONICheckpoint,
+  type NodeReturn,
 } from "../types.js";
 import { CircuitBreaker } from "../circuit-breaker.js";
 import { DeadLetterQueue, type DeadLetter } from "../dlq.js";
@@ -23,7 +22,7 @@ import { BudgetTracker } from "../guardrails/budget.js";
 import { ONITracer, type TracerLike } from "../telemetry.js";
 import type { CustomStreamEvent, MessageStreamEvent } from "../types.js";
 
-import type { PregelContext, PendingSend } from "./types.js";
+import type { PregelContext } from "./types.js";
 import { streamSupersteps } from "./streaming.js";
 import {
   getState, updateState, getStateAt, getHistory, forkFrom,
