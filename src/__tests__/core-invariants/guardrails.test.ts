@@ -44,4 +44,24 @@ describe('core invariant: guardrails', () => {
     const usage = { inputTokens: 10, outputTokens: 10, totalTokens: 20 };
     expect(() => tracker.record('agent', 'claude-sonnet-4-6', usage)).not.toThrow();
   });
+
+  it('BudgetTracker throws BudgetExceededError when token limit is exceeded', async () => {
+    const { BudgetTracker, BudgetExceededError } = await import('../../guardrails/budget.js');
+    // maxTokensPerRun: 5 — a single call with 20 total tokens will exceed it
+    // Default onBudgetExceeded is "error", so record() must throw
+    const tracker = new BudgetTracker({ maxTokensPerRun: 5 });
+    const bigUsage = { inputTokens: 10, outputTokens: 10, totalTokens: 20 };
+    expect(() => tracker.record('agent', 'claude-sonnet-4-6', bigUsage)).toThrow(BudgetExceededError);
+  });
+
+  it('BudgetTracker returns budget.exceeded entries when onBudgetExceeded is "warn"', async () => {
+    const { BudgetTracker } = await import('../../guardrails/budget.js');
+    // With mode "warn", record() should NOT throw but return audit entries
+    const tracker = new BudgetTracker({ maxTokensPerRun: 5, onBudgetExceeded: 'warn' });
+    const bigUsage = { inputTokens: 10, outputTokens: 10, totalTokens: 20 };
+    const entries = tracker.record('agent', 'claude-sonnet-4-6', bigUsage);
+    const exceeded = entries.filter((e) => e.action === 'budget.exceeded');
+    expect(exceeded.length).toBeGreaterThan(0);
+    expect(exceeded[0].data).toMatchObject({ kind: 'run' });
+  });
 });
