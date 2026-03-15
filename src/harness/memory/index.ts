@@ -15,7 +15,6 @@ import type { ToolDefinition, ToolContext } from "../../tools/types.js";
 
 import { getFs, getPath } from "./fs-compat.js";
 import {
-  parseFrontmatter,
   estimateTokens,
   inferTierFromPath,
   extractTagsFromContent,
@@ -23,7 +22,7 @@ import {
   registerFile,
   scanRoot,
 } from "./scanner.js";
-import { applyBudget, rankAndLoad, extractTagsFromString } from "./ranker.js";
+import { applyBudget, rankAndLoad } from "./ranker.js";
 import { buildSystemPrompt } from "./prompter.js";
 
 export * from "./types.js";

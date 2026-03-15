@@ -11,7 +11,6 @@ import type {
 import type {
   AgentLoopConfig,
   LoopMessage,
-  LoopToolResult,
 } from "../types.js";
 import { generateId } from "../types.js";
 import type { SessionOutcome } from "../types.js";
