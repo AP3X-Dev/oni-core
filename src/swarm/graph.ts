@@ -19,11 +19,10 @@ import type {
   SwarmAgentDef, SupervisorConfig,
   AgentCapability,
 } from "./types.js";
-import { Handoff } from "./types.js";
 import { AgentRegistry } from "./registry.js";
 import { baseSwarmChannels } from "./config.js";
 import type {
-  BaseSwarmState, PregelRunnerInternals,
+  BaseSwarmState,
   HierarchicalConfig, FanOutConfig, PipelineConfig, PeerNetworkConfig,
   MapReduceConfig, DebateConfig, HierarchicalMeshConfig,
   SwarmCompileOpts, SwarmExtensions,
@@ -1156,10 +1155,9 @@ export function quickAgent(
 // Re-exports from config.ts — keeps existing imports from "./graph.js" working
 // ----------------------------------------------------------------
 
-export type { BaseSwarmState, SwarmCompileOpts, SwarmExtensions } from "./config.js";
+export type { BaseSwarmState, SwarmCompileOpts, SwarmExtensions, PregelRunnerInternals } from "./config.js";
 export { baseSwarmChannels } from "./config.js";
 export type {
   HierarchicalConfig, FanOutConfig, PipelineConfig, PeerNetworkConfig,
   MapReduceConfig, DebateConfig, HierarchicalMeshConfig,
-  PregelRunnerInternals,
 } from "./config.js";
