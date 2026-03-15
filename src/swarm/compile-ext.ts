@@ -3,13 +3,14 @@
 // Extracted from SwarmGraph.compile() to keep graph.ts thin.
 // ============================================================
 
-import { Command, END } from "../types.js";
-import type { ONIConfig, NodeFn, NodeDefinition, Edge } from "../types.js";
+import { END, Send } from "../types.js";
+import type { NodeFn, NodeDefinition, Edge } from "../types.js";
 import type { ONISkeletonV3, CompiledGraphInternals, StateGraph } from "../graph.js";
 import type { SwarmAgentDef } from "./types.js";
 import type { AgentRegistry } from "./registry.js";
 import type { BaseSwarmState, PregelRunnerInternals, SwarmExtensions } from "./config.js";
-import { getInbox } from "./mailbox.js";
+import { createAgentNode } from "./agent-node.js";
+import type { SwarmLiveState } from "./agent-node.js";
 
 export function buildSwarmExtensions<S extends BaseSwarmState>(
   skeleton: ONISkeletonV3<S>,
@@ -17,6 +18,7 @@ export function buildSwarmExtensions<S extends BaseSwarmState>(
   inner: StateGraph<S>,
   hasSupervisor: boolean,
   supervisorNodeName: string,
+  onErrorPolicy: "fallback" | "throw",
 ): SwarmExtensions<S> {
   return {
     registry,
@@ -54,44 +56,11 @@ export function buildSwarmExtensions<S extends BaseSwarmState>(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       registry.register(def as SwarmAgentDef<Record<string, unknown>> as any); // SAFE: external boundary — generic registry accepts narrower S
 
-      // Create the agent node function (same logic as addAgent)
-      const agentNode: NodeFn<S> = async (state: S, config?: ONIConfig) => {
-        registry.markBusy(def.id);
-        await def.hooks?.onStart?.(def.id, state as Record<string, unknown>);
-
-        const maxRetries = def.maxRetries ?? 2;
-        let lastError: unknown;
-
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
-          try {
-            const result = await def.skeleton.invoke(
-              { ...state, context: { ...(state.context ?? {}), inbox: getInbox(state.swarmMessages ?? [], def.id) } } as S,
-              { ...config, agentId: def.id },
-            );
-            registry.markIdle(def.id);
-            await def.hooks?.onComplete?.(def.id, result);
-            return {
-              ...result,
-              agentResults: { ...(state.agentResults ?? {}), [def.id]: result },
-            } as Partial<S>;
-          } catch (err) {
-            lastError = err;
-            registry.markError(def.id);
-            if (attempt < maxRetries) continue;
-          }
-        }
-
-        await def.hooks?.onError?.(def.id, lastError);
-        // Keep agent in error status (don't reset to idle)
-
-        if (hasSupervisor) {
-          return new Command<S>({
-            update: { context: { ...(state.context ?? {}), lastAgentError: { agent: def.id, error: String(lastError) } } } as unknown as Partial<S>,
-            goto: supervisorNodeName,
-          });
-        }
-        throw lastError;
-      };
+      // Use the same createAgentNode path as static agents so dynamic agents get
+      // inbox tracking, timeout clamping, handoff handling, retry backoff, and
+      // structured error context — identical behavior to compile-time addAgent().
+      const swarmLiveState: SwarmLiveState = { hasSupervisor, supervisorNodeName, onErrorPolicy };
+      const agentNode: NodeFn<S> = createAgentNode(def, registry, swarmLiveState);
 
       // Add node to the compiled runner's nodes map
       const runner = (skeleton as unknown as CompiledGraphInternals<S>)._runner as unknown as PregelRunnerInternals<S> | undefined;
@@ -117,14 +86,54 @@ export function buildSwarmExtensions<S extends BaseSwarmState>(
     removeAgent(agentId: string) {
       registry.deregister(agentId);
       const runner = (skeleton as unknown as CompiledGraphInternals<S>)._runner as unknown as PregelRunnerInternals<S> | undefined;
-      if (runner?.nodes) runner.nodes.delete(agentId);
+      // If the agent is not in the compiled node map it was never part of the graph —
+      // no edges can reference it, so there is nothing structural to clean up.
+      if (!runner?.nodes?.has(agentId)) return;
+      runner.nodes.delete(agentId);
       // Remove stale edges pointing TO the removed agent so Pregel doesn't try to route to it.
       // Also remove edges FROM the agent (it won't execute, but keeps _edgesBySource clean).
-      if (runner?._edgesBySource) {
-        const edgesBySource = runner._edgesBySource;
+      const edgesBySource = runner._edgesBySource;
+      if (edgesBySource) {
         for (const [from, edges] of edgesBySource) {
-          const filtered = edges.filter((e) => !(e.type === "static" && e.to === agentId));
-          if (filtered.length !== edges.length) edgesBySource.set(from, filtered);
+          let changed = false;
+          const updated = edges
+            .filter((e) => {
+              // Drop static edges that target the removed agent
+              if (e.type === "static" && e.to === agentId) { changed = true; return false; }
+              return true;
+            })
+            .map((e) => {
+              if (e.type !== "conditional") return e;
+              // (a) Remap any pathMap entry whose value is the removed agentId → END
+              let newPathMap = e.pathMap;
+              if (newPathMap) {
+                const stale = Object.values(newPathMap).some((v) => v === agentId);
+                if (stale) {
+                  newPathMap = Object.fromEntries(
+                    Object.entries(newPathMap).map(([k, v]) => [k, v === agentId ? END : v]),
+                  ) as Record<string, string>;
+                }
+              }
+              // (b) Wrap the condition so any runtime return of agentId is replaced with END.
+              //     We cannot introspect the closure, so we always wrap for safety.
+              const orig = e.condition;
+              const wrapped: typeof e.condition = (state, cfg) => {
+                const result = orig(state, cfg);
+                if (!Array.isArray(result)) {
+                  // Single NodeName — replace agentId with END
+                  return result === agentId ? END : result;
+                }
+                if (result.length > 0 && result[0] instanceof Send) {
+                  // Send[] — filter out Sends targeting the removed agent
+                  return (result as Send[]).filter((r) => r.node !== agentId);
+                }
+                // NodeName[] — replace agentId entries with END
+                return (result as string[]).map((r) => (r === agentId ? END : r));
+              };
+              changed = true;
+              return { ...e, condition: wrapped, pathMap: newPathMap };
+            });
+          if (changed) edgesBySource.set(from, updated);
         }
         edgesBySource.delete(agentId);
       }

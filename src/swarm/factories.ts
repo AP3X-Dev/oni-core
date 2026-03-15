@@ -15,8 +15,6 @@ import type {
   BaseSwarmState, HierarchicalConfig, FanOutConfig, PipelineConfig,
   PeerNetworkConfig, MapReduceConfig, DebateConfig, HierarchicalMeshConfig,
 } from "./config.js";
-import type { SupervisorState } from "./supervisor.js";
-import { createSupervisorNode } from "./supervisor.js";
 import { runWithTimeout } from "../internal/timeout.js";
 
 // SwarmGraph — import type ONLY to avoid runtime circular dep
@@ -686,8 +684,6 @@ export function buildDag<S extends BaseSwarmState>(
 
   // Group agents into layers based on dependencies
   const deps = config.dependencies;
-  const _rootIds = config.agents.filter((a) => !deps[a.id]?.length).map((a) => a.id);
-  const _nonRootIds = config.agents.filter((a) => deps[a.id]?.length).map((a) => a.id);
 
   // For DAG execution: use a single orchestrator node
   swarm.inner.addNode("__dag_runner__", async (state: S, cfg?) => {
