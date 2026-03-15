@@ -56,7 +56,13 @@ export class PubSub {
       this.subscribers.set(pattern, new Set());
     this.subscribers.get(pattern)!.add(handler);
     return () => {
-      this.subscribers.get(pattern)?.delete(handler);
+      const handlers = this.subscribers.get(pattern);
+      if (handlers) {
+        handlers.delete(handler);
+        if (handlers.size === 0) {
+          this.subscribers.delete(pattern);
+        }
+      }
     };
   }
 

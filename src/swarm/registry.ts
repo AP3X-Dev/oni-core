@@ -126,7 +126,7 @@ export class AgentRegistry<S extends Record<string, unknown> = Record<string, un
     const rec = this.agents.get(agentId);
     if (rec) {
       rec.activeTasks = Math.max(0, rec.activeTasks - 1);
-      if (rec.activeTasks === 0) rec.status = "idle";
+      if (rec.activeTasks === 0 && rec.status !== "error") rec.status = "idle";
       rec.lastActive = Date.now();
     }
   }
