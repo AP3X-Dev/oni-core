@@ -11,8 +11,4 @@ export function getPendingInterrupts<S extends Record<string, unknown>>(
   return hitlStore.getByThread(threadId);
 }
 
-export function hitlSessionStore<S extends Record<string, unknown>>(
-  hitlStore: HITLSessionStore<S>,
-): HITLSessionStore<S> {
-  return hitlStore;
-}
+
