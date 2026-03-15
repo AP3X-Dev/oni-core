@@ -128,6 +128,8 @@ export interface HarnessConfig {
   memoryRoot?: string;
   memoryBudgets?: Partial<Record<0 | 1 | 2 | 3, number>>;
   memoryDebug?: boolean;
+  /** Optional ObjectiveManifest — loaded from MANIFEST.md, guides agent behavior */
+  manifest?: import("../swarm/self-improvement/manifest.js").ObjectiveManifest;
 }
 
 export interface AgentNodeConfig {
