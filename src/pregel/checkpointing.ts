@@ -2,9 +2,8 @@
 // src/pregel/checkpointing.ts — Checkpoint persistence helpers
 // ============================================================
 
-import type { NodeName, ONICheckpointer, ONICheckpoint } from "../types.js";
+import type { NodeName, ONICheckpointer, ONICheckpoint, ChannelSchema } from "../types.js";
 import { MemoryCheckpointer } from "../checkpoint.js";
-import type { ONITracer } from "../telemetry.js";
 import type { PregelContext, PendingSend } from "./types.js";
 import { applyUpdate } from "./state-helpers.js";
 
@@ -44,7 +43,7 @@ export async function getState<S extends Record<string, unknown>>(
 
 export async function updateState<S extends Record<string, unknown>>(
   checkpointer: ONICheckpointer<S> | null,
-  channels: import("../types.js").ChannelSchema<S>,
+  channels: ChannelSchema<S>,
   threadId: string,
   update: Partial<S>,
 ): Promise<void> {

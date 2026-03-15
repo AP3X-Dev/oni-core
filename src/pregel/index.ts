@@ -28,14 +28,14 @@ import { streamSupersteps } from "./streaming.js";
 import {
   getState, updateState, getStateAt, getHistory, forkFrom,
 } from "./checkpointing.js";
-import { getPendingInterrupts, hitlSessionStore } from "./interrupts.js";
+import { getPendingInterrupts } from "./interrupts.js";
 
 export class ONIPregelRunner<S extends Record<string, unknown>> {
   private hitlStore = new HITLSessionStore<S>();
   private nodeCache = new Map<string, { result: NodeReturn<S>; timestamp: number }>();
   private circuitBreakers = new Map<string, CircuitBreaker>();
   /** Count of concurrent subgraph invocations active on this runner. >0 means running as subgraph. */
-  _subgraphRefCount = 0;
+  _subgraphRef = { count: 0 };
   /** Per-invocation parent updates from Command.PARENT, keyed by parent threadId. */
   readonly _perInvocationParentUpdates = new Map<string, Array<Partial<unknown>>>();
   /** Per-invocation checkpointer override for subgraph isolation, keyed by threadId. */
@@ -114,7 +114,7 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
       hitlStore: this.hitlStore,
       defaults: this.defaults,
       nodeCache: this.nodeCache,
-      _subgraphRefCount: this._subgraphRefCount,
+      _subgraphRef: this._subgraphRef,
       _perInvocationParentUpdates: this._perInvocationParentUpdates,
       _perInvocationCheckpointer: this._perInvocationCheckpointer,
       _edgesBySource: this._edgesBySource,
@@ -195,7 +195,7 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
   }
 
   hitlSessionStore(): HITLSessionStore<S> {
-    return hitlSessionStore(this.hitlStore);
+    return this.hitlStore;
   }
 
   // ---- Dead Letter Queue ----
