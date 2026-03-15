@@ -77,8 +77,10 @@ export async function inspectCommand(args: ParsedArgs): Promise<void> {
     const { buildGraphDescriptor, toMermaidDetailed } = await import("../inspect.js");
 
     // Access internal state (nodes + edges) to build descriptor
-    const nodes = (graph as any).nodes ?? (graph as any)._nodes;
-    const edges = (graph as any).edges ?? (graph as any)._edges;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nodes = (graph as any).nodes ?? (graph as any)._nodes; // SAFE: external boundary — CLI introspects unknown user-exported graph object
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const edges = (graph as any).edges ?? (graph as any)._edges; // SAFE: external boundary — CLI introspects unknown user-exported graph object
 
     if (!nodes || !edges) {
       console.error("  Error: could not extract graph structure. Is this a StateGraph?");

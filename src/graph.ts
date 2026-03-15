@@ -21,6 +21,15 @@ import type { EventListeners } from "./events/types.js";
 import type { TracerLike } from "./telemetry.js";
 
 // ----------------------------------------------------------------
+// CompiledGraphInternals — typed access to internal runner attachment
+// ----------------------------------------------------------------
+
+/** Internal interface for accessing the Pregel runner attached to a compiled skeleton. */
+export interface CompiledGraphInternals<S extends Record<string, unknown>> {
+  _runner: ONIPregelRunner<S>;
+}
+
+// ----------------------------------------------------------------
 // ONISkeleton v3 — adds HITL resume + pending interrupts
 // ----------------------------------------------------------------
 
@@ -195,7 +204,7 @@ export class StateGraph<S extends Record<string, unknown>> {
     };
 
     // Attach runner as internal property for subgraph Command.PARENT support
-    (skeleton as any)._runner = runner;
+    (skeleton as unknown as CompiledGraphInternals<S>)._runner = runner;
     return skeleton;
   }
 
@@ -269,11 +278,19 @@ declare module "./graph.js" {
   }
 }
 
+/** Internal interface for accessing StateGraph's private nodes/edges fields from prototype extensions. */
+interface StateGraphInternals<S extends Record<string, unknown>> {
+  nodes: Map<string, import("./types.js").NodeDefinition<S>>;
+  edges: import("./types.js").Edge<S>[];
+}
+
 StateGraph.prototype.getGraph = function <S extends Record<string, unknown>>(this: StateGraph<S>) {
-  return buildGraphDescriptor((this as any).nodes, (this as any).edges);
+  const g = this as unknown as StateGraphInternals<S>;
+  return buildGraphDescriptor(g.nodes, g.edges);
 };
 
 StateGraph.prototype.toMermaidDetailed = function <S extends Record<string, unknown>>(this: StateGraph<S>) {
-  const desc = buildGraphDescriptor((this as any).nodes, (this as any).edges);
+  const g = this as unknown as StateGraphInternals<S>;
+  const desc = buildGraphDescriptor(g.nodes, g.edges);
   return toMermaidDetailed(desc);
 };
