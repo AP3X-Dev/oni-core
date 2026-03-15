@@ -14,6 +14,7 @@ import { START, END, appendList, lastValue, mergeObject } from "../types.js";
 import { Command, Send } from "../types.js";
 import type {
   NodeFn, ONIConfig, ONISkeleton, ONICheckpointer, ChannelSchema, NodeReturn,
+  NodeDefinition,
 } from "../types.js";
 import type { BaseStore } from "../store/index.js";
 import type { GuardrailsConfig } from "../guardrails/types.js";
@@ -39,7 +40,7 @@ import type { Edge } from "../types.js";
 // ----------------------------------------------------------------
 
 interface PregelRunnerInternals<S extends Record<string, unknown>> {
-  nodes: Map<string, { name: string; fn: NodeFn<S> }>;
+  nodes: Map<string, NodeDefinition<S>>;
   _edgesBySource: Map<string, Edge<S>[]>;
 }
 
@@ -1010,15 +1011,12 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
             // Respect removeAgent() — if the assigned slot was removed, redirect
             // to an active pool slot; if none remain, mark the item as failed.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            let agentDef = (swarm as any).registry.getDef(work.targetId) as SwarmAgentDef<S> | undefined; // SAFE: external boundary — accessing private registry field
+            let agentDef = swarm['registry'].getDef(work.targetId) as SwarmAgentDef<S> | undefined;
             if (!agentDef) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const activeIds = poolIds.filter((id) => !!(swarm as any).registry.getDef(id)); // SAFE: external boundary — private registry access
+              const activeIds = poolIds.filter((id) => !!swarm['registry'].getDef(id));
               if (activeIds.length > 0) {
                 work.targetId = activeIds[work.idx % activeIds.length]!;
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                agentDef = (swarm as any).registry.getDef(work.targetId) as SwarmAgentDef<S>; // SAFE: external boundary — private registry access
+                agentDef = swarm['registry'].getDef(work.targetId) as SwarmAgentDef<S>;
               } else {
                 results[`item_${work.idx}`] = { _error: `Pool slot removed; no active agents remain` };
                 completed++;
@@ -1498,7 +1496,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
         // Add node to the compiled runner's nodes map
         const runner = (skeleton as unknown as CompiledGraphInternals<S>)._runner as unknown as PregelRunnerInternals<S> | undefined;
         if (runner?.nodes) {
-          runner.nodes.set(def.id, { name: def.id, fn: agentNode });
+          runner.nodes.set(def.id, { name: def.id, fn: agentNode } as NodeDefinition<S>);
         }
 
         // In supervised swarms, add a conditional return edge so the runner

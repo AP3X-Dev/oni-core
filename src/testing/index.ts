@@ -3,16 +3,10 @@
 // ============================================================
 
 import type { ONIModel, ChatParams, ChatResponse, ChatChunk } from "../models/index.js";
-import type { StateGraph } from "../graph.js";
-import type { ONIStreamEvent, CustomStreamEvent, MessageStreamEvent, StreamMode, NodeDefinition, Edge } from "../types.js";
+import type { StateGraph, StateGraphInternals } from "../graph.js";
+import type { ONIStreamEvent, CustomStreamEvent, MessageStreamEvent, StreamMode } from "../types.js";
 import { MemoryCheckpointer } from "../checkpoint.js";
 import { InMemoryStore } from "../store/index.js";
-
-/** Internal interface for accessing StateGraph private nodes/edges in test utilities. */
-interface StateGraphInternals<S extends Record<string, unknown>> {
-  nodes: Map<string, NodeDefinition<S>>;
-  edges: Array<Edge<S>>;
-}
 
 // ----------------------------------------------------------------
 // Mock Model

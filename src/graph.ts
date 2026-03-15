@@ -279,7 +279,7 @@ declare module "./graph.js" {
 }
 
 /** Internal interface for accessing StateGraph's private nodes/edges fields from prototype extensions. */
-interface StateGraphInternals<S extends Record<string, unknown>> {
+export interface StateGraphInternals<S extends Record<string, unknown>> {
   nodes: Map<string, import("./types.js").NodeDefinition<S>>;
   edges: import("./types.js").Edge<S>[];
 }
