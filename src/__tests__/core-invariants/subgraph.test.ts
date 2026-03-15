@@ -71,5 +71,7 @@ describe('core invariant: subgraph execution', () => {
 
     const parentState = await graph.getState({ threadId: 'parent' });
     expect(parentState?.n).toBe(11);
+    const otherState = await graph.getState({ threadId: 'other' });
+    expect(otherState?.n).toBe(100); // 99 + 1 = 100, not contaminated by parent
   });
 });
