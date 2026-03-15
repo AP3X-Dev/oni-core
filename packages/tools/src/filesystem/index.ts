@@ -2,8 +2,8 @@ import { readFile, writeFile, readdir, mkdir, unlink, stat } from "node:fs/promi
 import { resolve, normalize } from "node:path";
 import type { ToolDefinition, ToolContext } from "../types.js";
 
-function checkAllowedPath(filePath: string, allowedPaths?: string[]): void {
-  if (!allowedPaths || allowedPaths.length === 0) return;
+function checkAllowedPath(filePath: string, allowedPaths: string[]): void {
+  if (allowedPaths.length === 0) return;
   const normalized = normalize(resolve(filePath));
   const allowed = allowedPaths.some((ap) => normalized.startsWith(normalize(resolve(ap))));
   if (!allowed) {
@@ -34,7 +34,7 @@ interface PathInput {
 }
 
 export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinition[] {
-  const { allowedPaths } = opts ?? {};
+  const { allowedPaths = [process.cwd()] } = opts ?? {};
 
   const readFileTool: ToolDefinition = {
     name: "fs_read_file",

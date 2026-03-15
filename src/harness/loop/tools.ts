@@ -79,7 +79,12 @@ export async function executeTools(
 
       // Apply modifiedInput if hook returned one
       if (preResult?.modifiedInput) {
-        Object.assign(toolCall.args, preResult.modifiedInput);
+        const sanitized = Object.fromEntries(
+          Object.entries(preResult.modifiedInput).filter(
+            ([k]) => k !== '__proto__' && k !== 'constructor' && k !== 'prototype'
+          )
+        );
+        Object.assign(toolCall.args, sanitized);
       }
     }
 

@@ -39,13 +39,25 @@ export async function handleJsonRPC(
   }
 
   if (req.method === "tasks/sendSubscribe") {
-    const result = handler(messageText, taskId);
-    if (typeof (result as AsyncGenerator<string>)[Symbol.asyncIterator] === "function") {
-      return { stream: result as AsyncGenerator<string>, taskId };
+    try {
+      const result = handler(messageText, taskId);
+      const rpcId = req.id;
+      async function* safeStream(gen: AsyncGenerator<string>): AsyncGenerator<string> {
+        try {
+          yield* gen;
+        } catch (err) {
+          yield JSON.stringify({ jsonrpc: "2.0", id: rpcId, error: { code: -32603, message: String(err) } });
+        }
+      }
+      if (typeof (result as AsyncGenerator<string>)[Symbol.asyncIterator] === "function") {
+        return { stream: safeStream(result as AsyncGenerator<string>), taskId };
+      }
+      // Wrap promise as single-item stream
+      async function* single(): AsyncGenerator<string> { yield await (result as Promise<string>); }
+      return { stream: safeStream(single()), taskId };
+    } catch (err) {
+      return { response: { jsonrpc: "2.0", id: req.id, error: { code: -32603, message: String(err) } } };
     }
-    // Wrap promise as single-item stream
-    async function* single(): AsyncGenerator<string> { yield await (result as Promise<string>); }
-    return { stream: single(), taskId };
   }
 
   if (req.method === "tasks/get") {
