@@ -191,6 +191,7 @@ export function toMermaidDetailed(descriptor: GraphDescriptor): string {
     } else {
       lines.push(`    ${edge.from} -->|${edge.label ?? "?"}| ${edge.from}_router`);
       lines.push(`    ${edge.from}_router:::conditional`);
+      lines.push(`    ${edge.from}_router --> ${edge.to}`);
     }
   }
 

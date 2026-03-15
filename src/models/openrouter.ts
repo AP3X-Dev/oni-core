@@ -364,8 +364,8 @@ export function openrouter(
     if (params.responseFormat && content) {
       try {
         result.parsed = JSON.parse(content);
-      } catch {
-        // content is not valid JSON — leave parsed undefined
+      } catch (err) {
+        console.warn("openrouter: responseFormat parsing failed", err, "raw content:", content);
       }
     }
 
@@ -399,7 +399,8 @@ export function openrouter(
       let parsed: Record<string, unknown>;
       try {
         parsed = JSON.parse(data) as Record<string, unknown>;
-      } catch {
+      } catch (err) {
+        console.warn("openrouter: failed to parse SSE chunk", err, "raw data:", data);
         continue;
       }
 

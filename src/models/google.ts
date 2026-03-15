@@ -329,7 +329,9 @@ export function google(
       try {
         result.parsed = JSON.parse(content);
       } catch {
-        // content is not valid JSON — leave parsed undefined
+        console.warn(
+          `[oni-core/google] responseFormat requested structured JSON output, but the model returned non-JSON content that could not be parsed. Raw content: ${content}`,
+        );
       }
     }
 
@@ -360,11 +362,13 @@ export function google(
       throw new ModelAPIError("Google Gemini", res.status, "No response body for stream");
     }
 
+    let streamCallIndex = 0;
     for await (const data of parseSSE(res.body)) {
       let parsed: GeminiResponseBody;
       try {
         parsed = JSON.parse(data) as GeminiResponseBody;
-      } catch {
+      } catch (err) {
+        console.warn("[oni-core] Google SSE: failed to parse JSON chunk:", err, "| raw data:", data);
         continue;
       }
 
@@ -376,7 +380,7 @@ export function google(
           yield { type: "text", text: part.text };
         }
         if (part.functionCall) {
-          const callId = `call_stream_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          const callId = `call_stream_${Date.now()}_${streamCallIndex++}`;
           yield {
             type: "tool_call_start",
             toolCall: {

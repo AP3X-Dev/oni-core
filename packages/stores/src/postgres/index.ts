@@ -59,7 +59,7 @@ export class PostgresStore extends BaseStore {
       }
       client = new Pool({ connectionString }) as PgClient;
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "MODULE_NOT_FOUND") {
+      if ((err as NodeJS.ErrnoException).code === "ERR_MODULE_NOT_FOUND") {
         throw new Error(
           "PostgresStore requires 'pg' to be installed. " +
           "Run: pnpm add pg"

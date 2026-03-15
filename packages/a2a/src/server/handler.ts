@@ -41,13 +41,8 @@ export async function handleJsonRPC(
   if (req.method === "tasks/sendSubscribe") {
     try {
       const result = handler(messageText, taskId);
-      const rpcId = req.id;
       async function* safeStream(gen: AsyncGenerator<string>): AsyncGenerator<string> {
-        try {
-          yield* gen;
-        } catch (err) {
-          yield JSON.stringify({ jsonrpc: "2.0", id: rpcId, error: { code: -32603, message: String(err) } });
-        }
+        yield* gen;
       }
       if (typeof (result as AsyncGenerator<string>)[Symbol.asyncIterator] === "function") {
         return { stream: safeStream(result as AsyncGenerator<string>), taskId };

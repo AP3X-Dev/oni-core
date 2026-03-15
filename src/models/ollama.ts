@@ -124,7 +124,8 @@ async function* parseNDJSON(
         if (!trimmed) continue;
         try {
           yield JSON.parse(trimmed) as Record<string, unknown>;
-        } catch {
+        } catch (err) {
+          console.warn("[oni-core] Ollama NDJSON: failed to parse line:", err, "| raw line:", trimmed);
           continue;
         }
       }
@@ -134,8 +135,8 @@ async function* parseNDJSON(
     if (buffer.trim()) {
       try {
         yield JSON.parse(buffer.trim()) as Record<string, unknown>;
-      } catch {
-        // ignore
+      } catch (err) {
+        console.warn("[oni-core] Ollama NDJSON: failed to parse remaining buffer:", err, "| raw data:", buffer.trim());
       }
     }
   } finally {

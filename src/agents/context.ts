@@ -106,41 +106,54 @@ export function buildAgentContext<S = Record<string, unknown>>(
     ): Promise<ToolResult[]> {
       const toolMap = new Map(tools.map((t) => [t.name, t]));
 
-      return Promise.all(
-        calls.map(async (call) => {
-          const tool = toolMap.get(call.name);
-          if (!tool) {
-            return {
-              toolCallId: call.id,
-              name: call.name,
-              result: `Tool "${call.name}" not found`,
-              isError: true,
-            };
-          }
-          try {
-            // Build a manual ToolContext — we don't rely on AsyncLocalStorage here
-            // because agent nodes run inside Pregel which provides context, and we
-            // want the tool to receive our explicit config/store/state.
-            const toolCtx = {
-              config,
-              store,
-              state: state as Record<string, unknown>,
-              emit: (event: string, data: unknown) => {
-                if (streamWriter) streamWriter.emit(event, data);
-              },
-            };
-            const result = await tool.execute(call.args, toolCtx);
-            return { toolCallId: call.id, name: call.name, result };
-          } catch (err) {
-            return {
-              toolCallId: call.id,
-              name: call.name,
-              result: String(err),
-              isError: true,
-            };
-          }
-        }),
+      async function executeOneCall(call: { id: string; name: string; args: Record<string, unknown> }): Promise<ToolResult> {
+        const tool = toolMap.get(call.name);
+        if (!tool) {
+          return {
+            toolCallId: call.id,
+            name: call.name,
+            result: `Tool "${call.name}" not found`,
+            isError: true,
+          };
+        }
+        try {
+          // Build a manual ToolContext — we don't rely on AsyncLocalStorage here
+          // because agent nodes run inside Pregel which provides context, and we
+          // want the tool to receive our explicit config/store/state.
+          const toolCtx = {
+            config,
+            store,
+            state: state as Record<string, unknown>,
+            emit: (event: string, data: unknown) => {
+              if (streamWriter) streamWriter.emit(event, data);
+            },
+          };
+          const result = await tool.execute(call.args, toolCtx);
+          return { toolCallId: call.id, name: call.name, result };
+        } catch (err) {
+          return {
+            toolCallId: call.id,
+            name: call.name,
+            result: String(err),
+            isError: true,
+          };
+        }
+      }
+
+      // Execute tools — sequentially if any has parallelSafe: false, otherwise in parallel
+      const hasSafetyConstraint = calls.some(
+        (call) => toolMap.get(call.name)?.parallelSafe === false,
       );
+
+      if (hasSafetyConstraint) {
+        const toolResults: ToolResult[] = [];
+        for (const call of calls) {
+          toolResults.push(await executeOneCall(call));
+        }
+        return toolResults;
+      }
+
+      return Promise.all(calls.map((call) => executeOneCall(call)));
     },
 
     // ---- Coordination ----
