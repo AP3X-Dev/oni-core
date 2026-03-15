@@ -1,0 +1,15 @@
+# Core runtime — requires review before merge into main
+/src/pregel/              @oni-bot
+/src/graph.ts             @oni-bot
+/src/checkpoint.ts        @oni-bot
+/src/hitl/                @oni-bot
+/src/events/              @oni-bot
+
+# Harness
+/src/harness/             @oni-bot
+
+# Swarm
+/src/swarm/               @oni-bot
+
+# Public API surface
+/src/index.ts             @oni-bot
