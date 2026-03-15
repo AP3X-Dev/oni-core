@@ -11,6 +11,7 @@ interface E2BSandbox {
     language: string,
     code: string
   ) => Promise<{ stdout: string; stderr: string; exitCode?: number }>;
+  close: () => Promise<void>;
 }
 
 interface E2BSandboxConstructor {
@@ -50,12 +51,16 @@ export function e2bSandbox(config: { apiKey: string }): ToolDefinition {
         throw new Error("e2bSandbox requires '@e2b/sdk'. Install it: pnpm add @e2b/sdk");
       }
       const sandbox = await SandboxClass.create({ apiKey: config.apiKey });
-      const result = await sandbox.runCode(i.language ?? "python", i.code);
-      return {
-        stdout: result.stdout,
-        stderr: result.stderr,
-        exitCode: result.exitCode ?? 0,
-      };
+      try {
+        const result = await sandbox.runCode(i.language ?? "python", i.code);
+        return {
+          stdout: result.stdout,
+          stderr: result.stderr,
+          exitCode: result.exitCode ?? 0,
+        };
+      } finally {
+        await sandbox.close();
+      }
     },
   };
 }

@@ -38,7 +38,7 @@ export function scoreRelevance(unit: MemoryUnit, taskTags: string[]): number {
   const rawAge = Date.now() - new Date(unit.updatedAt).getTime();
   const ageMs = isNaN(rawAge) ? 0 : rawAge;
   const ageDays = ageMs / (1000 * 60 * 60 * 24);
-  const recencyScore = unit.type === "episodic" ? Math.max(0, 1 - ageDays / 30) : 0;
+  const recencyScore = unit.type === "episodic" ? Math.max(0, 1 - ageDays / 30) : 1;
 
   return tagScore * 0.8 + recencyScore * 0.2;
 }

@@ -84,21 +84,26 @@ export async function runInference(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(
+      let inferenceTimer: ReturnType<typeof setTimeout> | undefined;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        inferenceTimer = setTimeout(
           () => reject(new Error(`Inference timeout after ${inferenceTimeoutMs}ms`)),
           inferenceTimeoutMs,
-        ),
-      );
-      response = await Promise.race([
-        config.model.chat({
-          messages,
-          tools: llmTools.length > 0 ? llmTools : undefined,
-          systemPrompt,
-          maxTokens: config.maxTokens ?? 8192,
-        }),
-        timeoutPromise,
-      ]);
+        );
+      });
+      try {
+        response = await Promise.race([
+          config.model.chat({
+            messages,
+            tools: llmTools.length > 0 ? llmTools : undefined,
+            systemPrompt,
+            maxTokens: config.maxTokens ?? 8192,
+          }),
+          timeoutPromise,
+        ]);
+      } finally {
+        clearTimeout(inferenceTimer);
+      }
       succeeded = true;
       break;
     } catch (err) {

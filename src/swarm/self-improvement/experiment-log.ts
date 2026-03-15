@@ -13,6 +13,8 @@ export interface ExperimentRecord {
   metricBefore: number;
   metricAfter: number | null;
   success: boolean;
+  /** Whether the metric should be minimized or maximized. Defaults to "minimize". */
+  direction?: "minimize" | "maximize";
   contextSummary: string;
   timestamp: string;
 }

@@ -33,10 +33,13 @@ describe("tavilySearch", () => {
     await tool.execute({ query: "test query" }, ctx);
     expect(mockFetch).toHaveBeenCalledWith(
       "https://api.tavily.com/search",
-      expect.objectContaining({ method: "POST" })
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({ "Authorization": "Bearer test-key" }),
+      })
     );
     const callBody = JSON.parse(mockFetch.mock.calls[0][1].body as string) as Record<string, unknown>;
-    expect(callBody.api_key).toBe("test-key");
+    expect(callBody.api_key).toBeUndefined();
     expect(callBody.query).toBe("test query");
   });
 

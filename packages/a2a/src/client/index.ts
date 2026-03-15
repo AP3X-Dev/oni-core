@@ -40,7 +40,10 @@ export class A2AClient {
     if (!res.ok) throw new Error(`A2A tasks/send failed: ${res.status}`);
     const result = (await res.json()) as { result?: A2ATask; error?: { message: string } };
     if (result.error) throw new Error(`A2A error: ${result.error.message}`);
-    const task = result.result!;
+    if (!result.result) {
+      throw new Error(`Server returned invalid JSON-RPC response: missing "result" field`);
+    }
+    const task = result.result;
     return task.artifacts?.[0]?.parts[0]?.type === "text"
       ? task.artifacts[0].parts[0].text
       : task.status.message?.parts?.[0]?.type === "text"

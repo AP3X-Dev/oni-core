@@ -14,6 +14,8 @@ export interface ExperimentOptions<S> {
   measureMetric: () => Promise<number>;
   timeBudget: number;
   threshold: number;
+  /** Whether the metric should be minimized or maximized. Defaults to "minimize". */
+  direction?: "minimize" | "maximize";
 }
 
 export interface ExperimentResult {
@@ -36,47 +38,58 @@ export class ExperimentalExecutor {
    * 5. If regressed: restore checkpoint
    */
   async runExperiment<S>(opts: ExperimentOptions<S>): Promise<ExperimentResult> {
-    const { checkpointer, threadId, hypothesis, applyChanges, measureMetric, timeBudget, threshold } = opts;
+    const { checkpointer, threadId, hypothesis, applyChanges, measureMetric, timeBudget, threshold, direction = "minimize" } = opts;
 
     // Measure baseline
     let metricBefore: number;
+    const baselineTimeout = this._timeout(timeBudget, "Baseline measurement timed out");
     try {
       metricBefore = await Promise.race([
         measureMetric(),
-        this._timeout(timeBudget, "Baseline measurement timed out"),
+        baselineTimeout.promise,
       ]);
     } catch (err) {
       return { hypothesis, success: false, metricBefore: 0, metricAfter: null, rolledBack: false, reason: String(err) };
+    } finally {
+      baselineTimeout.clear();
     }
 
     // Snapshot
     const snapshot = await checkpointer.get(threadId);
 
     // Apply changes
+    const applyTimeout = this._timeout(timeBudget, "applyChanges timed out");
     try {
       await Promise.race([
         applyChanges(),
-        this._timeout(timeBudget, "applyChanges timed out"),
+        applyTimeout.promise,
       ]);
     } catch (err) {
       return { hypothesis, success: false, metricBefore, metricAfter: null, rolledBack: false, reason: `applyChanges failed: ${String(err)}` };
+    } finally {
+      applyTimeout.clear();
     }
 
     // Measure result
     let metricAfter: number;
+    const measureTimeout = this._timeout(timeBudget, "Post-experiment measurement timed out");
     try {
       metricAfter = await Promise.race([
         measureMetric(),
-        this._timeout(timeBudget, "Post-experiment measurement timed out"),
+        measureTimeout.promise,
       ]);
     } catch (err) {
       // Roll back on measurement failure
       await this._rollback(checkpointer, threadId, snapshot);
       return { hypothesis, success: false, metricBefore, metricAfter: null, rolledBack: true, reason: `Measurement failed: ${String(err)}` };
+    } finally {
+      measureTimeout.clear();
     }
 
-    // Improvement means the metric decreased by at least threshold (lower = better)
-    const improved = metricBefore - metricAfter >= threshold;
+    // Check improvement based on direction
+    const improved = direction === "maximize"
+      ? metricAfter - metricBefore >= threshold
+      : metricBefore - metricAfter >= threshold;
     if (!improved) {
       await this._rollback(checkpointer, threadId, snapshot);
       return {
@@ -112,9 +125,11 @@ export class ExperimentalExecutor {
     }
   }
 
-  private _timeout(ms: number, message: string): Promise<never> {
-    return new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(message)), ms)
-    );
+  private _timeout(ms: number, message: string): { promise: Promise<never>; clear: () => void } {
+    let timer: ReturnType<typeof setTimeout>;
+    const promise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(message)), ms);
+    });
+    return { promise, clear: () => clearTimeout(timer) };
   }
 }

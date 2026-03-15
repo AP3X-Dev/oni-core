@@ -24,6 +24,9 @@ import { buildInitialState, applyUpdate, resetEphemeral, getNextNodes, checkDyna
 import { executeNode } from "./execution.js";
 import { saveCheckpoint } from "./checkpointing.js";
 
+// Monotonic counter for generating unique per-invocation keys (BUG-0035)
+let _nextInvocationId = 0;
+
 // Structural interface for the subgraph child runner — avoids circular import from ./index.js
 interface SubgraphRunner {
   _subgraphRef: { count: number };
@@ -126,7 +129,19 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
           );
         }
       }
-      const sendResults = await Promise.all(sendPromises);
+      const sendSettled = await Promise.allSettled(sendPromises);
+
+      // Check for rejected entries — collect results and throw first error after all settle
+      const sendResults: { name: string; result: NodeReturn<S> }[] = [];
+      let firstSendError: unknown = null;
+      for (const settled of sendSettled) {
+        if (settled.status === "fulfilled") {
+          sendResults.push(settled.value);
+        } else if (!firstSendError) {
+          firstSendError = settled.reason;
+        }
+      }
+      if (firstSendError) throw firstSendError;
 
       // Reduce all send results through channels
       for (const { name, result } of sendResults) {
@@ -237,7 +252,9 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const childRunner = (nodeDef.subgraph as any)._runner as SubgraphRunner | undefined; // SAFE: external boundary — subgraph._runner attached by graph.ts compile()
                 // Per-invocation key for concurrent-safe state isolation
-                const invocationKey = threadId;
+                // Include a unique counter suffix so concurrent calls sharing the
+                // same threadId don't collide in _perInvocationParentUpdates / _perInvocationCheckpointer.
+                const invocationKey = `${threadId}::${_nextInvocationId++}`;
 
                 if (childRunner) {
                   childRunner._subgraphRef.count++;
