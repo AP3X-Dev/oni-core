@@ -24,8 +24,12 @@ import { buildInitialState, applyUpdate, resetEphemeral, getNextNodes, checkDyna
 import { executeNode } from "./execution.js";
 import { saveCheckpoint } from "./checkpointing.js";
 
-// Re-import ONIPregelRunner type for subgraph handling — use import("./index.js") to avoid circular
-// We use dynamic typing via `as any` for the subgraph child runner access, same as original code.
+// Structural interface for the subgraph child runner — avoids circular import from ./index.js
+interface SubgraphRunner<S extends Record<string, unknown>> {
+  _subgraphRef: { count: number };
+  _perInvocationParentUpdates: Map<string, Array<Partial<unknown>>>;
+  _perInvocationCheckpointer: Map<string, unknown>;
+}
 
 export async function* streamSupersteps<S extends Record<string, unknown>>(
   ctx: PregelContext<S>,
@@ -230,7 +234,8 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
             (token: string) => writerImpl.token(token),
             async () => {
               if (nodeDef.subgraph) {
-                const childRunner = (nodeDef.subgraph as any)._runner as any | undefined;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const childRunner = (nodeDef.subgraph as any)._runner as SubgraphRunner<S> | undefined; // SAFE: external boundary — subgraph._runner attached by graph.ts compile()
                 // Per-invocation key for concurrent-safe state isolation
                 const invocationKey = threadId;
 
@@ -243,7 +248,8 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                 if (ctx.checkpointer && childRunner) {
                   childRunner._perInvocationCheckpointer.set(
                     invocationKey,
-                    new NamespacedCheckpointer(ctx.checkpointer as any, name),
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    new NamespacedCheckpointer(ctx.checkpointer as any, name), // SAFE: external boundary — checkpointer generic S differs between parent/child graph
                   );
                 }
 
@@ -379,10 +385,12 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
         yield tag(e, "values");
       }
       // Custom and message events from subgraphs are forwarded if those modes are active
-      if (modeCustom && (e as any).event === "custom") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (modeCustom && (e as any).event === "custom") { // SAFE: narrowing union event type that doesn't include "custom" in current TS discriminant
         yield tag(e, "custom");
       }
-      if (modeMessages && ((e as any).event === "messages" || (e as any).event === "messages/complete")) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (modeMessages && ((e as any).event === "messages" || (e as any).event === "messages/complete")) { // SAFE: narrowing union event type
         yield tag(e, "messages");
       }
     }

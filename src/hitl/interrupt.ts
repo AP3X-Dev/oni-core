@@ -70,7 +70,8 @@ export function _installInterruptContext(ctx: InterruptContext): void {
 }
 
 export function _clearInterruptContext(): void {
-  interruptALS.enterWith(undefined as any);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  interruptALS.enterWith(undefined as any); // SAFE: external boundary — AsyncLocalStorage.enterWith requires a value; undefined clears context
 }
 
 export function _getInterruptContext(): InterruptContext | null {

@@ -19,7 +19,8 @@ export class PostgresCheckpointer<S> implements ONICheckpointer<S> {
   static async create<S>(connectionString: string): Promise<PostgresCheckpointer<S>> {
     // @ts-expect-error — pg is an optional peer dependency
     const pg = await import("pg");
-    const Pool = pg.Pool ?? (pg.default as any)?.Pool ?? pg;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Pool = pg.Pool ?? (pg.default as any)?.Pool ?? pg; // SAFE: external boundary — pg is an optional peer dependency with variable shape
     const pool = new Pool({ connectionString }) as PgPool;
 
     try {
