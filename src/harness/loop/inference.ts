@@ -4,24 +4,8 @@
 // ============================================================
 
 import type { ChatResponse, LLMToolDef, ONIModelMessage } from "../../models/types.js";
-import type { AgentLoopConfig, LoopMessage, LoopMessageType } from "../types.js";
-
-// ─── makeMessage helper (local) ─────────────────────────────────────────────
-
-function makeMessage(
-  type: LoopMessageType,
-  sessionId: string,
-  turn: number,
-  overrides: Partial<LoopMessage> = {},
-): LoopMessage {
-  return {
-    type,
-    sessionId,
-    turn,
-    timestamp: Date.now(),
-    ...overrides,
-  };
-}
+import type { AgentLoopConfig, LoopMessage } from "../types.js";
+import { makeMessage } from "./types.js";
 
 // ─── isRetryableError ───────────────────────────────────────────────────────
 

@@ -11,18 +11,16 @@ import type {
 import type {
   AgentLoopConfig,
   LoopMessage,
-  LoopMessageType,
   LoopToolResult,
 } from "../types.js";
 import { generateId } from "../types.js";
 import type { SessionOutcome } from "../types.js";
 import type { ToolDefinition } from "../../tools/types.js";
-import type { HarnessToolContext } from "../types.js";
-import { validateToolArgs } from "../validate-args.js";
+import { makeMessage } from "./types.js";
 
 // Sub-module imports
 import { runInference } from "./inference.js";
-import { buildLLMTools, buildToolMap } from "./tools.js";
+import { buildLLMTools, buildToolMap, executeTools } from "./tools.js";
 import { initMemory, finalizeMemory } from "./memory.js";
 import {
   fireSessionStart,
@@ -31,17 +29,6 @@ import {
   firePreCompact,
   firePostCompact,
 } from "./hooks.js";
-
-// ─── makeMessage helper ─────────────────────────────────────────────────────
-
-function makeMessage(
-  type: LoopMessageType,
-  sessionId: string,
-  turn: number,
-  overrides: Partial<LoopMessage> = {},
-): LoopMessage {
-  return { type, sessionId, turn, timestamp: Date.now(), ...overrides };
-}
 
 // ─── agentLoop ─────────────────────────────────────────────────────────────
 
@@ -242,105 +229,17 @@ export async function* agentLoop(
       }
 
       // ── 3i. Tool execution ─────────────────────────────────────────
-      const toolResults: LoopToolResult[] = [];
+      const { toolResults, events: toolEvents } = await executeTools(response.toolCalls, {
+        sessionId,
+        threadId,
+        turn,
+        config,
+        toolMap,
+        hasMemoryLoader: memoryLoader !== null,
+      });
 
-      for (const toolCall of response.toolCalls) {
-        // Fire PreToolUse hook
-        if (config.hooksEngine) {
-          const preResult = await config.hooksEngine.fire("PreToolUse", {
-            sessionId, toolName: toolCall.name, input: toolCall.args,
-          });
-          if (preResult?.decision === "deny") {
-            toolResults.push({
-              toolCallId: toolCall.id, toolName: toolCall.name,
-              content: `Tool use denied: ${preResult.reason ?? "blocked by hook"}`, isError: true,
-            });
-            continue;
-          }
-          if (preResult?.modifiedInput) Object.assign(toolCall.args, preResult.modifiedInput);
-        }
-
-        // Safety gate check
-        if (config.safetyGate && config.safetyGate.requiresCheck(toolCall.name)) {
-          const safetyResult = await config.safetyGate.check({ id: toolCall.id, name: toolCall.name, args: toolCall.args });
-          if (!safetyResult.approved) {
-            toolResults.push({
-              toolCallId: toolCall.id, toolName: toolCall.name,
-              content: `Tool blocked by safety gate: ${safetyResult.reason ?? "unsafe operation"}`, isError: true,
-            });
-            continue;
-          }
-        }
-
-        // Find tool
-        const toolDef = toolMap.get(toolCall.name);
-        if (!toolDef) {
-          toolResults.push({ toolCallId: toolCall.id, toolName: toolCall.name, content: `Unknown tool: ${toolCall.name}`, isError: true });
-          continue;
-        }
-
-        // Validate args
-        if (toolDef.schema) {
-          const validationError = validateToolArgs(toolCall.args, toolDef.schema, toolCall.name);
-          if (validationError) {
-            toolResults.push({
-              toolCallId: toolCall.id, toolName: toolCall.name,
-              content: `${validationError}. Please retry with correct arguments.`, isError: true,
-            });
-            continue;
-          }
-        }
-
-        yield makeMessage("tool_start", sessionId, turn, {
-          metadata: { toolName: toolCall.name, toolArgs: toolCall.args, toolCallId: toolCall.id },
-        });
-
-        const metadataUpdates: Array<{ title?: string; metadata?: Record<string, unknown> }> = [];
-        const toolCtx: HarnessToolContext = {
-          config: {}, store: null, state: {}, emit: () => {},
-          sessionId, threadId, agentName: config.agentName, turn, signal: config.signal,
-          metadata: (update: { title?: string; metadata?: Record<string, unknown> }) => { metadataUpdates.push(update); },
-        };
-
-        try {
-          const startTime = Date.now();
-          const rawResult = await toolDef.execute(toolCall.args, toolCtx);
-          const durationMs = Date.now() - startTime;
-          const content = typeof rawResult === "string" ? rawResult : JSON.stringify(rawResult);
-
-          toolResults.push({ toolCallId: toolCall.id, toolName: toolCall.name, content, durationMs });
-
-          for (const mu of metadataUpdates) {
-            yield makeMessage("tool_metadata", sessionId, turn, {
-              metadata: { toolCallId: toolCall.id, toolName: toolCall.name, title: mu.title, data: mu.metadata },
-            });
-          }
-
-          if (config.hooksEngine) {
-            try {
-              await config.hooksEngine.fire("PostToolUse", {
-                sessionId, toolName: toolCall.name, input: toolCall.args, output: rawResult, durationMs,
-              });
-            } catch { /* Hook errors are non-fatal */ }
-          }
-        } catch (err) {
-          const errorMsg = err instanceof Error ? err.message : String(err);
-          if (config.hooksEngine) {
-            try {
-              await config.hooksEngine.fire("PostToolUseFailure", {
-                sessionId, toolName: toolCall.name, input: toolCall.args, error: err instanceof Error ? err : errorMsg,
-              });
-            } catch { /* Hook errors are non-fatal */ }
-          }
-          toolResults.push({
-            toolCallId: toolCall.id, toolName: toolCall.name,
-            content: memoryLoader
-              ? `Tool error: ${errorMsg}\n\nMemory query may help — call memory_query with a specific topic if this failure suggests a knowledge gap.`
-              : `Tool error: ${errorMsg}`,
-            isError: true,
-          });
-        }
-      }
+      // Yield events emitted during tool execution (tool_start, tool_metadata)
+      for (const evt of toolEvents) yield evt;
 
       // ── 3j. Update messages ────────────────────────────────────────
       messages.push({ role: "assistant", content: response.content, toolCalls: response.toolCalls });
