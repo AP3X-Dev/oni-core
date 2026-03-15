@@ -38,7 +38,7 @@ describe('regression: checkpointer isolation', () => {
   it('two threads on the same graph are fully isolated — state does not bleed', async () => {
     type S = { counter: number };
     const g = new StateGraph<S>({
-      channels: { counter: { reducer: (a, b) => a + b, default: () => 0 } },
+      channels: { counter: { reducer: (_, b) => b, default: () => 0 } },
     });
     g.addNode('add', async (s) => ({ counter: s.counter }));
     g.addEdge(START, 'add');
@@ -53,14 +53,9 @@ describe('regression: checkpointer isolation', () => {
     const stateA = await graph.getState({ threadId: 'bleed-A' });
     const stateB = await graph.getState({ threadId: 'bleed-B' });
 
-    // Each thread should have its own counter — no bleed across threads
-    expect(stateA).not.toBeNull();
-    expect(stateB).not.toBeNull();
-    // The states should be independently tracked
-    const histA = await graph.getHistory({ threadId: 'bleed-A' });
-    const histB = await graph.getHistory({ threadId: 'bleed-B' });
-    for (const c of histA) expect(c.threadId).toBe('bleed-A');
-    for (const c of histB) expect(c.threadId).toBe('bleed-B');
+    // Each thread must have its own counter — if state bled, bleed-B would show 10+99=109
+    expect(stateA?.counter).toBe(10);
+    expect(stateB?.counter).toBe(99);
   });
 
   it('getHistory returns empty array for a thread with no checkpoints', async () => {

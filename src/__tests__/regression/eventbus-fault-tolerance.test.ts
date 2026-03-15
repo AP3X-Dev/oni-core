@@ -10,8 +10,8 @@
 //   - tool.call shape: { type, agent, tool, timestamp, input }
 // ============================================================
 
-import { describe, it, expect, vi } from 'vitest';
-import { EventBus } from '../../events/bus.js';
+import { describe, it, expect } from 'vitest';
+import { EventBus } from '../../events/index.js';
 
 describe('regression: EventBus fault tolerance', () => {
   it('throwing listener does not prevent subsequent listeners from being called', () => {
@@ -28,6 +28,16 @@ describe('regression: EventBus fault tolerance', () => {
     }).not.toThrow();
 
     expect(received).toEqual([1, 2]);
+  });
+
+  it('onAll listener error does not prevent typed listeners from being called', () => {
+    const bus = new EventBus();
+    const typedCalls: number[] = [];
+    bus.on('agent.start', () => { typedCalls.push(1); });
+    bus.onAll(() => { throw new Error('onAll boom'); });
+    bus.emit({ type: 'agent.start', agent: 'a', timestamp: Date.now(), step: 0 });
+    // typed handlers run before onAll — if order ever inverts, this catches it
+    expect(typedCalls).toEqual([1]);
   });
 
   it('throwing onAll listener does not prevent other onAll listeners from being called', () => {
