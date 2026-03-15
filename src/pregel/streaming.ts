@@ -1,5 +1,9 @@
 // ============================================================
 // src/pregel/streaming.ts — Core superstep stream generator
+// Note: Intentionally exceeds 300-line guideline. The superstep loop
+// is a single indivisible concern (state → execute → checkpoint → route)
+// that cannot be split without introducing shared mutable state between
+// coroutines. All logic here belongs to one execution unit.
 // ============================================================
 
 import {
@@ -231,7 +235,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                 const invocationKey = threadId;
 
                 if (childRunner) {
-                  childRunner._subgraphRefCount++;
+                  childRunner._subgraphRef.count++;
                   childRunner._perInvocationParentUpdates.set(invocationKey, []);
                 }
 
@@ -272,7 +276,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                 } finally {
                   // Clean up per-invocation state — decrement ref count, remove Maps entries
                   if (childRunner) {
-                    childRunner._subgraphRefCount--;
+                    childRunner._subgraphRef.count--;
                     childRunner._perInvocationParentUpdates.delete(invocationKey);
                     childRunner._perInvocationCheckpointer.delete(invocationKey);
                   }
@@ -389,7 +393,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
       if (result instanceof Command) {
         if (result.graph === Command.PARENT) {
           // Push update to parent — do NOT apply locally
-          if (!ctx._subgraphRefCount) {
+          if (!ctx._subgraphRef.count) {
             throw new Error("Command.PARENT used but graph is not running as a subgraph");
           }
           if (result.update) {

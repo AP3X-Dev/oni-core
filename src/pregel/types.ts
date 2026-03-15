@@ -36,7 +36,7 @@ export interface PregelContext<S extends Record<string, unknown>> {
   hitlStore: HITLSessionStore<S>;
   defaults: { nodeTimeout?: number } | undefined;
   nodeCache: Map<string, { result: NodeReturn<S>; timestamp: number }>;
-  _subgraphRefCount: number;
+  _subgraphRef: { count: number };
   _perInvocationParentUpdates: Map<string, Array<Partial<unknown>>>;
   _perInvocationCheckpointer: Map<string, unknown>;
   _edgesBySource: Map<string, Edge<S>[]>;
