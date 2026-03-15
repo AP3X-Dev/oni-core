@@ -3,8 +3,8 @@
 // ============================================================
 
 import type {
-  NodeName, NodeDefinition, Edge, ChannelSchema,
-  ONIConfig, ONICheckpointer, InterruptConfig,
+  NodeDefinition, Edge, ChannelSchema,
+  ONICheckpointer, InterruptConfig,
 } from "../types.js";
 import type { CircuitBreaker } from "../circuit-breaker.js";
 import type { DeadLetterQueue } from "../dlq.js";

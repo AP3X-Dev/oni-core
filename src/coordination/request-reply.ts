@@ -16,6 +16,16 @@ export interface PendingRequest {
   response?: unknown;
 }
 
+/** Message object returned by request() and reply() — suitable for routing through the graph. */
+export interface BrokerMessage {
+  id: string;
+  from: string;
+  to: string;
+  content: string;
+  metadata: Record<string, unknown>;
+  timestamp: number;
+}
+
 export class RequestReplyBroker {
   private pending   = new Map<string, PendingRequest>();
   private resolvers = new Map<string, (value: unknown) => void>();
@@ -32,7 +42,7 @@ export class RequestReplyBroker {
     to: string,
     payload: unknown,
     opts?: { timeoutMs?: number },
-  ): { requestId: string; promise: Promise<unknown>; message: any } {
+  ): { requestId: string; promise: Promise<unknown>; message: BrokerMessage } {
     const id = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     // Serialize before mutating state — throw early if payload is non-serializable
@@ -92,7 +102,7 @@ export class RequestReplyBroker {
    * Reply to a pending request, resolving the caller's promise.
    * Returns a reply message object.
    */
-  reply(requestId: string, payload: unknown): any {
+  reply(requestId: string, payload: unknown): BrokerMessage {
     const req = this.pending.get(requestId);
     if (!req) throw new Error(`No pending request with id ${requestId}`);
 

@@ -9,7 +9,6 @@ import { ONIError, NodeTimeoutError, NodeExecutionError, CircuitBreakerOpenError
 import { CircuitBreaker } from "../circuit-breaker.js";
 import { withRetry } from "../retry.js";
 import { _runWithContext, type RunContext, type StreamWriter } from "../context.js";
-import { StreamWriterImpl } from "../streaming.js";
 import {
   NodeInterruptSignal, _installInterruptContext, _clearInterruptContext,
 } from "../hitl/index.js";

@@ -267,7 +267,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // Register agents in registry (but don't use addAgent — we wire manually)
     for (const agentDef of config.agents) {
-      swarm.registry.register(agentDef as SwarmAgentDef<Record<string, unknown>> as any); // SAFE: external boundary — generic registry accepts narrower S
+      swarm.registry.register(agentDef);
       swarm.agentIds.add(agentDef.id);
     }
 
@@ -774,7 +774,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // Register agents so they appear in the registry
     for (const agentDef of config.agents) {
-      swarm.registry.register(agentDef as SwarmAgentDef<Record<string, unknown>> as any); // SAFE: external boundary — generic registry accepts narrower S
+      swarm.registry.register(agentDef);
       swarm.agentIds.add(agentDef.id);
     }
 

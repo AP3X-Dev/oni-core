@@ -1,7 +1,8 @@
 import type { ToolDefinition, DefineToolOptions, ToolContext } from "./types.js";
 import { getConfig, getStore, getCurrentState, getStreamWriter } from "../context.js";
 
-export function defineTool<TInput = any, TOutput = any>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function defineTool<TInput = any, TOutput = any>( // SAFE: external boundary — any defaults are needed for generic ToolDefinition compatibility
   opts: DefineToolOptions<TInput, TOutput>
 ): ToolDefinition<TInput, TOutput> {
   return {

@@ -1,7 +1,8 @@
 import type { LifecycleEvent, EventType, EventHandler, EventListeners } from "./types.js";
 
 export class EventBus {
-  private handlers = new Map<string, Set<EventHandler<any>>>();
+  // EventHandler is covariant in the event type; store as LifecycleEvent and narrow at callsite.
+  private handlers = new Map<string, Set<EventHandler<LifecycleEvent>>>();
   private allHandlers = new Set<EventHandler<LifecycleEvent>>();
   private disposed = false;
   private pendingTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -9,7 +10,7 @@ export class EventBus {
   constructor(listeners?: EventListeners) {
     if (listeners) {
       for (const [type, handler] of Object.entries(listeners)) {
-        if (handler) this.on(type as EventType, handler as EventHandler<any>);
+        if (handler) this.on(type as EventType, handler as EventHandler<LifecycleEvent>);
       }
     }
   }
@@ -20,9 +21,9 @@ export class EventBus {
   ): () => void {
     if (this.disposed) return () => {};
     if (!this.handlers.has(type)) this.handlers.set(type, new Set());
-    this.handlers.get(type)!.add(handler);
+    this.handlers.get(type)!.add(handler as EventHandler<LifecycleEvent>);
     return () => {
-      this.handlers.get(type)?.delete(handler);
+      this.handlers.get(type)?.delete(handler as EventHandler<LifecycleEvent>);
     };
   }
 

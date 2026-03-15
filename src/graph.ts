@@ -94,7 +94,7 @@ export class StateGraph<S extends Record<string, unknown>> {
     return this;
   }
 
-  addAgent(agentNode: AgentNode<any>): this {
+  addAgent(agentNode: AgentNode<S>): this {
     return this.addNode(agentNode.name, agentNode._nodeFn);
   }
 

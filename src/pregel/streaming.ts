@@ -25,7 +25,7 @@ import { executeNode } from "./execution.js";
 import { saveCheckpoint } from "./checkpointing.js";
 
 // Structural interface for the subgraph child runner — avoids circular import from ./index.js
-interface SubgraphRunner<S extends Record<string, unknown>> {
+interface SubgraphRunner {
   _subgraphRef: { count: number };
   _perInvocationParentUpdates: Map<string, Array<Partial<unknown>>>;
   _perInvocationCheckpointer: Map<string, unknown>;
@@ -176,7 +176,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
     // Execute all active nodes in parallel
     const allCustomEvents: CustomStreamEvent[] = [];
     const allMessageEvents: MessageStreamEvent[] = [];
-    const allSubgraphEvents: (ONIStreamEvent<any> | CustomStreamEvent | MessageStreamEvent)[] = [];
+    const allSubgraphEvents: (ONIStreamEvent<S> | CustomStreamEvent | MessageStreamEvent)[] = [];
     const nodeWriters: Map<string, StreamWriterImpl> = new Map();
 
     // Track the first HITL interrupt across all parallel nodes. We use
@@ -235,7 +235,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
             async () => {
               if (nodeDef.subgraph) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const childRunner = (nodeDef.subgraph as any)._runner as SubgraphRunner<S> | undefined; // SAFE: external boundary — subgraph._runner attached by graph.ts compile()
+                const childRunner = (nodeDef.subgraph as any)._runner as SubgraphRunner | undefined; // SAFE: external boundary — subgraph._runner attached by graph.ts compile()
                 // Per-invocation key for concurrent-safe state isolation
                 const invocationKey = threadId;
 

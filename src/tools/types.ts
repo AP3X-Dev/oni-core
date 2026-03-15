@@ -9,7 +9,8 @@ export interface ToolContext {
   emit: (event: string, data: unknown) => void;
 }
 
-export interface ToolDefinition<TInput = any, TOutput = any> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface ToolDefinition<TInput = any, TOutput = any> { // SAFE: external boundary — generic tool registry requires any-typed defaults for contravariant compatibility
   name: string;
   description: string;
   schema: JSONSchema;
@@ -18,7 +19,8 @@ export interface ToolDefinition<TInput = any, TOutput = any> {
   execute: (input: TInput, ctx: ToolContext) => Promise<TOutput> | TOutput;
 }
 
-export interface DefineToolOptions<TInput = any, TOutput = any> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface DefineToolOptions<TInput = any, TOutput = any> { // SAFE: external boundary — see ToolDefinition
   name: string;
   description: string;
   schema: JSONSchema;

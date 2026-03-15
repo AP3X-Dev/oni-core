@@ -129,7 +129,7 @@ interface TestHarness<S extends Record<string, unknown>> {
 
 export function createTestHarness<S extends Record<string, unknown>>(
   graph: StateGraph<S>,
-  options?: { checkpointer?: any; store?: any },
+  options?: { checkpointer?: import("../types.js").ONICheckpointer<S>; store?: import("../store/index.js").BaseStore },
 ): TestHarness<S> {
   let invocationCount = 0;
   const app = graph.compile({
