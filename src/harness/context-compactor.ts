@@ -57,6 +57,8 @@ export class ContextCompactor {
   private readonly charsPerToken: number;
   private readonly compactInstructions?: string;
   private _lastSummary: string | null = null;
+  /** Promise-chain lock: serializes concurrent calls to compact(). */
+  private _lockChain: Promise<void> = Promise.resolve();
 
   constructor(config: CompactorConfig) {
     this.summaryModel = config.summaryModel;
@@ -160,11 +162,20 @@ export class ContextCompactor {
    * Returns the compacted message array.
    */
   async compact(messages: ONIModelMessage[], opts?: { skipInitialCheck?: boolean }): Promise<ONIModelMessage[]> {
-    if (!opts?.skipInitialCheck && !this.shouldCompact(messages)) {
-      return messages;
-    }
+    // Chain onto the lock so only one compaction pass runs at a time.
+    // Each caller awaits the previous chain link before executing.
+    const result = this._lockChain.then(async () => {
+      if (!opts?.skipInitialCheck && !this.shouldCompact(messages)) {
+        return messages;
+      }
+      return this._runCompaction(messages);
+    });
 
-    return this._runCompaction(messages);
+    // Extend the chain; swallow errors so a failed compaction doesn't
+    // permanently block subsequent calls.
+    this._lockChain = result.then(() => {}, () => {});
+
+    return result;
   }
 
   private async _runCompaction(messages: ONIModelMessage[]): Promise<ONIModelMessage[]> {
@@ -316,7 +327,7 @@ export class ContextCompactor {
     // Walk backwards to keep the most recent messages that fit in the budget
     for (let i = messages.length - 1; i >= 0; i--) {
       const len = this.contentLength(messages[i]);
-      if (totalChars + len > budget) break;
+      if (totalChars + len > budget) continue;
       totalChars += len;
       kept.unshift(messages[i]);
     }

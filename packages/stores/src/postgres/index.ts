@@ -59,13 +59,13 @@ export class PostgresStore extends BaseStore {
       }
       client = new Pool({ connectionString }) as PgClient;
     } catch (err) {
-      if (err instanceof Error && err.message.includes("pg")) {
-        throw err;
+      if ((err as NodeJS.ErrnoException).code === "MODULE_NOT_FOUND") {
+        throw new Error(
+          "PostgresStore requires 'pg' to be installed. " +
+          "Run: pnpm add pg"
+        );
       }
-      throw new Error(
-        "PostgresStore requires 'pg' to be installed. " +
-        "Run: pnpm add pg"
-      );
+      throw err;
     }
 
     const store = new PostgresStore(client, prefix ?? "default");
@@ -133,29 +133,20 @@ export class PostgresStore extends BaseStore {
   ): Promise<void> {
     const now = Date.now();
 
-    // Retrieve existing createdAt if present
-    const existing = await this.client.query(
-      `SELECT created_at FROM oni_store WHERE prefix = $1 AND namespace = $2 AND key = $3`,
-      [this.prefix, this.nsStr(namespace), key]
-    );
-    const existingRow = existing.rows[0] as OniStoreRow | undefined;
-    const createdAt = existingRow != null
-      ? Number(existingRow.created_at)
-      : now;
-
     await this.client.query(
       `INSERT INTO oni_store (prefix, namespace, key, value, created_at, updated_at, ttl)
             VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)
        ON CONFLICT (prefix, namespace, key)
        DO UPDATE SET value      = EXCLUDED.value,
                      updated_at = EXCLUDED.updated_at,
-                     ttl        = EXCLUDED.ttl`,
+                     ttl        = EXCLUDED.ttl,
+                     created_at = oni_store.created_at`,
       [
         this.prefix,
         this.nsStr(namespace),
         key,
         JSON.stringify(value),
-        createdAt,
+        now,
         now,
         opts?.ttl ?? null,
       ]

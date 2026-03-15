@@ -46,7 +46,12 @@ export function identifyPatterns(
     const successRate = successes.length / records.length;
     const gains = successes
       .filter(r => r.metricAfter !== null)
-      .map(r => r.metricAfter! - r.metricBefore);
+      .map(r => {
+        const dir = r.direction ?? "minimize";
+        return dir === "maximize"
+          ? r.metricAfter! - r.metricBefore
+          : r.metricBefore - r.metricAfter!;
+      });
     const metricGain = gains.length > 0
       ? gains.reduce((a, b) => a + b, 0) / gains.length
       : 0;

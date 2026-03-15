@@ -22,6 +22,7 @@ export interface RedisClient {
   zrange(key: string, start: number | string, stop: number | string): Promise<string[]>;
   zrem(key: string, member: string): Promise<unknown>;
   keys(pattern: string): Promise<string[]>;
+  eval(script: string, numkeys: number, ...args: (string | number)[]): Promise<unknown>;
   quit?(): Promise<unknown>;
   disconnect?(): Promise<unknown>;
 }

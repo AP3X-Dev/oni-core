@@ -104,8 +104,14 @@ function propToJsonSchema(prop: Property): JSONSchema {
         type: "string",
         enum: (prop as StaticDropdownProperty).options.options.map(o => o.value),
       };
-    case PropertyType.ARRAY:
-      return { ...base, type: "array" };
+    case PropertyType.ARRAY: {
+      const arraySchema: JSONSchema = { ...base, type: "array" };
+      const arrayProp = prop as ArrayProperty;
+      if (arrayProp.properties && Object.keys(arrayProp.properties).length > 0) {
+        arraySchema.items = propsToJsonSchema(arrayProp.properties);
+      }
+      return arraySchema;
+    }
     case PropertyType.FILE:
       return {
         ...base,
@@ -120,6 +126,34 @@ function propToJsonSchema(prop: Property): JSONSchema {
     case PropertyType.JSON:
     case PropertyType.DYNAMIC:
       return { ...base, type: "object" };
+    case PropertyType.BASIC_AUTH:
+      return {
+        ...base,
+        type: "object",
+        properties: {
+          username: { type: "string" },
+          password: { type: "string" },
+        },
+        required: ["username", "password"],
+      };
+    case PropertyType.OAUTH2:
+      return {
+        ...base,
+        type: "object",
+        properties: {
+          access_token: { type: "string" },
+        },
+        required: ["access_token"],
+      };
+    case PropertyType.CUSTOM_AUTH:
+      return {
+        ...base,
+        type: "object",
+        properties: {
+          token: { type: "string" },
+        },
+        required: ["token"],
+      };
     default:
       return { ...base, type: "string" };
   }

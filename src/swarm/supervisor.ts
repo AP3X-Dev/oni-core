@@ -124,15 +124,25 @@ export function createSupervisorNode<S extends SupervisorState>(
       case "llm":
         try {
           targetAgentId = await routeViaLLM(task, ctx, registry, config.model!, config.systemPrompt);
-        } catch {
-          targetAgentId = null; // transient model error — fall through to graceful END
+        } catch (err) {
+          const cause = err instanceof Error ? err : new Error(String(err));
+          throw new ONIError(
+            `LLM routing failed: ${cause.message}`,
+            {
+              code: "ONI_SWARM_ROUTING",
+              category: "SWARM",
+              recoverable: true,
+              suggestion: "Check model credentials, network connectivity, and response format.",
+              context: { strategy: "llm", round },
+            },
+          );
         }
         break;
       case "rule":
         targetAgentId = routeViaRules(task, ctx, config.rules ?? []);
         break;
       case "round-robin":
-        targetAgentId = routeRoundRobin(registry, round);
+        targetAgentId = routeRoundRobin(registry);
         break;
       case "capability":
         targetAgentId = routeViaCapability(ctx, registry);
@@ -221,18 +231,23 @@ function routeViaRules(
   return null;
 }
 
+let rrCounter = 0;
+
 function routeRoundRobin<S extends Record<string, unknown>>(
   registry: AgentRegistry<S>,
-  round:    number
 ): string | null {
   const agents = registry.findIdle();
   if (!agents.length) {
     // Fall back to all agents if none idle
     const all = registry.getAll().filter((a) => a.status !== "terminated");
     if (!all.length) return null;
-    return all[round % all.length]!.def.id;
+    const idx = rrCounter % all.length;
+    rrCounter++;
+    return all[idx]!.def.id;
   }
-  return agents[round % agents.length]!.def.id;
+  const idx = rrCounter % agents.length;
+  rrCounter++;
+  return agents[idx]!.def.id;
 }
 
 function routeViaCapability<S extends Record<string, unknown>>(

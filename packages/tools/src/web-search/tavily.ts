@@ -29,9 +29,11 @@ export function tavilySearch(config: { apiKey: string }): ToolDefinition {
       const i = input as TavilyInput;
       const res = await fetch("https://api.tavily.com/search", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${config.apiKey}`,
+        },
         body: JSON.stringify({
-          api_key: config.apiKey,
           query: i.query,
           max_results: i.maxResults ?? 5,
           search_depth: i.searchDepth ?? "basic",
