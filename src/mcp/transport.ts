@@ -79,10 +79,19 @@ export class StdioTransport {
         reject(new Error(`MCP server failed to start within ${timeout}ms`));
       }, timeout);
 
+      // Build a minimal base environment — only essential system variables
+      // are forwarded so secrets (API keys, tokens) from the parent process
+      // are never leaked to MCP server child processes.  Explicitly
+      // configured env vars (this.config.env) are merged on top.
+      const BASE_ENV: Record<string, string> = {};
+      for (const k of ["PATH", "HOME", "TMPDIR", "TEMP", "TMP", "LANG", "TERM"]) {
+        if (process.env[k]) BASE_ENV[k] = process.env[k]!;
+      }
+
       try {
         this.process = spawn(this.config.command, this.config.args ?? [], {
           stdio: ["pipe", "pipe", "pipe"],
-          env: { ...process.env, ...this.config.env },
+          env: { ...BASE_ENV, ...this.config.env },
           cwd: this.config.cwd,
           shell: false,
         });

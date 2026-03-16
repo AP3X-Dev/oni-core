@@ -30,7 +30,7 @@ describe("TodoModule", () => {
     ];
     mod.write(todos);
 
-    const state = mod.read();
+    const state = mod.getState();
     expect(state.todos).toHaveLength(2);
     expect(state.todos[0].content).toBe("First");
     expect(state.todos[1].content).toBe("Second");
@@ -45,7 +45,7 @@ describe("TodoModule", () => {
 
     const result = mod.updateStatus("1", "in_progress");
     expect(result).toBe(true);
-    expect(mod.read().todos[0].status).toBe("in_progress");
+    expect(mod.getState().todos[0].status).toBe("in_progress");
   });
 
   it("updateStatus() returns false for unknown id", () => {
@@ -179,7 +179,7 @@ describe("TodoModule", () => {
     expect(parsed.completed).toBe(0);
 
     // State should be updated
-    expect(mod.read().todos).toHaveLength(2);
+    expect(mod.getState().todos).toHaveLength(2);
   });
 
   it("TodoRead tool returns current state", async () => {
@@ -209,12 +209,12 @@ describe("TodoModule", () => {
     const json = mod.toJSON();
     const restored = TodoModule.fromJSON(json);
 
-    expect(restored.read().todos).toHaveLength(2);
-    expect(restored.read().todos[0].content).toBe("Alpha");
-    expect(restored.read().todos[0].status).toBe("in_progress");
-    expect(restored.read().todos[1].content).toBe("Beta");
-    expect(restored.read().todos[1].status).toBe("blocked");
-    expect(restored.read().lastUpdated).toBe(mod.read().lastUpdated);
+    expect(restored.getState().todos).toHaveLength(2);
+    expect(restored.getState().todos[0].content).toBe("Alpha");
+    expect(restored.getState().todos[0].status).toBe("in_progress");
+    expect(restored.getState().todos[1].content).toBe("Beta");
+    expect(restored.getState().todos[1].status).toBe("blocked");
+    expect(restored.getState().lastUpdated).toBe(mod.getState().lastUpdated);
   });
 
   it("toContextString() formats todos with status icons", () => {

@@ -45,6 +45,10 @@ export async function handleJsonRPC(
   }
 
   if (req.method === "tasks/sendSubscribe") {
+    // If agentCard is provided and streaming is not enabled, reject with method-not-found
+    if (agentCard && !agentCard.capabilities?.streaming) {
+      return { response: { jsonrpc: "2.0", id: req.id, error: { code: -32601, message: "Method not found: streaming not supported" } } };
+    }
     try {
       const result = handler(messageText, taskId);
       async function* safeStream(gen: AsyncGenerator<string>): AsyncGenerator<string> {
@@ -67,9 +71,6 @@ export async function handleJsonRPC(
     const task: A2ATask = { id: taskId, status: { state: "completed" } };
     return { response: { jsonrpc: "2.0", id: req.id, result: task } };
   }
-
-  // Suppress unused parameter warning — agentCard reserved for future method dispatch
-  void agentCard;
 
   return { response: { jsonrpc: "2.0", id: req.id, error: { code: -32601, message: "Method not found" } } };
 }

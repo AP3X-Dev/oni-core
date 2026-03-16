@@ -114,6 +114,8 @@ export interface LSPServerConfig {
   args?: string[];
   /** Language ID for documents */
   languageId: string;
+  /** Extra environment variables passed to the spawned server process */
+  env?: Record<string, string>;
   /** Initialization options passed to the server */
   initializationOptions?: unknown;
 }

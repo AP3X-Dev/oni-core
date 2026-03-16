@@ -90,6 +90,8 @@ export interface AgentLoopConfig {
   onQuestion?: (question: string, resolve: (answer: string | null) => void) => void;
   /** Callback for streaming tool metadata updates. */
   onToolMetadata?: (toolCallId: string, toolName: string, update: ToolMetadataUpdate) => void;
+  /** If set, only skills whose names are in this list will be loaded. */
+  allowedSkills?: string[];
   env?: {
     cwd?: string;
     platform?: string;

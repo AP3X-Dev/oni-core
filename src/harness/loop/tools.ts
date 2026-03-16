@@ -151,16 +151,30 @@ export async function executeTools(
       agentName: config.agentName,
       turn,
       signal: config.signal,
+      askUser: config.onQuestion
+        ? (question: string) =>
+            new Promise<string>((resolve) => {
+              config.onQuestion!(question, (answer) => {
+                resolve(answer ?? "");
+              });
+            })
+        : undefined,
       metadata: (update: { title?: string; metadata?: Record<string, unknown> }) => {
         metadataUpdates.push(update);
       },
     };
+
+    // Notify onToolMetadata that this tool is now running
+    config.onToolMetadata?.(toolCall.id, toolCall.name, { status: "running" });
 
     try {
       const startTime = Date.now();
       const rawResult = await toolDef.execute(toolCall.args, toolCtx);
       const durationMs = Date.now() - startTime;
       const content = typeof rawResult === "string" ? rawResult : JSON.stringify(rawResult);
+
+      // Notify onToolMetadata that this tool completed successfully
+      config.onToolMetadata?.(toolCall.id, toolCall.name, { status: "complete", result: content });
 
       // Push the successful result first — before the hook — so a hook
       // throw cannot retroactively mark this tool call as failed.
@@ -201,6 +215,9 @@ export async function executeTools(
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
+
+      // Notify onToolMetadata that this tool errored
+      config.onToolMetadata?.(toolCall.id, toolCall.name, { status: "error", error: errorMsg });
 
       // Fire PostToolUseFailure — in its own try/catch so a hook error does not
       // drop the error result from toolResults or corrupt conversation history.

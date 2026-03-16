@@ -67,10 +67,6 @@ export class TodoModule {
 
   // ── Read ────────────────────────────────────────────────────────────────
 
-  read(): TodoState {
-    return this.state;
-  }
-
   getState(): TodoState {
     return this.state;
   }
