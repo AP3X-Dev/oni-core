@@ -4,7 +4,7 @@ import { generateAgentCard } from "../card/generator.js";
 
 describe("handleJsonRPC — tasks/sendSubscribe", () => {
   it("BUG-0001: should return JSON-RPC error when handler throws synchronously", async () => {
-    const card = generateAgentCard({ name: "Test", description: "Test", url: "http://test" });
+    const card = generateAgentCard({ name: "Test", description: "Test", url: "http://test", streaming: true });
 
     const throwingHandler = () => {
       throw new Error("sync boom");
