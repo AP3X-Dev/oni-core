@@ -136,9 +136,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/AP3X-Dev/oni-core"
+    "url": "git+https://github.com/AP3X-Dev/oni-core.git"
   },
-  "homepage": "https://github.com/AP3X-Dev/oni-core#readme",
+  "homepage": "https://www.npmjs.com/package/@oni.bot/core",
   "bugs": {
     "url": "https://github.com/AP3X-Dev/oni-core/issues"
   },
