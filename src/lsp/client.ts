@@ -15,6 +15,7 @@
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
+import { validateSpawnCommand } from "../internal/validate-command.js";
 import { pathToFileURL } from "node:url";
 import { readFileSync } from "node:fs";
 import type {
@@ -119,10 +120,12 @@ export class LSPClient {
     }
 
     try {
+      validateSpawnCommand(this.config.command, `LSP server "${this.config.id}"`);
       this.process = spawn(this.config.command, this.config.args ?? [], {
         cwd: this.rootDir,
         stdio: ["pipe", "pipe", "pipe"],
         env: { ...BASE_ENV, ...this.config.env },
+        shell: false,
       });
 
       // Wire up stdout for JSON-RPC responses

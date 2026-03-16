@@ -13,6 +13,7 @@
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
+import { validateSpawnCommand } from "../internal/validate-command.js";
 import type {
   JsonRpcRequest,
   JsonRpcResponse,
@@ -89,6 +90,7 @@ export class StdioTransport {
       }
 
       try {
+        validateSpawnCommand(this.config.command, `MCP server "${this.config.command}"`);
         this.process = spawn(this.config.command, this.config.args ?? [], {
           stdio: ["pipe", "pipe", "pipe"],
           env: { ...BASE_ENV, ...this.config.env },
