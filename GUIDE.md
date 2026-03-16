@@ -1,7 +1,6 @@
-# @oni.bot/core v1.1.0 — Developer Guide
+# @oni.bot/core — Developer Guide
 
 > Progressive tutorial from zero to advanced. Each section builds on the last.
-> For complete API signatures, see [API.md](./API.md).
 
 ---
 
