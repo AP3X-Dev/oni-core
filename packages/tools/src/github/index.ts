@@ -60,20 +60,30 @@ async function githubRequest(
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${await res.text()}`);
+  if (!res.ok) {
+    const body = await res.text();
+    console.error(`[github] API error ${res.status} ${method} ${path}:`, body);
+    throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
+  }
   return res.json();
 }
+
+const GITHUB_SLUG_RE = /^[a-zA-Z0-9._-]+$/;
 
 export function githubTools(config: GitHubConfig): ToolDefinition[] {
   function resolveOwner(input: WithOwnerRepo): string {
     const owner = input.owner ?? config.defaultOwner;
     if (!owner) throw new Error("owner is required (not set in input or config)");
+    if (!GITHUB_SLUG_RE.test(owner))
+      throw new Error(`Invalid GitHub owner: ${owner}`);
     return owner;
   }
 
   function resolveRepo(input: WithOwnerRepo): string {
     const repo = input.repo ?? config.defaultRepo;
     if (!repo) throw new Error("repo is required (not set in input or config)");
+    if (!GITHUB_SLUG_RE.test(repo))
+      throw new Error(`Invalid GitHub repo: ${repo}`);
     return repo;
   }
 
@@ -227,6 +237,8 @@ export function githubTools(config: GitHubConfig): ToolDefinition[] {
     parallelSafe: false,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as AddCommentInput;
+      if (!Number.isInteger(i.issueNumber) || i.issueNumber <= 0)
+        throw new Error(`Invalid issue number: ${i.issueNumber}`);
       const owner = resolveOwner(i);
       const repo = resolveRepo(i);
       return githubRequest(

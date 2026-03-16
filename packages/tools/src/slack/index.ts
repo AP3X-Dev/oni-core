@@ -7,6 +7,8 @@ interface SlackWebClient {
       text?: string;
       blocks?: unknown[];
       thread_ts?: string;
+      username?: string;
+      icon_emoji?: string;
     }) => Promise<unknown>;
   };
 }
@@ -108,6 +110,8 @@ export function slackTools(config: { token: string }): ToolDefinition[] {
       return client.chat.postMessage({
         channel: i.channel,
         text: i.text,
+        username: i.username,
+        icon_emoji: i.iconEmoji,
       });
     },
   };

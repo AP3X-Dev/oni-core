@@ -45,7 +45,11 @@ export function exaSearch(config: { apiKey: string }): ToolDefinition {
           useAutoprompt: i.useAutoprompt ?? true,
         }),
       });
-      if (!res.ok) throw new Error(`Exa Search API error: ${res.status} ${await res.text()}`);
+      if (!res.ok) {
+        const body = await res.text();
+        console.error(`[exa] API error ${res.status}:`, body);
+        throw new Error(`Exa Search API error: ${res.status} ${res.statusText}`);
+      }
       return res.json();
     },
   };

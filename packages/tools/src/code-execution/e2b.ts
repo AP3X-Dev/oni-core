@@ -51,14 +51,21 @@ export function e2bSandbox(config: { apiKey: string }): ToolDefinition {
         throw new Error("e2bSandbox requires '@e2b/sdk'. Install it: pnpm add @e2b/sdk");
       }
       const sandbox = await SandboxClass.create({ apiKey: config.apiKey });
+      const timeoutMs = i.timeout ?? 30_000;
+      let timerId: ReturnType<typeof setTimeout> | undefined;
       try {
-        const result = await sandbox.runCode(i.language ?? "python", i.code);
+        const codePromise = sandbox.runCode(i.language ?? "python", i.code);
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timerId = setTimeout(() => reject(new Error(`E2B sandbox execution timed out after ${timeoutMs}ms`)), timeoutMs);
+        });
+        const result = await Promise.race([codePromise, timeoutPromise]);
         return {
           stdout: result.stdout,
           stderr: result.stderr,
           exitCode: result.exitCode ?? 0,
         };
       } finally {
+        if (timerId !== undefined) clearTimeout(timerId);
         await sandbox.close();
       }
     },

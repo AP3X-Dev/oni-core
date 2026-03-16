@@ -162,11 +162,11 @@ export class StateGraph<S extends Record<string, unknown>> {
       invoke:      (input, config)  => runner.invoke(input, config),
       stream:      (input, config)  => runner.stream(input, config),
       batch:       (inputs, config) => runner.batch(inputs, config),
-      getState:    (cfg)            => runner.getState(cfg.threadId),
-      updateState: (cfg, update)    => runner.updateState(cfg.threadId, update),
-      getStateAt:  (cfg)            => runner.getStateAt(cfg.threadId, cfg.step),
-      getHistory:  (cfg)            => runner.getHistory(cfg.threadId),
-      forkFrom:    (cfg)            => runner.forkFrom(cfg.threadId, cfg.step, cfg.newThreadId),
+      getState:    (cfg)            => runner.getState(cfg),
+      updateState: (cfg, update)    => runner.updateState(cfg, update),
+      getStateAt:  (cfg)            => runner.getStateAt(cfg),
+      getHistory:  (cfg)            => runner.getHistory(cfg),
+      forkFrom:    (cfg)            => runner.forkFrom(cfg),
 
       // ---- HITL ----
 

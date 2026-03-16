@@ -6,9 +6,8 @@
 // broadcast. Consumers pull their inbox by agent ID.
 // ============================================================
 
+import { randomUUID } from "node:crypto";
 import type { SwarmMessage } from "./types.js";
-
-let msgCounter = 0;
 
 export function createMessage(
   from:      string,
@@ -17,7 +16,7 @@ export function createMessage(
   opts?: { metadata?: Record<string, unknown>; replyTo?: string }
 ): SwarmMessage {
   return {
-    id:        `msg-${++msgCounter}-${Date.now()}`,
+    id:        `msg-${randomUUID()}`,
     from,
     to,
     content,

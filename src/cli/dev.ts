@@ -50,7 +50,14 @@ export async function devCommand(args: ParsedArgs): Promise<void> {
   process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
 
-  return new Promise((resolvePromise) => {
+  return new Promise<void>((resolvePromise) => {
+    child.on("error", (err) => {
+      console.error(`\n  Failed to spawn npx: ${err.message}`);
+      process.off("SIGINT", cleanup);
+      process.off("SIGTERM", cleanup);
+      process.exitCode = 1;
+      resolvePromise();
+    });
     child.on("close", (code) => {
       process.off("SIGINT", cleanup);
       process.off("SIGTERM", cleanup);

@@ -43,7 +43,16 @@ export async function buildCommand(args: ParsedArgs): Promise<void> {
     shell: true,
   });
 
-  const exitCode = await new Promise<number | null>((r) => child.on("close", r));
+  const exitCode = await new Promise<number | null>((resolve, reject) => {
+    child.on("error", (err) => {
+      reject(new Error(`Failed to spawn npx: ${err.message}`));
+    });
+    child.on("close", resolve);
+  }).catch((err: Error) => {
+    console.error(`\n  ${err.message}`);
+    process.exitCode = 1;
+    return 1;
+  });
 
   if (exitCode && exitCode !== 0) {
     console.error("\n  Build failed — TypeScript compilation errors");

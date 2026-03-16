@@ -142,7 +142,6 @@ export interface AgentNodeConfig {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-let _idCounter = 0;
 export function generateId(prefix: string): string {
-  return `${prefix}_${Date.now().toString(36)}_${(++_idCounter).toString(36)}`;
+  return `${prefix}_${crypto.randomUUID()}`;
 }

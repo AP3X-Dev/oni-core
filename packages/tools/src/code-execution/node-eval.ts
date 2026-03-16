@@ -50,15 +50,18 @@ export function nodeEval(): ToolDefinition {
         warn: (...args: unknown[]) => logs.push(`[warn] ${String(args.join(" "))}`),
       });
 
-      // Freeze the sandbox and its prototype chain to make breakout harder.
-      // NOTE: this is defence-in-depth, NOT a guarantee. node:vm is fundamentally
-      // unsuitable as a security boundary.
-      Object.freeze(sandbox);
-
       const ctx = createContext(sandbox);
       const script = new Script(`result = (function() { ${i.code} })()`);
       script.runInContext(ctx, { timeout });
-      return { result: sandbox.result, logs };
+
+      const out = sandbox.result;
+
+      // Freeze the sandbox after reading the result so it cannot be mutated
+      // by any lingering references. This is defence-in-depth only — node:vm
+      // is NOT a security boundary (see BUG-0023).
+      Object.freeze(sandbox);
+
+      return { result: out, logs };
     },
   };
 }

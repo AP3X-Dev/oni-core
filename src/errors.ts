@@ -49,6 +49,18 @@ export class ONIError extends Error {
       message: this.message,
       recoverable: this.recoverable,
       suggestion: this.suggestion,
+    };
+  }
+
+  /** Full serialization including stack and context — for internal logging only. */
+  toInternalJSON(): Record<string, unknown> {
+    return {
+      name: this.name,
+      code: this.code,
+      category: this.category,
+      message: this.message,
+      recoverable: this.recoverable,
+      suggestion: this.suggestion,
       context: this.context,
       stack: this.stack,
     };
@@ -184,7 +196,7 @@ export class ModelAPIError extends ONIError {
     },
   ) {
     const recoverable = status >= 500;
-    super(`${provider} API error ${status}: ${opts?.messageBody ?? body}`, {
+    super(`${provider} API error ${status}${opts?.messageBody ? `: ${opts.messageBody}` : ""}`, {
       code: "ONI_MODEL_API",
       category: "MODEL",
       recoverable,

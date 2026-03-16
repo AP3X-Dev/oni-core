@@ -2,11 +2,16 @@ import type { ContentFilter, ContentFilterResult } from "./types.js";
 
 // ── PII patterns ──────────────────────────────────────────────────
 
+// BUG-0025: The /g flag is intentionally omitted from these patterns.
+// RegExp objects with /g maintain shared `lastIndex` state, which causes a
+// race condition when the same pattern is tested across concurrent calls —
+// alternating between match and no-match. When a global replace is needed,
+// a fresh RegExp is created per call (see `piiFilter` below).
 const PII_PATTERNS: Record<string, RegExp> = {
-  email:      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
-  ssn:        /\b\d{3}-\d{2}-\d{4}\b/g,
-  phone:      /\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
-  creditCard: /\b(?:\d{4}[-\s]?){3}\d{4}\b/g,
+  email:      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,
+  ssn:        /\b\d{3}-\d{2}-\d{4}\b/,
+  phone:      /\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/,
+  creditCard: /\b(?:\d{4}[-\s]?){3}\d{4}\b/,
 };
 
 const REDACT_LABELS: Record<string, string> = {
@@ -32,14 +37,10 @@ export function piiFilter(options: PiiFilterOptions): ContentFilter {
         const pattern = PII_PATTERNS[kind];
         if (!pattern) continue;
 
-        // Reset lastIndex for global regex
-        pattern.lastIndex = 0;
-
         if (pattern.test(content)) {
           if (redact) {
-            // Reset again for replace
-            pattern.lastIndex = 0;
-            const redacted = content.replace(pattern, REDACT_LABELS[kind]);
+            const globalPattern = new RegExp(pattern.source, "g");
+            const redacted = content.replace(globalPattern, REDACT_LABELS[kind]);
             return { blocked: true, reason: `PII detected: ${kind}`, redacted };
           }
           return { blocked: true, reason: `PII detected: ${kind}` };

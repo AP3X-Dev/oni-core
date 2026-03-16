@@ -232,7 +232,16 @@ export class StdioTransport {
 
   // ── Buffer processing ───────────────────────────────────────
 
+  private static readonly MAX_BUFFER_SIZE = 64 * 1024 * 1024; // 64 MB
+
   private processBuffer(): void {
+    if (this.buffer.length > StdioTransport.MAX_BUFFER_SIZE) {
+      console.error("[mcp] Buffer exceeded 64 MB limit — disconnecting");
+      this.buffer = Buffer.alloc(0);
+      this.stop();
+      return;
+    }
+
     while (true) {
       // Look for Content-Length header (byte-level search)
       const headerEnd = this.buffer.indexOf("\r\n\r\n");

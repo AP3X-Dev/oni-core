@@ -14,6 +14,7 @@ export interface DeadLetter {
 }
 
 export class DeadLetterQueue {
+  private static readonly MAX_PER_THREAD = 100;
   private letters = new Map<string, DeadLetter[]>();
 
   record(threadId: string, node: string, input: Record<string, unknown>, error: Error, attempts: number): DeadLetter {
@@ -23,7 +24,11 @@ export class DeadLetterQueue {
       timestamp: Date.now(),
     };
     if (!this.letters.has(threadId)) this.letters.set(threadId, []);
-    this.letters.get(threadId)!.push(dl);
+    const arr = this.letters.get(threadId)!;
+    arr.push(dl);
+    if (arr.length > DeadLetterQueue.MAX_PER_THREAD) {
+      arr.splice(0, arr.length - DeadLetterQueue.MAX_PER_THREAD);
+    }
     return dl;
   }
 

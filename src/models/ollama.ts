@@ -125,7 +125,7 @@ async function* parseNDJSON(
         try {
           yield JSON.parse(trimmed) as Record<string, unknown>;
         } catch (err) {
-          console.warn("[oni-core] Ollama NDJSON: failed to parse line:", err, "| raw line:", trimmed);
+          console.warn("[oni-core] Ollama NDJSON: failed to parse line:", err, "| line length:", trimmed?.length ?? 0);
           continue;
         }
       }
@@ -136,7 +136,7 @@ async function* parseNDJSON(
       try {
         yield JSON.parse(buffer.trim()) as Record<string, unknown>;
       } catch (err) {
-        console.warn("[oni-core] Ollama NDJSON: failed to parse remaining buffer:", err, "| raw data:", buffer.trim());
+        console.warn("[oni-core] Ollama NDJSON: failed to parse remaining buffer:", err, "| data length:", buffer.trim().length);
       }
     }
   } finally {
@@ -152,10 +152,20 @@ export function ollama(
   modelId: string,
   opts?: OllamaOptions,
 ): ONIModel {
-  const baseUrl = (opts?.baseUrl ?? "http://localhost:11434").replace(
+  const rawBaseUrl = (opts?.baseUrl ?? "http://localhost:11434").replace(
     /\/$/,
     "",
   );
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawBaseUrl);
+  } catch {
+    throw new Error(`Invalid Ollama baseUrl: "${rawBaseUrl}" is not a valid URL`);
+  }
+  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+    throw new Error(`Invalid Ollama baseUrl scheme: "${parsedUrl.protocol}" — only "https:" and "http:" are allowed`);
+  }
+  const baseUrl = rawBaseUrl;
   const defaultMaxTokens = opts?.defaultMaxTokens;
   const defaultTemperature = opts?.defaultTemperature;
 

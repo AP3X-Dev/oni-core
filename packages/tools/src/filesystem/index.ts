@@ -1,16 +1,59 @@
 import { readFile, writeFile, readdir, mkdir, unlink, stat } from "node:fs/promises";
-import { resolve, normalize } from "node:path";
+import { realpathSync, existsSync } from "node:fs";
+import { resolve, normalize, dirname, basename, join } from "node:path";
 import type { ToolDefinition, ToolContext } from "../types.js";
 
-function checkAllowedPath(filePath: string, allowedPaths: string[]): void {
-  if (allowedPaths.length === 0) return;
+/**
+ * Resolve the real filesystem path, following symlinks.
+ * If the target does not exist, walk up to the deepest existing ancestor
+ * and resolve that (covers write-to-new-file scenarios).
+ */
+function resolveReal(filePath: string): string {
+  const abs = normalize(resolve(filePath));
+  if (existsSync(abs)) {
+    return realpathSync(abs);
+  }
+  // For non-existent paths, resolve the deepest existing ancestor
+  // and reconstruct the full path with remaining unresolved segments.
+  let current = abs;
+  const tail: string[] = [];
+  while (!existsSync(current)) {
+    tail.unshift(basename(current));
+    const parent = dirname(current);
+    if (parent === current) break; // filesystem root
+    current = parent;
+  }
+  return join(realpathSync(current), ...tail);
+}
+
+function checkAllowedPath(filePath: string, allowedPaths: string[]): string {
+  if (allowedPaths.length === 0) {
+    throw new Error("Access denied: allowedPaths is empty — at least one allowed path must be configured");
+  }
   const normalized = normalize(resolve(filePath));
-  const allowed = allowedPaths.some((ap) => normalized.startsWith(normalize(resolve(ap))));
-  if (!allowed) {
+  const normalizedAllowed = allowedPaths.map((ap) => normalize(resolve(ap)));
+
+  // Lexical check first (fast path).
+  const lexicalOk = normalizedAllowed.some((ap) => normalized.startsWith(ap));
+  if (!lexicalOk) {
     throw new Error(
       `Access denied: path "${filePath}" is not within allowed paths: ${allowedPaths.join(", ")}`
     );
   }
+
+  // Follow symlinks and re-check to prevent symlink-based escapes.
+  const real = resolveReal(filePath);
+  const realAllowed = normalizedAllowed.some((ap) => {
+    const realAp = existsSync(ap) ? realpathSync(ap) : ap;
+    return real.startsWith(realAp);
+  });
+  if (!realAllowed) {
+    throw new Error(
+      `Access denied: path "${filePath}" resolves via symlink to "${real}" which is outside allowed paths: ${allowedPaths.join(", ")}`
+    );
+  }
+
+  return real;
 }
 
 interface ReadFileInput {
@@ -55,8 +98,8 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: true,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as ReadFileInput;
-      checkAllowedPath(i.path, allowedPaths);
-      const content = await readFile(i.path, { encoding: i.encoding ?? "utf8" });
+      const safePath = checkAllowedPath(i.path, allowedPaths);
+      const content = await readFile(safePath, { encoding: i.encoding ?? "utf8" });
       return { path: i.path, content };
     },
   };
@@ -81,8 +124,8 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: false,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as WriteFileInput;
-      checkAllowedPath(i.path, allowedPaths);
-      await writeFile(i.path, i.content, { encoding: i.encoding ?? "utf8" });
+      const safePath = checkAllowedPath(i.path, allowedPaths);
+      await writeFile(safePath, i.content, { encoding: i.encoding ?? "utf8" });
       return { path: i.path, success: true };
     },
   };
@@ -102,8 +145,8 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: true,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as ListDirInput;
-      checkAllowedPath(i.path, allowedPaths);
-      const entries = await readdir(i.path, { withFileTypes: true });
+      const safePath = checkAllowedPath(i.path, allowedPaths);
+      const entries = await readdir(safePath, { withFileTypes: true });
       const items = entries.map((e) => ({
         name: e.name,
         type: e.isDirectory() ? "directory" : "file",
@@ -126,8 +169,8 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: false,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as PathInput;
-      checkAllowedPath(i.path, allowedPaths);
-      await mkdir(i.path, { recursive: true });
+      const safePath = checkAllowedPath(i.path, allowedPaths);
+      await mkdir(safePath, { recursive: true });
       return { path: i.path, success: true };
     },
   };
@@ -146,8 +189,8 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: false,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as PathInput;
-      checkAllowedPath(i.path, allowedPaths);
-      await unlink(i.path);
+      const safePath = checkAllowedPath(i.path, allowedPaths);
+      await unlink(safePath);
       return { path: i.path, success: true };
     },
   };
@@ -166,8 +209,8 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: true,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as PathInput;
-      checkAllowedPath(i.path, allowedPaths);
-      const stats = await stat(i.path);
+      const safePath = checkAllowedPath(i.path, allowedPaths);
+      const stats = await stat(safePath);
       return {
         path: i.path,
         size: stats.size,

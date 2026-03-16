@@ -184,9 +184,22 @@ export function google(
   opts?: ModelOptions,
 ): ONIModel {
   const apiKey = opts?.apiKey ?? process.env["GOOGLE_API_KEY"] ?? "";
-  const baseUrl = (
+  if (!apiKey) {
+    throw new Error('Google API key not configured. Set GOOGLE_API_KEY environment variable or pass apiKey in options.');
+  }
+  const rawBaseUrl = (
     opts?.baseUrl ?? "https://generativelanguage.googleapis.com/v1beta"
   ).replace(/\/$/, "");
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawBaseUrl);
+  } catch {
+    throw new Error(`Invalid Google baseUrl: "${rawBaseUrl}" is not a valid URL`);
+  }
+  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+    throw new Error(`Invalid Google baseUrl scheme: "${parsedUrl.protocol}" — only "https:" and "http:" are allowed`);
+  }
+  const baseUrl = rawBaseUrl;
   const defaultMaxTokens = opts?.defaultMaxTokens;
   const defaultTemperature = opts?.defaultTemperature;
 
@@ -368,7 +381,7 @@ export function google(
       try {
         parsed = JSON.parse(data) as GeminiResponseBody;
       } catch (err) {
-        console.warn("[oni-core] Google SSE: failed to parse JSON chunk:", err, "| raw data:", data);
+        console.warn("[oni-core] Google SSE: failed to parse JSON chunk:", err, "| data length:", data?.length ?? 0);
         continue;
       }
 

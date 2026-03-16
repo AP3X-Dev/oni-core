@@ -12,6 +12,10 @@ import { Command } from "../types.js";
 import type { SupervisorConfig, RuleRoute } from "./types.js";
 import type { AgentRegistry } from "./registry.js";
 import type { ONIModel } from "../models/types.js";
+
+/** Strip newlines and collapse whitespace to prevent prompt injection in LLM messages. */
+const sanitizeRole = (s: string): string =>
+  s.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
 import { ONIError } from "../errors.js";
 
 // ----------------------------------------------------------------
@@ -107,7 +111,7 @@ export function createSupervisorNode<S extends SupervisorState>(
                 [config.contextField ?? "context"]: { ...rawCtx, lastAgentError: undefined },
                 messages: [
                   ...state.messages,
-                  { role: "system", content: `Supervisor auto-recovering to: ${match.def.role}` },
+                  { role: "system", content: `Supervisor auto-recovering to: ${sanitizeRole(match.def.role)}` },
                 ],
               } as Partial<S>,
               goto: match.def.id,
@@ -142,7 +146,7 @@ export function createSupervisorNode<S extends SupervisorState>(
         targetAgentId = routeViaRules(task, ctx, config.rules ?? []);
         break;
       case "round-robin":
-        targetAgentId = routeRoundRobin(registry);
+        targetAgentId = routeRoundRobin(registry, round);
         break;
       case "capability":
         targetAgentId = routeViaCapability(ctx, registry);
@@ -165,7 +169,7 @@ export function createSupervisorNode<S extends SupervisorState>(
         ...(deadlineAbsolute != null ? { [config.contextField ?? "context"]: { ...rawCtx, __deadlineAbsolute: deadlineAbsolute } } : {}),
         messages: [
           ...state.messages,
-          { role: "system", content: `Supervisor routing to: ${agentDef.role}` },
+          { role: "system", content: `Supervisor routing to: ${sanitizeRole(agentDef.role)}` },
         ],
       } as Partial<S>,
       goto: targetAgentId,
@@ -231,22 +235,19 @@ function routeViaRules(
   return null;
 }
 
-let rrCounter = 0;
-
 function routeRoundRobin<S extends Record<string, unknown>>(
   registry: AgentRegistry<S>,
+  counter: number,
 ): string | null {
   const agents = registry.findIdle();
   if (!agents.length) {
     // Fall back to all agents if none idle
     const all = registry.getAll().filter((a) => a.status !== "terminated");
     if (!all.length) return null;
-    const idx = rrCounter % all.length;
-    rrCounter++;
+    const idx = counter % all.length;
     return all[idx]!.def.id;
   }
-  const idx = rrCounter % agents.length;
-  rrCounter++;
+  const idx = counter % agents.length;
   return agents[idx]!.def.id;
 }
 

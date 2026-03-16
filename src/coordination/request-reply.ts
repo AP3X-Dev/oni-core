@@ -6,6 +6,8 @@
  * receives a promise that resolves when the target replies.
  */
 
+import { randomUUID } from "node:crypto";
+
 export interface PendingRequest {
   id: string;
   from: string;
@@ -43,7 +45,7 @@ export class RequestReplyBroker {
     payload: unknown,
     opts?: { timeoutMs?: number },
   ): { requestId: string; promise: Promise<unknown>; message: BrokerMessage } {
-    const id = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const id = `req_${randomUUID()}`;
 
     // Serialize before mutating state — throw early if payload is non-serializable
     // so no orphaned pending entry is left behind.

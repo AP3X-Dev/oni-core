@@ -189,8 +189,12 @@ export class HooksEngine {
 
   // ── Observability ───────────────────────────────────────────────────
 
-  onAny(listener: (event: HookEvent, payload: BasePayload) => void): void {
+  onAny(listener: (event: HookEvent, payload: BasePayload) => void): () => void {
     this.anyListeners.push(listener);
+    return () => {
+      const idx = this.anyListeners.indexOf(listener);
+      if (idx !== -1) this.anyListeners.splice(idx, 1);
+    };
   }
 
   // ── Fire ────────────────────────────────────────────────────────────
@@ -224,12 +228,25 @@ export class HooksEngine {
         } else {
           result = await promise;
         }
-      } catch {
-        // Errors are caught silently; treat as pass
+      } catch (err) {
+        // Security-critical hooks fail closed (deny) on error
+        if (event === "PreToolUse" || event === "PermissionRequest") {
+          console.error(`[hooks-engine] ${event} hook crashed — denying (fail-closed):`, err);
+          return { decision: "deny", reason: "Hook error: fail-closed for security" };
+        }
+        // Non-security hooks fail open (pass)
         result = null;
       }
 
-      if (result == null) continue;
+      // Security-critical hooks must fail-closed on timeout (result is null
+      // when withTimeout fires). Non-security hooks can safely skip.
+      if (result == null) {
+        if (event === "PreToolUse" || event === "PermissionRequest") {
+          console.error(`[hooks-engine] ${event} hook timed out — denying (fail-closed)`);
+          return { decision: "deny", reason: "Hook timeout — fail-closed for security" };
+        }
+        continue;
+      }
 
       // Short-circuit on deny or block
       if (result.decision === "deny" || result.decision === "block") {
@@ -300,8 +317,30 @@ export class HooksEngine {
   static withSecurityGuardrails(): HooksEngine {
     const engine = new HooksEngine();
 
+    // O(n) check for rm with both -r and -f flags (any order, combined or separate).
+    // Replaces lookahead-based regex that was vulnerable to ReDoS on adversarial input.
+    const hasRmRf = (cmd: string): boolean => {
+      const tokens = cmd.split(/\s+/);
+      let foundRm = false;
+      let hasR = false;
+      let hasF = false;
+      for (const tok of tokens) {
+        if (!foundRm) {
+          if (tok === "rm") foundRm = true;
+          continue;
+        }
+        if (tok.startsWith("-")) {
+          if (/[rR]/.test(tok)) hasR = true;
+          if (/[fF]/.test(tok)) hasF = true;
+        } else {
+          // Non-flag after rm — still check subsequent tokens for flags
+        }
+        if (hasR && hasF) return true;
+      }
+      return false;
+    };
+
     const dangerousBashPatterns = [
-      /rm\b(?=[^\n]*-[a-zA-Z]*[rR])(?=[^\n]*-[a-zA-Z]*[fF])/,  // rm -rf, rm -fr, rm -Rf, rm -r -f, etc.
       /mkfs/,
       /dd\s+if=/,
       /chmod\s+777/,
@@ -314,10 +353,6 @@ export class HooksEngine {
       /eval\s+.*mkfs/,
       /eval\s+.*dd\s+if=/,
       /eval\s+.*chmod\s+777/,
-      // Variable expansion executing commands: $VAR, ${VAR}, or $(...)
-      /=\s*["']?\s*rm\b(?=[^\n]*-[a-zA-Z]*[rR])(?=[^\n]*-[a-zA-Z]*[fF])/,  // CMD="rm -rf ..."
-      /\$\(.*rm\b(?=[^\n]*-[a-zA-Z]*[rR])(?=[^\n]*-[a-zA-Z]*[fF])/,         // $(rm -rf ...)
-      /`.*rm\b(?=[^\n]*-[a-zA-Z]*[rR])(?=[^\n]*-[a-zA-Z]*[fF])/,             // `rm -rf ...`
     ];
 
     const sensitiveFilePatterns = [
@@ -338,6 +373,12 @@ export class HooksEngine {
         // Check bash commands
         if (p.toolName === "Bash") {
           const command = typeof input.command === "string" ? input.command : "";
+          if (hasRmRf(command)) {
+            return {
+              decision: "deny" as const,
+              reason: "Dangerous command blocked: rm with -r and -f flags",
+            };
+          }
           for (const pattern of dangerousBashPatterns) {
             if (pattern.test(command)) {
               return {

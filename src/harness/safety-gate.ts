@@ -97,15 +97,21 @@ export class SafetyGate {
     }
 
     // Safely extract text — content is typed as string but guard defensively
-    // against adapters that return a content-block array at runtime.
-    const text = typeof response.content === "string"
-      ? response.content
-      : (response.content as Array<{ text?: string }>).map((p) => p.text ?? "").join("");
+    // against adapters that return a content-block array or unexpected types.
+    let text: string;
+    if (typeof response.content === "string") {
+      text = response.content;
+    } else if (Array.isArray(response.content)) {
+      text = (response.content as Array<{ text?: string }>).map((p) => p.text ?? "").join("");
+    } else {
+      // content is null, undefined, or unexpected type — fail-closed
+      return { ...FALLBACK_RESULT };
+    }
 
     try {
       const parsed = JSON.parse(text) as Record<string, unknown>;
       return {
-        approved: Boolean(parsed["approved"]),
+        approved: parsed["approved"] === true,
         reason: parsed["reason"] as string | undefined,
         riskScore: parsed["riskScore"] as number | undefined,
         suggestion: parsed["suggestion"] as string | undefined,

@@ -8,6 +8,7 @@
 //   - Auto-generates IDs if not provided
 // ============================================================
 
+import { randomUUID } from "node:crypto";
 import type { Channel } from "../types.js";
 
 // ----------------------------------------------------------------
@@ -51,9 +52,8 @@ export type MessageUpdate = BaseMessage | RemoveMessage | UpdateMessage;
 // ID generator
 // ----------------------------------------------------------------
 
-let _msgCounter = 0;
 function generateId(): string {
-  return `msg-${++_msgCounter}-${Date.now().toString(36)}`;
+  return `msg-${randomUUID()}`;
 }
 
 function ensureId(msg: BaseMessage): Message {

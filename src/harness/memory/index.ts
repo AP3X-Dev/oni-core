@@ -251,12 +251,16 @@ export class MemoryLoader {
       };
     }
 
+    const root = path.resolve(this.config.root);
     const folder = subfolder
-      ? path.join(this.config.root, type, subfolder)
-      : path.join(this.config.root, type);
+      ? path.resolve(this.config.root, type, subfolder)
+      : path.resolve(this.config.root, type);
 
-    const absPath = path.join(folder, filename);
-    const relPath = path.relative(this.config.root, absPath);
+    const absPath = path.resolve(folder, filename);
+    if (!absPath.startsWith(root + "/") && absPath !== root) {
+      throw new Error(`Path traversal detected: resolved path escapes memory root`);
+    }
+    const relPath = path.relative(root, absPath);
 
     const finalContent = /^---\r?\n/.test(content)
       ? content
@@ -314,7 +318,8 @@ export class MemoryLoader {
    */
   persistEpisodic(sessionId: string, content: string): MemoryUnit {
     const date = new Date().toISOString().split("T")[0]!;
-    const filename = `${date}_${sessionId}.md`;
+    const safeSessionId = sessionId.replace(/\.\./g, "_").replace(/[\/\\]/g, "_").replace(/\x00/g, "_");
+    const filename = `${date}_${safeSessionId}.md`;
     // Skip autoIndex for episodic/recent — INDEX.md would pollute the dated file listing
     const unit = this.persistInternal("episodic", filename, content, "recent", true);
     this.compactEpisodicIfNeeded();
@@ -327,8 +332,10 @@ export class MemoryLoader {
    */
   persistSemantic(domain: string, topic: string, content: string): MemoryUnit {
     const path = getPath();
-    const filename = `${topic.toLowerCase().replace(/\s+/g, "-")}.md`;
-    const unit = this.persist("semantic", filename, content, domain);
+    const safeDomain = domain.replace(/\.\./g, '_').replace(/[\/\\]/g, '_').replace(/\x00/g, '_');
+    const safeTopic = topic.replace(/\.\./g, '_').replace(/[\/\\]/g, '_').replace(/\x00/g, '_');
+    const filename = `${safeTopic.toLowerCase().replace(/\s+/g, "-")}.md`;
+    const unit = this.persist("semantic", filename, content, safeDomain);
 
     if (this.config.autoIndex && path) {
       this.rebuildIndex(path.join(this.config.root, "semantic"));

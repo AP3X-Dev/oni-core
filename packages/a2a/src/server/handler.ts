@@ -2,6 +2,11 @@ import type { A2ATask } from "../types.js";
 
 export type TaskHandler = (message: string, taskId: string) => Promise<string> | AsyncGenerator<string>;
 
+/** Extract a safe error message from an unknown throw value (BUG-0029). */
+function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
 export async function handleJsonRPC(
   body: unknown,
   handler: TaskHandler,
@@ -33,8 +38,9 @@ export async function handleJsonRPC(
         artifacts: [{ parts: [{ type: "text", text: output }] }],
       };
       return { response: { jsonrpc: "2.0", id: req.id, result: task } };
-    } catch (err) {
-      return { response: { jsonrpc: "2.0", id: req.id, error: { code: -32603, message: String(err) } } };
+    } catch (e: unknown) {
+      console.error("[a2a] tasks/send error:", errorMessage(e));
+      return { response: { jsonrpc: "2.0", id: req.id, error: { code: -32603, message: "Internal server error" } } };
     }
   }
 
@@ -50,8 +56,9 @@ export async function handleJsonRPC(
       // Wrap promise as single-item stream
       async function* single(): AsyncGenerator<string> { yield await (result as Promise<string>); }
       return { stream: safeStream(single()), taskId };
-    } catch (err) {
-      return { response: { jsonrpc: "2.0", id: req.id, error: { code: -32603, message: String(err) } } };
+    } catch (e: unknown) {
+      console.error("[a2a] tasks/sendSubscribe error:", errorMessage(e));
+      return { response: { jsonrpc: "2.0", id: req.id, error: { code: -32603, message: "Internal server error" } } };
     }
   }
 

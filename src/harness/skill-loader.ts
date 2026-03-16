@@ -3,6 +3,9 @@
 // SKILL.md discovery and on-demand injection into agent loop
 // ============================================================
 
+import fs from "node:fs";
+import path from "node:path";
+
 import type { ToolDefinition } from "../tools/types.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -76,7 +79,6 @@ export class SkillLoader {
 
   /**
    * Scan a single directory (recursively) for SKILL.md files.
-   * Uses dynamic require("fs") — safe to call in non-Node envs (returns empty loader).
    */
   static fromDirectory(dir: string): SkillLoader {
     const loader = new SkillLoader();
@@ -99,22 +101,13 @@ export class SkillLoader {
 
   private loadDirectory(dir: string): void {
     try {
-      // Dynamic require to avoid bundler issues in non-Node envs
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const fs = require("fs") as typeof import("fs");
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const path = require("path") as typeof import("path");
-      this.scanDirectory(dir, fs, path);
+      this.scanDirectory(dir);
     } catch {
-      // Not in Node.js or fs unavailable — silently skip
+      // fs unavailable — silently skip
     }
   }
 
-  private scanDirectory(
-    dir: string,
-    fs: typeof import("fs"),
-    path: typeof import("path"),
-  ): void {
+  private scanDirectory(dir: string): void {
     let entries: string[];
     try {
       entries = fs.readdirSync(dir);
@@ -127,9 +120,9 @@ export class SkillLoader {
       try {
         const stat = fs.statSync(full);
         if (stat.isDirectory()) {
-          this.scanDirectory(full, fs, path);
+          this.scanDirectory(full);
         } else if (entry === "SKILL.md") {
-          this.loadSkillFile(full, fs);
+          this.loadSkillFile(full);
         }
       } catch {
         // Skip inaccessible entries
@@ -137,7 +130,7 @@ export class SkillLoader {
     }
   }
 
-  private loadSkillFile(filePath: string, fs: typeof import("fs")): boolean {
+  private loadSkillFile(filePath: string): boolean {
     try {
       const raw = fs.readFileSync(filePath, "utf-8");
       const { meta, body } = parseFrontmatter(raw);
@@ -207,10 +200,8 @@ export class SkillLoader {
    */
   loadSkillFromFile(filePath: string): boolean {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const fs = require("fs") as typeof import("fs");
       // Note: loadSkillFile already increments this.version on success.
-      return this.loadSkillFile(filePath, fs);
+      return this.loadSkillFile(filePath);
     } catch {
       return false;
     }

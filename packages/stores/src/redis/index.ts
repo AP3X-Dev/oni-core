@@ -122,6 +122,7 @@ export class RedisStore extends BaseStore {
     if ttl > 0 then
       redis.call('PEXPIRE', KEYS[1], ttl)
     end
+    redis.call('ZADD', KEYS[2], tonumber(ARGV[3]), ARGV[4])
     return 'OK'
   `;
 
@@ -145,22 +146,35 @@ export class RedisStore extends BaseStore {
     const dk = this.dataKey(namespace, key);
     const ttlMs = opts?.ttl ?? 0;
 
-    // Atomic GET + conditional createdAt preservation + SET via Lua script
+    // Atomic GET + conditional createdAt preservation + SET + ZADD via Lua script
     await this.client.eval(
       RedisStore.PUT_SCRIPT,
-      1,
+      2,
       dk,
+      this.idxKey(namespace),
       JSON.stringify(item),
       ttlMs,
+      now,
+      key,
     );
-
-    // Update the namespace index (sorted set, score = updatedAt)
-    await this.client.zadd(this.idxKey(namespace), now, key);
   }
 
+  // Lua script: atomically DEL the data key and ZREM the index entry.
+  // KEYS[1] = data key, KEYS[2] = index key, ARGV[1] = member to remove
+  private static readonly DELETE_SCRIPT = `
+    redis.call('DEL', KEYS[1])
+    redis.call('ZREM', KEYS[2], ARGV[1])
+    return 'OK'
+  `;
+
   async delete(namespace: Namespace, key: StoreKey): Promise<void> {
-    await this.client.del(this.dataKey(namespace, key));
-    await this.client.zrem(this.idxKey(namespace), key);
+    await this.client.eval(
+      RedisStore.DELETE_SCRIPT,
+      2,
+      this.dataKey(namespace, key),
+      this.idxKey(namespace),
+      key,
+    );
   }
 
   async list(namespace: Namespace): Promise<StoreItem[]> {

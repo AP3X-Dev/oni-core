@@ -10,6 +10,7 @@ export class CsvLoader extends DocumentLoader {
     const raw = await readFile(source, "utf-8");
     const separator = source.endsWith(".tsv") ? "\t" : ",";
     const rows = parseCSV(raw, separator);
+    if (rows.length === 0) return [];
     const [header, ...data] = rows;
     const content = data
       .map((row) => header!.map((h, i) => `${h}: ${row[i] ?? ""}`).join(", "))

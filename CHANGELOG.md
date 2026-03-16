@@ -5,6 +5,55 @@ All notable changes to @oni.bot/core are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-03-16
+
+Automated bug pipeline sweep: **90 bugs** found, fixed, and independently verified (BUG-0024 through BUG-0182). Primarily security hardening and reliability improvements across the entire codebase.
+
+### Security — Injection & Traversal
+- **Path traversal prevention:** `persistSemantic()`, `persistEpisodic()`, `persistInternal()`, `safeSkillPath()`, and GitHub API calls now validate/sanitize paths (BUG-0064, 0075, 0100, 0101, 0106, 0163, 0166)
+- **Null-byte injection:** Stripped from `sessionId`, `domain`, and `topic` fields before filesystem operations (BUG-0163, 0166)
+- **Command injection:** `execSync` replaced with `execFileSync` (array args) in CLI commands; `shell:true` removed from spawn (BUG-0063, 0104)
+- **Prototype pollution:** `deepMerge` filters `__proto__`/`constructor`/`prototype` keys; recursive strip in `modifiedInput` (BUG-0062, 0144)
+- **Mermaid injection:** Bracket characters escaped in node labels to prevent diagram injection (BUG-0174)
+- **Role string sanitization:** LLM message interpolation sites in supervisor sanitized (BUG-0173)
+- **LLM-generated skill validation:** Content validated before writing to disk (BUG-0157)
+- **ReDoS prevention:** Replaced vulnerable `rm -rf` regex with O(n) token-based check (BUG-0180)
+
+### Security — SSRF & Exfiltration
+- **URL scheme validation:** All model factories (`anthropic`, `openai`, `openrouter`, `google`, `ollama`) and `A2AClient` now reject non-HTTP(S) `baseUrl` schemes to prevent API key exfiltration (BUG-0105, 0141, 0142, 0143, 0170, 0179)
+- **API key validation:** All model factories throw at construction time if API key is missing (BUG-0098, 0099, 0159)
+
+### Security — Information Disclosure
+- **Error message sanitization:** Raw API response bodies replaced with generic status messages across all model adapters, GitHub, Firecrawl, web-search, and A2A handlers (BUG-0076, 0102, 0111, 0155, 0161, 0164, 0165, 0167)
+
+### Security — Access Control & DoS
+- **TOCTOU race fix:** `checkAllowedPath()` returns resolved path; all 6 filesystem handlers use it for I/O (BUG-0065, 0181)
+- **Fail-closed semantics:** Empty `allowedPaths` now throws instead of allowing all access; hook timeouts fail-closed for security-critical events (BUG-0149, 0168, 0169)
+- **Default-deny permissions:** Missing agent entries in permission config now deny by default (BUG-0172)
+- **Safety gate strictness:** `approved` field checked with strict boolean equality (BUG-0162)
+- **Body size limits:** A2A server enforces 1MB max body; `requestHandler()` enforces `MAX_BODY_SIZE` for Fetch-API callers (BUG-0077, 0145)
+- **Buffer overflow guards:** MCP `StdioTransport` enforces `MAX_BUFFER_SIZE`; LSP client caps buffer at 64MB (BUG-0068, 0182)
+- **Unbounded growth caps:** `ExperimentLog` capped at 1000 records; `DeadLetterQueue` at 100 per thread (BUG-0129, 0130)
+- **CORS enforcement:** A2A server adds preflight handling and `Content-Type` enforcement (BUG-0171)
+
+### Security — Cryptographic
+- **PRNG hardening:** `Math.random` replaced with `crypto.randomUUID` for HITL resume IDs, broker IDs, and `generateId()` (BUG-0095, 0103, 0122)
+
+### Fixed — Reliability
+- **Shared mutable state:** 6 module-level counters/maps moved to per-instance scope to prevent cross-tenant interference (BUG-0070, 0082, 0083, 0092, 0123, 0134)
+- **Race conditions:** `refreshTools()` coalescing lock prevents concurrent races; `fileVersions` re-read at increment point; race timeout properly cleared (BUG-0124, 0125, 0127)
+- **Resource leaks:** `ReadableStream` reader released in `finally` block; `onAny()` returns unsubscribe function (BUG-0079, 0128)
+- **Lifecycle events:** `SessionEnd` fires on all loop exit paths including HITL interrupt; telemetry span closes on interrupt (BUG-0080, 0086)
+- **Redis atomicity:** `SET+ZADD` combined into single Lua script for `put()`; `DEL+ZREM` wrapped in `MULTI/EXEC` (BUG-0073, 0096, 0126)
+- **ESM compatibility:** `require()` calls replaced with static ESM imports in `SkillLoader` and `safeSkillPath` (BUG-0078, 0081)
+- **Stream resilience:** OpenRouter adapter handles usage-only SSE chunks and guards `choices` dereference; `SafetyGate.check()` handles non-string/non-array content (BUG-0153, 0178)
+- **Error handling:** JSON-RPC handler catches sync throws; spawn processes get `error` event handlers; JSONL parsing skips malformed lines (BUG-0029, 0114, 0115, 0150)
+- **Input validation:** `fromJSON` validates input shape; nested object schemas enforce required fields; `validate` callback invoked on resumed user input; `Object.freeze` no longer blocks VM result write-back (BUG-0024, 0112, 0151, 0152)
+- **Minor fixes:** Empty CSV guard, PII regex `/g` flag removal, Slack `username`/`iconEmoji` passthrough, round-robin over full slot list, `structuredClone` fallback, dotless path guard in `getLoader`, null-safe `refreshTools`, unknown channel key filtering, state method signature alignment, E2B timeout cleanup, off-by-one in `fireSessionEnd` turn count, fallback truncation `continue` fix (BUG-0025, 0026, 0027, 0028, 0030, 0067, 0090, 0093, 0107, 0120, 0121, 0133, 0136, 0137, 0154, 0175)
+
+### Added
+- 8 new test files covering prototype pollution, hooks eval bypass, PII regex safety, skill evolver ESM paths, DAG unsatisfiable deps, supervisor routing errors, wrap-agent loop errors, and A2A handler subscribe errors
+
 ## [1.1.1] — 2026-03-15
 
 ### Fixed

@@ -137,9 +137,16 @@ export class AgentPool<S extends Record<string, unknown>> {
       case "least-busy":
         return available.reduce((a, b) => (a.activeTasks <= b.activeTasks ? a : b));
       case "round-robin": {
-        const slot = available[this.rrIndex % available.length]!;
-        this.rrIndex++;
-        return slot;
+        const total = this.slots.length;
+        for (let i = 0; i < total; i++) {
+          const idx = (this.rrIndex + i) % total;
+          const candidate = this.slots[idx]!;
+          if (candidate.activeTasks < (candidate.agent.maxConcurrency ?? 1)) {
+            this.rrIndex = idx + 1;
+            return candidate;
+          }
+        }
+        return null;
       }
       case "random":
         return available[Math.floor(Math.random() * available.length)]!;

@@ -265,8 +265,8 @@ export class LSPClient {
         },
       });
     } else {
-      // Subsequent — didChange
-      const nextVersion = version + 1;
+      // Subsequent — didChange (re-read to prevent stale version from concurrent callers)
+      const nextVersion = (this.fileVersions.get(filePath) ?? 0) + 1;
       this.fileVersions.set(filePath, nextVersion);
       this.sendNotification("textDocument/didChange", {
         textDocument: { uri, version: nextVersion },
@@ -423,8 +423,17 @@ export class LSPClient {
     }
   }
 
+  private static readonly MAX_BUFFER_SIZE = 64 * 1024 * 1024; // 64 MB
+
   private processBuffer(data: string): void {
     this.buffer += data;
+
+    if (this.buffer.length > LSPClient.MAX_BUFFER_SIZE) {
+      console.error("[lsp] Buffer exceeded 64 MB limit — disconnecting");
+      this.buffer = "";
+      this.stop();
+      return;
+    }
 
     while (true) {
       const headerEnd = this.buffer.indexOf("\r\n\r\n");

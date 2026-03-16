@@ -46,13 +46,37 @@ export class AuditLog {
   }
 
   fromJSON(threadId: string, json: string): void {
-    let entries: AuditEntry[];
+    const safeThreadId = threadId.replace(/[^\w\-.:]/g, "_");
+    let parsed: unknown;
     try {
-      entries = JSON.parse(json) as AuditEntry[];
+      parsed = JSON.parse(json);
     } catch (err) {
       throw new Error(
-        `AuditLog.fromJSON: failed to parse log for threadId "${threadId}": ${err instanceof Error ? err.message : String(err)}`
+        `AuditLog.fromJSON: failed to parse log for threadId "${safeThreadId}": ${err instanceof Error ? err.message : String(err)}`
       );
+    }
+    if (!Array.isArray(parsed)) {
+      throw new Error(
+        `AuditLog.fromJSON: expected array for threadId "${safeThreadId}", got ${typeof parsed}`
+      );
+    }
+    const VALID_ACTIONS = new Set([
+      "llm.request", "llm.response", "tool.call", "tool.result",
+      "filter.blocked", "budget.warning", "budget.exceeded", "budget.unknown_pricing",
+    ]);
+    const entries: AuditEntry[] = [];
+    for (const entry of parsed) {
+      if (
+        entry == null ||
+        typeof entry !== "object" ||
+        Object.prototype.hasOwnProperty.call(entry, "__proto__") ||
+        typeof (entry as AuditEntry).timestamp !== "number" ||
+        typeof (entry as AuditEntry).agent !== "string" ||
+        !VALID_ACTIONS.has((entry as AuditEntry).action)
+      ) {
+        continue; // skip malformed or suspicious entries
+      }
+      entries.push(entry as AuditEntry);
     }
     this.logs.set(threadId, entries);
   }
