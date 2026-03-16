@@ -287,7 +287,7 @@ export function openai(
       try {
         parsed = JSON.parse(content);
       } catch {
-        // leave parsed undefined if content isn't valid JSON
+        console.warn(`[oni-core] Structured output parsing failed: json_schema response format was requested but the model returned invalid JSON. Raw content: ${content}`);
       }
     }
 
@@ -332,7 +332,8 @@ export function openai(
       let parsed: Record<string, unknown>;
       try {
         parsed = JSON.parse(data) as Record<string, unknown>;
-      } catch {
+      } catch (err) {
+        console.warn("[oni-core] OpenAI SSE: failed to parse JSON chunk:", err, "| raw data:", data);
         continue;
       }
 

@@ -351,13 +351,21 @@ export class ContextCompactor {
    * Get the character length of a message's content.
    */
   private contentLength(msg: ONIModelMessage): number {
-    if (typeof msg.content === "string") {
-      return msg.content.length;
-    }
     let len = 0;
-    for (const part of msg.content) {
-      if (part.text) {
-        len += part.text.length;
+    if (typeof msg.content === "string") {
+      len = msg.content.length;
+    } else {
+      for (const part of msg.content) {
+        if (part.text) {
+          len += part.text.length;
+        }
+      }
+    }
+    // Account for tool calls payload (function names + JSON arguments)
+    if (msg.toolCalls) {
+      for (const tc of msg.toolCalls) {
+        len += tc.name.length;
+        len += JSON.stringify(tc.args).length;
       }
     }
     return len;

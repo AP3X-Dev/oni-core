@@ -36,8 +36,9 @@ export class PubSub {
         for (const handler of handlers) {
           try {
             handler(msg);
-          } catch {
+          } catch (err) {
             // Isolate subscriber errors — delivery continues to remaining handlers
+            console.warn(`[PubSub] Subscriber handler error on topic "${topic}":`, err);
           }
         }
       }

@@ -31,7 +31,7 @@ export function bridgeSwarmTracer(
 ): () => void {
   const startTimes = new Map<string, number>();
 
-  return tracer.subscribe((event) => {
+  const unsubscribe = tracer.subscribe((event) => {
     switch (event.type) {
       case "agent_start":
         startTimes.set(event.agentId, event.timestamp);
@@ -75,4 +75,9 @@ export function bridgeSwarmTracer(
       }
     }
   });
+
+  return () => {
+    unsubscribe();
+    startTimes.clear();
+  };
 }

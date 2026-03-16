@@ -467,8 +467,13 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
         if (modeUpdates) yield tag(evt("node_end", delta as Partial<S>, step, agentId, name), "updates");
         if (modeDebug) yield tag(evt("node_end", delta as Partial<S>, step, agentId, name), "debug");
       }
+    }
 
-      // Static interrupt AFTER
+    // Static interrupt AFTER — checked after ALL parallel results have been
+    // applied so that no node's state updates, routes, or stepWrites are lost.
+    // (BUG-0055: previously this was inside the per-result loop above, which
+    // discarded results from parallel nodes processed after the interrupting one.)
+    for (const { name } of nodeResults) {
       if (ctx.interruptConfig.interruptAfter?.includes(name)) {
         await saveCheckpoint(ctx, threadId, step, state, nextNodes, nextSends, agentId, config?.metadata);
         throw new ONIInterrupt(name, "after", state);

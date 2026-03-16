@@ -130,16 +130,25 @@ export class PostgresCheckpointer<S> implements ONICheckpointer<S> {
       }
     };
 
+    const step = Number(row.step);
+    if (!Number.isFinite(step)) {
+      throw new CheckpointCorruptError(threadId, `invalid "step" — expected a finite number, got ${JSON.stringify(row.step)}`);
+    }
+    const timestamp = Number(row.timestamp);
+    if (!Number.isFinite(timestamp)) {
+      throw new CheckpointCorruptError(threadId, `invalid "timestamp" — expected a finite number, got ${JSON.stringify(row.timestamp)}`);
+    }
+
     return {
       threadId,
-      step:          row.step as number,
+      step,
       agentId:       (row.agent_id as string | null) ?? undefined,
       state:         safeParse<S>("state", row.state),
       nextNodes:     safeParse<string[]>("next_nodes", row.next_nodes),
       pendingSends:  safeParse<Array<{ node: string; args: Record<string, unknown> }>>("pending_sends", row.pending_sends),
       metadata:      row.metadata ? safeParse<Record<string, unknown>>("metadata", row.metadata) : undefined,
       pendingWrites: row.pending_writes ? safeParse<Array<{ nodeId: string; writes: Record<string, unknown> }>>("pending_writes", row.pending_writes) : undefined,
-      timestamp:     Number(row.timestamp),
+      timestamp,
     };
   }
 }
