@@ -95,6 +95,12 @@ for await (const chunk of app.stream(
 
 ---
 
+## Documentation
+
+- **[Developer Guide](./GUIDE.md)** — Progressive tutorial from zero to advanced: graphs, channels, streaming, checkpointing, agents, swarms, and more.
+
+---
+
 ## Ecosystem
 
 **Built on @oni.bot/core:**

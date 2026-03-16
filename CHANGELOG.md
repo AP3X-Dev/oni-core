@@ -5,6 +5,34 @@ All notable changes to @oni.bot/core are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] — 2026-03-15
+
+### Fixed
+- **Deep equal cycle guard:** Two separate WeakSets for independent object tracking prevents false equality on cyclic structures
+- **Direction-aware improvement check:** `ExperimentalExecutor` now correctly evaluates optimization direction
+- **ESM error code:** Postgres store uses `ERR_MODULE_NOT_FOUND` (correct ESM code) instead of `MODULE_NOT_FOUND`
+- **Streaming tool-call ID collisions:** Counter-based IDs prevent duplicates in parallel tool calls
+- **SSE error propagation:** Nested try/catch with `controller.error` for proper stream error handling
+- **Fallback truncation:** `continue` instead of `break` so oversized messages don't halt truncation
+- **Silent parse failures:** `console.warn` surfaced across all 5 model adapters and `responseFormat` parsers
+- **Postgres checkpoint deserialization:** Runtime validation on restored checkpoint data
+- **PubSub subscriber errors:** Errors in subscriber callbacks are now logged instead of silently swallowed
+- **Bridge tracer cleanup:** `startTimes` map entries removed on `unsubscribe` to prevent memory leaks
+- **MCP client error propagation:** `.catch()` reordered so callback errors propagate correctly
+- **Mermaid graph rendering:** Router-to-target edges now render correctly in `toMermaid()`
+- **`contentLength()` accounting:** Tool call tokens included in content length calculation
+- **`interruptAfter` parallel safety:** Moved to post-loop pass to avoid interrupting mid-superstep
+- **`executeTools` parallel safety:** `parallelSafe` check now matches `defineAgent` pattern
+- **EventBus dispose:** `waitFor` promises correctly reject on bus disposal
+- **Harness hooks engine:** Error isolation between hook handlers
+- **OpenAI adapter streaming:** Robust chunk parsing for partial SSE frames
+- **Skill evolver:** Pattern learner and evolver state management fixes
+- **Redis store:** Connection lifecycle and error handling improvements
+
+### Changed
+- Removed internal planning documents from repository (architecture docs, bug trackers, sprint plans)
+- Moved developer guide to root level (`GUIDE.md`)
+
 ## [1.0.2] — 2026-03-13
 
 ### Fixed
