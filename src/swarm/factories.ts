@@ -576,15 +576,14 @@ export function buildRace<S extends BaseSwarmState>(
         );
 
       if (timeoutMs != null) {
-        return Promise.race([
-          p,
-          new Promise<RaceResult>((resolve) =>
-            setTimeout(
-              () => resolve({ id: agent.id, result: null, error: new Error("timeout") }),
-              timeoutMs,
-            ),
-          ),
-        ]);
+        let timer: ReturnType<typeof setTimeout>;
+        const timeoutPromise = new Promise<RaceResult>((resolve) => {
+          timer = setTimeout(
+            () => resolve({ id: agent.id, result: null, error: new Error("timeout") }),
+            timeoutMs,
+          );
+        });
+        return Promise.race([p, timeoutPromise]).finally(() => clearTimeout(timer));
       }
       return p;
     });

@@ -327,7 +327,7 @@ export class ContextCompactor {
     // Walk backwards to keep the most recent messages that fit in the budget
     for (let i = messages.length - 1; i >= 0; i--) {
       const len = this.contentLength(messages[i]);
-      if (totalChars + len > budget) continue;
+      if (totalChars + len > budget) break;
       totalChars += len;
       kept.unshift(messages[i]);
     }

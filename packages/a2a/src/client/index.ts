@@ -1,7 +1,19 @@
 import type { A2AClientConfig, A2ATask, AgentCard } from "../types.js";
 
 export class A2AClient {
-  constructor(private readonly config: A2AClientConfig) {}
+  constructor(private readonly config: A2AClientConfig) {
+    // Validate baseUrl scheme to prevent SSRF via file://, ftp://, or other
+    // non-HTTP schemes when baseUrl is derived from untrusted agent registry data.
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(config.baseUrl);
+    } catch {
+      throw new Error(`Invalid A2A baseUrl: "${config.baseUrl}" is not a valid URL`);
+    }
+    if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+      throw new Error(`Invalid A2A baseUrl scheme: "${parsedUrl.protocol}" — only "https:" and "http:" are allowed`);
+    }
+  }
 
   async getCard(): Promise<AgentCard> {
     const res = await fetch(`${this.config.baseUrl}/.well-known/agent.json`, {
@@ -75,23 +87,30 @@ export class A2AClient {
     const decoder = new TextDecoder();
     let buffer = "";
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") return;
-          try {
-            const event = JSON.parse(data) as { result?: A2ATask };
-            const text = event.result?.status?.message?.parts?.[0];
-            if (text?.type === "text") yield text.text;
-          } catch { /* ignore parse errors */ }
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") return;
+            try {
+              const event = JSON.parse(data) as { result?: A2ATask };
+              const text = event.result?.status?.message?.parts?.[0];
+              // BUG-0028: A2A TextPart declares `text` as optional, meaning
+              // text.text may be undefined even when type === "text". The != null
+              // check ensures we never yield undefined to stream consumers.
+              if (text?.type === "text" && text.text != null) yield text.text;
+            } catch { /* ignore parse errors */ }
+          }
         }
       }
+    } finally {
+      reader.releaseLock();
     }
   }
 

@@ -5,6 +5,7 @@
 // ============================================================
 
 import type { ExperimentResult } from "../../harness/loop/experimental-executor.js";
+import path from "node:path";
 
 export interface SkillUsageRecord {
   skillName: string;
@@ -43,6 +44,23 @@ export interface SkillEvolverConfig {
 }
 
 const MAX_USAGE_HISTORY = 1000;
+const MAX_SKILL_FILE_SIZE = 10_240; // 10 KB — skill files should be concise
+
+/**
+ * Resolve a skill path and verify it stays within the skills root directory.
+ * Throws if skillName contains path traversal sequences (e.g. "../").
+ */
+function safeSkillPath(skillsRoot: string, skillName: string, ...rest: string[]): string {
+  if (skillName.includes("\0") || rest.some(s => s.includes("\0"))) {
+    throw new Error(`Null byte in path segment: skillName "${skillName}"`);
+  }
+  const root = path.resolve(skillsRoot);
+  const resolved = path.resolve(root, skillName, ...rest);
+  if (!resolved.startsWith(root + "/") && resolved !== root) {
+    throw new Error(`Path traversal detected: skillName "${skillName}" escapes skills root`);
+  }
+  return resolved;
+}
 
 export class SkillEvolver {
   private readonly usageHistory: SkillUsageRecord[] = [];
@@ -103,9 +121,8 @@ export class SkillEvolver {
     llm: { chat: (opts: { messages: Array<{ role: string; content: string }>; maxTokens?: number }) => Promise<{ content: string }> },
   ): Promise<string> {
     const { readFile } = await import("node:fs/promises");
-    const { join } = await import("node:path");
 
-    const skillPath = join(this.skillsRoot, skillName, "SKILL.md");
+    const skillPath = safeSkillPath(this.skillsRoot, skillName, "SKILL.md");
     let currentContent = "";
     try {
       currentContent = await readFile(skillPath, "utf-8");
@@ -163,11 +180,38 @@ export class SkillEvolver {
   async commitOrRevert(skillName: string, experiment: ExperimentResult, revisedContent: string): Promise<void> {
     if (!experiment.success) return; // Don't commit regressions
 
-    const { writeFile, mkdir } = await import("node:fs/promises");
-    const { join, dirname } = await import("node:path");
+    // Validate LLM-generated content before persisting to disk.
+    // Skill files are injected into future agent system prompts, so
+    // unconstrained content enables persistent prompt-injection attacks.
+    const sizeBytes = Buffer.byteLength(revisedContent, "utf-8");
+    if (sizeBytes === 0) {
+      console.error(`[skill-evolver] Rejected empty skill revision for "${skillName}"`);
+      return;
+    }
+    if (sizeBytes > MAX_SKILL_FILE_SIZE) {
+      console.error(
+        `[skill-evolver] Rejected skill revision for "${skillName}": ${sizeBytes} bytes exceeds ${MAX_SKILL_FILE_SIZE} byte limit`,
+      );
+      return;
+    }
+    // Valid SKILL.md must start with a markdown heading or YAML frontmatter
+    const trimmed = revisedContent.trimStart();
+    if (!trimmed.startsWith("#") && !trimmed.startsWith("---")) {
+      console.error(
+        `[skill-evolver] Rejected skill revision for "${skillName}": content must start with a markdown heading (#) or frontmatter (---)`,
+      );
+      return;
+    }
 
-    const skillPath = join(this.skillsRoot, skillName, "SKILL.md");
-    await mkdir(dirname(skillPath), { recursive: true });
-    await writeFile(skillPath, revisedContent, "utf-8");
+    try {
+      const { writeFile, mkdir } = await import("node:fs/promises");
+      const { dirname } = await import("node:path");
+
+      const skillPath = safeSkillPath(this.skillsRoot, skillName, "SKILL.md");
+      await mkdir(dirname(skillPath), { recursive: true });
+      await writeFile(skillPath, revisedContent, "utf-8");
+    } catch (err) {
+      console.error(`[skill-evolver] Failed to commit skill "${skillName}":`, err);
+    }
   }
 }

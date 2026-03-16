@@ -57,7 +57,7 @@ export function toSwarmMermaid(registry: AgentRegistry): string {
       parts.push(stats.join(" | "));
     }
 
-    const label = parts.join("<br/>").replace(/"/g, "#quot;");
+    const label = parts.join("<br/>").replace(/"/g, "#quot;").replace(/\[/g, "#lsqb;").replace(/\]/g, "#rsqb;");
     lines.push(`    ${nodeId}["${label}"]`);
 
     // Style by status

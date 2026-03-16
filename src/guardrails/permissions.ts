@@ -9,7 +9,7 @@ export class ToolPermissionError extends Error {
 
 export function checkToolPermission(permissions: ToolPermissions, agentName: string, toolName: string): void {
   const allowed = permissions[agentName];
-  if (allowed === undefined) return;
+  if (allowed === undefined) throw new ToolPermissionError(agentName, toolName);
   if (allowed === "*") return;
   if (Array.isArray(allowed) && allowed.includes(toolName)) return;
   throw new ToolPermissionError(agentName, toolName);
@@ -17,7 +17,7 @@ export function checkToolPermission(permissions: ToolPermissions, agentName: str
 
 export function getPermittedTools(permissions: ToolPermissions, agentName: string, allTools: string[]): string[] {
   const allowed = permissions[agentName];
-  if (allowed === undefined) return allTools;
+  if (allowed === undefined) return [];
   if (allowed === "*") return allTools;
   return allowed.filter(t => allTools.includes(t));
 }

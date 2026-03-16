@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { extname } from "node:path";
 import type { DiffResult } from "./types.js";
 
@@ -27,8 +27,11 @@ export async function resolveFiles(opts: {
   }
 
   try {
-    const output = execSync(
-      `git diff --name-only ${opts.baseBranch}...HEAD`,
+    // BUG-0063: Use execFileSync with an argument array instead of execSync
+    // with string interpolation to prevent command injection via opts.baseBranch.
+    const output = execFileSync(
+      "git",
+      ["diff", "--name-only", `${opts.baseBranch}...HEAD`],
       { cwd: opts.targetDir, encoding: "utf-8", timeout: 10_000 },
     );
     const files = parseDiffOutput(output);

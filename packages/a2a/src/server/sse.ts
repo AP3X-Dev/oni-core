@@ -21,7 +21,8 @@ export function createSSEResponse(
         controller.enqueue(encoder.encode(`data: ${doneEvent}\n\n`));
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (err) {
-        const errEvent = JSON.stringify({ error: { code: -32603, message: String(err) } });
+        console.error("[a2a] SSE task handler error:", err);
+        const errEvent = JSON.stringify({ error: { code: -32603, message: "Internal server error" } });
         try {
           controller.enqueue(encoder.encode(`data: ${errEvent}\n\n`));
         } catch (_) { /* stream may already be cancelled */ }

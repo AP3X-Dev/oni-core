@@ -39,7 +39,11 @@ export function tavilySearch(config: { apiKey: string }): ToolDefinition {
           search_depth: i.searchDepth ?? "basic",
         }),
       });
-      if (!res.ok) throw new Error(`Tavily API error: ${res.status} ${await res.text()}`);
+      if (!res.ok) {
+        const body = await res.text();
+        console.error(`[tavily] API error ${res.status}:`, body);
+        throw new Error(`Tavily API error: ${res.status} ${res.statusText}`);
+      }
       return res.json();
     },
   };

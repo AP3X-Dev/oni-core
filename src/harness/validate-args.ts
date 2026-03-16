@@ -148,6 +148,15 @@ function validateValue(
   ) {
     const props = schema.properties as Record<string, JSONSchema>;
     const obj = value as Record<string, unknown>;
+    // Check required fields on nested objects (mirrors top-level validateToolArgs check)
+    const required = schema.required as string[] | undefined;
+    if (required && Array.isArray(required)) {
+      for (const key of required) {
+        if (!(key in obj) || obj[key] === null) {
+          return `missing required field "${path ? `${path}.${key}` : key}"`;
+        }
+      }
+    }
     for (const [k, propSchema] of Object.entries(props)) {
       if (k in obj) {
         const propError = validateValue(obj[k], propSchema, path ? `${path}.${k}` : k);

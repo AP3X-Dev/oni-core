@@ -40,6 +40,7 @@ export class MCPClient {
   private error: string | undefined;
   private onToolsChanged: (() => void) | undefined;
   private _connectLock: Promise<void> | null = null;
+  private _refreshLock: Promise<void> | null = null;
 
   constructor(
     private config: MCPServerConfig,
@@ -162,18 +163,33 @@ export class MCPClient {
    * Refresh the tool list from the server.
    */
   async refreshTools(): Promise<void> {
-    if (!this.transport?.isConnected()) {
-      throw new Error("MCP client not connected");
+    if (this._refreshLock !== null) {
+      return this._refreshLock;
     }
 
-    const response = await this.transport.send("tools/list");
+    const refreshing = (async () => {
+      if (!this.transport?.isConnected()) {
+        throw new Error("MCP client not connected");
+      }
 
-    if (response.error) {
-      throw new Error(`MCP tools/list failed: ${response.error.message}`);
+      const response = await this.transport.send("tools/list");
+
+      if (response.error) {
+        throw new Error(`MCP tools/list failed: ${response.error.message}`);
+      }
+
+      const result = response.result as MCPToolListResult | null;
+      this.tools = result?.tools ?? [];
+    })();
+
+    this._refreshLock = refreshing;
+    try {
+      await refreshing;
+    } finally {
+      if (this._refreshLock === refreshing) {
+        this._refreshLock = null;
+      }
     }
-
-    const result = response.result as MCPToolListResult;
-    this.tools = result.tools ?? [];
   }
 
   /**
@@ -240,10 +256,10 @@ export class MCPClient {
   private handleNotification(notification: JsonRpcNotification): void {
     if (notification.method === "notifications/tools/list_changed") {
       // Server says tools have changed — refresh
-      void this.refreshTools().catch(() => {
-        // Silently ignore refresh failures from notifications
-      }).then(() => {
+      void this.refreshTools().then(() => {
         this.onToolsChanged?.();
+      }).catch(() => {
+        // Silently ignore refresh failures from notifications
       });
     }
   }

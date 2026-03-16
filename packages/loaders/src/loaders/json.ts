@@ -11,11 +11,19 @@ export class JsonLoader extends DocumentLoader {
 
     if (source.endsWith(".jsonl") || source.endsWith(".ndjson")) {
       const lines = raw.split("\n").filter((l) => l.trim());
-      return lines.map((line, i) => ({
-        content: JSON.stringify(JSON.parse(line), null, 2),
-        metadata: { type: "json", lineIndex: i },
-        source,
-      }));
+      const docs: Document[] = [];
+      for (let i = 0; i < lines.length; i++) {
+        try {
+          docs.push({
+            content: JSON.stringify(JSON.parse(lines[i]), null, 2),
+            metadata: { type: "json", lineIndex: i },
+            source,
+          });
+        } catch {
+          console.warn(`[loaders/json] Skipping malformed JSONL line ${i + 1} in ${source}`);
+        }
+      }
+      return docs;
     }
 
     const parsed = JSON.parse(raw) as unknown;

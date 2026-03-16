@@ -246,10 +246,31 @@ export function anthropic(
   opts?: AnthropicOptions,
 ): ONIModel {
   const apiKey = opts?.apiKey ?? process.env["ANTHROPIC_API_KEY"] ?? "";
-  const baseUrl = (opts?.baseUrl ?? "https://api.anthropic.com").replace(
+  if (!apiKey) {
+    throw new Error(
+      "Anthropic API key not configured. Set ANTHROPIC_API_KEY environment variable or pass apiKey in options.",
+    );
+  }
+  const rawBaseUrl = (opts?.baseUrl ?? "https://api.anthropic.com").replace(
     /\/$/,
     "",
   );
+
+  // Validate baseUrl scheme to prevent API key exfiltration via config injection
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawBaseUrl);
+  } catch {
+    throw new Error(
+      `Invalid Anthropic baseUrl: "${rawBaseUrl}" is not a valid URL`,
+    );
+  }
+  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+    throw new Error(
+      `Invalid Anthropic baseUrl scheme: "${parsedUrl.protocol}" — only "https:" and "http:" are allowed`,
+    );
+  }
+  const baseUrl = rawBaseUrl;
   const anthropicVersion = opts?.anthropicVersion ?? "2023-06-01";
   const defaultMaxTokens = opts?.defaultMaxTokens ?? 4096;
   const defaultTemperature = opts?.defaultTemperature;
@@ -417,7 +438,7 @@ export function anthropic(
       try {
         parsed = JSON.parse(data) as Record<string, unknown>;
       } catch (err) {
-        console.warn("[oni-core] Anthropic SSE: failed to parse JSON chunk", { error: err, rawData: data });
+        console.warn("[oni-core] Anthropic SSE: failed to parse JSON chunk", { error: err, dataLength: data?.length ?? 0 });
         continue;
       }
 

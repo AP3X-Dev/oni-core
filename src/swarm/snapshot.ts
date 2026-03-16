@@ -49,12 +49,11 @@ export interface SnapshotCaptureOptions {
 // SwarmSnapshotStore
 // ----------------------------------------------------------------
 
-let _counter = 0;
-
 const MAX_SNAPSHOTS = 100;
 
 export class SwarmSnapshotStore {
   private snapshots = new Map<string, SwarmSnapshot>();
+  private _counter = 0;
 
   /**
    * Capture a point-in-time snapshot of the swarm state.
@@ -64,7 +63,7 @@ export class SwarmSnapshotStore {
     state: Record<string, unknown>,
     opts?: SnapshotCaptureOptions,
   ): string {
-    const id = `snap_${Date.now()}_${++_counter}`;
+    const id = `snap_${Date.now()}_${++this._counter}`;
     // Fall back to JSON round-trip if state contains non-cloneable values
     // (functions, WeakRefs, etc.); JSON silently drops them rather than throwing.
     let clonedState: Record<string, unknown>;
@@ -86,7 +85,11 @@ export class SwarmSnapshotStore {
       snapshot.timeline = opts.tracer.getTimeline();
     }
     if (opts?.metadata) {
-      snapshot.metadata = structuredClone(opts.metadata);
+      try {
+        snapshot.metadata = structuredClone(opts.metadata);
+      } catch {
+        snapshot.metadata = JSON.parse(JSON.stringify(opts.metadata)) as Record<string, unknown>;
+      }
     }
 
     this.snapshots.set(id, snapshot);

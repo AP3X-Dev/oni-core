@@ -108,7 +108,12 @@ export function deepMerge<T extends Record<string, unknown>>(
 ): T {
   const result = { ...base };
 
+  const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
   for (const key of Object.keys(override) as Array<keyof T>) {
+    // Guard against prototype pollution
+    if (DANGEROUS_KEYS.has(key as string)) continue;
+
     const overrideVal = override[key];
 
     // Skip undefined — don't overwrite base

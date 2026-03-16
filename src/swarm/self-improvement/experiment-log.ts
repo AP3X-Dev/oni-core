@@ -20,6 +20,7 @@ export interface ExperimentRecord {
 }
 
 export class ExperimentLog {
+  private static readonly MAX_RECORDS = 1000;
   private readonly records: ExperimentRecord[] = [];
 
   log(record: Omit<ExperimentRecord, "id" | "timestamp">): ExperimentRecord {
@@ -29,6 +30,9 @@ export class ExperimentLog {
       timestamp: new Date().toISOString(),
     };
     this.records.push(full);
+    if (this.records.length > ExperimentLog.MAX_RECORDS) {
+      this.records.splice(0, this.records.length - ExperimentLog.MAX_RECORDS);
+    }
     return full;
   }
 

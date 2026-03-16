@@ -24,8 +24,7 @@ import { buildInitialState, applyUpdate, resetEphemeral, getNextNodes, checkDyna
 import { executeNode } from "./execution.js";
 import { saveCheckpoint } from "./checkpointing.js";
 
-// Monotonic counter for generating unique per-invocation keys (BUG-0035)
-let _nextInvocationId = 0;
+// _nextInvocationId moved to per-instance scope (BUG-0082) — see PregelContext._nextInvocationId
 
 // Structural interface for the subgraph child runner — avoids circular import from ./index.js
 interface SubgraphRunner {
@@ -254,7 +253,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                 // Per-invocation key for concurrent-safe state isolation
                 // Include a unique counter suffix so concurrent calls sharing the
                 // same threadId don't collide in _perInvocationParentUpdates / _perInvocationCheckpointer.
-                const invocationKey = `${threadId}::${_nextInvocationId++}`;
+                const invocationKey = `${threadId}::${ctx._nextInvocationId.value++}`;
 
                 if (childRunner) {
                   childRunner._subgraphRef.count++;
@@ -355,20 +354,20 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
             const telErr = (err instanceof NodeExecutionError && err.cause instanceof Error) ? err.cause : err;
             ctx.tracer.recordError(nodeSpan, telErr);
           }
-          ctx.tracer.endSpan(nodeSpan);
 
           // Lifecycle event: emit error for non-interrupt failures
           if (err instanceof Error) {
             ctx.eventBus.emit({ type: "error", agent: name, error: err, timestamp: Date.now() });
           }
           throw err;
+        } finally {
+          // Telemetry: end node span — must fire on ALL exit paths
+          // (success, error, and HITL interrupt re-throw)
+          ctx.tracer.endSpan(nodeSpan);
+
+          // Emit agent.end lifecycle event
+          ctx.eventBus.emit({ type: "agent.end", agent: name, timestamp: Date.now(), step, duration: Date.now() - nodeStartTime });
         }
-
-        // Telemetry: end node span
-        ctx.tracer.endSpan(nodeSpan);
-
-        // Emit agent.end lifecycle event
-        ctx.eventBus.emit({ type: "agent.end", agent: name, timestamp: Date.now(), step, duration: Date.now() - nodeStartTime });
 
         // Collect events for yielding after parallel execution
         allCustomEvents.push(...customEvents);
