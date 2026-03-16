@@ -22,7 +22,9 @@ export function createSSEResponse(
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (err) {
         const errEvent = JSON.stringify({ error: { code: -32603, message: String(err) } });
-        controller.enqueue(encoder.encode(`data: ${errEvent}\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`data: ${errEvent}\n\n`));
+        } catch (_) { /* stream may already be cancelled */ }
         controller.error(err);
         return;
       }

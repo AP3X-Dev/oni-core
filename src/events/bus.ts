@@ -6,6 +6,7 @@ export class EventBus {
   private allHandlers = new Set<EventHandler<LifecycleEvent>>();
   private disposed = false;
   private pendingTimers = new Set<ReturnType<typeof setTimeout>>();
+  private pendingRejects = new Set<(err: Error) => void>();
 
   constructor(listeners?: EventListeners) {
     if (listeners) {
@@ -72,15 +73,20 @@ export class EventBus {
     timeoutMs = 60_000,
   ): Promise<Extract<LifecycleEvent, { type: T }>> {
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
+      const cleanup = () => {
         this.pendingTimers.delete(timer);
+        this.pendingRejects.delete(reject);
+      };
+      const timer = setTimeout(() => {
+        cleanup();
         unsub();
         reject(new Error(`waitFor("${type}") timed out after ${timeoutMs}ms`));
       }, timeoutMs);
       this.pendingTimers.add(timer);
+      this.pendingRejects.add(reject);
       const unsub = this.once(type, ((event: Extract<LifecycleEvent, { type: T }>) => {
         clearTimeout(timer);
-        this.pendingTimers.delete(timer);
+        cleanup();
         resolve(event);
       }) as EventHandler<Extract<LifecycleEvent, { type: T }>>);
     });
@@ -91,6 +97,11 @@ export class EventBus {
   }
 
   removeAll(): void {
+    const disposedError = new Error("EventBus disposed");
+    for (const reject of this.pendingRejects) {
+      reject(disposedError);
+    }
+    this.pendingRejects.clear();
     this.handlers.clear();
     this.allHandlers.clear();
     for (const timer of this.pendingTimers) {
