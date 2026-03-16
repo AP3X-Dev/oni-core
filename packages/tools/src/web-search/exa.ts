@@ -46,8 +46,7 @@ export function exaSearch(config: { apiKey: string }): ToolDefinition {
         }),
       });
       if (!res.ok) {
-        const body = await res.text();
-        console.error(`[exa] API error ${res.status}:`, body.slice(0, 200));
+        console.error(`[exa] API error ${res.status} ${res.statusText}`);
         throw new Error(`Exa Search API error: ${res.status} ${res.statusText}`);
       }
       return res.json();
