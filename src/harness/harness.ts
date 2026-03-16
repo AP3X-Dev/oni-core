@@ -96,6 +96,11 @@ export class ONIHarness {
     // Fork the skill loader — shares the catalog but isolates pendingInjection per agent
     const skillLoader = this.skillLoader.fork();
 
+    // Filter skills if allowedSkills is set on the agent config
+    if (agentConfig.allowedSkills) {
+      skillLoader.filterByAllowlist(agentConfig.allowedSkills);
+    }
+
     // Build systemPrompt from soul fragments + skill descriptions
     const systemPrompt = [
       this.config.soul,

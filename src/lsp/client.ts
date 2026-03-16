@@ -109,11 +109,20 @@ export class LSPClient {
   private async _doStart(): Promise<void> {
     this.state = "connecting";
 
+    // Build a minimal base environment — only essential system variables
+    // are forwarded so secrets (API keys, tokens) from the parent process
+    // are never leaked to LSP server child processes.  Explicitly
+    // configured env vars (this.config.env) are merged on top.
+    const BASE_ENV: Record<string, string> = {};
+    for (const k of ["PATH", "HOME", "TMPDIR", "TEMP", "TMP", "LANG", "TERM"]) {
+      if (process.env[k]) BASE_ENV[k] = process.env[k]!;
+    }
+
     try {
       this.process = spawn(this.config.command, this.config.args ?? [], {
         cwd: this.rootDir,
         stdio: ["pipe", "pipe", "pipe"],
-        env: { ...process.env },
+        env: { ...BASE_ENV, ...this.config.env },
       });
 
       // Wire up stdout for JSON-RPC responses

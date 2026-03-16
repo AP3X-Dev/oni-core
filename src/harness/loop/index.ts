@@ -158,7 +158,10 @@ export async function* agentLoop(
         if (envLines.length > 0) systemPrompt += `\n\n<env>\n${envLines.join("\n")}\n</env>`;
       }
 
-      // ── 3d. Skill injection ────────────────────────────────────────
+      // ── 3d. Skill filtering & injection ─────────────────────────────
+      if (config.skillLoader && config.allowedSkills && turn === 0) {
+        config.skillLoader.filterByAllowlist(config.allowedSkills);
+      }
       if (config.skillLoader) {
         const pending = config.skillLoader.getPendingInjection();
         if (pending) {

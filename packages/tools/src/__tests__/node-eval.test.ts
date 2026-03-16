@@ -63,12 +63,12 @@ describe("nodeEval", () => {
     expect(result.result).toBeUndefined();
   });
 
-  it("enforces timeout", () => {
+  it("enforces timeout", async () => {
     const tool = nodeEval();
-    expect(() =>
+    await expect(
       tool.execute({ code: "while(true){}", timeout: 100 }, ctx)
-    ).toThrow();
-  });
+    ).rejects.toThrow();
+  }, 15_000);
 
   it("enforces max timeout of 30000", async () => {
     // Can't easily test it enforces 30s max without waiting, but we can verify it accepts large values
@@ -79,10 +79,10 @@ describe("nodeEval", () => {
     expect(result.result).toBe(1);
   });
 
-  it("throws on syntax errors", () => {
+  it("throws on syntax errors", async () => {
     const tool = nodeEval();
-    expect(() =>
+    await expect(
       tool.execute({ code: "this is not valid javascript {{{{" }, ctx)
-    ).toThrow();
+    ).rejects.toThrow();
   });
 });

@@ -4,27 +4,50 @@ import { createSSEResponse } from "./sse.js";
 
 const MAX_BODY_SIZE = 1 * 1024 * 1024; // 1 MB
 
+export interface A2AServerOptions {
+  /** Optional API key. When set, every request (except CORS preflight) must
+   *  include an `Authorization: Bearer <key>` header matching this value. */
+  apiKey?: string;
+}
+
 export class A2AServer {
+  private readonly apiKey?: string;
+
   constructor(
     private readonly agentCard: AgentCard,
     private readonly handler: TaskHandler,
-  ) {}
+    options?: A2AServerOptions,
+  ) {
+    this.apiKey = options?.apiKey;
+  }
 
   requestHandler(): (req: Request) => Promise<Response> {
     return async (req: Request): Promise<Response> => {
       const url = new URL(req.url);
-
-      if (req.method === "GET" && url.pathname === "/.well-known/agent.json") {
-        return new Response(JSON.stringify(this.agentCard), {
-          headers: { "Content-Type": "application/json" },
-        });
-      }
 
       // Handle CORS preflight — deny all cross-origin requests by returning
       // no Access-Control-Allow-Origin header, which causes the browser to
       // block the subsequent actual request.
       if (req.method === "OPTIONS") {
         return new Response(null, { status: 204 });
+      }
+
+      // Optional API key authentication — if configured, require a matching
+      // Bearer token on every non-preflight request.
+      if (this.apiKey) {
+        const auth = req.headers.get("authorization") ?? "";
+        if (auth !== `Bearer ${this.apiKey}`) {
+          return new Response(
+            JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Unauthorized" } }),
+            { status: 401, headers: { "Content-Type": "application/json" } },
+          );
+        }
+      }
+
+      if (req.method === "GET" && url.pathname === "/.well-known/agent.json") {
+        return new Response(JSON.stringify(this.agentCard), {
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       if (req.method !== "POST") {

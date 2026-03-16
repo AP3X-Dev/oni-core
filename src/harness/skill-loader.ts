@@ -184,6 +184,21 @@ export class SkillLoader {
     return forked;
   }
 
+  /**
+   * Filter skills to only include those whose names are in the allowlist.
+   * Mutates this loader in place. If allowlist is empty or undefined, no-op.
+   */
+  filterByAllowlist(allowedSkills: string[] | undefined): void {
+    if (!allowedSkills || allowedSkills.length === 0) return;
+    const allowed = new Set(allowedSkills);
+    for (const name of this.skills.keys()) {
+      if (!allowed.has(name)) {
+        this.skills.delete(name);
+      }
+    }
+    this.version++;
+  }
+
   // ── Programmatic Registration ────────────────────────────────────────
 
   /**
