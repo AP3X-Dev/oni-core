@@ -40,8 +40,7 @@ export function tavilySearch(config: { apiKey: string }): ToolDefinition {
         }),
       });
       if (!res.ok) {
-        const body = await res.text();
-        console.error(`[tavily] API error ${res.status}:`, body.slice(0, 200));
+        console.error(`[tavily] API error ${res.status} ${res.statusText}`);
         throw new Error(`Tavily API error: ${res.status} ${res.statusText}`);
       }
       return res.json();
