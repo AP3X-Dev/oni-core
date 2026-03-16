@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { DocumentLoader, type Document } from "../types.js";
 
 type PdfTextItem = { str: string };
@@ -21,7 +21,7 @@ export class PdfLoader extends DocumentLoader {
       throw new Error("PdfLoader requires 'pdfjs-dist'. Install it: pnpm add pdfjs-dist");
     }
 
-    const data = new Uint8Array(readFileSync(source));
+    const data = new Uint8Array(await readFile(source));
     const loadingTask = pdfjsLib.getDocument({ data });
     const pdf = await loadingTask.promise;
     const pages: string[] = [];

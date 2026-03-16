@@ -36,9 +36,9 @@ describe("guardrails — tool permissions", () => {
     expect(() => checkToolPermission(permissions, "admin", "anything_at_all")).not.toThrow();
   });
 
-  it("undefined agent = allow all", () => {
-    expect(() => checkToolPermission(permissions, "unknown_agent", "web_search")).not.toThrow();
-    expect(() => checkToolPermission(permissions, "unknown_agent", "delete_file")).not.toThrow();
+  it("undefined agent = default deny", () => {
+    expect(() => checkToolPermission(permissions, "unknown_agent", "web_search")).toThrow(ToolPermissionError);
+    expect(() => checkToolPermission(permissions, "unknown_agent", "delete_file")).toThrow(ToolPermissionError);
   });
 
   it("getPermittedTools returns filtered list", () => {
@@ -56,8 +56,8 @@ describe("guardrails — tool permissions", () => {
     const adminTools = getPermittedTools(permissions, "admin", allTools);
     expect(adminTools).toEqual(allTools);
 
-    // Unknown agent: all tools
+    // Unknown agent: no tools (default deny)
     const unknownTools = getPermittedTools(permissions, "unknown_agent", allTools);
-    expect(unknownTools).toEqual(allTools);
+    expect(unknownTools).toEqual([]);
   });
 });

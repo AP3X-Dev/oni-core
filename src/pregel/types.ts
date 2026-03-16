@@ -39,6 +39,7 @@ export interface PregelContext<S extends Record<string, unknown>> {
   _subgraphRef: { count: number };
   _perInvocationParentUpdates: Map<string, Array<Partial<unknown>>>;
   _perInvocationCheckpointer: Map<string, unknown>;
+  _nextInvocationId: { value: number };
   _edgesBySource: Map<string, Edge<S>[]>;
   _ephemeralKeys: (keyof S)[];
 }

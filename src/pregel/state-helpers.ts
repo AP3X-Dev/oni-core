@@ -31,9 +31,11 @@ export function applyUpdate<S extends Record<string, unknown>>(
   for (const key of keys) {
     if (update[key] !== undefined) {
       const ch = channels[key];
-      next[key] = ch
-        ? ch.reducer(current[key], update[key] as S[keyof S])
-        : (update[key] as S[keyof S]);
+      if (!ch) {
+        console.warn(`[oni-core] applyUpdate: unknown channel key "${String(key)}" — skipping (not in channel schema)`);
+        continue;
+      }
+      next[key] = ch.reducer(current[key], update[key] as S[keyof S]);
     }
   }
   return next;

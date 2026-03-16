@@ -216,9 +216,6 @@ export async function* agentLoop(
             continue;
           }
         }
-        if (config.hooksEngine) {
-          await fireSessionEnd(config.hooksEngine, sessionId, "completed", turn + 1);
-        }
         messages.push({ role: "assistant", content: response.content });
         yield makeMessage("result", sessionId, turn, {
           content: response.content,
@@ -275,6 +272,9 @@ export async function* agentLoop(
       metadata: { finalMessages: messages },
     });
   } finally {
+    if (config.hooksEngine) {
+      await fireSessionEnd(config.hooksEngine, sessionId, sessionOutcome, turn);
+    }
     finalizeMemory(memoryLoader, sessionId, prompt, turn, sessionOutcome, config);
   }
 }

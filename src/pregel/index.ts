@@ -39,6 +39,8 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
   readonly _perInvocationParentUpdates = new Map<string, Array<Partial<unknown>>>();
   /** Per-invocation checkpointer override for subgraph isolation, keyed by threadId. */
   readonly _perInvocationCheckpointer = new Map<string, unknown>();
+  /** Monotonic counter for unique per-invocation subgraph keys (BUG-0082: per-instance, not module-level). */
+  private _nextInvocationId = { value: 0 };
 
   readonly eventBus: EventBus;
   readonly auditLog: AuditLog | null;
@@ -116,6 +118,7 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
       _subgraphRef: this._subgraphRef,
       _perInvocationParentUpdates: this._perInvocationParentUpdates,
       _perInvocationCheckpointer: this._perInvocationCheckpointer,
+      _nextInvocationId: this._nextInvocationId,
       _edgesBySource: this._edgesBySource,
       _ephemeralKeys: this._ephemeralKeys,
     };
@@ -168,26 +171,26 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
 
   // ---- State ----
 
-  async getState(threadId: string): Promise<S | null> {
-    return getState(this.checkpointer, threadId);
+  async getState(config: { threadId: string }): Promise<S | null> {
+    return getState(this.checkpointer, config.threadId);
   }
 
-  async updateState(threadId: string, update: Partial<S>): Promise<void> {
-    return updateState(this.checkpointer, this.channels, threadId, update);
+  async updateState(config: { threadId: string }, update: Partial<S>): Promise<void> {
+    return updateState(this.checkpointer, this.channels, config.threadId, update);
   }
 
   // ---- Time-travel ----
 
-  async getStateAt(threadId: string, step: number): Promise<S | null> {
-    return getStateAt(this.checkpointer, threadId, step);
+  async getStateAt(config: { threadId: string; step: number }): Promise<S | null> {
+    return getStateAt(this.checkpointer, config.threadId, config.step);
   }
 
-  async getHistory(threadId: string): Promise<ONICheckpoint<S>[]> {
-    return getHistory(this.checkpointer, threadId);
+  async getHistory(config: { threadId: string }): Promise<ONICheckpoint<S>[]> {
+    return getHistory(this.checkpointer, config.threadId);
   }
 
-  async forkFrom(threadId: string, step: number, newThreadId: string): Promise<void> {
-    return forkFrom(this.checkpointer, threadId, step, newThreadId);
+  async forkFrom(config: { threadId: string; step: number; newThreadId: string }): Promise<void> {
+    return forkFrom(this.checkpointer, config.threadId, config.step, config.newThreadId);
   }
 
   // ---- HITL ----

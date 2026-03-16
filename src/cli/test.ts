@@ -24,7 +24,6 @@ export async function testCommand(args: ParsedArgs): Promise<void> {
 
   const child = spawn("npx", ["vitest", ...vitestArgs], {
     stdio: "inherit",
-    shell: true,
   });
 
   return new Promise((resolvePromise) => {

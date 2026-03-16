@@ -16,6 +16,7 @@
 // ============================================================
 
 import { AsyncLocalStorage } from "node:async_hooks";
+import { randomUUID } from "node:crypto";
 
 // ----------------------------------------------------------------
 // The interrupt value surfaced to the caller
@@ -116,7 +117,7 @@ export async function interrupt<T = unknown>(value: unknown): Promise<T> {
   }
 
   // Queue exhausted (or first run) — throw to pause execution
-  const resumeId = `${ctx.nodeName}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const resumeId = `${ctx.nodeName}-${Date.now()}-${randomUUID()}`;
   throw new NodeInterruptSignal(value, resumeId);
 }
 
@@ -153,15 +154,26 @@ export interface GetUserInputOptions {
 export async function getUserInput<T = unknown>(
   opts: GetUserInputOptions
 ): Promise<T> {
-  return interrupt<T>({
+  const value = await interrupt<T>({
     __type:    "user_input_request",
     prompt:    opts.prompt,
     field:     opts.field,
     inputType: opts.inputType ?? "text",
     choices:   opts.choices,
-    // Validator serialized as string for display purposes
     hasValidator: !!opts.validate,
   });
+
+  if (opts.validate) {
+    const result = opts.validate(value);
+    if (result === false) {
+      throw new Error(`Validation failed for field "${opts.field ?? "input"}"`);
+    }
+    if (typeof result === "string") {
+      throw new Error(result);
+    }
+  }
+
+  return value;
 }
 
 // ----------------------------------------------------------------

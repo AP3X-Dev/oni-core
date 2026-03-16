@@ -16,6 +16,7 @@ interface RedisClient {
   zrange(key: string, start: number | string, stop: number | string): Promise<string[]>;
   zrangebyscore?(key: string, min: number, max: number): Promise<string[]>;
   keys(pattern: string): Promise<string[]>;
+  eval(script: string, numkeys: number, ...args: (string | number)[]): Promise<unknown>;
   quit?(): Promise<unknown>;
   disconnect?(): Promise<unknown>;
 }
@@ -48,6 +49,7 @@ export class RedisCheckpointer<S> implements ONICheckpointer<S> {
         zrange: (k, start, stop) =>
           r.zrange(k, start as number, stop as number),
         keys: (p) => r.keys(p),
+        eval: (script, numkeys, ...args) => r.eval(script, numkeys, ...args),
         disconnect: () => r.disconnect(),
       };
     } catch {
@@ -80,6 +82,17 @@ export class RedisCheckpointer<S> implements ONICheckpointer<S> {
     return `oni:cp:idx:${this.prefix}:${threadId}`;
   }
 
+  // ── Lua scripts ────────────────────────────────────────────
+
+  // Atomic SET + ZADD: stores checkpoint data and updates the index in one round-trip.
+  // KEYS[1] = data key, KEYS[2] = index key
+  // ARGV[1] = serialized checkpoint JSON, ARGV[2] = step (used as score and member)
+  private static readonly PUT_SCRIPT = `
+    redis.call('SET', KEYS[1], ARGV[1])
+    redis.call('ZADD', KEYS[2], tonumber(ARGV[2]), ARGV[2])
+    return 'OK'
+  `;
+
   // ── ONICheckpointer interface ────────────────────────────────
 
   async get(threadId: string): Promise<ONICheckpoint<S> | null> {
@@ -95,8 +108,14 @@ export class RedisCheckpointer<S> implements ONICheckpointer<S> {
   }
 
   async put(cp: ONICheckpoint<S>): Promise<void> {
-    await this.client.set(this.dataKey(cp.threadId, cp.step), JSON.stringify(cp));
-    await this.client.zadd(this.idxKey(cp.threadId), cp.step, String(cp.step));
+    await this.client.eval(
+      RedisCheckpointer.PUT_SCRIPT,
+      2,
+      this.dataKey(cp.threadId, cp.step),
+      this.idxKey(cp.threadId),
+      JSON.stringify(cp),
+      cp.step,
+    );
   }
 
   async list(threadId: string, opts?: CheckpointListOptions): Promise<ONICheckpoint<S>[]> {

@@ -17,7 +17,8 @@ import { DocxLoader } from "./loaders/docx.js";
 
 /** Convenience: get the right loader for a file path */
 export function getLoader(filePath: string): DocumentLoader | null {
-  const ext = filePath.slice(filePath.lastIndexOf("."));
+  const dotIdx = filePath.lastIndexOf(".");
+  const ext = dotIdx >= 0 ? filePath.slice(dotIdx) : "";
   const loaders = [
     new MarkdownLoader(),
     new JsonLoader(),

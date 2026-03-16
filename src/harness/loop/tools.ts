@@ -79,11 +79,16 @@ export async function executeTools(
 
       // Apply modifiedInput if hook returned one
       if (preResult?.modifiedInput) {
-        const sanitized = Object.fromEntries(
-          Object.entries(preResult.modifiedInput).filter(
-            ([k]) => k !== '__proto__' && k !== 'constructor' && k !== 'prototype'
-          )
-        );
+        const stripProtoKeys = (obj: unknown): unknown => {
+          if (obj === null || typeof obj !== "object" || Array.isArray(obj)) return obj;
+          const clean: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+            if (k === "__proto__" || k === "constructor" || k === "prototype") continue;
+            clean[k] = stripProtoKeys(v);
+          }
+          return clean;
+        };
+        const sanitized = stripProtoKeys(preResult.modifiedInput) as Record<string, unknown>;
         Object.assign(toolCall.args, sanitized);
       }
     }

@@ -38,7 +38,11 @@ export function braveSearch(config: { apiKey: string }): ToolDefinition {
           },
         }
       );
-      if (!res.ok) throw new Error(`Brave Search API error: ${res.status} ${await res.text()}`);
+      if (!res.ok) {
+        const body = await res.text();
+        console.error(`[brave] API error ${res.status}:`, body);
+        throw new Error(`Brave Search API error: ${res.status} ${res.statusText}`);
+      }
       return res.json();
     },
   };

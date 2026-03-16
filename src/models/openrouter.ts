@@ -218,10 +218,25 @@ export function openrouter(
   opts?: OpenRouterOptions,
 ): ONIModel {
   const apiKey = opts?.apiKey ?? process.env["OPENROUTER_API_KEY"] ?? "";
-  const baseUrl = (opts?.baseUrl ?? "https://openrouter.ai/api").replace(
+  if (!apiKey) {
+    throw new Error(
+      "OpenRouter API key not configured. Set OPENROUTER_API_KEY environment variable or pass apiKey in options.",
+    );
+  }
+  const rawBaseUrl = (opts?.baseUrl ?? "https://openrouter.ai/api").replace(
     /\/$/,
     "",
   );
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawBaseUrl);
+  } catch {
+    throw new Error(`Invalid OpenRouter baseUrl: "${rawBaseUrl}" is not a valid URL`);
+  }
+  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+    throw new Error(`Invalid OpenRouter baseUrl scheme: "${parsedUrl.protocol}" — only "https:" and "http:" are allowed`);
+  }
+  const baseUrl = rawBaseUrl;
   const defaultMaxTokens = opts?.defaultMaxTokens;
   const defaultTemperature = opts?.defaultTemperature;
   const referer = opts?.referer ?? process.env["OPENROUTER_REFERER"] ?? "";
@@ -365,7 +380,7 @@ export function openrouter(
       try {
         result.parsed = JSON.parse(content);
       } catch (err) {
-        console.warn("openrouter: responseFormat parsing failed", err, "raw content:", content);
+        console.warn("openrouter: responseFormat parsing failed", err, "content length:", content?.length ?? 0);
       }
     }
 
@@ -400,77 +415,80 @@ export function openrouter(
       try {
         parsed = JSON.parse(data) as Record<string, unknown>;
       } catch (err) {
-        console.warn("openrouter: failed to parse SSE chunk", err, "raw data:", data);
+        console.warn("openrouter: failed to parse SSE chunk", err, "data length:", data?.length ?? 0);
         continue;
       }
 
       const choices = parsed["choices"] as Array<Record<string, unknown>> | undefined;
-      if (!choices || choices.length === 0) continue;
+      if ((!choices || choices.length === 0) && !parsed["usage"]) continue;
 
-      const choice = choices[0]!;
-      const delta = choice["delta"] as Record<string, unknown> | undefined;
-      if (!delta) continue;
+      if (choices && choices.length > 0) {
+        const choice = choices[0]!;
+        const delta = choice["delta"] as Record<string, unknown> | undefined;
+        if (delta) {
+          // Text content
+          if (delta["content"] && typeof delta["content"] === "string") {
+            yield { type: "text", text: delta["content"] };
+          }
 
-      // Text content
-      if (delta["content"] && typeof delta["content"] === "string") {
-        yield { type: "text", text: delta["content"] };
-      }
+          // Tool calls
+          const toolCalls = delta["tool_calls"] as Array<Record<string, unknown>> | undefined;
+          if (toolCalls) {
+            for (const tc of toolCalls) {
+              const rawIndex = tc["index"];
+              const index = typeof rawIndex === "string" ? parseInt(rawIndex, 10) : Number(rawIndex ?? 0);
+              const fn = tc["function"] as Record<string, unknown> | undefined;
 
-      // Tool calls
-      const toolCalls = delta["tool_calls"] as Array<Record<string, unknown>> | undefined;
-      if (toolCalls) {
-        for (const tc of toolCalls) {
-          const index = tc["index"] as number;
-          const fn = tc["function"] as Record<string, unknown> | undefined;
-
-          if (tc["id"]) {
-            activeToolCalls.set(index, {
-              id: tc["id"] as string,
-              name: fn?.["name"] as string ?? "",
-              args: (fn?.["arguments"] as string) ?? "",
-            });
-            yield {
-              type: "tool_call_start",
-              toolCall: {
-                id: tc["id"] as string,
-                name: fn?.["name"] as string ?? "",
-                args: {},
-              },
-            };
-          } else if (fn?.["arguments"]) {
-            const active = activeToolCalls.get(index);
-            if (active) {
-              active.args += fn["arguments"] as string;
+              if (tc["id"]) {
+                activeToolCalls.set(index, {
+                  id: tc["id"] as string,
+                  name: fn?.["name"] as string ?? "",
+                  args: (fn?.["arguments"] as string) ?? "",
+                });
+                yield {
+                  type: "tool_call_start",
+                  toolCall: {
+                    id: tc["id"] as string,
+                    name: fn?.["name"] as string ?? "",
+                    args: {},
+                  },
+                };
+              } else if (fn?.["arguments"]) {
+                const active = activeToolCalls.get(index);
+                if (active) {
+                  active.args += fn["arguments"] as string;
+                }
+                yield {
+                  type: "tool_call_delta",
+                  toolCall: {
+                    args: { __partial: fn["arguments"] as string } as unknown as Record<string, unknown>,
+                  },
+                };
+              }
             }
-            yield {
-              type: "tool_call_delta",
-              toolCall: {
-                args: { __partial: fn["arguments"] as string } as unknown as Record<string, unknown>,
-              },
-            };
+          }
+
+          // Finish reason → emit tool_call_end
+          const finishReason = choice["finish_reason"] as string | null;
+          if (finishReason === "tool_calls") {
+            for (const [, active] of activeToolCalls) {
+              let args: Record<string, unknown> = {};
+              try {
+                args = JSON.parse(active.args) as Record<string, unknown>;
+              } catch {
+                // partial args
+              }
+              yield {
+                type: "tool_call_end",
+                toolCall: { id: active.id, name: active.name, args },
+              };
+            }
+            activeToolCalls.clear();
           }
         }
       }
 
-      // Finish reason → emit tool_call_end
-      const finishReason = choice["finish_reason"] as string | null;
-      if (finishReason === "tool_calls") {
-        for (const [, active] of activeToolCalls) {
-          let args: Record<string, unknown> = {};
-          try {
-            args = JSON.parse(active.args) as Record<string, unknown>;
-          } catch {
-            // partial args
-          }
-          yield {
-            type: "tool_call_end",
-            toolCall: { id: active.id, name: active.name, args },
-          };
-        }
-        activeToolCalls.clear();
-      }
-
-      // Usage
+      // Usage (outside choices guard — usage-only chunks have empty choices)
       const usage = parsed["usage"] as { prompt_tokens?: number; completion_tokens?: number } | undefined;
       if (usage) {
         yield {

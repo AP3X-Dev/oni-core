@@ -174,10 +174,20 @@ export function openai(
   if (!apiKey) {
     throw new Error('OpenAI API key not configured. Set OPENAI_API_KEY environment variable or pass apiKey in options.');
   }
-  const baseUrl = (opts?.baseUrl ?? "https://api.openai.com").replace(
+  const rawBaseUrl = (opts?.baseUrl ?? "https://api.openai.com").replace(
     /\/$/,
     "",
   );
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawBaseUrl);
+  } catch {
+    throw new Error(`Invalid OpenAI baseUrl: "${rawBaseUrl}" is not a valid URL`);
+  }
+  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+    throw new Error(`Invalid OpenAI baseUrl scheme: "${parsedUrl.protocol}" — only "https:" and "http:" are allowed`);
+  }
+  const baseUrl = rawBaseUrl;
   const defaultMaxTokens = opts?.defaultMaxTokens;
   const defaultTemperature = opts?.defaultTemperature;
 
@@ -287,7 +297,7 @@ export function openai(
       try {
         parsed = JSON.parse(content);
       } catch {
-        console.warn(`[oni-core] Structured output parsing failed: json_schema response format was requested but the model returned invalid JSON. Raw content: ${content}`);
+        console.warn(`[oni-core] Structured output parsing failed: json_schema response format was requested but the model returned invalid JSON. Content length: ${content?.length ?? 0}`);
       }
     }
 
@@ -333,7 +343,7 @@ export function openai(
       try {
         parsed = JSON.parse(data) as Record<string, unknown>;
       } catch (err) {
-        console.warn("[oni-core] OpenAI SSE: failed to parse JSON chunk:", err, "| raw data:", data);
+        console.warn("[oni-core] OpenAI SSE: failed to parse JSON chunk:", err, "| data length:", data?.length ?? 0);
         continue;
       }
 
@@ -353,7 +363,8 @@ export function openai(
           const toolCalls = delta["tool_calls"] as Array<Record<string, unknown>> | undefined;
           if (toolCalls) {
             for (const tc of toolCalls) {
-              const index = tc["index"] as number;
+              const rawIndex = tc["index"];
+              const index = typeof rawIndex === "string" ? parseInt(rawIndex, 10) : Number(rawIndex ?? 0);
               const fn = tc["function"] as Record<string, unknown> | undefined;
 
               if (tc["id"]) {
