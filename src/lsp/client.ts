@@ -67,7 +67,7 @@ export class LSPClient {
   // JSON-RPC
   private nextId = 1;
   private pending = new Map<number, PendingRequest>();
-  private buffer = "";
+  private buffer = Buffer.alloc(0);
 
   // File tracking
   private fileVersions = new Map<string, number>();
@@ -128,9 +128,10 @@ export class LSPClient {
         shell: false,
       });
 
-      // Wire up stdout for JSON-RPC responses
+      // Wire up stdout for JSON-RPC responses (Buffer-based)
       this._onStdoutData = (chunk: Buffer) => {
-        this.processBuffer(chunk.toString());
+        this.buffer = Buffer.concat([this.buffer, chunk]);
+        this.processBuffer();
       };
       this.process.stdout?.on("data", this._onStdoutData);
 
@@ -437,36 +438,37 @@ export class LSPClient {
 
   private static readonly MAX_BUFFER_SIZE = 64 * 1024 * 1024; // 64 MB
 
-  private processBuffer(data: string): void {
-    this.buffer += data;
-
+  private processBuffer(): void {
     if (this.buffer.length > LSPClient.MAX_BUFFER_SIZE) {
       console.error("[lsp] Buffer exceeded 64 MB limit — disconnecting");
-      this.buffer = "";
+      this.buffer = Buffer.alloc(0);
       this.stop();
       return;
     }
 
     while (true) {
+      // Look for Content-Length header (byte-level search)
       const headerEnd = this.buffer.indexOf("\r\n\r\n");
       if (headerEnd === -1) break;
 
-      const header = this.buffer.slice(0, headerEnd);
+      const header = this.buffer.subarray(0, headerEnd).toString("utf-8");
       const match = header.match(/Content-Length:\s*(\d+)/i);
       if (!match) {
         // Malformed header — skip to next potential header
-        this.buffer = this.buffer.slice(headerEnd + 4);
+        this.buffer = this.buffer.subarray(headerEnd + 4);
         continue;
       }
 
+      // contentLength is a byte count (per LSP wire spec)
       const contentLength = parseInt(match[1]!, 10);
       const bodyStart = headerEnd + 4;
       const bodyEnd = bodyStart + contentLength;
 
       if (this.buffer.length < bodyEnd) break; // Incomplete body
 
-      const body = this.buffer.slice(bodyStart, bodyEnd);
-      this.buffer = this.buffer.slice(bodyEnd);
+      // Decode body bytes to string only after correct byte-level slicing
+      const body = this.buffer.subarray(bodyStart, bodyEnd).toString("utf-8");
+      this.buffer = this.buffer.subarray(bodyEnd);
 
       try {
         const message = JSON.parse(body);
