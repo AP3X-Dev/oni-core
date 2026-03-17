@@ -93,6 +93,15 @@ export class ONIHarness {
     // Create a per-agent TodoModule so concurrent asNode() agents don't share state
     const todoModule = new TodoModule();
 
+    // Create a per-agent ContextCompactor so concurrent sessions don't cross-contaminate _lastSummary
+    const compactor = new ContextCompactor({
+      summaryModel: this.config.fastModel ?? this.config.model,
+      threshold: this.config.compaction?.threshold,
+      maxTokens: this.config.compaction?.maxTokens,
+      charsPerToken: this.config.compaction?.charsPerToken,
+      compactInstructions: this.config.compaction?.compactInstructions,
+    });
+
     // Fork the skill loader — shares the catalog but isolates pendingInjection per agent
     const skillLoader = this.skillLoader.fork();
 
@@ -126,7 +135,7 @@ export class ONIHarness {
       maxTurns: agentConfig.maxTurns ?? this.config.maxTurns,
       todoModule,
       hooksEngine: this.hooksEngine,
-      compactor: this.compactor,
+      compactor,
       safetyGate: this.safetyGate,
       skillLoader,
       // ── Memory config forwarded to loop ──
