@@ -61,8 +61,7 @@ async function githubRequest(
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   if (!res.ok) {
-    const body = await res.text();
-    console.error(`[github] API error ${res.status} ${method} ${path}:`, body);
+    console.error(`[github] API error ${res.status} ${res.statusText} ${method} ${path}`);
     throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
   }
   return res.json();
