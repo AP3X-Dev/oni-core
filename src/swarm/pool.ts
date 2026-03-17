@@ -115,14 +115,33 @@ export class AgentPool<S extends Record<string, unknown>> {
     }
   }
 
-  /** Remove agent slots by ID. Cannot remove the last agent. */
+  /** Remove agent slots by ID. Slots with active tasks are skipped. Cannot remove the last agent. */
   removeSlots(agentIds: string[]): void {
     const toRemove = new Set(agentIds);
-    const remaining = this.slots.filter((s) => !toRemove.has(s.agent.id));
-    if (remaining.length === 0 && this.slots.length > 0) {
+
+    // Partition requested slots into idle (safe to remove) and busy (must keep).
+    const busy:      PoolSlot<S>[] = [];
+    const remaining: PoolSlot<S>[] = [];
+
+    for (const slot of this.slots) {
+      if (toRemove.has(slot.agent.id)) {
+        if (slot.activeTasks > 0) {
+          // Slot has in-flight tasks — keep it in the pool so tasks can complete.
+          busy.push(slot);
+        }
+        // else: idle slot targeted for removal — omit from both lists
+      } else {
+        remaining.push(slot);
+      }
+    }
+
+    const nextSlots = [...remaining, ...busy];
+
+    if (nextSlots.length === 0 && this.slots.length > 0) {
       throw new Error("AgentPool must retain at least one agent.");
     }
-    this.slots = remaining;
+
+    this.slots = nextSlots;
   }
 
   // ---- Internals ----
