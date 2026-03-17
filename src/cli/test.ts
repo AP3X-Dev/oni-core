@@ -31,5 +31,11 @@ export async function testCommand(args: ParsedArgs): Promise<void> {
       if (code && code !== 0) process.exitCode = code;
       resolvePromise();
     });
+
+    child.on("error", (err) => {
+      console.error(`  Error: ${err.message}`);
+      process.exitCode = 1;
+      resolvePromise();
+    });
   });
 }
