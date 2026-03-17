@@ -64,6 +64,17 @@ export class BudgetTracker {
         (usage.inputTokens / 1_000_000) * pricing.input +
         (usage.outputTokens / 1_000_000) * pricing.output;
       this.totalCost += cost;
+    } else {
+      console.warn(
+        `[BudgetTracker] Unknown pricing for model "${modelId}"; cost tracking will be incomplete. ` +
+        `maxCostPerRun limit may not be enforced.`,
+      );
+      entries.push({
+        timestamp: Date.now(),
+        agent: agentName,
+        action: "budget.unknown_pricing",
+        data: { modelId, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens },
+      });
     }
 
     const now = Date.now();
