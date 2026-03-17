@@ -146,7 +146,7 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as ListDirInput;
       const safePath = checkAllowedPath(i.path, allowedPaths);
-      const entries = await readdir(safePath, { withFileTypes: true });
+      const entries = await readdir(safePath, { withFileTypes: true, recursive: !!i.recursive });
       const items = entries.map((e) => ({
         name: e.name,
         type: e.isDirectory() ? "directory" : "file",
