@@ -34,7 +34,13 @@ export function isRetryableError(err: unknown): boolean {
 /** Get retry delay with exponential backoff. */
 export function getRetryDelay(err: unknown, attempt: number): number {
   if (err && typeof err === "object") {
-    // Respect retryAfterMs if provided by the model adapter
+    // Respect retryAfterMs if provided by the model adapter (e.g. ModelRateLimitError
+    // stores it at err.context.retryAfterMs, not as a top-level property).
+    const ctx = (err as { context?: Record<string, unknown> }).context;
+    if (ctx && typeof ctx.retryAfterMs === "number" && ctx.retryAfterMs > 0) {
+      return ctx.retryAfterMs;
+    }
+    // Also check top-level retryAfterMs for any error that carries it directly
     if ("retryAfterMs" in err) {
       const after = (err as { retryAfterMs?: number }).retryAfterMs;
       if (typeof after === "number" && after > 0) return after;
