@@ -182,19 +182,30 @@ export class RedisStore extends BaseStore {
     const members = await this.client.zrange(this.idxKey(namespace), 0, -1);
     if (members.length === 0) return [];
 
+    const indexKey = this.idxKey(namespace);
     const items: StoreItem[] = [];
     for (const key of members) {
       const raw = await this.client.get(this.dataKey(namespace, key));
-      if (raw == null) continue; // expired or deleted
+      if (raw == null) {
+        // Data key expired or was deleted — clean up the stale index entry
+        void this.client.zrem(indexKey, key);
+        continue;
+      }
 
       let item: StoreItem;
       try {
         item = JSON.parse(raw) as StoreItem;
       } catch {
+        // Corrupt data — remove the orphan index entry
+        void this.client.zrem(indexKey, key);
         continue;
       }
 
-      if (this.isExpired(item)) continue;
+      if (this.isExpired(item)) {
+        // Soft-expired (Redis PEXPIRE hasn't fired yet) — prune from index
+        void this.client.zrem(indexKey, key);
+        continue;
+      }
       items.push(item);
     }
 
