@@ -119,6 +119,7 @@ export function agent<S extends Record<string, unknown> = Record<string, unknown
         ...pendingMessages.map((m) => ({
           id: `${name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           from: name,
+          to: m.to,
           content: m.content,
           timestamp: m.timestamp,
         })),
