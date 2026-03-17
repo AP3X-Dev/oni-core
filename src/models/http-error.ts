@@ -71,7 +71,7 @@ export function throwModelHttpError(
   if (authHint) {
     throw new ModelAPIError(provider, status, body, {
       suggestion: authHint,
-      messageBody: `${body} Hint: ${authHint}`,
+      messageBody: `${provider} ${status} error. Hint: ${authHint}`,
     });
   }
   throw new ModelAPIError(provider, status, body);
