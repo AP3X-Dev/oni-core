@@ -11,6 +11,11 @@ import { makeMessage } from "./types.js";
 
 /** Check if an error is retryable (rate limits, transient server errors). */
 export function isRetryableError(err: unknown): boolean {
+  // ONIError (and subclasses like ModelRateLimitError) expose `recoverable`
+  if (err && typeof err === "object" && "recoverable" in err) {
+    return (err as { recoverable?: boolean }).recoverable !== false;
+  }
+  // Fallback for third-party errors that may use the `isRetryable` convention
   if (err && typeof err === "object" && "isRetryable" in err) {
     return !!(err as { isRetryable?: boolean }).isRetryable;
   }
