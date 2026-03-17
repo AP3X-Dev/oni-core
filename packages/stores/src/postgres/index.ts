@@ -120,7 +120,14 @@ export class PostgresStore extends BaseStore {
     if (result.rows.length === 0) return null;
 
     const row = result.rows[0] as OniStoreRow;
-    if (this.isExpired(row)) return null;
+    if (this.isExpired(row)) {
+      // Fire-and-forget: clean up the expired row so it doesn't accumulate
+      void this.client.query(
+        `DELETE FROM oni_store WHERE prefix = $1 AND namespace = $2 AND key = $3`,
+        [this.prefix, this.nsStr(namespace), key]
+      );
+      return null;
+    }
 
     return this.rowToItem<T>(row);
   }
@@ -168,9 +175,20 @@ export class PostgresStore extends BaseStore {
       [this.prefix, this.nsStr(namespace)]
     );
 
-    return (result.rows as OniStoreRow[])
-      .filter(row => !this.isExpired(row))
-      .map(row => this.rowToItem(row));
+    const allRows = result.rows as OniStoreRow[];
+    const expiredRows = allRows.filter(row => this.isExpired(row));
+    const liveRows = allRows.filter(row => !this.isExpired(row));
+
+    // Bulk-delete expired rows so they don't accumulate
+    if (expiredRows.length > 0) {
+      const expiredKeys = expiredRows.map(row => row.key);
+      void this.client.query(
+        `DELETE FROM oni_store WHERE prefix = $1 AND namespace = $2 AND key = ANY($3)`,
+        [this.prefix, this.nsStr(namespace), expiredKeys]
+      );
+    }
+
+    return liveRows.map(row => this.rowToItem(row));
   }
 
   async search<T = unknown>(
