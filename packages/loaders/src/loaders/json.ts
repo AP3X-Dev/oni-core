@@ -26,7 +26,12 @@ export class JsonLoader extends DocumentLoader {
       return docs;
     }
 
-    const parsed = JSON.parse(raw) as unknown;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      throw new Error(`Failed to parse JSON from ${source}: ${(e as Error).message}`);
+    }
     return [{ content: JSON.stringify(parsed, null, 2), metadata: { type: "json" }, source }];
   }
 }
