@@ -114,11 +114,15 @@ export class ExperimentalExecutor {
 
   private async _rollback<S>(
     checkpointer: ONICheckpointer<S>,
-    _threadId: string,
+    threadId: string,
     snapshot: ONICheckpoint<S> | null,
   ): Promise<void> {
     if (!snapshot) return;
     try {
+      // Remove ALL checkpoints for this thread (including higher-step ones
+      // written during measureMetric) so the restored snapshot becomes the
+      // latest checkpoint returned by get().
+      await checkpointer.delete(threadId);
       await checkpointer.put(snapshot);
     } catch {
       // Rollback failure is non-fatal — log but don't throw
