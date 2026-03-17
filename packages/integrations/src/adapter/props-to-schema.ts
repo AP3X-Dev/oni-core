@@ -104,6 +104,9 @@ function propToJsonSchema(prop: Property): JSONSchema {
         type: "string",
         enum: (prop as StaticDropdownProperty).options.options.map(o => o.value),
       };
+    case PropertyType.MULTI_SELECT:
+    case PropertyType.STATIC_MULTI_SELECT:
+      return { ...base, type: "array", items: { type: "string" } };
     case PropertyType.ARRAY: {
       const arraySchema: JSONSchema = { ...base, type: "array" };
       const arrayProp = prop as ArrayProperty;
