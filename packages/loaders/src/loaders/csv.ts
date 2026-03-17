@@ -26,6 +26,7 @@ export class CsvLoader extends DocumentLoader {
 }
 
 function parseCSV(text: string, sep: string): string[][] {
+  text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const rows: string[][] = [];
   const lines = text.split("\n");
   for (const line of lines) {
