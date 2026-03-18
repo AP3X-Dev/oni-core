@@ -79,6 +79,9 @@ export class A2AClient {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "text/event-stream", ...this.config.headers },
       body: JSON.stringify(body),
+      signal: this.config.timeout
+        ? AbortSignal.timeout(this.config.timeout)
+        : undefined,
     });
 
     if (!res.ok || !res.body) throw new Error(`A2A stream failed: ${res.status}`);
