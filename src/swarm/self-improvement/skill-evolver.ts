@@ -203,6 +203,18 @@ export class SkillEvolver {
       return;
     }
 
+    // Defense-in-depth: reject content containing XML patterns that could break
+    // the <skill-instructions> wrapper used by SkillLoader.invoke().
+    // An adversarially-crafted revision could close the wrapper tag, inject
+    // arbitrary prompt content, and persist across sessions. (See BUG-0211 for
+    // the complementary fix at the injection site in SkillLoader.)
+    if (/<\/skill-instructions>/i.test(revisedContent) || /<skill-instructions[\s>]/i.test(revisedContent)) {
+      console.error(
+        `[skill-evolver] Rejected skill revision for "${skillName}": content contains XML injection pattern (skill-instructions tag)`,
+      );
+      return;
+    }
+
     try {
       const { writeFile, mkdir } = await import("node:fs/promises");
       const { dirname } = await import("node:path");
