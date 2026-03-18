@@ -18,12 +18,13 @@ export interface AgentManifestEntry {
 }
 
 export interface AgentRecord<S extends Record<string, unknown>> {
-  def:         SwarmAgentDef<S>;
-  status:      AgentStatus;
-  activeTasks: number;
-  totalRuns:   number;
-  lastActive:  number | null;
-  errors:      number;
+  def:          SwarmAgentDef<S>;
+  status:       AgentStatus;
+  activeTasks:  number;
+  totalRuns:    number;
+  lastActive:   number | null;
+  errors:       number;
+  pendingError: boolean;
 }
 
 export class AgentRegistry<S extends Record<string, unknown> = Record<string, unknown>> {
@@ -37,11 +38,12 @@ export class AgentRegistry<S extends Record<string, unknown> = Record<string, un
     }
     this.agents.set(def.id, {
       def,
-      status:      "idle",
-      activeTasks: 0,
-      totalRuns:   0,
-      lastActive:  null,
-      errors:      0,
+      status:       "idle",
+      activeTasks:  0,
+      totalRuns:    0,
+      lastActive:   null,
+      errors:       0,
+      pendingError: false,
     });
     return this;
   }
@@ -126,7 +128,10 @@ export class AgentRegistry<S extends Record<string, unknown> = Record<string, un
     const rec = this.agents.get(agentId);
     if (rec) {
       rec.activeTasks = Math.max(0, rec.activeTasks - 1);
-      if (rec.activeTasks === 0 && rec.status !== "error") rec.status = "idle";
+      if (rec.activeTasks === 0) {
+        rec.status = rec.pendingError ? "error" : "idle";
+        rec.pendingError = false;
+      }
       rec.lastActive = Date.now();
     }
   }
@@ -136,7 +141,12 @@ export class AgentRegistry<S extends Record<string, unknown> = Record<string, un
     if (rec) {
       rec.errors++;
       rec.activeTasks = Math.max(0, rec.activeTasks - 1);
-      rec.status = "error";
+      if (rec.activeTasks === 0) {
+        rec.status = "error";
+        rec.pendingError = false; // consumed immediately — no stale latch
+      } else {
+        rec.pendingError = true; // deferred — markIdle will consume when activeTasks hits 0
+      }
     }
   }
 
