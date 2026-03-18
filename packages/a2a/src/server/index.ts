@@ -143,25 +143,32 @@ export class A2AServer {
         return; // already responded with 413
       }
 
-      const fetchReq = new Request(url, { method: req.method, headers, body });
-      const fetchRes = await handler(fetchReq);
+      try {
+        const fetchReq = new Request(url, { method: req.method, headers, body });
+        const fetchRes = await handler(fetchReq);
 
-      res.writeHead(fetchRes.status, Object.fromEntries(fetchRes.headers.entries()));
-      const contentType = fetchRes.headers.get("content-type") ?? "";
-      if (contentType.includes("text/event-stream") && fetchRes.body) {
-        const reader = fetchRes.body.getReader();
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            res.write(value);
+        res.writeHead(fetchRes.status, Object.fromEntries(fetchRes.headers.entries()));
+        const contentType = fetchRes.headers.get("content-type") ?? "";
+        if (contentType.includes("text/event-stream") && fetchRes.body) {
+          const reader = fetchRes.body.getReader();
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              res.write(value);
+            }
+          } finally {
+            res.end();
           }
-        } finally {
-          res.end();
+        } else {
+          const buf = await fetchRes.arrayBuffer();
+          res.end(Buffer.from(buf));
         }
-      } else {
-        const buf = await fetchRes.arrayBuffer();
-        res.end(Buffer.from(buf));
+      } catch (err) {
+        if (!res.headersSent) {
+          res.writeHead(500, { "Content-Type": "text/plain" });
+        }
+        res.end("Internal Server Error");
       }
     });
 
