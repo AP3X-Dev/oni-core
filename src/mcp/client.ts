@@ -131,6 +131,11 @@ export class MCPClient {
 
       this.state = "ready";
     } catch (err) {
+      // If disconnect() was called concurrently, it already set state to
+      // "disconnected" — don't overwrite that with "error".
+      if ((this.state as MCPClientState) === "disconnected") {
+        throw err;
+      }
       this.state = "error";
       this.error =
         err instanceof Error ? err.message : String(err);
