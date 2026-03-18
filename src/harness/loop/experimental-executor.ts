@@ -65,7 +65,8 @@ export class ExperimentalExecutor {
         applyTimeout.promise,
       ]);
     } catch (err) {
-      return { hypothesis, success: false, metricBefore, metricAfter: null, rolledBack: false, reason: `applyChanges failed: ${String(err)}` };
+      await this._rollback(checkpointer, threadId, snapshot);
+      return { hypothesis, success: false, metricBefore, metricAfter: null, rolledBack: true, reason: `applyChanges failed: ${String(err)}` };
     } finally {
       applyTimeout.clear();
     }
