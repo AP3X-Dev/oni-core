@@ -108,7 +108,7 @@ export function createSupervisorNode<S extends SupervisorState>(
               update: {
                 supervisorRound: round + 1,
                 currentAgent: match.def.id,
-                [config.contextField ?? "context"]: { ...rawCtx, lastAgentError: undefined },
+                [config.contextField ?? "context"]: { ...rawCtx, lastAgentError: undefined, ...(deadlineAbsolute != null ? { __deadlineAbsolute: deadlineAbsolute } : {}) },
                 messages: [
                   ...state.messages,
                   { role: "system", content: `Supervisor auto-recovering to: ${sanitizeRole(match.def.role)}` },
