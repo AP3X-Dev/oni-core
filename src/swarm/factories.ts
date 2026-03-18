@@ -567,9 +567,11 @@ export function buildRace<S extends BaseSwarmState>(
   swarm.inner.addNode("__race__", async (state: S, cfg?) => {
     type RaceResult = { id: string; result: unknown; error: unknown | null };
 
+    const raceController = new AbortController();
+
     const agentPromises: Promise<RaceResult>[] = config.agents.map((agent) => {
       const p: Promise<RaceResult> = agent.skeleton
-        .invoke({ ...state } as S, { ...cfg, agentId: agent.id })
+        .invoke({ ...state } as S, { ...cfg, agentId: agent.id, signal: raceController.signal })
         .then(
           (result) => ({ id: agent.id, result, error: null } as RaceResult),
           (err)    => ({ id: agent.id, result: null, error: err } as RaceResult),
@@ -590,11 +592,13 @@ export function buildRace<S extends BaseSwarmState>(
 
     // Resolve as soon as the first acceptable result arrives.
     const winner = await new Promise<RaceResult | null>((resolve) => {
+      let resolved = false;
       let remaining = agentPromises.length;
       if (remaining === 0) { resolve(null); return; }
 
       for (const p of agentPromises) {
         p.then((r) => {
+          if (resolved) return;
           let accepted = false;
           try {
             accepted = !r.error && accept(r.result);
@@ -602,7 +606,9 @@ export function buildRace<S extends BaseSwarmState>(
             // accept() threw — treat as not accepted to keep remaining decrement working
           }
           if (accepted) {
+            resolved = true;
             resolve(r);
+            raceController.abort();
           } else {
             remaining--;
             if (remaining === 0) resolve(null);
