@@ -110,8 +110,12 @@ export class AgentPool<S extends Record<string, unknown>> {
       const slot = this.pickSlot();
       if (!slot) break;
       const next = this.queue.shift()!;
+      // Increment activeTasks synchronously so that pickSlot() sees the
+      // updated count on the next iteration and respects maxConcurrency.
+      // runOnSlot will skip its own increment when preIncremented=true.
+      slot.activeTasks++;
       Promise.resolve()
-        .then(() => this.runOnSlot(slot, next.input, next.config))
+        .then(() => this.runOnSlot(slot, next.input, next.config, true))
         .then(next.resolve, next.reject);
     }
   }
@@ -176,9 +180,10 @@ export class AgentPool<S extends Record<string, unknown>> {
   private async runOnSlot(
     slot:    PoolSlot<S>,
     input:   Partial<S>,
-    config?: ONIConfig
+    config?: ONIConfig,
+    preIncremented = false
   ): Promise<S> {
-    slot.activeTasks++;
+    if (!preIncremented) slot.activeTasks++;
     slot.totalRuns++;
 
     const agent = slot.agent;
