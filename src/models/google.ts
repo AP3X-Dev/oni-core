@@ -176,6 +176,29 @@ function mapFinishReason(
 import { parseSSEData as parseSSE } from "./sse.js";
 
 /* ------------------------------------------------------------------ */
+/*  Model ID validation                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Validates a Google model ID to prevent path-traversal and SSRF attacks.
+ * Allows alphanumeric characters, dots, hyphens, and underscores.
+ * Rejects path traversal sequences and any characters that could alter
+ * the URL structure (slashes, colons with scheme-like patterns, etc.).
+ */
+const VALID_MODEL_ID_RE = /^[a-zA-Z0-9._\-]+$/;
+
+function validateModelId(modelId: string): void {
+  if (!modelId) {
+    throw new Error("Google modelId must not be empty");
+  }
+  if (!VALID_MODEL_ID_RE.test(modelId)) {
+    throw new Error(
+      `Invalid Google modelId: "${modelId}" — must contain only alphanumeric characters, dots, hyphens, and underscores`,
+    );
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Factory                                                           */
 /* ------------------------------------------------------------------ */
 
@@ -183,6 +206,8 @@ export function google(
   modelId: string,
   opts?: ModelOptions,
 ): ONIModel {
+  validateModelId(modelId);
+
   const apiKey = opts?.apiKey ?? process.env["GOOGLE_API_KEY"] ?? "";
   if (!apiKey) {
     throw new Error('Google API key not configured. Set GOOGLE_API_KEY environment variable or pass apiKey in options.');
@@ -282,7 +307,7 @@ export function google(
     const body = buildBody(params);
 
     const res = await fetch(
-      `${baseUrl}/models/${modelId}:generateContent`,
+      `${baseUrl}/models/${encodeURIComponent(modelId)}:generateContent`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
@@ -357,7 +382,7 @@ export function google(
     const body = buildBody(params);
 
     const res = await fetch(
-      `${baseUrl}/models/${modelId}:streamGenerateContent?alt=sse`,
+      `${baseUrl}/models/${encodeURIComponent(modelId)}:streamGenerateContent?alt=sse`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
@@ -433,7 +458,7 @@ export function google(
 
     for (const text of texts) {
       const res = await fetch(
-        `${baseUrl}/models/${modelId}:embedContent`,
+        `${baseUrl}/models/${encodeURIComponent(modelId)}:embedContent`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
