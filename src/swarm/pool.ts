@@ -22,6 +22,7 @@ export class AgentPool<S extends Record<string, unknown>> {
   private slots:    PoolSlot<S>[];
   private strategy: PoolStrategy;
   private rrIndex = 0;
+  private _pendingRemoval = new Set<string>();
   private static readonly PRIORITY_ORDER: Record<string, number> = {
     critical: 0, high: 1, normal: 2, low: 3,
   };
@@ -126,10 +127,14 @@ export class AgentPool<S extends Record<string, unknown>> {
     for (const slot of this.slots) {
       if (toRemove.has(slot.agent.id)) {
         if (slot.activeTasks > 0) {
-          // Slot has in-flight tasks — keep it in the pool so tasks can complete.
+          // Slot has in-flight tasks — keep it in the pool so tasks can complete,
+          // but mark it for deferred eviction once all tasks drain.
           busy.push(slot);
+          this._pendingRemoval.add(slot.agent.id);
+        } else {
+          // Idle slot targeted for removal — omit from both lists.
+          this._pendingRemoval.delete(slot.agent.id);
         }
-        // else: idle slot targeted for removal — omit from both lists
       } else {
         remaining.push(slot);
       }
@@ -149,6 +154,7 @@ export class AgentPool<S extends Record<string, unknown>> {
   private pickSlot(): PoolSlot<S> | null {
     const available = this.slots.filter(
       (s) => s.activeTasks < (s.agent.maxConcurrency ?? 1)
+        && !this._pendingRemoval.has(s.agent.id)
     );
     if (!available.length) return null;
 
@@ -156,16 +162,11 @@ export class AgentPool<S extends Record<string, unknown>> {
       case "least-busy":
         return available.reduce((a, b) => (a.activeTasks <= b.activeTasks ? a : b));
       case "round-robin": {
-        const total = this.slots.length;
-        for (let i = 0; i < total; i++) {
-          const idx = (this.rrIndex + i) % total;
-          const candidate = this.slots[idx]!;
-          if (candidate.activeTasks < (candidate.agent.maxConcurrency ?? 1)) {
-            this.rrIndex = idx + 1;
-            return candidate;
-          }
-        }
-        return null;
+        const total = available.length;
+        if (!total) return null;
+        const slot = available[this.rrIndex % total]!;
+        this.rrIndex++;
+        return slot;
       }
       case "random":
         return available[Math.floor(Math.random() * available.length)]!;
@@ -220,6 +221,14 @@ export class AgentPool<S extends Record<string, unknown>> {
       throw lastError;
     } finally {
       slot.activeTasks--;
+
+      // Deferred eviction: if this slot was marked for removal and all its
+      // in-flight tasks have drained, remove it from the pool now.
+      if (slot.activeTasks === 0 && this._pendingRemoval.has(slot.agent.id)) {
+        this._pendingRemoval.delete(slot.agent.id);
+        this.slots = this.slots.filter((s) => s !== slot);
+      }
+
       if (this.queue.length > 0) {
         const next = this.queue.shift()!;
         if (this.slots.includes(slot)) {
