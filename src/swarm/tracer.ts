@@ -173,7 +173,6 @@ export class SwarmTracer {
           const stack = startTimeStacks.get(e.agentId);
           if (stack && stack.length > 0) {
             const runLatency = e.timestamp - stack.shift()!;
-            agentLatency[e.agentId] = runLatency;
             if (!allRunLatencies.has(e.agentId)) allRunLatencies.set(e.agentId, []);
             allRunLatencies.get(e.agentId)!.push(runLatency);
           }
@@ -184,13 +183,17 @@ export class SwarmTracer {
           const stack = startTimeStacks.get(e.agentId);
           if (stack && stack.length > 0) {
             const runLatency = e.timestamp - stack.shift()!;
-            agentLatency[e.agentId] = runLatency;
             if (!allRunLatencies.has(e.agentId)) allRunLatencies.set(e.agentId, []);
             allRunLatencies.get(e.agentId)!.push(runLatency);
           }
           break;
         }
       }
+    }
+
+    // Compute per-agent average latency from all runs.
+    for (const [agentId, runs] of allRunLatencies.entries()) {
+      agentLatency[agentId] = runs.reduce((a, b) => a + b, 0) / runs.length;
     }
 
     // Flatten all per-agent run latencies for true aggregate avg/max.
