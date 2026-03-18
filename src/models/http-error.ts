@@ -15,7 +15,7 @@ import { ModelAPIError, ModelRateLimitError } from "../errors.js";
  * - `retry-after` (seconds, per HTTP spec)
  * - `retry-after-ms` (milliseconds, used by some providers)
  */
-const MAX_RETRY_AFTER_MS = 5 * 60 * 1000; // 5 minutes cap
+export const MAX_RETRY_AFTER_MS = 5 * 60 * 1000; // 5 minutes cap
 
 function buildAuthHint(provider: string, status: number, body: string): string | undefined {
   if (status !== 401) return undefined;
