@@ -18,7 +18,7 @@ export async function withRetry<T>(
   nodeName: string,
   policy: RetryPolicy
 ): Promise<T> {
-  const maxAttempts       = policy.maxAttempts ?? DEFAULT_POLICY.maxAttempts;
+  const maxAttempts       = Math.max(1, policy.maxAttempts ?? DEFAULT_POLICY.maxAttempts);
   const initialDelay      = policy.initialDelay      ?? DEFAULT_POLICY.initialDelay;
   const backoffMultiplier = policy.backoffMultiplier  ?? DEFAULT_POLICY.backoffMultiplier;
   const maxDelay          = policy.maxDelay           ?? DEFAULT_POLICY.maxDelay;
