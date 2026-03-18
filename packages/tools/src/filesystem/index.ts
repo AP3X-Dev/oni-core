@@ -34,7 +34,7 @@ function checkAllowedPath(filePath: string, allowedPaths: string[]): string {
   const normalizedAllowed = allowedPaths.map((ap) => normalize(resolve(ap)));
 
   // Lexical check first (fast path).
-  const lexicalOk = normalizedAllowed.some((ap) => normalized.startsWith(ap));
+  const lexicalOk = normalizedAllowed.some((ap) => normalized === ap || normalized.startsWith(ap + "/"));
   if (!lexicalOk) {
     throw new Error(
       `Access denied: path "${filePath}" is not within allowed paths: ${allowedPaths.join(", ")}`
@@ -45,7 +45,7 @@ function checkAllowedPath(filePath: string, allowedPaths: string[]): string {
   const real = resolveReal(filePath);
   const realAllowed = normalizedAllowed.some((ap) => {
     const realAp = existsSync(ap) ? realpathSync(ap) : ap;
-    return real.startsWith(realAp);
+    return real === realAp || real.startsWith(realAp + "/");
   });
   if (!realAllowed) {
     throw new Error(
