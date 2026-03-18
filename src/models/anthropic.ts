@@ -431,6 +431,9 @@ export function anthropic(
       throw new Error("Anthropic API returned no body for stream");
     }
 
+    // Track tool_use blocks by content_block index for tool_call_end emission
+    const activeToolBlocks = new Map<number, { id: string; name: string; argsJson: string }>();
+
     for await (const { event, data } of parseSSE(res.body)) {
       if (data === "[DONE]") break;
 
@@ -450,6 +453,8 @@ export function anthropic(
           | AnthropicContentBlock
           | undefined;
         if (block?.type === "tool_use" && block.id && block.name) {
+          const blockIndex = parsed["index"] as number;
+          activeToolBlocks.set(blockIndex, { id: block.id, name: block.name, argsJson: "" });
           yield {
             type: "tool_call_start",
             toolCall: { id: block.id, name: block.name, args: {} },
@@ -465,6 +470,11 @@ export function anthropic(
         if (delta["type"] === "text_delta") {
           yield { type: "text", text: delta["text"] as string };
         } else if (delta["type"] === "input_json_delta") {
+          const blockIndex = parsed["index"] as number;
+          const active = activeToolBlocks.get(blockIndex);
+          if (active) {
+            active.argsJson += delta["partial_json"] as string;
+          }
           yield {
             type: "tool_call_delta",
             toolCall: {
@@ -476,9 +486,21 @@ export function anthropic(
         event === "content_block_stop" ||
         parsed["type"] === "content_block_stop"
       ) {
-        // We could emit tool_call_end here but need to know if it was a tool block.
-        // For simplicity, emit tool_call_end after every content_block_stop that was a tool_use.
-        // The consumer tracks state to know which blocks were tool_use.
+        const blockIndex = parsed["index"] as number;
+        const active = activeToolBlocks.get(blockIndex);
+        if (active) {
+          let args: Record<string, unknown> = {};
+          try {
+            args = JSON.parse(active.argsJson || "{}") as Record<string, unknown>;
+          } catch {
+            // partial args — pass empty object
+          }
+          yield {
+            type: "tool_call_end",
+            toolCall: { id: active.id, name: active.name, args },
+          };
+          activeToolBlocks.delete(blockIndex);
+        }
       } else if (
         event === "message_delta" ||
         parsed["type"] === "message_delta"
