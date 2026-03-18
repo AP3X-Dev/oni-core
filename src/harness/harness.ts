@@ -89,7 +89,7 @@ export class ONIHarness {
 
   // ── Private: Build Loop Config ──────────────────────────────────────
 
-  private buildLoopConfig(agentConfig: AgentNodeConfig): AgentLoopConfig {
+  private buildLoopConfig(agentConfig: AgentNodeConfig, signal?: AbortSignal): AgentLoopConfig {
     // Create a per-agent TodoModule so concurrent asNode() agents don't share state
     const todoModule = new TodoModule();
 
@@ -138,6 +138,7 @@ export class ONIHarness {
       compactor,
       safetyGate: this.safetyGate,
       skillLoader,
+      signal,
       // ── Memory config forwarded to loop ──
       memoryRoot: this.config.memoryRoot,
       memoryBudgets: this.config.memoryBudgets,
@@ -150,13 +151,14 @@ export class ONIHarness {
   async *run(
     prompt: string,
     agentConfig: AgentNodeConfig | string,
+    signal?: AbortSignal,
   ): AsyncGenerator<LoopMessage> {
     const config =
       typeof agentConfig === "string"
         ? { name: agentConfig }
         : agentConfig;
 
-    const loopConfig = this.buildLoopConfig(config);
+    const loopConfig = this.buildLoopConfig(config, signal);
     yield* agentLoop(prompt, loopConfig);
   }
 
@@ -165,11 +167,12 @@ export class ONIHarness {
   async runToResult(
     prompt: string,
     agentConfig: AgentNodeConfig | string,
+    signal?: AbortSignal,
   ): Promise<string> {
     let finalResult = "";
     let errorMsg: string | undefined;
 
-    for await (const msg of this.run(prompt, agentConfig)) {
+    for await (const msg of this.run(prompt, agentConfig, signal)) {
       if (msg.type === "result") {
         finalResult = msg.content ?? "";
       } else if (msg.type === "error") {
@@ -192,8 +195,8 @@ export class ONIHarness {
       context?: string;
       agentResults?: Record<string, string>;
     },
-  >(agentConfig: AgentNodeConfig): (state: S) => Promise<Partial<S>> {
-    const loopConfig = this.buildLoopConfig(agentConfig);
+  >(agentConfig: AgentNodeConfig, signal?: AbortSignal): (state: S) => Promise<Partial<S>> {
+    const loopConfig = this.buildLoopConfig(agentConfig, signal);
     return wrapWithAgentLoop<S>(loopConfig);
   }
 
@@ -203,10 +206,10 @@ export class ONIHarness {
     name: string,
     soul: string,
     tools?: ToolDefinition[],
-    opts?: { description?: string; capabilities?: string[] },
+    opts?: { description?: string; capabilities?: string[]; signal?: AbortSignal },
   ): SwarmAgentCompat {
     const agentConfig: AgentNodeConfig = { name, soul, tools };
-    const loopConfig = this.buildLoopConfig(agentConfig);
+    const loopConfig = this.buildLoopConfig(agentConfig, opts?.signal);
 
     return {
       name,
