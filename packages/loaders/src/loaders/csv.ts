@@ -34,6 +34,7 @@ function parseCSV(text: string, sep: string): string[][] {
     const fields: string[] = [];
     let current = "";
     let inQuotes = false;
+    let wasQuoted = false;
     for (let i = 0; i < line.length; i++) {
       const ch = line[i]!;
       if (ch === '"') {
@@ -42,15 +43,17 @@ function parseCSV(text: string, sep: string): string[][] {
           i++;
         } else {
           inQuotes = !inQuotes;
+          if (inQuotes) wasQuoted = true;
         }
       } else if (ch === sep && !inQuotes) {
-        fields.push(current.trim());
+        fields.push(wasQuoted ? current : current.trim());
         current = "";
+        wasQuoted = false;
       } else {
         current += ch;
       }
     }
-    fields.push(current.trim());
+    fields.push(wasQuoted ? current : current.trim());
     rows.push(fields);
   }
   return rows;
