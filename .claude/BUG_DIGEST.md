@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-17T23:59:49Z
+**Generated:** 2026-03-18T00:35:00Z
 **Period:** Last 24 hours
 
 ---
@@ -9,10 +9,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 3 |
-| Pending | 0 |
-| In Progress | 0 |
-| Fixed (awaiting validation) | 0 |
+| Active Bugs | 22 |
+| Pending | 5 |
+| In Progress | 1 |
+| Fixed (awaiting validation) | 13 |
 | In Validation | 2 |
 | Reopened | 0 |
 | Blocked | 1 |
@@ -21,56 +21,60 @@
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 6 |
-| Bugs Fixed | 5 |
-| Bugs Verified | 3 |
-| Throughput | 3 bugs/day |
-| Mean Time to Fix | 15h 33m |
-| Mean Time to Verify | 4m 31s |
-| Reopen Rate | 7.0% |
-| First-Pass Fix Rate | 100% |
-| Queue Drain Rate | 0.50 |
-| Blocked Ratio | 33.3% |
+| Bugs Found | 21 |
+| Bugs Fixed | 15 |
+| Bugs Verified | 0 |
+| Throughput | 0 bugs/day |
+| Mean Time to Fix | N/A (no verified bugs this cycle) |
+| Mean Time to Verify | N/A (no verified bugs this cycle) |
+| Reopen Rate | 7.5% |
+| First-Pass Fix Rate | N/A (no verified bugs this cycle) |
+| Queue Drain Rate | 0.00 |
+| Blocked Ratio | 4.5% |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
 | `src/models/openai.ts` | 4 |
-| `src/swarm/supervisor.ts` | 3 |
+| `src/swarm/supervisor.ts` | 4 |
+| `src/swarm/self-improvement/skill-evolver.ts` | 4 |
+| `src/harness/skill-loader.ts` | 4 |
 | `src/swarm/factories.ts` | 3 |
-| `src/swarm/self-improvement/skill-evolver.ts` | 3 |
-| `packages/tools/src/filesystem/index.ts` | 3 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 31 |
-| missing-error-handling | 15 |
-| memory-leak | 10 |
-| security | 9 |
-| race-condition | 8 |
+| logic-bug | 39 |
+| security (all variants) | 19 |
+| missing-error-handling | 16 |
+| memory-leak | 12 |
+| race-condition | 9 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-17T01:05:00Z | active |
-| Fixer | 2026-03-17T23:55:42Z | skipped (no pending/reopened bugs) |
-| Validator | 2026-03-17T23:52:00Z | skipped (no fixed bugs; archived 3) |
+| Hunter | 2026-03-18T00:20:52Z | active |
+| Fixer | 2026-03-18T00:27:07Z | active (working on BUG-0218) |
+| Validator | 2026-03-17T23:52:00Z | skipped (saw 0 fixed at last pass; 13 now queued) |
 
 ## Bottleneck Analysis
 
-Pipeline is nearly drained — only 3 active bugs remain (2 in validation, 1 blocked). The Fixer and Validator are both idle with no work queued. The blocked bug (BUG-0191) requires a human design decision and cannot be auto-resolved.
+**Validator is the bottleneck.** The Fixer completed 15 fixes in the last 24h, but the Validator verified 0 — all 13 fixed bugs are waiting in queue. The Validator's last pass at 23:52Z saw no fixed bugs (they were completed after that timestamp), so it skipped. The Validator needs to run again immediately to begin draining the 13-bug backlog.
 
-**Warning:** Blocked ratio is 33.3% (above 20% threshold), but this is due to the low total active count (1 of 3). Not indicative of systemic blocking — just one human-decision bug remaining after a productive cycle.
-
-**Warning:** Queue drain rate is 0.50 (below 1.0), meaning more bugs were found than verified. However, 2 bugs are currently in validation and will likely clear next cycle, which would bring effective throughput to 5 — closer to parity.
+**Warning:** Queue drain rate is 0.00 — the pipeline is accumulating bugs with zero outflow. The Hunter found 21 new bugs while zero were verified. This is unsustainable; the Validator must catch up before the next Hunter scan adds more.
 
 ## Trend (vs Previous Digest)
 
-No previous digest available — trend tracking starts next cycle.
+| Metric | Yesterday | Today | Direction |
+|--------|-----------|-------|-----------|
+| Active Bugs | 3 | 22 | +19 |
+| Throughput | 3 bugs/day | 0 bugs/day | 0 |
+| Reopen Rate | 7.0% | 7.5% | ~ |
+
+The active bug count surged from 3 to 22 — the Hunter ran a productive scan cycle that found 21 new bugs across security, logic, and memory-leak categories. The Fixer kept pace (15 fixed) but the Validator has not yet processed any of these. The same files (`openai.ts`, `supervisor.ts`, `skill-evolver.ts`, `factories.ts`) continue appearing in Top Problem Files, indicating modules that need structural attention beyond individual bug fixes.
 
 ## Blocked — Needs Human Attention
 
