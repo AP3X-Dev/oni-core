@@ -28,33 +28,38 @@ export class CsvLoader extends DocumentLoader {
 function parseCSV(text: string, sep: string): string[][] {
   text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const rows: string[][] = [];
-  const lines = text.split("\n");
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    const fields: string[] = [];
-    let current = "";
-    let inQuotes = false;
-    let wasQuoted = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i]!;
-      if (ch === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-          if (inQuotes) wasQuoted = true;
-        }
-      } else if (ch === sep && !inQuotes) {
-        fields.push(wasQuoted ? current : current.trim());
-        current = "";
-        wasQuoted = false;
+  let fields: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  let wasQuoted = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]!;
+    if (ch === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        current += '"';
+        i++;
       } else {
-        current += ch;
+        inQuotes = !inQuotes;
+        if (inQuotes) wasQuoted = true;
       }
+    } else if (ch === sep && !inQuotes) {
+      fields.push(wasQuoted ? current : current.trim());
+      current = "";
+      wasQuoted = false;
+    } else if (ch === "\n" && !inQuotes) {
+      fields.push(wasQuoted ? current : current.trim());
+      if (fields.some((f) => f !== "")) rows.push(fields);
+      fields = [];
+      current = "";
+      wasQuoted = false;
+    } else {
+      current += ch;
     }
-    fields.push(wasQuoted ? current : current.trim());
-    rows.push(fields);
   }
+  // Final field/row after last character
+  fields.push(wasQuoted ? current : current.trim());
+  if (fields.some((f) => f !== "")) rows.push(fields);
+
   return rows;
 }
