@@ -5,6 +5,7 @@
 
 import type { ChatResponse, LLMToolDef, ONIModelMessage } from "../../models/types.js";
 import type { AgentLoopConfig, LoopMessage } from "../types.js";
+import { MAX_RETRY_AFTER_MS } from "../../models/http-error.js";
 import { makeMessage } from "./types.js";
 
 // ─── isRetryableError ───────────────────────────────────────────────────────
@@ -43,12 +44,12 @@ export function getRetryDelay(err: unknown, attempt: number): number {
     // stores it at err.context.retryAfterMs, not as a top-level property).
     const ctx = (err as { context?: Record<string, unknown> }).context;
     if (ctx && typeof ctx.retryAfterMs === "number" && ctx.retryAfterMs > 0) {
-      return ctx.retryAfterMs;
+      return Math.min(ctx.retryAfterMs, MAX_RETRY_AFTER_MS);
     }
     // Also check top-level retryAfterMs for any error that carries it directly
     if ("retryAfterMs" in err) {
       const after = (err as { retryAfterMs?: number }).retryAfterMs;
-      if (typeof after === "number" && after > 0) return after;
+      if (typeof after === "number" && after > 0) return Math.min(after, MAX_RETRY_AFTER_MS);
     }
     // Check headers for retry-after-ms (common in HTTP error responses)
     const headers = (err as { headers?: Record<string, string> }).headers;
@@ -56,7 +57,7 @@ export function getRetryDelay(err: unknown, attempt: number): number {
       const headerMs = headers["retry-after-ms"];
       if (headerMs) {
         const parsed = parseInt(headerMs, 10);
-        if (!isNaN(parsed) && parsed > 0) return parsed;
+        if (!isNaN(parsed) && parsed > 0) return Math.min(parsed, MAX_RETRY_AFTER_MS);
       }
     }
   }
