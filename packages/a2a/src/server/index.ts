@@ -147,8 +147,22 @@ export class A2AServer {
       const fetchRes = await handler(fetchReq);
 
       res.writeHead(fetchRes.status, Object.fromEntries(fetchRes.headers.entries()));
-      const buf = await fetchRes.arrayBuffer();
-      res.end(Buffer.from(buf));
+      const contentType = fetchRes.headers.get("content-type") ?? "";
+      if (contentType.includes("text/event-stream") && fetchRes.body) {
+        const reader = fetchRes.body.getReader();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(value);
+          }
+        } finally {
+          res.end();
+        }
+      } else {
+        const buf = await fetchRes.arrayBuffer();
+        res.end(Buffer.from(buf));
+      }
     });
 
     await new Promise<void>((resolve, reject) => {
