@@ -1338,6 +1338,8 @@
 - **validator_completed:** `2026-03-16T04:10:00Z`
 - **validator_notes:** Confirmed realpathSync resolves symlinks after lexical prefix check. resolveReal() helper walks up to deepest existing ancestor for non-existent paths. Both the symlink target path AND allowed roots are resolved before re-comparison. Normal non-symlink paths unaffected. Branch already merged into main. Verified.
 - **archived:** `2026-03-16T04:12:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/tools/src/__tests__/filesystem-symlink-escape.test.ts`
 
 ---
 
