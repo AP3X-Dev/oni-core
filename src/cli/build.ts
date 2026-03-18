@@ -36,7 +36,7 @@ export async function buildCommand(args: ParsedArgs): Promise<void> {
   console.log("\n  Building...\n");
 
   // Step 1: Run tsc
-  const tscArgs = noCheck ? ["tsc", "--noEmit", "false"] : ["tsc"];
+  const tscArgs = noCheck ? ["tsc", "--noCheck"] : ["tsc"];
 
   const child = spawn("npx", tscArgs, {
     stdio: "inherit",
