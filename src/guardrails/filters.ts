@@ -33,18 +33,28 @@ export function piiFilter(options: PiiFilterOptions): ContentFilter {
     name: "pii",
     apply: "both",
     check(content: string): ContentFilterResult {
+      let currentContent = content;
+      const detectedKinds: string[] = [];
+
       for (const kind of block) {
         const pattern = PII_PATTERNS[kind];
         if (!pattern) continue;
 
-        if (pattern.test(content)) {
+        if (pattern.test(currentContent)) {
+          detectedKinds.push(kind);
           if (redact) {
             const globalPattern = new RegExp(pattern.source, "g");
-            const redacted = content.replace(globalPattern, REDACT_LABELS[kind]);
-            return { blocked: true, reason: `PII detected: ${kind}`, redacted };
+            currentContent = currentContent.replace(globalPattern, REDACT_LABELS[kind]);
           }
-          return { blocked: true, reason: `PII detected: ${kind}` };
         }
+      }
+
+      if (detectedKinds.length > 0) {
+        const reason = `PII detected: ${detectedKinds.join(", ")}`;
+        if (redact) {
+          return { blocked: true, reason, redacted: currentContent };
+        }
+        return { blocked: true, reason };
       }
       return { blocked: false };
     },
