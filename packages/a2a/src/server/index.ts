@@ -168,7 +168,9 @@ export class A2AServer {
         if (!res.headersSent) {
           res.writeHead(500, { "Content-Type": "text/plain" });
         }
-        res.end("Internal Server Error");
+        if (!res.writableEnded) {
+          res.end("Internal Server Error");
+        }
       }
     });
 
