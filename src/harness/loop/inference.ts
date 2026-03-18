@@ -110,6 +110,7 @@ export async function runInference(
             tools: llmTools.length > 0 ? llmTools : undefined,
             systemPrompt,
             maxTokens: config.maxTokens ?? 8192,
+            signal: config.signal,
           }),
           timeoutPromise,
         ]);
