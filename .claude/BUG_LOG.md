@@ -201,6 +201,8 @@
 - **validator_completed:** `2026-03-15T13:02:00Z`
 - **validator_notes:** Confirmed MAX_USAGE_HISTORY=1000 at line 45 and splice eviction after push at lines 62-70. Arithmetic correct for both normal (cap+1) and bulk scenarios. All consumers (identifyWeakSkills, proposeSkillImprovement) tolerant of truncated array — usageHistory is private readonly.
 - **archived:** `2026-03-15T13:03:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/skill-evolver-usage-cap.test.ts`
 
 ---
 
@@ -1615,5 +1617,154 @@
 - **validator_completed:** `2026-03-16T18:07:00Z`
 - **validator_notes:** `Confirmed all 6 handlers use safePath. resolveReal() reconstructs from ancestor for non-existent paths. TOCTOU window closed. tsc clean. Merged via fast-forward.`
 - **archived:** `2026-03-16T18:07:00Z`
+
+---
+
+### BUG-0234
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/models/anthropic.ts`
+- **line:** `455`
+- **category:** `logic-bug`
+- **description:** In `anthropic.ts` `stream()`, when `responseFormat.type === "json_schema"` is used, the synthetic tool-use block (created by `buildBody` to implement structured output via the tool-use pattern) is not filtered — spurious `tool_call_start`, `tool_call_delta`, and `tool_call_end` chunks are emitted for the internal structured-output tool that consumers never declared.
+- **context:** `chat()` correctly filters the synthetic tool (`b.name !== rfName`) and exposes the result as `response.parsed`. `stream()` has no equivalent filter: `params.responseFormat?.name` is available in the closure but never checked at the `content_block_start` or `content_block_stop` handlers. When a caller uses `model.stream({ responseFormat: { type: "json_schema", name: "MySchema", schema: {...} } })`, they receive three unexpected chunk types (`tool_call_start`, N×`tool_call_delta`, `tool_call_end`) whose `toolCall.name` is `"MySchema"` — a name the consumer did not register as a tool. Harness loop consumers (e.g. `agentLoop`) that iterate `stream()` chunks and dispatch on `tool_call_end` will attempt to invoke a tool named `"MySchema"`, find no matching tool definition, and likely throw or silently drop the result. The structured output (the JSON) is buried in `tool_call_end.toolCall.args` instead of being surfaced as `parsed`. Fix: capture `rfName = params.responseFormat?.type === "json_schema" ? params.responseFormat.name : undefined` at the top of `stream()` and skip (or convert to a `parsed` chunk) any `content_block_start/stop` events whose block name matches `rfName`.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0234`
+- **hunter_found:** `2026-03-17T02:36:00Z`
+- **fixer_started:** `2026-03-19T07:16:00Z`
+- **fixer_completed:** `2026-03-19T07:20:00Z`
+- **fix_summary:** `Added rfName detection at top of stream() in src/models/anthropic.ts, matching chat()'s pattern. Synthetic structured-output tool_use blocks (where block.name === rfName) are now tracked internally but suppressed from yielded chunks — tool_call_start, tool_call_delta, and tool_call_end are all filtered. Real tool calls pass through unchanged.`
+- **validator_started:** `2026-03-19T19:35:00Z`
+- **validator_completed:** `2026-03-19T19:40:00Z`
+- **validator_notes:** `Confirmed rfName detection at top of stream() matches chat()'s pattern. All three emission points (content_block_start, content_block_delta, content_block_stop) properly guard against synthetic tool blocks. Real tool calls unaffected. tsc clean. Anthropic-specific tests pass.`
+- **archived:** `2026-03-19T19:42:00Z`
+
+---
+
+### BUG-0237
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/harness/hooks-engine.ts`
+- **line:** `244`
+- **category:** `test-regression`
+- **description:** Tests "hook timeout abandons slow hooks" and "handler errors are caught silently" in harness-hooks.test.ts fail: tests expect `null` (fail-open) but `runHooks()` now returns `{ decision: "deny" }` for `PreToolUse` timeouts and crashes (fail-closed).
+- **context:** CI Sentinel detected regression on main branch. `hooks-engine.ts` was changed to implement fail-closed behavior for security-critical hooks (`PreToolUse`, `PermissionRequest`): timeouts return `{ decision: "deny", reason: "Hook timeout — fail-closed for security" }` and crashes return `{ decision: "deny", reason: "Hook error: fail-closed for security" }`. The test at line 198 asserts `expect(result).toBeNull()` with comment "Timed-out hook is treated as a pass (null)" and line 458 asserts `expect(result).toBeNull()` with comment "Crashed hooks are treated as pass". Both assertions reflect old fail-open semantics. The implementation was intentionally changed for security hardening but tests were not updated. Fix: update the two test assertions to expect `{ decision: "deny" }` shape instead of `null`.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0237`
+- **hunter_found:** `2026-03-19T00:16:00Z`
+- **fixer_started:** `2026-03-19T07:21:00Z`
+- **fixer_completed:** `2026-03-19T07:25:00Z`
+- **fix_summary:** `Updated two test assertions in src/__tests__/harness-hooks.test.ts to match fail-closed security behavior. Timeout test now expects { decision: "deny", reason: "Hook timeout — fail-closed for security" } and crash test expects { decision: "deny", reason: "Hook error: fail-closed for security" }. All 17 tests pass.`
+- **validator_started:** `2026-03-19T19:35:00Z`
+- **validator_completed:** `2026-03-19T19:40:00Z`
+- **validator_notes:** `Confirmed hooks-engine.ts is identical on main and branch — fail-closed behavior was already in production. Test assertions now precisely match runtime behavior for PreToolUse timeout and crash paths. All 17 harness-hooks tests pass. tsc clean. Pure test-assertion correction, no production code changes.`
+- **archived:** `2026-03-19T19:42:00Z`
+
+---
+
+### BUG-0236
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/a2a/src/server/index.ts`
+- **line:** `39`
+- **category:** `security-auth`
+- **description:** API key authentication uses non-constant-time string comparison (`!==`), enabling timing-based side-channel attacks to reconstruct the key character by character.
+- **context:** When `apiKey` is configured, the Bearer token check on line 39 uses JavaScript's `!==` operator which short-circuits on first mismatch. An attacker can measure response-time differences to determine correct characters progressively, brute-forcing the API key without rate limiting. Fix: use `crypto.timingSafeEqual()` with equal-length Buffer comparison. OWASP A07:2021 - Identification and Authentication Failures.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0236`
+- **hunter_found:** `2026-03-19T12:00:00Z`
+- **fixer_started:** `2026-03-19T17:30:00Z`
+- **fixer_completed:** `2026-03-19T17:35:00Z`
+- **fix_summary:** `Replaced non-constant-time !== string comparison with crypto.timingSafeEqual() using Buffer instances in packages/a2a/src/server/index.ts. Added length check guard since timingSafeEqual requires equal-length buffers. Imported node:crypto.`
+- **validator_started:** `2026-03-19T19:35:00Z`
+- **validator_completed:** `2026-03-19T19:40:00Z`
+- **validator_notes:** `Confirmed crypto.timingSafeEqual() correctly applied with Buffer.from() on both token and expected key. Length guard is required by the API and acceptable tradeoff. tsc clean. No regressions.`
+- **archived:** `2026-03-19T19:42:00Z`
+
+---
+
+### BUG-0238
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/self-improvement/skill-evolver.ts`
+- **line:** `139`
+- **category:** `missing-error-handling`
+- **description:** `proposeSkillImprovement` awaits `llm.chat()` with no try/catch, so any network error, rate limit, or model error propagates as an unhandled rejection to the self-improvement loop caller.
+- **context:** A transient API failure (timeout, 429, 500) during skill improvement will crash the calling loop with an opaque LLM SDK error rather than being caught and handled gracefully. The caller has no documented recovery path, meaning one flaky API call can halt the entire self-improvement pipeline.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0238`
+- **hunter_found:** `2026-03-19T07:22:00Z`
+- **fixer_started:** `2026-03-19T17:30:00Z`
+- **fixer_completed:** `2026-03-19T17:35:00Z`
+- **fix_summary:** `Wrapped llm.chat() call in proposeSkillImprovement() in try/catch in src/swarm/self-improvement/skill-evolver.ts. On failure, logs warning via console.warn and returns null. Updated return type to Promise<string | null> for graceful degradation.`
+- **validator_started:** `2026-03-19T19:35:00Z`
+- **validator_completed:** `2026-03-19T19:40:00Z`
+- **validator_notes:** `Confirmed try/catch fully wraps llm.chat(). Return type updated to Promise<string | null>. No internal callers — public API boundary, so null-handling is caller responsibility. tsc clean. No regressions vs main.`
+- **archived:** `2026-03-19T19:42:00Z`
+
+---
+
+### BUG-0242
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `packages/stores/src/redis/index.ts`
+- **line:** `70`
+- **category:** `security`
+- **description:** Redis data keys are constructed by directly embedding the raw `key` parameter into the key string without sanitization, allowing a crafted key containing `:` to traverse into a different key-space prefix.
+- **context:** `dataKey` returns `oni:store:${this.prefix}:${JSON.stringify(namespace)}:${key}`. If an LLM or external caller constructs a `key` value like `x:oni:store:admin:secret`, it will collide with keys in other namespaces. The `JSON.stringify` of namespace provides some delimiting but the final `:${key}` segment is entirely unescaped. The fix is to sanitize or hash the key before embedding it in the Redis key string (e.g. `encodeURIComponent(key)` or SHA-256 hash).
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0242`
+- **hunter_found:** `2026-03-19T07:22:00Z`
+- **fixer_started:** `2026-03-19T17:30:00Z`
+- **fixer_completed:** `2026-03-19T17:35:00Z`
+- **fix_summary:** `Applied encodeURIComponent(key) in the dataKey method in packages/stores/src/redis/index.ts to prevent key-space traversal via crafted keys containing colons. The idxKey method does not embed user keys so no change needed there.`
+- **validator_started:** `2026-03-19T19:35:00Z`
+- **validator_completed:** `2026-03-19T19:40:00Z`
+- **validator_notes:** `Confirmed encodeURIComponent applied in dataKey. All CRUD paths (get/put/delete/list) route through dataKey, so encoding is consistent. idxKey does not embed user keys. Sorted-set members use raw keys (not Redis key names) so correctly remain unencoded. tsc clean. Store tests pass.`
+- **archived:** `2026-03-19T19:42:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/stores/src/__tests__/redis-key-encoding.test.ts`
+
+---
+
+### BUG-0239
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `170`
+- **category:** `missing-error-handling`
+- **description:** The `onError` hook at line 170 is awaited without a try/catch, so a throwing user-supplied `onError` handler replaces the original agent error as the propagated exception.
+- **context:** After all retries are exhausted, `await def.hooks?.onError?.(def.id, lastError)` runs unguarded. If the hook itself throws, `lastError` is lost and the new hook exception propagates instead, making root-cause diagnosis impossible for the operator. The fix is to wrap the `onError` call in a try/catch that logs the hook error and still throws `lastError`.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0239`
+- **hunter_found:** `2026-03-19T07:22:00Z`
+- **fixer_started:** `2026-03-19T17:30:00Z`
+- **fixer_completed:** `2026-03-19T17:35:00Z`
+- **fix_summary:** `Wrapped the onError hook call in src/swarm/agent-node.ts in try/catch. Hook errors are logged via console.warn and the original lastError is preserved for propagation. Prevents user-supplied hook from masking root cause.`
+- **validator_started:** `2026-03-19T19:48:00Z`
+- **validator_completed:** `2026-03-19T20:08:00Z`
+- **validator_notes:** `Confirmed try/catch wraps the onError hook call. Hook errors logged via console.warn, original lastError preserved for error context building below. No regressions — surrounding error handling paths unchanged. tsc clean, all 10 swarm tests pass. Merged to main cleanly.`
+- **archived:** `2026-03-19T20:08:00Z`
+
+---
+
+### BUG-0240
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `96`
+- **category:** `logic-bug`
+- **description:** `registry.markIdle()` is called before the Handoff detection branch, so an agent performing a handoff is briefly marked idle before the Command is returned, allowing the supervisor to dispatch new work to an agent that is logically mid-handoff.
+- **context:** The idle mark at line 96 races with the handoff path at lines 100-122. If the supervisor checks `registry.findIdle()` between line 96 and the point where the Command reroutes execution, it could assign additional work to the agent. The fix is to move `registry.markIdle()` after both the handoff branch and the normal return path.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0240`
+- **hunter_found:** `2026-03-19T07:22:00Z`
+- **fixer_started:** `2026-03-19T17:30:00Z`
+- **fixer_completed:** `2026-03-19T17:35:00Z`
+- **fix_summary:** `Moved registry.markIdle(def.id) from before handoff detection (line 96) to after both the handoff return and normal return paths in src/swarm/agent-node.ts. Agent is now only marked idle after onComplete hook fires and just before the return statement, closing the race window.`
+- **validator_started:** `2026-03-19T19:48:00Z`
+- **validator_completed:** `2026-03-19T20:08:00Z`
+- **validator_notes:** `Confirmed markIdle removed from pre-handoff position and placed after onComplete in both branches (handoff return at line 105, normal return at line 125). Race window closed — agent stays in non-idle state during handoff processing. tsc clean, all 10 swarm tests pass. Merged to main cleanly after BUG-0239 with no conflicts.`
+- **archived:** `2026-03-19T20:08:00Z`
 
 ---
