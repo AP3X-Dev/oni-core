@@ -327,6 +327,8 @@
 - **validator_completed:** `2026-03-15T13:17:00Z`
 - **validator_notes:** Confirmed Promise.allSettled at line 132 replacing Promise.all. Fulfilled values collected into sendResults (line 139), first rejection stored (line 141), re-thrown after all settle (line 144). Pattern matches node execution at line 204. Success-path behavior identical to original. No conflict with BUG-0035 fix.
 - **archived:** `2026-03-15T13:18:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/regression/send-fanout-allsettled.test.ts`
 
 ---
 
@@ -1406,6 +1408,8 @@
 - **validator_completed:** `2026-03-16T04:30:00Z`
 - **validator_notes:** `Confirmed sessionId sanitization: replaces .. sequences and path separators (/ \) with underscores before filename construction in persistEpisodic(). Applied before path.join, no other unsanitized uses. Verified.`
 - **archived:** `2026-03-16T04:32:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/memory-episodic-session-traversal.test.ts`
 
 ---
 
