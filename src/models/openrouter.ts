@@ -468,23 +468,25 @@ export function openrouter(
             }
           }
 
-          // Finish reason → emit tool_call_end
-          const finishReason = choice["finish_reason"] as string | null;
-          if (finishReason === "tool_calls") {
-            for (const [, active] of activeToolCalls) {
-              let args: Record<string, unknown> = {};
-              try {
-                args = JSON.parse(active.args) as Record<string, unknown>;
-              } catch {
-                // partial args
-              }
-              yield {
-                type: "tool_call_end",
-                toolCall: { id: active.id, name: active.name, args },
-              };
+        }
+
+        // Finish reason → emit tool_call_end (checked outside delta block so it fires
+        // even when the final chunk has finish_reason but no delta object)
+        const finishReason = choice["finish_reason"] as string | null;
+        if (finishReason === "tool_calls") {
+          for (const [, active] of activeToolCalls) {
+            let args: Record<string, unknown> = {};
+            try {
+              args = JSON.parse(active.args) as Record<string, unknown>;
+            } catch {
+              // partial args
             }
-            activeToolCalls.clear();
+            yield {
+              type: "tool_call_end",
+              toolCall: { id: active.id, name: active.name, args },
+            };
           }
+          activeToolCalls.clear();
         }
       }
 
