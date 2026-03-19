@@ -388,6 +388,8 @@
 - **validator_completed:** `2026-03-15T13:32:00Z`
 - **validator_notes:** Confirmed key in Authorization: Bearer header, no api_key in body. Test asserts Bearer header and api_key undefined. All 14 tests pass.
 - **archived:** `2026-03-15T13:33:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/tools/src/__tests__/tavily-bearer-auth.test.ts`
 
 ---
 
@@ -407,6 +409,8 @@
 - **validator_completed:** `2026-03-15T13:32:00Z`
 - **validator_notes:** Confirmed guard at line 340 checks usage. Choices logic wrapped in conditional. Usage yield now reachable. No regression.
 - **archived:** `2026-03-15T13:33:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/openai-stream-usage-only-chunk.test.ts`
 
 ---
 

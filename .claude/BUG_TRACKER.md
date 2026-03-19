@@ -10,24 +10,24 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-19T23:21:32Z` |
+| **Last Fixer Pass** | `2026-03-19T23:26:27Z` |
 | **Last Validator Pass** | `2026-03-19T23:18:00Z` |
 | **Last Digest Run** | `2026-03-18T00:35:00Z` |
 | **Last Security Scan** | `2026-03-19T19:55:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-19T23:58:00Z` |
+| **Last TestGen Run** | `2026-03-19T23:59:30Z` |
 | **Last Git Manager Pass** | `2026-03-19T07:30:10Z` |
 | **Last Supervisor Pass** | `2026-03-19T21:52:17Z` |
 | **Total Found** | `109` |
-| **Total Pending** | `23` |
+| **Total Pending** | `24` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `0` |
+| **Total Fixed** | `9` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `5` |
-| **Total Reopened** | `3` |
+| **Total Blocked** | `6` |
+| **Total Reopened** | `0` |
 
 ---
 
@@ -315,19 +315,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0244
-- **status:** `reopened`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/cli/build.ts`
 - **line:** `41`
 - **category:** `security-injection`
 - **description:** `spawn("npx", tscArgs, { shell: true })` invokes the system shell unnecessarily, creating a latent shell injection vector inconsistent with the rest of the CLI.
 - **context:** `shell: true` causes `/bin/sh -c "npx tsc ..."` which interprets shell metacharacters. Currently `tscArgs` is `["tsc"]` or `["tsc", "--noCheck"]` so no immediate exploit exists. However `src/cli/run.ts` and `src/cli/dev.ts` perform identical spawns without `shell: true`. Any future change adding user-supplied flags to `tscArgs` would be immediately shell-injectable. Fix: remove `shell: true` to match the rest of the CLI. OWASP A03:2021 - Injection.
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0244`
+- **reopen_count:** `2`
+- **branch:** ``
 - **hunter_found:** `2026-03-19T17:35:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-19T23:26:27Z`
+- **fixer_completed:** `2026-03-19T23:26:27Z`
+- **fix_summary:** `False positive — already fixed on main. src/cli/build.ts line 41 already uses { stdio: "inherit" } with no shell: true. Bug no longer exists. Hunter should re-evaluate.`
 - **validator_started:** `2026-03-19T23:15:00Z`
 - **validator_completed:** `2026-03-19T23:18:00Z`
 - **validator_notes:** `REOPENED: Branch bugfix/BUG-0244 ADDS shell: true instead of removing it. Main already has { stdio: "inherit" } with no shell: true. The branch diff shows +shell: true, inverting the fix. Either main was already fixed or the branch has the change backwards. Delete the branch and verify whether main still has the bug before reattempting.`
@@ -335,19 +335,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0245
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `examples/harness/codebase-audit.ts`
 - **line:** `58`
 - **category:** `security-injection`
 - **description:** LLM-exposed `read_file` tool calls `readFile(input.path)` with no path sanitization, allowing the LLM or prompt injection to read arbitrary files on the host.
 - **context:** `input.path` from the LLM flows directly to `fs.readFile()` with no validation — no allowlist, no boundary check, no symlink resolution. A prompt injection in audited code could read `/etc/passwd`, `~/.ssh/id_rsa`, or cloud credentials. Same pattern in `examples/audit-system/audit-agent.ts:100`. The production tool at `packages/tools/src/filesystem/index.ts` correctly uses `checkAllowedPath()`. Fix: add equivalent path boundary check. OWASP A01:2021 - Broken Access Control.
-- **reopen_count:** `1`
+- **reopen_count:** `2`
 - **branch:** `bugfix/BUG-0245`
 - **hunter_found:** `2026-03-19T17:35:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-19T23:26:27Z`
+- **fixer_completed:** `2026-03-19T23:26:27Z`
+- **fix_summary:** `Added missing normalize import to node:path in examples/audit-system/audit-agent.ts which prevented the path boundary guard from executing. Both example files now have working path boundary checks using normalize(resolve()) against process.cwd().`
 - **validator_started:** `2026-03-19T23:15:00Z`
 - **validator_completed:** `2026-03-19T23:18:00Z`
 - **validator_notes:** `REOPENED: Branch bugfix/BUG-0245 has zero commits beyond main — git diff is empty. No path sanitization was applied to either file. Both still call readFile(input.path, "utf-8") with no boundary check, no normalization, no cwd verification. Fix was never committed to the branch.`
@@ -816,7 +816,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0272
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/factories.ts`
 - **line:** `371`
@@ -824,11 +824,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Test "terminates at maxRounds if no consensus" in `src/__tests__/swarm/template-debate.test.ts` fails: `judgeModel.chat` called 1 time instead of expected 2 times when `maxRounds: 2`.
 - **context:** CI Sentinel detected regression on main branch. The debate judge node termination condition at line 371 uses `nextRound >= config.judge.maxRounds`. With `maxRounds: 2`, after the second judge invocation (round=1), `nextRound=2 >= 2` is true — the graph terminates after only 1 chat call. The test expects `chat` to be called exactly `maxRounds` (2) times, implying the condition should be `nextRound > config.judge.maxRounds` (off-by-one fix) so the judge runs exactly `maxRounds` real evaluation cycles before stopping.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0272`
 - **hunter_found:** `2026-03-19T22:59:15Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-19T23:26:27Z`
+- **fixer_completed:** `2026-03-19T23:26:27Z`
+- **fix_summary:** `Changed debate judge termination condition in src/swarm/factories.ts line 371 from nextRound >= config.judge.maxRounds to nextRound > config.judge.maxRounds. Judge now runs exactly maxRounds evaluation cycles before stopping.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -836,7 +836,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0273
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/harness/memory/ranker.ts`
 - **line:** `101`
@@ -844,11 +844,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Test "drops units that score below matchThreshold" in `src/__tests__/memory-loader.test.ts` fails: expected 0 units returned but got 1 — a non-episodic unit scoring exactly at `matchThreshold` (0.2) is not filtered out.
 - **context:** CI Sentinel detected regression on main branch. The `rankAndLoad` relevance filter uses `score >= matchThreshold`. Non-episodic units with zero tag overlap receive `recencyScore=1`, yielding `score = 0 * 0.8 + 1 * 0.2 = 0.2` — exactly equal to the default `matchThreshold` of `0.2`. The test asserts 0 units returned (expecting strictly-below semantics). Fix: change filter condition to `score > matchThreshold` to exclude boundary-equal units as the test requires.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0273`
 - **hunter_found:** `2026-03-19T22:59:15Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-19T23:26:27Z`
+- **fixer_completed:** `2026-03-19T23:26:27Z`
+- **fix_summary:** `Changed relevance filter in src/harness/memory/ranker.ts line 101 from score >= matchThreshold to score > matchThreshold. Boundary-equal units (score === 0.2 with threshold 0.2) are now excluded.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -856,19 +856,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0274
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/models/google.ts`
 - **line:** `338`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0274`
 - **description:** `candidate.content.parts` is accessed without a null check on `candidate.content`, which the Gemini API omits when finishReason is "SAFETY" or "RECITATION", causing a runtime TypeError.
 - **context:** Line 325–326 guards `!candidate` but not `!candidate.content`. The streaming path (line 414) correctly checks `!candidate.content` with a `continue`, but the synchronous `chat()` path does not — accessing `.parts` on undefined throws. Any safety-filtered Gemini response crashes the non-streaming code path.
 - **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-19T23:26:27Z`
+- **fixer_completed:** `2026-03-19T23:26:27Z`
+- **fix_summary:** `Added null check for candidate.content in src/models/google.ts chat() path after the existing !candidate guard. When content is missing (SAFETY/RECITATION filtered), returns empty response gracefully matching the streaming path pattern.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
