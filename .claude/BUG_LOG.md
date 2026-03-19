@@ -264,6 +264,8 @@
 - **validator_completed:** `2026-03-15T13:02:00Z`
 - **validator_notes:** Confirmed Object.fromEntries + Object.entries filter at lines 82-87 removes __proto__, constructor, prototype before Object.assign. Shallow copy means nested __proto__ is harmless. Object.entries only enumerates own enumerable properties — no prototype chain leakage. No regression risk for legitimate keys.
 - **archived:** `2026-03-15T13:03:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/harness-tools-proto-pollution.test.ts`
 
 ---
 
@@ -304,6 +306,8 @@
 - **validator_completed:** `2026-03-15T13:17:00Z`
 - **validator_notes:** Confirmed monotonic counter `_nextInvocationId` at line 28, post-incremented at line 257 in synchronous context. Key used in both _perInvocationParentUpdates (set/read/delete at lines 261/297/303) and _perInvocationCheckpointer (set/delete at lines 266/304). Cleanup in finally block prevents leaks. No conflict with BUG-0041 fix.
 - **archived:** `2026-03-15T13:18:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/pregel-concurrent-subgraph-keys.test.ts`
 
 ---
 

