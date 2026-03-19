@@ -3,8 +3,11 @@
 // Print graph topology as table or Mermaid
 // ============================================================
 
+import { resolve, extname } from "node:path";
 import type { ParsedArgs } from "./router.js";
 import type { GraphDescriptor } from "../inspect.js";
+
+const ALLOWED_EXTENSIONS = new Set([".ts", ".js", ".mts", ".mjs", ".cts", ".cjs"]);
 
 export function formatGraphTable(descriptor: GraphDescriptor): string {
   const lines: string[] = [];
@@ -52,9 +55,23 @@ export function formatGraphTable(descriptor: GraphDescriptor): string {
 }
 
 export async function inspectCommand(args: ParsedArgs): Promise<void> {
-  const file = args.positional[0];
-  if (!file) {
+  const rawFile = args.positional[0];
+  if (!rawFile) {
     console.error("  Error: file required\n  Usage: oni inspect <file>");
+    process.exitCode = 1;
+    return;
+  }
+
+  // Validate: resolve to absolute path, restrict extensions, ensure within cwd
+  const file = resolve(process.cwd(), rawFile);
+  const cwd = process.cwd();
+  if (!file.startsWith(cwd + "/") && file !== cwd) {
+    console.error("  Error: file must be within the project directory");
+    process.exitCode = 1;
+    return;
+  }
+  if (!ALLOWED_EXTENSIONS.has(extname(file))) {
+    console.error(`  Error: unsupported file extension. Allowed: ${[...ALLOWED_EXTENSIONS].join(", ")}`);
     process.exitCode = 1;
     return;
   }
