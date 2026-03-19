@@ -94,12 +94,27 @@ export function createAgentNode<S extends BaseSwarmState>(
         );
 
         // ---- Handoff detection ----
+        // The agent's skeleton is a compiled StateGraph. When the agent's node
+        // handler returns a Handoff, the pregel engine intercepts it (see
+        // applyUpdate in state-helpers.ts) and stores it in
+        // result.__pendingHandoff rather than spreading its fields as state
+        // updates (which would all be unknown channel keys). We check both the
+        // direct case (Handoff returned by a raw NodeFn, not wrapped in a
+        // skeleton) and the __pendingHandoff passthrough from the skeleton.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (result instanceof Handoff || (result && (result as any).isHandoff)) { // SAFE: duck-typing unknown agent return value
-          const handoff = result instanceof Handoff
-            ? result
+        const rawHandoff = (result instanceof Handoff || (result && (result as any).isHandoff))
+          ? result
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          : ((result as any)?.__pendingHandoff instanceof Handoff || (result as any)?.__pendingHandoff?.isHandoff)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            : new Handoff((result as any).opts); // SAFE: duck-typing unknown agent return value
+            ? (result as any).__pendingHandoff
+            : null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (rawHandoff) { // SAFE: duck-typing unknown agent return value
+          const handoff = rawHandoff instanceof Handoff
+            ? rawHandoff
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            : new Handoff((rawHandoff as any).opts); // SAFE: duck-typing unknown agent return value
           // Fire onComplete for handoffs too
           await def.hooks?.onComplete?.(def.id, result);
           registry.markIdle(def.id);
