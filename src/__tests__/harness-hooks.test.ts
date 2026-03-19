@@ -194,8 +194,8 @@ describe("HooksEngine", () => {
       input: {},
     } as PreToolUsePayload);
 
-    // Timed-out hook is treated as a pass (null)
-    expect(result).toBeNull();
+    // Timed-out PreToolUse hook fails closed for security
+    expect(result).toEqual({ decision: "deny", reason: "Hook timeout — fail-closed for security" });
   });
 
   // ── 8. compose() merges multiple engines ───────────────────────────
@@ -454,7 +454,7 @@ describe("HooksEngine", () => {
       input: {},
     } as PreToolUsePayload);
 
-    // Crashed hooks are treated as pass
-    expect(result).toBeNull();
+    // Crashed PreToolUse hooks fail closed for security
+    expect(result).toEqual({ decision: "deny", reason: "Hook error: fail-closed for security" });
   });
 });
