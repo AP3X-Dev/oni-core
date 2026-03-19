@@ -93,8 +93,6 @@ export function createAgentNode<S extends BaseSwarmState>(
           () => new Error(`Agent "${def.id}" timed out after ${effectiveTimeout}ms`),
         );
 
-        registry.markIdle(def.id);
-
         // ---- Handoff detection ----
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (result instanceof Handoff || (result && (result as any).isHandoff)) { // SAFE: duck-typing unknown agent return value
@@ -104,6 +102,7 @@ export function createAgentNode<S extends BaseSwarmState>(
             : new Handoff((result as any).opts); // SAFE: duck-typing unknown agent return value
           // Fire onComplete for handoffs too
           await def.hooks?.onComplete?.(def.id, result);
+          registry.markIdle(def.id);
           return new Command<S>({
             update: {
               context: { ...(state.context ?? {}), ...(handoff.context ?? {}) },
@@ -123,6 +122,7 @@ export function createAgentNode<S extends BaseSwarmState>(
 
         // Fire onComplete hook
         await def.hooks?.onComplete?.(def.id, result);
+        registry.markIdle(def.id);
 
         // ---- Normal result ----
         return {
