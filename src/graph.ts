@@ -89,7 +89,12 @@ export class StateGraph<S extends Record<string, unknown>> {
 
   addSubgraph(name: string, subgraph: ONISkeleton<S>, opts?: { retry?: RetryPolicy }): this {
     if (this.nodes.has(name)) throw new InvalidSkeletonError(`Node "${name}" already registered.`);
-    const fn: NodeFn<S> = async (state, config) => subgraph.invoke(state, config) as Promise<Partial<S>>;
+    const fn: NodeFn<S> = async (state, config) => {
+      const namespacedConfig = config?.threadId
+        ? { ...config, threadId: `${config.threadId}:${name}` }
+        : config;
+      return subgraph.invoke(state, namespacedConfig) as Promise<Partial<S>>;
+    };
     this.nodes.set(name, { name, fn, retry: opts?.retry, subgraph });
     return this;
   }
