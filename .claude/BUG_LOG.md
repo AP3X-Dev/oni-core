@@ -1817,6 +1817,8 @@
 - **validator_completed:** `2026-03-19T22:01:00Z`
 - **validator_notes:** `Confirmed bare res.json() replaced with res.text() + JSON.parse() in try/catch. On parse failure, descriptive error thrown with method, path, and first 200 chars of body. Success path unchanged — callers still receive parsed JSON. Fix scoped to single function. Verified.`
 - **archived:** `2026-03-19T22:02:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/tools/src/__tests__/github-json-parse-error.test.ts`
 
 ---
 
