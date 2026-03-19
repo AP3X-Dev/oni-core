@@ -40,7 +40,6 @@ export async function buildCommand(args: ParsedArgs): Promise<void> {
 
   const child = spawn("npx", tscArgs, {
     stdio: "inherit",
-    shell: true,
   });
 
   const exitCode = await new Promise<number | null>((resolve, reject) => {
