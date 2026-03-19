@@ -376,11 +376,12 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
 
           // Emit agent.end lifecycle event
           ctx.eventBus.emit({ type: "agent.end", agent: name, timestamp: Date.now(), step, duration: Date.now() - nodeStartTime });
-        }
 
-        // Collect events for yielding after parallel execution
-        allCustomEvents.push(...customEvents);
-        allMessageEvents.push(...messageEvents);
+          // Collect events for yielding after parallel execution — must be in
+          // finally so events emitted before a failure are preserved, not dropped
+          allCustomEvents.push(...customEvents);
+          allMessageEvents.push(...messageEvents);
+        }
 
         return { name, result, subParentUpdates };
       })
