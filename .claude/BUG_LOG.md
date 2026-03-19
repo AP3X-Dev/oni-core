@@ -1305,6 +1305,8 @@
 - **validator_completed:** `2026-03-15T20:20:00Z`
 - **validator_notes:** Confirmed parallelSafe check at lines 144-146, sequential for...of at lines 148-153, Promise.all fallback at line 156. Pattern matches defineAgent (define-agent.ts:171-186) exactly. ToolDefinition.parallelSafe field confirmed at tools/types.ts:17-18. tsc --noEmit clean.
 - **archived:** `2026-03-15T20:20:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/agent-context-parallel-safe.test.ts`
 
 ---
 
