@@ -167,7 +167,11 @@ export function createAgentNode<S extends BaseSwarmState>(
 
     // All retries exhausted — mark error once, then fire onError hook
     registry.markError(def.id);
-    await def.hooks?.onError?.(def.id, lastError);
+    try {
+      await def.hooks?.onError?.(def.id, lastError);
+    } catch (hookErr) {
+      console.warn(`[oni] onError hook for agent "${def.id}" threw:`, hookErr);
+    }
 
     // Keep agent in error status (don't reset to idle)
 
