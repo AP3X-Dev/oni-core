@@ -108,6 +108,7 @@ export class DynamicScalingMonitor {
   private static readonly MAX_HISTORY = 500;
   private callbacks: Set<ScalingCallback> = new Set();
   private unsubscribeTracer: (() => void) | null = null;
+  private _evaluating = false;
 
   constructor(tracer: SwarmTracer, config?: ScalingConfig) {
     this.tracer = tracer;
@@ -351,16 +352,24 @@ export class DynamicScalingMonitor {
       // and complete events (potential scale-down signal)
       if (event.type !== "agent_error" && event.type !== "agent_complete") return;
 
-      const decision = this.evaluate();
-      if (decision.action !== "idle") {
-        this.recordDecision(decision);
-        for (const cb of this.callbacks) {
-          try {
-            cb(decision);
-          } catch {
-            // Callback errors must not disrupt monitoring
+      // Re-entrancy guard: prevent nested evaluate() calls from re-entrant
+      // tracer.record() invocations inside callbacks bypassing the cooldown check.
+      if (this._evaluating) return;
+      this._evaluating = true;
+      try {
+        const decision = this.evaluate();
+        if (decision.action !== "idle") {
+          this.recordDecision(decision);
+          for (const cb of this.callbacks) {
+            try {
+              cb(decision);
+            } catch {
+              // Callback errors must not disrupt monitoring
+            }
           }
         }
+      } finally {
+        this._evaluating = false;
       }
     });
   }
