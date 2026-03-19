@@ -9,7 +9,7 @@ import { ONIHarness } from "../../src/harness/index.js";
 import { anthropic } from "../../src/models/anthropic.js";
 import { defineTool } from "../../src/tools/define.js";
 import { readdir, readFile, stat } from "node:fs/promises";
-import { join, extname } from "node:path";
+import { join, extname, resolve, normalize } from "node:path";
 import type { BasePayload, PreToolUsePayload } from "../../src/harness/hooks-engine.js";
 
 // ── Models ───────────────────────────────────────────────────
@@ -55,7 +55,12 @@ const readFileTool = defineTool({
     required: ["path"],
   },
   execute: async (input: { path: string; maxLines?: number }) => {
-    const content = await readFile(input.path, "utf-8");
+    const boundary = normalize(resolve(process.cwd()));
+    const resolved = normalize(resolve(input.path));
+    if (!resolved.startsWith(boundary + "/") && resolved !== boundary) {
+      throw new Error(`Access denied: path "${input.path}" is outside the working directory`);
+    }
+    const content = await readFile(resolved, "utf-8");
     const lines = content.split("\n");
     const maxLines = input.maxLines ?? 200;
     const truncated = lines.length > maxLines;
