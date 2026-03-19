@@ -1701,6 +1701,8 @@
 - **validator_completed:** `2026-03-19T19:40:00Z`
 - **validator_notes:** `Confirmed try/catch fully wraps llm.chat(). Return type updated to Promise<string | null>. No internal callers — public API boundary, so null-handling is caller responsibility. tsc clean. No regressions vs main.`
 - **archived:** `2026-03-19T19:42:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/skill-evolver-llm-error-handling.test.ts`
 
 ---
 
