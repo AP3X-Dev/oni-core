@@ -68,7 +68,7 @@ export class RedisStore extends BaseStore {
   // ── Key helpers ──────────────────────────────────────────────
 
   private dataKey(namespace: Namespace, key: StoreKey): string {
-    return `oni:store:${this.prefix}:${JSON.stringify(namespace)}:${key}`;
+    return `oni:store:${this.prefix}:${JSON.stringify(namespace)}:${encodeURIComponent(key)}`;
   }
 
   private idxKey(namespace: Namespace): string {
