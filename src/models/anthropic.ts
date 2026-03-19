@@ -413,6 +413,9 @@ export function anthropic(
   /* ---- stream ------------------------------------------------------ */
 
   async function* stream(params: ChatParams): AsyncGenerator<ChatChunk> {
+    const rfName = params.responseFormat?.type === "json_schema"
+      ? params.responseFormat.name
+      : undefined;
     const body = buildBody(params, true);
 
     const res = await fetch(`${baseUrl}/v1/messages`, {
@@ -454,11 +457,16 @@ export function anthropic(
           | undefined;
         if (block?.type === "tool_use" && block.id && block.name) {
           const blockIndex = parsed["index"] as number;
-          activeToolBlocks.set(blockIndex, { id: block.id, name: block.name, argsJson: "" });
-          yield {
-            type: "tool_call_start",
-            toolCall: { id: block.id, name: block.name, args: {} },
-          };
+          if (rfName && block.name === rfName) {
+            // Synthetic structured-output tool — track index to suppress deltas/end but don't emit
+            activeToolBlocks.set(blockIndex, { id: block.id, name: block.name, argsJson: "" });
+          } else {
+            activeToolBlocks.set(blockIndex, { id: block.id, name: block.name, argsJson: "" });
+            yield {
+              type: "tool_call_start",
+              toolCall: { id: block.id, name: block.name, args: {} },
+            };
+          }
         }
       } else if (
         event === "content_block_delta" ||
@@ -474,13 +482,15 @@ export function anthropic(
           const active = activeToolBlocks.get(blockIndex);
           if (active) {
             active.argsJson += delta["partial_json"] as string;
+            if (!(rfName && active.name === rfName)) {
+              yield {
+                type: "tool_call_delta",
+                toolCall: {
+                  args: { __partial: delta["partial_json"] as string } as unknown as Record<string, unknown>,
+                },
+              };
+            }
           }
-          yield {
-            type: "tool_call_delta",
-            toolCall: {
-              args: { __partial: delta["partial_json"] as string } as unknown as Record<string, unknown>,
-            },
-          };
         }
       } else if (
         event === "content_block_stop" ||
@@ -495,10 +505,12 @@ export function anthropic(
           } catch {
             // partial args — pass empty object
           }
-          yield {
-            type: "tool_call_end",
-            toolCall: { id: active.id, name: active.name, args },
-          };
+          if (!(rfName && active.name === rfName)) {
+            yield {
+              type: "tool_call_end",
+              toolCall: { id: active.id, name: active.name, args },
+            };
+          }
           activeToolBlocks.delete(blockIndex);
         }
       } else if (
