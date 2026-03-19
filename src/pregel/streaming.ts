@@ -150,6 +150,15 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
             ? (Array.isArray(result.goto) ? result.goto : [result.goto])
             : getNextNodes(name, state, ctx._edgesBySource, config).nodes;
           nextNodes.push(...gotos);
+        } else if (result && typeof result === "object" && (result as Record<string, unknown>).isHandoff === true) {
+          // Handoff duck-type: store in __pendingHandoff so createAgentNode can intercept it
+          // before it reaches applyUpdate (where its fields would be treated as unknown channel keys).
+          if ("__pendingHandoff" in ctx.channels) {
+            state = applyUpdate(ctx.channels, state, { __pendingHandoff: result } as Partial<S>);
+          }
+          const { nodes, sends } = getNextNodes(name, state, ctx._edgesBySource, config);
+          nextNodes.push(...nodes);
+          nextSends.push(...sends);
         } else if (result && typeof result === "object") {
           state = applyUpdate(ctx.channels, state, result as Partial<S>);
           const { nodes, sends } = getNextNodes(name, state, ctx._edgesBySource, config);
@@ -255,17 +264,26 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                 // same threadId don't collide in _perInvocationParentUpdates / _perInvocationCheckpointer.
                 const invocationKey = `${threadId}::${ctx._nextInvocationId.value++}`;
 
+                // Compute the namespaced threadId for this subgraph invocation.
+                // Format: "parentThreadId:subgraphName" — used as the child's threadId
+                // so that checkpoints are stored under the namespaced key directly.
+                // For concurrent safety (BUG-0082), the invocationKey is still unique
+                // but now derived from the namespaced threadId + counter.
+                const parentThreadId = config?.threadId ?? threadId;
+                const namespacedThreadId = `${parentThreadId}:${name}`;
+
                 if (childRunner) {
                   childRunner._subgraphRef.count++;
-                  childRunner._perInvocationParentUpdates.set(invocationKey, []);
+                  childRunner._perInvocationParentUpdates.set(namespacedThreadId, []);
                 }
 
-                // Install a namespaced checkpointer per invocation instead of swapping a shared field
+                // Install the parent's checkpointer directly under the namespaced threadId
+                // so child checkpoints are stored as "parentThreadId:subgraphName".
                 if (ctx.checkpointer && childRunner) {
                   childRunner._perInvocationCheckpointer.set(
-                    invocationKey,
+                    namespacedThreadId,
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    new NamespacedCheckpointer(ctx.checkpointer as any, name), // SAFE: external boundary — checkpointer generic S differs between parent/child graph
+                    ctx.checkpointer as any, // SAFE: external boundary — checkpointer generic S differs between parent/child graph
                   );
                 }
 
@@ -275,10 +293,9 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                   const childStreamMode: StreamMode[] = ["debug", "values"];
                   for await (const subEvt of nodeDef.subgraph.stream(state, {
                     ...config,
-                    // Pass the parent's effective threadId explicitly so the child's
-                    // _perInvocationParentUpdates lookup at Command.PARENT time uses
-                    // the same key that was registered in invocationKey above.
-                    threadId: invocationKey,
+                    // Pass the namespaced threadId so the child checkpoints under
+                    // "parentThreadId:subgraphName" and Command.PARENT lookups work correctly.
+                    threadId: namespacedThreadId,
                     parentRunId: config?.threadId,
                     streamMode: childStreamMode,
                   })) {
@@ -293,14 +310,14 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                     }
                   }
                   if (childRunner) {
-                    subParentUpdates = childRunner._perInvocationParentUpdates.get(invocationKey) ?? [];
+                    subParentUpdates = childRunner._perInvocationParentUpdates.get(namespacedThreadId) ?? [];
                   }
                 } finally {
                   // Clean up per-invocation state — decrement ref count, remove Maps entries
                   if (childRunner) {
                     childRunner._subgraphRef.count--;
-                    childRunner._perInvocationParentUpdates.delete(invocationKey);
-                    childRunner._perInvocationCheckpointer.delete(invocationKey);
+                    childRunner._perInvocationParentUpdates.delete(namespacedThreadId);
+                    childRunner._perInvocationCheckpointer.delete(namespacedThreadId);
                   }
                 }
                 return subFinalState ?? {};
@@ -441,6 +458,17 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
           nextNodes.push(...gotos);
           if (result.send) nextSends.push(...result.send.map((s) => ({ node: s.node, args: s.args })));
         }
+      } else if (result && typeof result === "object" && (result as Record<string, unknown>).isHandoff === true) {
+        // Handoff duck-type: store in __pendingHandoff so createAgentNode can intercept it
+        // before it reaches applyUpdate (where its fields would be treated as unknown channel keys).
+        if ("__pendingHandoff" in ctx.channels) {
+          const handoffUpdate = { __pendingHandoff: result } as Partial<S>;
+          state = applyUpdate(ctx.channels, state, handoffUpdate);
+          stepWrites.push({ nodeId: name, writes: handoffUpdate as Record<string, unknown> });
+        }
+        const { nodes, sends } = getNextNodes(name, state, ctx._edgesBySource, config);
+        nextNodes.push(...nodes);
+        nextSends.push(...sends);
       } else if (result && typeof result === "object") {
         state = applyUpdate(ctx.channels, state, result as Partial<S>);
         const writes = result as Record<string, unknown>;
