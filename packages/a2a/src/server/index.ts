@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import type { AgentCard } from "../types.js";
 import { handleJsonRPC, type TaskHandler } from "./handler.js";
 import { createSSEResponse } from "./sse.js";
@@ -35,8 +36,11 @@ export class A2AServer {
       // Optional API key authentication — if configured, require a matching
       // Bearer token on every non-preflight request.
       if (this.apiKey) {
-        const auth = req.headers.get("authorization") ?? "";
-        if (auth !== `Bearer ${this.apiKey}`) {
+        const token = req.headers.get("authorization") ?? "";
+        const expected = `Bearer ${this.apiKey}`;
+        const tokenBuf = Buffer.from(token);
+        const expectedBuf = Buffer.from(expected);
+        if (tokenBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(tokenBuf, expectedBuf)) {
           return new Response(
             JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Unauthorized" } }),
             { status: 401, headers: { "Content-Type": "application/json" } },
