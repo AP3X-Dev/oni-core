@@ -83,6 +83,8 @@
 - **validator_completed:** `2026-03-15T12:32:00Z`
 - **validator_notes:** Confirmed single atomic INSERT...ON CONFLICT DO UPDATE at lines 136-153. created_at preserved via oni_store.created_at (valid PostgreSQL syntax). New rows get Date.now(). All columns (value, updated_at, ttl) correctly handled on conflict. No regression — namespace encoding consistent with other methods.
 - **archived:** `2026-03-15T12:33:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/stores/src/__tests__/postgres-put-atomic.test.ts`
 
 ---
 
@@ -1484,6 +1486,8 @@
 - **validator_completed:** `2026-03-16T04:50:00Z`
 - **validator_notes:** REOPENED: Branch bugfix/BUG-0063 REVERSES the fix already on main. Main has correct execFileSync with array args. The branch replaces it with vulnerable execSync + string interpolation. Branch must be recreated from current main without reverting the existing fix.
 - **archived:** `2026-03-16T04:52:00Z`
+- **test_generated:** `true`
+- **test_file:** `examples/audit-system/diff-resolver-injection.test.ts`
 
 ---
 
@@ -1545,6 +1549,8 @@
 - **validator_completed:** `2026-03-16T04:50:00Z`
 - **validator_notes:** `Confirmed DELETE_SCRIPT Lua script at lines 163-167 atomically executes DEL+ZREM. client.eval() at lines 170-176 with correct keys (data key, index key, member). Follows PUT_SCRIPT pattern. Verified.`
 - **archived:** `2026-03-16T04:52:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/stores/src/__tests__/redis-delete-atomic.test.ts`
 
 ---
 
