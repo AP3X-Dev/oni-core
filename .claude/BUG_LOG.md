@@ -279,6 +279,8 @@
 - **validator_completed:** `2026-03-15T13:17:00Z`
 - **validator_notes:** Original `let finalState!: S` with no fallback is gone. Fix superseded by BUG-0050's safer approach: `let finalState: S | undefined = undefined` with explicit throw if no state_update events. No unsafe Partial→S cast. Type-safe and correct.
 - **archived:** `2026-03-15T13:18:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/pregel-invoke-no-state-update.test.ts`
 
 ---
 
@@ -1205,6 +1207,8 @@
 - **validator_completed:** `2026-03-15T20:05:00Z`
 - **validator_notes:** Confirmed interruptAfter moved to post-loop pass at lines 476-482. All state updates, routes, stepWrites applied in per-result loop (lines 417-470) before interrupt. Checkpoint saved at line 478 with complete state before throw. ONIInterrupt type and node identity preserved. tsc --noEmit clean.
 - **archived:** `2026-03-15T20:05:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/pregel-interrupt-after-parallel.test.ts`
 
 ---
 
@@ -1774,5 +1778,66 @@
 - **validator_completed:** `2026-03-19T20:08:00Z`
 - **validator_notes:** `Confirmed markIdle removed from pre-handoff position and placed after onComplete in both branches (handoff return at line 105, normal return at line 125). Race window closed — agent stays in non-idle state during handoff processing. tsc clean, all 10 swarm tests pass. Merged to main cleanly after BUG-0239 with no conflicts.`
 - **archived:** `2026-03-19T20:08:00Z`
+
+---
+
+### BUG-0241
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/tools/src/github/index.ts`
+- **line:** `67`
+- **category:** `missing-error-handling`
+- **description:** `githubRequest` returns `res.json()` without a `.catch()` after confirming `res.ok`, so a malformed or truncated JSON response body throws an unhandled parse error from every GitHub tool's execute function.
+- **context:** All five GitHub tools (search_repos, get_file_contents, create_issue, list_issues, create_pull_request) delegate to this helper. During a GitHub API incident or proxy error, a non-JSON 200 response will produce an unhandled JSON parse exception in the tool executor rather than a structured error message back to the agent. The fix is to wrap `res.json()` in a try/catch that returns a descriptive error string.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0241`
+- **hunter_found:** `2026-03-19T07:22:00Z`
+- **fixer_started:** `2026-03-19T19:53:00Z`
+- **fixer_completed:** `2026-03-19T21:54:46Z`
+- **fix_summary:** `Replaced bare res.json() with res.text() + JSON.parse() wrapped in try/catch in githubRequest(). On parse failure, throws descriptive error including method, path, and first 200 chars of response body.`
+- **validator_started:** `2026-03-19T21:57:00Z`
+- **validator_completed:** `2026-03-19T22:01:00Z`
+- **validator_notes:** `Confirmed bare res.json() replaced with res.text() + JSON.parse() in try/catch. On parse failure, descriptive error thrown with method, path, and first 200 chars of body. Success path unchanged — callers still receive parsed JSON. Fix scoped to single function. Verified.`
+- **archived:** `2026-03-19T22:02:00Z`
+
+---
+
+### BUG-0243
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/cli/inspect.ts`
+- **line:** `66`
+- **category:** `security-injection`
+- **description:** `import()` is called with an unvalidated CLI positional argument, allowing arbitrary module loading from any filesystem path or potentially `data:` URIs.
+- **context:** `args.positional[0]` flows directly into `await import(file)` with no path canonicalization, allowlist, or extension check. An attacker controlling CLI invocation can load and execute arbitrary JavaScript/TypeScript modules from any path the process can read. The `/* @vite-ignore */` comment shows awareness of the dynamic import but no security mitigation was added. Fix: resolve to absolute path, verify within project directory, restrict extensions. OWASP A03:2021 - Injection.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0243`
+- **hunter_found:** `2026-03-19T17:35:00Z`
+- **fixer_started:** `2026-03-19T19:53:00Z`
+- **fixer_completed:** `2026-03-19T21:54:46Z`
+- **fix_summary:** `Added path validation to inspect CLI: resolve to absolute path, reject paths outside cwd, restrict to allowed extensions (.ts/.js/.mts/.mjs/.cts/.cjs). Prevents arbitrary module loading via CLI args.`
+- **validator_started:** `2026-03-19T21:57:00Z`
+- **validator_completed:** `2026-03-19T22:01:00Z`
+- **validator_notes:** `Path validation correctly implemented: resolve() to absolute path, cwd containment check with trailing slash to prevent prefix-match bypass, extension whitelist (.ts/.js/.mts/.mjs/.cts/.cjs). data: URIs blocked by resolve() treating them as relative filenames. Symlink caveat acceptable (requires prior fs write access). No regressions for legitimate use. Verified.`
+- **archived:** `2026-03-19T22:02:00Z`
+
+---
+
+### BUG-0247
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/mcp/client.ts`
+- **line:** `190`
+- **category:** `race-condition`
+- **description:** `refreshTools()` sets `_refreshLock` after the IIFE is created (line 190), leaving a window where a concurrent caller sees `_refreshLock === null` and starts a second parallel refresh.
+- **context:** The `connect()` method's coalesce pattern correctly sets the lock synchronously before the first await. `refreshTools()` does not: the IIFE at line 175 executes synchronously up to its first internal `await` before `this._refreshLock = refreshing` runs at line 190. A `notifications/tools/list_changed` handler (line 264, calls `void this.refreshTools()`) firing during `connect()` can enter before the lock is set, causing two parallel `tools/list` requests that race on writing `this.tools`, producing a torn or stale tool list.
+- **hunter_found:** `2026-03-19T18:45:00Z`
+- **fixer_started:** `2026-03-19T19:53:00Z`
+- **fixer_completed:** `2026-03-19T21:54:46Z`
+- **fix_summary:** `Extracted async work into private _runRefreshTools() method and assigned its promise to _refreshLock synchronously before first await, matching the connect() coalesce pattern. Concurrent callers now always see the lock.`
+- **validator_started:** `2026-03-19T21:57:00Z`
+- **validator_completed:** `2026-03-19T22:01:00Z`
+- **validator_notes:** `Confirmed _runRefreshTools() returns its Promise synchronously, assigned to _refreshLock before any await. Matches connect()/_connectLock pattern. Finally block clears lock via identity check. Connectivity check hoisted to refreshTools() for synchronous short-circuit. Async function cannot throw synchronously before lock assignment. Verified.`
+- **archived:** `2026-03-19T22:02:00Z`
 
 ---
