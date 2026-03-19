@@ -97,10 +97,15 @@ export async function runAuditAgent(
       required: ["path"],
     },
     execute: async (input: { path: string; maxLines?: number }) => {
-      const content = await readFile(input.path, "utf-8");
+      const boundary = normalize(resolve(process.cwd()));
+      const resolved = normalize(resolve(input.path));
+      if (!resolved.startsWith(boundary + "/") && resolved !== boundary) {
+        throw new Error(`Access denied: path "${input.path}" is outside the working directory`);
+      }
+      const content = await readFile(resolved, "utf-8");
       const lines = content.split("\n");
       const maxLines = input.maxLines ?? 300;
-      filesScanned.add(input.path);
+      filesScanned.add(resolved);
       return { path: input.path, content: lines.slice(0, maxLines).join("\n"), totalLines: lines.length, truncated: lines.length > maxLines };
     },
   });
