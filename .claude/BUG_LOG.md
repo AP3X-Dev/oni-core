@@ -1527,6 +1527,8 @@
 - **validator_completed:** `2026-03-16T04:50:00Z`
 - **validator_notes:** `Confirmed static ESM imports (import fs from "node:fs", import path from "node:path") at lines 6-7. All require() calls removed (3 occurrences). eslint-disable comments removed. Method signatures cleaned up. Verified.`
 - **archived:** `2026-03-16T04:52:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/skill-loader-from-directory.test.ts`
 
 ---
 
@@ -1921,5 +1923,7 @@
 - **validator_completed:** `2026-03-19T23:18:00Z`
 - **validator_notes:** `Confirmed oversized first message is truncated (not dropped) with [truncated] suffix. Budget accounting correct: allowedChars + suffix.length = budget. console.warn fires. Normal within-budget messages follow original untouched path. No regressions.`
 - **archived:** `2026-03-19T23:18:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/compactor-fallback-oversized-first-msg.test.ts`
 
 ---

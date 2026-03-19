@@ -10,14 +10,14 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-19T23:03:23Z` |
+| **Last Fixer Pass** | `2026-03-19T23:21:32Z` |
 | **Last Validator Pass** | `2026-03-19T23:18:00Z` |
 | **Last Digest Run** | `2026-03-18T00:35:00Z` |
 | **Last Security Scan** | `2026-03-19T19:55:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-19T23:45:00Z` |
+| **Last TestGen Run** | `2026-03-19T23:58:00Z` |
 | **Last Git Manager Pass** | `2026-03-19T07:30:10Z` |
 | **Last Supervisor Pass** | `2026-03-19T21:52:17Z` |
 | **Total Found** | `109` |
@@ -376,19 +376,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0248
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/pool.ts`
 - **line:** `228`
 - **category:** `race-condition`
-- **reopen_count:** `1`
+- **reopen_count:** `2`
 - **branch:** `bugfix/BUG-0248`
 - **description:** The queue drain path in the `finally` block of `runOnSlot()` uses `Promise.resolve().then(...)` to defer dispatch, creating a window where `invoke()` can also dispatch to the now-idle slot, violating `maxConcurrency = 1`.
 - **context:** When a slot finishes, `activeTasks--` runs synchronously but the queued item is dispatched via a deferred microtask. Between decrement and microtask execution, a concurrent `invoke()` call sees the idle slot via `pickSlot()`, dispatches to it, and increments `activeTasks` to 1. Then the deferred microtask fires and also dispatches via `runOnSlot`, incrementing to 2. Two tasks run concurrently on a slot configured for exclusive access, corrupting any agent state that assumes single-occupancy.
 - **hunter_found:** `2026-03-19T18:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-19T23:21:32Z`
+- **fixer_completed:** `2026-03-19T23:21:32Z`
+- **fix_summary:** `Fixed addSlots() in src/swarm/pool.ts: removed manual slot.activeTasks++ before runOnSlot() call (was causing double-increment since runOnSlot() increments unconditionally), and replaced Promise.resolve().then() deferred dispatch with synchronous runOnSlot() call to close race window. Also removed preIncremented parameter entirely. Finally block already fixed from previous attempt.`
 - **validator_started:** `2026-03-19T21:57:00Z`
 - **validator_completed:** `2026-03-19T22:01:00Z`
 - **validator_notes:** `REOPENED: Finally block fix is correct — synchronous runOnSlot() call closes the race window. However, addSlots() was NOT updated: (1) it still manually increments slot.activeTasks++ before calling runOnSlot(), but runOnSlot() now unconditionally increments too (the preIncremented parameter was removed), causing double-increment — slot appears at activeTasks=2 with only 1 task running, starving capacity. (2) addSlots() still uses Promise.resolve().then() for dispatch, retaining the original deferred-dispatch race in that code path. Fix must update addSlots() to remove manual increment and use synchronous dispatch.`
@@ -676,7 +676,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0265
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/models/anthropic.ts`
 - **line:** `398`
@@ -684,11 +684,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `chat()` returns `stopReason: "tool_use"` even when all tool_use blocks were for structured output (responseFormat), so callers see `stopReason: "tool_use"` instead of `"end"` on structured output responses.
 - **context:** CI Sentinel detected regression on main branch. `mapStopReason` at line 175 converts `"tool_use"` to `"tool_use"` unconditionally. When `responseFormat.type === "json_schema"` is used, the tool_use block is a synthetic internal tool — after filtering it from `toolCalls` (line 380), `stopReason` should be overridden to `"end"`. Without this, the agent harness sees `stopReason: "tool_use"` and enters tool-processing logic for a response that has no tool calls, causing incorrect agent behavior. Test "extracts parsed from tool_use input, not text content" in `src/__tests__/structured-output.test.ts` fails at line 337.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0265`
 - **hunter_found:** `2026-03-19T22:00:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-19T23:21:32Z`
+- **fixer_completed:** `2026-03-19T23:21:32Z`
+- **fix_summary:** `Changed const to let for stopReason in src/models/anthropic.ts chat(). Added conditional: when stopReason is "tool_use" but toolCalls is empty and rfName is set (structured output mode), override stopReason to "end" since all tool_use blocks were synthetic.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -696,7 +696,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0266
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/pregel/index.ts`
 - **line:** `1`
@@ -704,11 +704,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Subgraph checkpoint namespace isolation is not implemented — child subgraph checkpoints are stored under the parent threadId instead of `"parentId:subgraphName"`, so `cp.list("parent-1:child")` returns zero results.
 - **context:** CI Sentinel detected regression on main branch. Test "subgraph checkpoints are isolated from parent" in `src/__tests__/checkpoint-namespace.test.ts` fails at line 40: `expected 0 to be greater than 0`. When a subgraph is added via `outer.addSubgraph("child", ...)`, the compiled inner graph should checkpoint using a namespaced threadId (`"parent-1:child"`) to prevent checkpoint key collisions between parent and child graphs sharing the same checkpointer. Currently all checkpoints land under the parent threadId, making namespace isolation impossible.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0266`
 - **hunter_found:** `2026-03-19T22:00:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-19T23:21:32Z`
+- **fixer_completed:** `2026-03-19T23:21:32Z`
+- **fix_summary:** `In src/pregel/streaming.ts, computed namespacedThreadId as "parentThreadId:subgraphName" and passed it as the child graph's threadId instead of the opaque invocationKey. Registered parent checkpointer directly under the namespaced key. Also updated src/graph.ts addSubgraph fallback. Subgraph checkpoints now isolated under "parent-1:child" namespace.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -716,7 +716,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0267
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `100`
@@ -724,11 +724,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Handoff routing is broken — agents returning a `Handoff` object do not route to the target agent, causing 3 tests across 2 files to fail with `result.done === false`.
 - **context:** CI Sentinel detected regression on main branch. Tests "spawned agent that returns a Handoff routes to the handoff target" (`src/__tests__/swarm/dynamic-spawn.test.ts:112`) and "agent returning Handoff routes to target agent" (`src/__tests__/swarm/handoff-execution.test.ts:67`) both fail with `expected false to be true`. Stderr shows `applyUpdate: unknown channel key "isHandoff" — skipping (not in channel schema)`, confirming that the Handoff marker is being treated as a state update rather than a routing directive. The duck-typed `isHandoff` detection at line 100 is not intercepting the return value before it reaches the state updater.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0267`
 - **hunter_found:** `2026-03-19T22:00:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-19T23:21:32Z`
+- **fixer_completed:** `2026-03-19T23:21:32Z`
+- **fix_summary:** `Fixed Handoff routing in 3 files: (1) src/pregel/state-helpers.ts applyUpdate() now detects Handoff objects via isHandoff duck-type and stores them as __pendingHandoff instead of iterating keys through channel schema. (2) src/pregel/streaming.ts updated to handle passthrough. (3) src/swarm/agent-node.ts extended to check result.__pendingHandoff in addition to instanceof Handoff.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -796,7 +796,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0271
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/self-improvement/skill-evolver.ts`
 - **line:** `186`
@@ -804,11 +804,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Test "BUG-0078: safeSkillPath does not throw ReferenceError from require() in ESM" in `src/__tests__/skill-evolver-esm-path.test.ts` fails: `commitOrRevert("../../etc/passwd", ...)` resolves instead of rejecting with "Path traversal detected".
 - **context:** CI Sentinel detected regression on main branch. `commitOrRevert` validates content format before calling `safeSkillPath`. When the test passes a path-traversal skillName with content that does not start with `#` or `---`, the content validation guard (line 204) returns early before `safeSkillPath` at line 228 can throw the expected "Path traversal detected" error. The path traversal guard is bypassed by the content format check. Fix: validate path traversal via `safeSkillPath` before content format checks, so security rejections always throw regardless of content.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0271`
 - **hunter_found:** `2026-03-19T22:59:15Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-19T23:21:32Z`
+- **fixer_completed:** `2026-03-19T23:21:32Z`
+- **fix_summary:** `Moved safeSkillPath(skillName) call to the top of commitOrRevert() in src/swarm/self-improvement/skill-evolver.ts, before content format validation checks. Path traversal is now always validated first regardless of content format, so "../../etc/passwd" correctly throws "Path traversal detected".`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
