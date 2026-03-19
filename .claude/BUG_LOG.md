@@ -549,6 +549,8 @@
 - **validator_completed:** `2026-03-15T14:17:00Z`
 - **validator_notes:** Confirmed escXml(name) at line 263. Handles &, <, >, ". No regressions.
 - **archived:** `2026-03-15T14:18:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/skill-loader-invoke-xml-injection.test.ts`
 
 ---
 
@@ -1019,6 +1021,8 @@
 - **validator_completed:** `2026-03-15T19:35:00Z`
 - **validator_notes:** Confirmed Number() + Number.isFinite() guards at lines 133-140. CheckpointCorruptError thrown for invalid values matching safeParse pattern. No bare `as number` casts remain. tsc --noEmit clean.
 - **archived:** `2026-03-15T19:35:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/postgres-checkpointer-deserialize.test.ts`
 
 ---
 
