@@ -201,7 +201,11 @@ export class AgentPool<S extends Record<string, unknown>> {
           );
 
           // Fire onComplete hook
-          await agent.hooks?.onComplete?.(agent.id, result);
+          try {
+            await agent.hooks?.onComplete?.(agent.id, result);
+          } catch (hookErr) {
+            console.warn(`[pool] onComplete hook threw for agent "${agent.id}":`, hookErr);
+          }
 
           return result;
         } catch (err) {
