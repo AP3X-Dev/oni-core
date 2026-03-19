@@ -27,6 +27,23 @@ export function applyUpdate<S extends Record<string, unknown>>(
 ): S {
   const keys = Object.keys(update) as (keyof S)[];
   if (keys.length === 0) return current;
+
+  // ---- Handoff passthrough (BUG-0267) ----
+  // When a node inside a skeleton returns a Handoff object the pregel engine
+  // calls applyUpdate with that Handoff as the `update` argument.  All of the
+  // Handoff's own keys (isHandoff, opts, to, message, context, …) are absent
+  // from the channel schema, so they would be silently skipped and the Handoff
+  // would be lost.  Instead, when we detect the update IS a Handoff (duck-
+  // typed via the isHandoff marker), we store it verbatim in __pendingHandoff
+  // on the returned state so that createAgentNode can retrieve it after
+  // skeleton.invoke() returns.  We do not attempt to pass it through a channel
+  // reducer — we write directly to the state object so this works regardless
+  // of whether the skeleton's channel schema declares __pendingHandoff.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((update as any).isHandoff === true) {
+    return { ...current, __pendingHandoff: update } as S;
+  }
+
   const next = { ...current };
   for (const key of keys) {
     if (update[key] !== undefined) {
