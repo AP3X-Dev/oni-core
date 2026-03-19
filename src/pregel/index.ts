@@ -158,8 +158,11 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
     yield* this._stream(input, config, config?.streamMode ?? "updates");
   }
 
-  async batch(inputs: Partial<S>[], config?: ONIConfig): Promise<S[]> {
-    return Promise.all(
+  async batch(
+    inputs: Partial<S>[],
+    config?: ONIConfig
+  ): Promise<PromiseSettledResult<S>[]> {
+    return Promise.allSettled(
       inputs.map((inp, i) =>
         this.invoke(inp, {
           ...config,
