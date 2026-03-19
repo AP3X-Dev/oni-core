@@ -119,7 +119,7 @@ export class SkillEvolver {
   async proposeSkillImprovement(
     skillName: string,
     llm: { chat: (opts: { messages: Array<{ role: string; content: string }>; maxTokens?: number }) => Promise<{ content: string }> },
-  ): Promise<string> {
+  ): Promise<string | null> {
     const { readFile } = await import("node:fs/promises");
 
     const skillPath = safeSkillPath(this.skillsRoot, skillName, "SKILL.md");
@@ -136,19 +136,25 @@ export class SkillEvolver {
       .map(r => `- ${r.context}`)
       .join("\n");
 
-    const response = await llm.chat({
-      messages: [
-        {
-          role: "user",
-          content:
-            `You are improving an agent skill. Here is the current SKILL.md:\n\n${currentContent}\n\n` +
-            `Recent failure contexts:\n${failures || "(none)"}\n\n` +
-            `Propose an improved version of SKILL.md that addresses the failure patterns. ` +
-            `Return ONLY the new SKILL.md content, no explanation.`,
-        },
-      ],
-      maxTokens: 2048,
-    });
+    let response;
+    try {
+      response = await llm.chat({
+        messages: [
+          {
+            role: "user",
+            content:
+              `You are improving an agent skill. Here is the current SKILL.md:\n\n${currentContent}\n\n` +
+              `Recent failure contexts:\n${failures || "(none)"}\n\n` +
+              `Propose an improved version of SKILL.md that addresses the failure patterns. ` +
+              `Return ONLY the new SKILL.md content, no explanation.`,
+          },
+        ],
+        maxTokens: 2048,
+      });
+    } catch (err) {
+      console.warn(`[SkillEvolver] llm.chat failed for skill "${skillName}":`, err);
+      return null;
+    }
 
     return response.content.trim();
   }
