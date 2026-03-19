@@ -40,6 +40,7 @@ export class MCPClient {
   private error: string | undefined;
   private onToolsChanged: (() => void) | undefined;
   private _connectLock: Promise<void> | null = null;
+  private _refreshLock: Promise<void> | null = null;
 
   constructor(
     private config: MCPServerConfig,
@@ -166,7 +167,27 @@ export class MCPClient {
       throw new Error("MCP client not connected");
     }
 
-    const response = await this.transport.send("tools/list");
+    // Coalesce concurrent refresh calls — wait for the in-flight attempt
+    // rather than issuing a parallel tools/list request.
+    if (this._refreshLock !== null) {
+      return this._refreshLock;
+    }
+
+    // Set the lock synchronously before the first await so no concurrent
+    // caller can slip through the guard above.
+    const refreshing = this._runRefreshTools();
+    this._refreshLock = refreshing;
+    try {
+      await refreshing;
+    } finally {
+      if (this._refreshLock === refreshing) {
+        this._refreshLock = null;
+      }
+    }
+  }
+
+  private async _runRefreshTools(): Promise<void> {
+    const response = await this.transport!.send("tools/list");
 
     if (response.error) {
       throw new Error(`MCP tools/list failed: ${response.error.message}`);
