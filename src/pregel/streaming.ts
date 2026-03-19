@@ -151,6 +151,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
             : getNextNodes(name, state, ctx._edgesBySource, config).nodes;
           nextNodes.push(...gotos);
         } else if (result && typeof result === "object") {
+          // applyUpdate handles Handoff duck-types via the __pendingHandoff passthrough (BUG-0267)
           state = applyUpdate(ctx.channels, state, result as Partial<S>);
           const { nodes, sends } = getNextNodes(name, state, ctx._edgesBySource, config);
           nextNodes.push(...nodes);
@@ -442,6 +443,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
           if (result.send) nextSends.push(...result.send.map((s) => ({ node: s.node, args: s.args })));
         }
       } else if (result && typeof result === "object") {
+        // applyUpdate handles Handoff duck-types via the __pendingHandoff passthrough (BUG-0267)
         state = applyUpdate(ctx.channels, state, result as Partial<S>);
         const writes = result as Record<string, unknown>;
         if (Object.keys(writes).length > 0) {
