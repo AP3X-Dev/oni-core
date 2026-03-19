@@ -98,7 +98,7 @@ export function rankAndLoad(
 
   const scored = candidates
     .map((unit) => ({ unit, score: scoreRelevance(unit, taskTags) }))
-    .filter(({ score }) => score > 0 && score >= matchThreshold)
+    .filter(({ score }) => score > 0 && score > matchThreshold)
     .sort((a, b) => b.score - a.score);
 
   return applyBudget(scored.map((s) => s.unit), budget, hydrateUnit, markLoaded, logFn);
