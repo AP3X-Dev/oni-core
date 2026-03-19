@@ -418,6 +418,8 @@
 - **validator_completed:** `2026-03-15T13:32:00Z`
 - **validator_notes:** Confirmed direction field, direction-aware ternary, executor consistency. Default is minimize for backward compat.
 - **archived:** `2026-03-15T13:33:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/pattern-learner-direction-aware.test.ts`
 
 ---
 
@@ -572,6 +574,8 @@
 - **validator_completed:** `2026-03-15T14:17:00Z`
 - **validator_notes:** Confirmed .some() at lines 287-290. matches() returns boolean — semantic change safe. All string values now checked.
 - **archived:** `2026-03-15T14:18:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/hooks-arg-pattern-all-values.test.ts`
 
 ---
 
