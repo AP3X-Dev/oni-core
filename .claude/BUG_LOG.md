@@ -123,6 +123,8 @@
 - **validator_completed:** `2026-03-15T12:47:00Z`
 - **validator_notes:** Confirmed close() on E2BSandbox interface (line 14), try/finally wraps runCode() (lines 54-63), sandbox created outside try block (line 53) so close() always runs. Minor note: close() error could mask runCode() error via JS finally semantics — non-regressive, acceptable trade-off.
 - **archived:** `2026-03-15T12:48:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/tools/src/__tests__/e2b-sandbox-close.test.ts`
 
 ---
 
@@ -1433,6 +1435,8 @@
 - **validator_completed:** `2026-03-16T04:30:00Z`
 - **validator_notes:** `Confirmed MAX_BODY_SIZE (1MB) constant, per-request totalBytes tracking, 413 response + req.destroy() on overflow, early return prevents chunks.push. try/catch suppresses post-413 processing. Verified.`
 - **archived:** `2026-03-16T04:32:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/a2a/src/__tests__/server-body-limit.test.ts`
 
 ---
 
@@ -1875,5 +1879,47 @@
 - **archived:** `2026-03-19T22:02:00Z`
 - **test_generated:** `true`
 - **test_file:** `src/__tests__/mcp-refresh-tools-coalesce.test.ts`
+
+---
+
+### BUG-0249
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/swarm/scaling.ts`
+- **line:** `354`
+- **category:** `race-condition`
+- **description:** The reactive subscription handler calls `evaluate()` then `recordDecision()` non-atomically, so a re-entrant `tracer.record()` from a callback can bypass the cooldown check and issue duplicate scale decisions for a single event.
+- **context:** `tracer.record()` calls listeners synchronously. If a callback at line 359 triggers another `tracer.record()`, two `evaluate()` calls read the same stale `lastDecisionTime`, both pass the cooldown check, and two scale-up decisions fire for one error event. This defeats the cooldown mechanism and can cause 2x the intended scaling, leading to resource exhaustion.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0249`
+- **hunter_found:** `2026-03-19T18:45:00Z`
+- **fixer_started:** `2026-03-19T23:03:23Z`
+- **fixer_completed:** `2026-03-19T23:03:23Z`
+- **fix_summary:** `Added private _evaluating boolean re-entrancy guard to the reactive subscription handler in src/swarm/scaling.ts. Handler returns early if already evaluating, with try/finally to ensure flag is always reset. Prevents duplicate scale decisions from re-entrant tracer.record() calls.`
+- **validator_started:** `2026-03-19T23:15:00Z`
+- **validator_completed:** `2026-03-19T23:18:00Z`
+- **validator_notes:** `Confirmed _evaluating boolean guard prevents re-entrant evaluate() calls. Flag set before evaluate(), reset in finally block — cannot stay stuck true. First non-re-entrant call processes normally. No regressions.`
+- **archived:** `2026-03-19T23:18:00Z`
+
+---
+
+### BUG-0261
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/harness/context-compactor.ts`
+- **line:** `328`
+- **category:** `logic-bug`
+- **description:** `fallbackTruncation` silently returns only a synthetic two-message header with no actual conversation history if the most recent message exceeds the character budget.
+- **context:** The backward walk at line 328 breaks immediately if the first (most recent) message's character length exceeds `budget`. The function returns `[truncation_notice, "Context loaded."]` with zero conversation history and no error or warning. Since `fallbackTruncation` is the last-resort path when summarization fails, this is a silent total context loss — downstream inference proceeds with no prior conversation, producing responses that ignore all previous turns.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0261`
+- **hunter_found:** `2026-03-19T15:11:42Z`
+- **fixer_started:** `2026-03-19T23:03:23Z`
+- **fixer_completed:** `2026-03-19T23:03:23Z`
+- **fix_summary:** `In fallbackTruncation() in src/harness/context-compactor.ts, changed the break-on-first-message logic to truncate oversized messages instead of dropping them entirely. When the most recent message exceeds the budget and no messages have been kept yet, the content is sliced to fit with a [truncated] suffix. Emits console.warn to signal the truncation.`
+- **validator_started:** `2026-03-19T23:15:00Z`
+- **validator_completed:** `2026-03-19T23:18:00Z`
+- **validator_notes:** `Confirmed oversized first message is truncated (not dropped) with [truncated] suffix. Budget accounting correct: allowedChars + suffix.length = budget. console.warn fires. Normal within-budget messages follow original untouched path. No regressions.`
+- **archived:** `2026-03-19T23:18:00Z`
 
 ---
