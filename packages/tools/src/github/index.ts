@@ -64,7 +64,12 @@ async function githubRequest(
     console.error(`[github] API error ${res.status} ${res.statusText} ${method} ${path}`);
     throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
   }
-  return res.json();
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`GitHub API returned non-JSON response for ${method} ${path}: ${text.slice(0, 200)}`);
+  }
 }
 
 const GITHUB_SLUG_RE = /^[a-zA-Z0-9._-]+$/;
