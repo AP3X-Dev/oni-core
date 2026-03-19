@@ -42,14 +42,21 @@ export interface SimpleStore {
 export function storeAuthResolver(
   store: SimpleStore,
   integrationKey: string,
+  options?: { scope?: string },
 ): AuthResolver {
+  if (!options?.scope) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[auth-resolver] storeAuthResolver for "${integrationKey}" was created without an access scope. ` +
+      `Credentials are readable by any caller. Pass options.scope to restrict access.`,
+    );
+  }
   return {
     resolve: async () => {
       const item = await store.get(["credentials"], integrationKey);
       if (!item) {
         throw new Error(
-          `No credentials found for "${integrationKey}". ` +
-          `Store them first using: store.put(["credentials"], "${integrationKey}", { ... })`,
+          `Credential not found for integration "${integrationKey}".`,
         );
       }
       return item.value;
