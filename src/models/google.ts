@@ -335,6 +335,18 @@ export function google(
         raw: json,
       };
     }
+    if (!candidate.content) {
+      // candidate.content is omitted when finishReason is SAFETY or RECITATION
+      return {
+        content: "",
+        usage: {
+          inputTokens: json.usageMetadata?.promptTokenCount ?? 0,
+          outputTokens: json.usageMetadata?.candidatesTokenCount ?? 0,
+        },
+        stopReason: "end",
+        raw: json,
+      };
+    }
     const parts = candidate.content.parts;
 
     // Extract text
