@@ -33,14 +33,16 @@ export class CircuitBreaker {
   async execute<T>(fn: () => Promise<T>): Promise<T> {
     const currentState = this.state;
     if (currentState === "open") {
-      if (this.config.fallback) return this.config.fallback() as T;
-      throw new CircuitBreakerOpenError(this.nodeName, this.config.resetAfter);
+      const openErr = new CircuitBreakerOpenError(this.nodeName, this.config.resetAfter);
+      if (this.config.fallback) return this.config.fallback(undefined, openErr) as T;
+      throw openErr;
     }
     if (currentState === "half_open") {
       if (this._probeInFlight) {
         // Another probe is already in flight — reject additional concurrent callers
-        if (this.config.fallback) return this.config.fallback() as T;
-        throw new CircuitBreakerOpenError(this.nodeName, this.config.resetAfter);
+        const openErr = new CircuitBreakerOpenError(this.nodeName, this.config.resetAfter);
+        if (this.config.fallback) return this.config.fallback(undefined, openErr) as T;
+        throw openErr;
       }
       this._probeInFlight = true; // Set synchronously before any await
     }
