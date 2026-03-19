@@ -176,13 +176,62 @@ export class RedisCheckpointer<S> implements ONICheckpointer<S> {
   // ── Deserialization ──────────────────────────────────────────
 
   private deserialize(threadId: string, raw: string): ONICheckpoint<S> {
+    let parsed: unknown;
     try {
-      return JSON.parse(raw) as ONICheckpoint<S>;
+      parsed = JSON.parse(raw);
     } catch {
       throw new CheckpointCorruptError(
         threadId,
         "failed to parse checkpoint JSON — data may be truncated or corrupted"
       );
     }
+
+    if (parsed === null || typeof parsed !== "object") {
+      throw new CheckpointCorruptError(
+        threadId,
+        `invalid checkpoint — expected an object, got ${JSON.stringify(parsed)}`
+      );
+    }
+
+    const cp = parsed as Record<string, unknown>;
+
+    if (typeof cp["threadId"] !== "string") {
+      throw new CheckpointCorruptError(
+        threadId,
+        `missing or invalid "threadId" — expected string, got ${JSON.stringify(cp["threadId"])}`
+      );
+    }
+
+    const step = Number(cp["step"]);
+    if (!Number.isFinite(step)) {
+      throw new CheckpointCorruptError(
+        threadId,
+        `missing or invalid "step" — expected a finite number, got ${JSON.stringify(cp["step"])}`
+      );
+    }
+
+    const timestamp = Number(cp["timestamp"]);
+    if (!Number.isFinite(timestamp)) {
+      throw new CheckpointCorruptError(
+        threadId,
+        `missing or invalid "timestamp" — expected a finite number, got ${JSON.stringify(cp["timestamp"])}`
+      );
+    }
+
+    if (cp["state"] === undefined) {
+      throw new CheckpointCorruptError(
+        threadId,
+        `missing required field "state"`
+      );
+    }
+
+    if (!Array.isArray(cp["nextNodes"])) {
+      throw new CheckpointCorruptError(
+        threadId,
+        `missing or invalid "nextNodes" — expected an array, got ${JSON.stringify(cp["nextNodes"])}`
+      );
+    }
+
+    return cp as unknown as ONICheckpoint<S>;
   }
 }
