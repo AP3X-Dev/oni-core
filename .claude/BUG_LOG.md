@@ -1596,6 +1596,8 @@
 - **validator_completed:** `2026-03-16T17:34:00Z`
 - **validator_notes:** `Confirmed choices[0] safely guarded. Usage yield outside choices block. tsc clean (TS18048 resolved). Merged cleanly.`
 - **archived:** `2026-03-16T17:34:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/openrouter-usage-only-chunks.test.ts`
 
 ---
 
@@ -1617,6 +1619,8 @@
 - **validator_completed:** `2026-03-16T18:07:00Z`
 - **validator_notes:** `Confirmed all 6 handlers use safePath. resolveReal() reconstructs from ancestor for non-existent paths. TOCTOU window closed. tsc clean. Merged via fast-forward.`
 - **archived:** `2026-03-16T18:07:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/tools/src/__tests__/filesystem-toctou.test.ts`
 
 ---
 
@@ -1626,6 +1630,8 @@
 - **file:** `src/models/anthropic.ts`
 - **line:** `455`
 - **category:** `logic-bug`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/anthropic-stream-responseformat-filter.test.ts`
 - **description:** In `anthropic.ts` `stream()`, when `responseFormat.type === "json_schema"` is used, the synthetic tool-use block (created by `buildBody` to implement structured output via the tool-use pattern) is not filtered — spurious `tool_call_start`, `tool_call_delta`, and `tool_call_end` chunks are emitted for the internal structured-output tool that consumers never declared.
 - **context:** `chat()` correctly filters the synthetic tool (`b.name !== rfName`) and exposes the result as `response.parsed`. `stream()` has no equivalent filter: `params.responseFormat?.name` is available in the closure but never checked at the `content_block_start` or `content_block_stop` handlers. When a caller uses `model.stream({ responseFormat: { type: "json_schema", name: "MySchema", schema: {...} } })`, they receive three unexpected chunk types (`tool_call_start`, N×`tool_call_delta`, `tool_call_end`) whose `toolCall.name` is `"MySchema"` — a name the consumer did not register as a tool. Harness loop consumers (e.g. `agentLoop`) that iterate `stream()` chunks and dispatch on `tool_call_end` will attempt to invoke a tool named `"MySchema"`, find no matching tool definition, and likely throw or silently drop the result. The structured output (the JSON) is buried in `tool_call_end.toolCall.args` instead of being surfaced as `parsed`. Fix: capture `rfName = params.responseFormat?.type === "json_schema" ? params.responseFormat.name : undefined` at the top of `stream()` and skip (or convert to a `parsed` chunk) any `content_block_start/stop` events whose block name matches `rfName`.
 - **reopen_count:** `0`
@@ -1701,6 +1707,8 @@
 - **validator_completed:** `2026-03-19T19:40:00Z`
 - **validator_notes:** `Confirmed try/catch fully wraps llm.chat(). Return type updated to Promise<string | null>. No internal callers — public API boundary, so null-handling is caller responsibility. tsc clean. No regressions vs main.`
 - **archived:** `2026-03-19T19:42:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/skill-evolver-llm-error.test.ts`
 
 ---
 
