@@ -23,6 +23,7 @@ export class AgentPool<S extends Record<string, unknown>> {
   private strategy: PoolStrategy;
   private rrIndex = 0;
   private _pendingRemoval = new Set<string>();
+  private _disposed = false;
   private static readonly PRIORITY_ORDER: Record<string, number> = {
     critical: 0, high: 1, normal: 2, low: 3,
   };
@@ -48,7 +49,19 @@ export class AgentPool<S extends Record<string, unknown>> {
 
   // ---- Public API ----
 
+  dispose(): void {
+    this._disposed = true;
+    const drainError = new Error("AgentPool disposed");
+    for (const item of this.queue) {
+      item.reject(drainError);
+    }
+    this.queue = [];
+  }
+
   async invoke(input: Partial<S>, config?: ONIConfig, priority?: string): Promise<S> {
+    if (this._disposed) {
+      throw new Error("AgentPool disposed");
+    }
     const slot = this.pickSlot();
 
     if (slot) {
