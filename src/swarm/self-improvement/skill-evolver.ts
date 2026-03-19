@@ -200,6 +200,18 @@ export class SkillEvolver {
       );
       return;
     }
+    // Security: validate the skill path BEFORE any content checks so that
+    // path-traversal attempts are always rejected, regardless of content format.
+    // Performing this check first prevents an attacker from bypassing the path
+    // guard by supplying content that fails earlier validations.
+    let skillPath: string;
+    try {
+      skillPath = safeSkillPath(this.skillsRoot, skillName, "SKILL.md");
+    } catch (err) {
+      console.error(`[skill-evolver] Rejected skill revision for "${skillName}": path traversal detected`);
+      throw err;
+    }
+
     // Valid SKILL.md must start with a markdown heading or YAML frontmatter
     const trimmed = revisedContent.trimStart();
     if (!trimmed.startsWith("#") && !trimmed.startsWith("---")) {
@@ -225,7 +237,7 @@ export class SkillEvolver {
       const { writeFile, mkdir } = await import("node:fs/promises");
       const { dirname } = await import("node:path");
 
-      const skillPath = safeSkillPath(this.skillsRoot, skillName, "SKILL.md");
+      // skillPath already validated above
       await mkdir(dirname(skillPath), { recursive: true });
       await writeFile(skillPath, revisedContent, "utf-8");
     } catch (err) {
