@@ -53,9 +53,17 @@ export class ExperimentLog {
     const history = this.getHistory(agentId, limit);
     if (history.length === 0) return "No experiments recorded.";
     const successRate = history.filter(r => r.success).length / history.length;
-    const lines = history.map(r =>
-      `- [${r.success ? "+" : "x"}] ${r.hypothesis} (metric: ${r.targetMetric}, delta: ${r.metricAfter !== null ? (r.metricAfter - r.metricBefore).toFixed(3) : "n/a"})`
-    );
+    const lines = history.map(r => {
+      let delta: string;
+      if (r.metricAfter !== null) {
+        let d = r.metricAfter - r.metricBefore;
+        if (r.direction === "minimize") d = -d;
+        delta = d.toFixed(3);
+      } else {
+        delta = "n/a";
+      }
+      return `- [${r.success ? "+" : "x"}] ${r.hypothesis} (metric: ${r.targetMetric}, delta: ${delta})`;
+    });
     return [
       `ExperimentLog (${history.length} recent, ${(successRate * 100).toFixed(0)}% success):`,
       ...lines,
