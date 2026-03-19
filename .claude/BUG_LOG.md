@@ -222,6 +222,8 @@
 - **validator_completed:** `2026-03-15T13:02:00Z`
 - **validator_notes:** Confirmed _onStdoutData field (line 82), removeListener before kill (lines 202-205), removeAllListeners on stdout/stderr/exit/error (lines 206-209). Safe for stop-before-start (this.process null guard) and double-stop (this.process nulled on first call). No regressions.
 - **archived:** `2026-03-15T13:03:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/lsp-client-stop-removes-listener.test.ts`
 
 ---
 
@@ -1112,6 +1114,8 @@
 - **validator_completed:** `2026-03-15T19:50:00Z`
 - **validator_notes:** Confirmed safeStream is now a plain pass-through (yield* gen, no try/catch). Errors propagate to sse.ts catch block at line 23 which emits JSON-RPC error with code -32603 and returns before "completed" frame. tsc --noEmit clean.
 - **archived:** `2026-03-15T19:50:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/a2a/src/__tests__/sse-handler-error-propagation.test.ts`
 
 ---
 
@@ -1820,6 +1824,8 @@
 - **validator_completed:** `2026-03-19T22:01:00Z`
 - **validator_notes:** `Path validation correctly implemented: resolve() to absolute path, cwd containment check with trailing slash to prevent prefix-match bypass, extension whitelist (.ts/.js/.mts/.mjs/.cts/.cjs). data: URIs blocked by resolve() treating them as relative filenames. Symlink caveat acceptable (requires prior fs write access). No regressions for legitimate use. Verified.`
 - **archived:** `2026-03-19T22:02:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/cli-inspect-path-validation.test.ts`
 
 ---
 
@@ -1839,5 +1845,7 @@
 - **validator_completed:** `2026-03-19T22:01:00Z`
 - **validator_notes:** `Confirmed _runRefreshTools() returns its Promise synchronously, assigned to _refreshLock before any await. Matches connect()/_connectLock pattern. Finally block clears lock via identity check. Connectivity check hoisted to refreshTools() for synchronous short-circuit. Async function cannot throw synchronously before lock assignment. Verified.`
 - **archived:** `2026-03-19T22:02:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/mcp-refresh-tools-coalesce.test.ts`
 
 ---
