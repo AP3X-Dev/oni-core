@@ -110,13 +110,9 @@ export class AgentPool<S extends Record<string, unknown>> {
       const slot = this.pickSlot();
       if (!slot) break;
       const next = this.queue.shift()!;
-      // Increment activeTasks synchronously so that pickSlot() sees the
+      // runOnSlot increments activeTasks synchronously, so pickSlot() sees the
       // updated count on the next iteration and respects maxConcurrency.
-      // runOnSlot will skip its own increment when preIncremented=true.
-      slot.activeTasks++;
-      Promise.resolve()
-        .then(() => this.runOnSlot(slot, next.input, next.config, true))
-        .then(next.resolve, next.reject);
+      this.runOnSlot(slot, next.input, next.config).then(next.resolve, next.reject);
     }
   }
 
@@ -181,9 +177,8 @@ export class AgentPool<S extends Record<string, unknown>> {
     slot:    PoolSlot<S>,
     input:   Partial<S>,
     config?: ONIConfig,
-    preIncremented = false
   ): Promise<S> {
-    if (!preIncremented) slot.activeTasks++;
+    slot.activeTasks++;
     slot.totalRuns++;
 
     const agent = slot.agent;
@@ -237,10 +232,9 @@ export class AgentPool<S extends Record<string, unknown>> {
       if (this.queue.length > 0) {
         const next = this.queue.shift()!;
         if (this.slots.includes(slot)) {
-          // Slot still active — drain directly for efficiency
-          Promise.resolve()
-            .then(() => this.runOnSlot(slot, next.input, next.config))
-            .then(next.resolve, next.reject);
+          // Slot still active — drain directly and synchronously to close the
+          // race window where invoke() could also dispatch to this now-idle slot.
+          this.runOnSlot(slot, next.input, next.config).then(next.resolve, next.reject);
         } else {
           // Slot was removed — route through normal dispatch so removed agents
           // never execute queued work
