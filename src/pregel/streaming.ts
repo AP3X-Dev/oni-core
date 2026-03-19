@@ -150,16 +150,8 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
             ? (Array.isArray(result.goto) ? result.goto : [result.goto])
             : getNextNodes(name, state, ctx._edgesBySource, config).nodes;
           nextNodes.push(...gotos);
-        } else if (result && typeof result === "object" && (result as Record<string, unknown>).isHandoff === true) {
-          // Handoff duck-type: store in __pendingHandoff so createAgentNode can intercept it
-          // before it reaches applyUpdate (where its fields would be treated as unknown channel keys).
-          if ("__pendingHandoff" in ctx.channels) {
-            state = applyUpdate(ctx.channels, state, { __pendingHandoff: result } as Partial<S>);
-          }
-          const { nodes, sends } = getNextNodes(name, state, ctx._edgesBySource, config);
-          nextNodes.push(...nodes);
-          nextSends.push(...sends);
         } else if (result && typeof result === "object") {
+          // applyUpdate handles Handoff duck-types via the __pendingHandoff passthrough (BUG-0267)
           state = applyUpdate(ctx.channels, state, result as Partial<S>);
           const { nodes, sends } = getNextNodes(name, state, ctx._edgesBySource, config);
           nextNodes.push(...nodes);
@@ -458,18 +450,8 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
           nextNodes.push(...gotos);
           if (result.send) nextSends.push(...result.send.map((s) => ({ node: s.node, args: s.args })));
         }
-      } else if (result && typeof result === "object" && (result as Record<string, unknown>).isHandoff === true) {
-        // Handoff duck-type: store in __pendingHandoff so createAgentNode can intercept it
-        // before it reaches applyUpdate (where its fields would be treated as unknown channel keys).
-        if ("__pendingHandoff" in ctx.channels) {
-          const handoffUpdate = { __pendingHandoff: result } as Partial<S>;
-          state = applyUpdate(ctx.channels, state, handoffUpdate);
-          stepWrites.push({ nodeId: name, writes: handoffUpdate as Record<string, unknown> });
-        }
-        const { nodes, sends } = getNextNodes(name, state, ctx._edgesBySource, config);
-        nextNodes.push(...nodes);
-        nextSends.push(...sends);
       } else if (result && typeof result === "object") {
+        // applyUpdate handles Handoff duck-types via the __pendingHandoff passthrough (BUG-0267)
         state = applyUpdate(ctx.channels, state, result as Partial<S>);
         const writes = result as Record<string, unknown>;
         if (Object.keys(writes).length > 0) {
