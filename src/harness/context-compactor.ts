@@ -327,7 +327,35 @@ export class ContextCompactor {
     // Walk backwards to keep the most recent messages that fit in the budget
     for (let i = messages.length - 1; i >= 0; i--) {
       const len = this.contentLength(messages[i]);
-      if (totalChars + len > budget) break;
+      if (totalChars + len > budget) {
+        // If this is the most recent message (first one we examine) and nothing
+        // has been kept yet, truncate it to fit rather than dropping it entirely
+        // so the agent retains at least some context.
+        if (kept.length === 0 && budget > 0) {
+          const remaining = budget - totalChars;
+          const suffix = " [truncated]";
+          const allowedChars = Math.max(0, remaining - suffix.length);
+          const msg = messages[i];
+          let truncatedMsg: ONIModelMessage;
+          if (typeof msg.content === "string") {
+            truncatedMsg = { ...msg, content: msg.content.slice(0, allowedChars) + suffix };
+          } else {
+            // For array content, truncate the text of the last text part
+            const parts = msg.content.map((p, idx, arr) => {
+              if (idx === arr.length - 1 && p.text) {
+                return { ...p, text: p.text.slice(0, allowedChars) + suffix };
+              }
+              return p;
+            });
+            truncatedMsg = { ...msg, content: parts };
+          }
+          console.warn(
+            `[ContextCompactor] fallbackTruncation: most recent message exceeded budget (${len} chars > ${budget} remaining); truncating to ${allowedChars} chars.`
+          );
+          kept.unshift(truncatedMsg);
+        }
+        break;
+      }
       totalChars += len;
       kept.unshift(messages[i]);
     }
