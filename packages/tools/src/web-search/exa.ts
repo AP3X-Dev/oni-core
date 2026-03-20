@@ -49,7 +49,11 @@ export function exaSearch(config: { apiKey: string }): ToolDefinition {
         console.error(`[exa] API error ${res.status} ${res.statusText}`);
         throw new Error(`Exa Search API error: ${res.status} ${res.statusText}`);
       }
-      return res.json();
+      try {
+        return await res.json();
+      } catch {
+        throw new Error(`exa_search: invalid JSON response from https://api.exa.ai/search`);
+      }
     },
   };
 }
