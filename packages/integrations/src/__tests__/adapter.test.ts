@@ -94,6 +94,35 @@ describe("adaptActivePiece", () => {
     await tool.execute({ text: "hello" }, {});
     expect(mockRun).toHaveBeenCalledWith(expect.objectContaining({ auth: "resolved-key", propsValue: { text: "hello" } }));
   });
+
+  it("strips prototype-polluting keys from input before passing to action.run", async () => {
+    const mockRun = vi.fn().mockResolvedValue({ ok: true });
+    const mockAction = {
+      name: "write_data",
+      displayName: "Write",
+      description: "Writes data",
+      props: { text: { type: PropertyType.SHORT_TEXT, displayName: "Text", required: true } },
+      run: mockRun,
+    };
+    const resolver = apiKeyAuthResolver(() => "key");
+    const tool = adaptActivePiece(mockAction, resolver);
+
+    await tool.execute({
+      text: "safe",
+      __proto__: { polluted: true },
+      constructor: { polluted: true },
+      prototype: { polluted: true },
+      nested: { __proto__: { bad: true }, ok: "yes" },
+    } as Record<string, unknown>, {});
+
+    const passed = mockRun.mock.calls[0][0].propsValue;
+    expect(passed).not.toHaveProperty("__proto__");
+    expect(passed).not.toHaveProperty("constructor");
+    expect(passed).not.toHaveProperty("prototype");
+    expect(passed.text).toBe("safe");
+    expect((passed.nested as Record<string, unknown>)).not.toHaveProperty("__proto__");
+    expect((passed.nested as Record<string, unknown>).ok).toBe("yes");
+  });
 });
 
 describe("storeAuthResolver", () => {
