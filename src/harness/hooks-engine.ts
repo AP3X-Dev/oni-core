@@ -358,6 +358,10 @@ export class HooksEngine {
       /LD_PRELOAD\s*=/,
       /chmod\s+.*\+s/,
       /chmod\s+[0-7]*[4-7][0-7]{2}\s/,
+      /\/dev\/tcp\//,
+      /nc\s+.*-e/,
+      /ncat\s+.*-e/,
+      /socat\s+.*exec/i,
     ];
 
     const sensitiveFilePatterns = [
