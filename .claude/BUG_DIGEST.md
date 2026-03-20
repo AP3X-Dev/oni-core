@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T11:08:13Z
+**Generated:** 2026-03-20T11:31:00Z
 **Period:** Last 24 hours
 
 ---
@@ -9,20 +9,20 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 50 |
-| Pending | 4 |
+| Active Bugs | 49 |
+| Pending | 0 |
 | In Progress | 0 |
-| Fixed (awaiting validation) | 32 |
+| Fixed (awaiting validation) | 33 |
 | Reopened | 0 |
-| Blocked | 14 |
+| Blocked | 16 |
 
 ## Severity Breakdown
 
 | Severity | Count |
 |----------|-------|
 | Critical | 1 |
-| High | 15 |
-| Medium | 32 |
+| High | 16 |
+| Medium | 30 |
 | Low | 2 |
 
 ## 24h Activity
@@ -38,26 +38,26 @@
 | Reopen Rate | 25.0% (6/24 archived bugs have reopen_count > 0) |
 | First-Pass Fix Rate | 75.0% |
 | Queue Drain Rate | N/A (0 found) |
-| Blocked Ratio | 28.0% |
+| Blocked Ratio | 32.7% |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
-| `src/swarm/pool.ts` | 4 |
+| `src/swarm/pool.ts` | 5 |
 | `src/harness/memory/ranker.ts` | 3 |
+| `src/swarm/agent-node.ts` | 2 |
 | `packages/a2a/src/server/index.ts` | 2 |
 | `src/models/google.ts` | 2 |
-| `src/checkpointers/redis.ts` | 2 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| security-injection | 8 |
-| test-regression | 7 |
-| logic-bug | 6 |
-| missing-error-handling | 4 |
+| security-injection | 10 |
+| logic-bug | 9 |
+| test-regression | 8 |
+| missing-error-handling | 5 |
 | type-error | 4 |
 
 ## Agent Health
@@ -70,9 +70,9 @@
 
 ## Bottleneck Analysis
 
-**Validator is the critical bottleneck:** 32 bugs are fixed and awaiting validation with 0 currently in-validation. The Validator last ran over 7 hours ago (04:07Z). The fixed queue is massive and not draining. **Recommendation:** Urgently trigger Validator passes to clear the backlog.
+**Validator is the critical bottleneck:** 33 bugs are fixed and awaiting validation with 0 currently in-validation. The Validator last ran over 7 hours ago (04:07Z). The fixed queue is massive and not draining. **Recommendation:** Urgently trigger Validator passes to clear the backlog.
 
-**Blocked ratio at 28.0%** — 14 of 50 active bugs are blocked. At least 8 appear to be false positives (already fixed on main) needing Hunter re-evaluation or human triage. A bulk false-positive sweep would significantly reduce noise.
+**Blocked ratio at 32.7%** (up from 28.0%) — 16 of 49 active bugs are blocked. At least 8 appear to be false positives (already fixed on main) needing Hunter re-evaluation or human triage. A bulk false-positive sweep would significantly reduce noise.
 
 **Pipeline stalled** — 0 bugs found, fixed, or verified in the last 24h. All agents appear idle since their last recorded timestamps. The pipeline needs manual intervention to resume.
 
@@ -80,12 +80,12 @@
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
-| Active Bugs | 50 | 50 | &rarr; |
-| Throughput | 12 | 0 | &darr; |
-| Reopen Rate | 6.3% | 25.0% | &uarr; |
-| Blocked Ratio | 28.0% | 28.0% | &rarr; |
+| Active Bugs | 50 | 49 | ↓ |
+| Throughput | 0 | 0 | → |
+| Reopen Rate | 25.0% | 25.0% | → |
+| Blocked Ratio | 28.0% | 32.7% | ↑ |
 
-Active bug count unchanged at 50. Throughput dropped from 12/day to 0 — no bugs were verified in this period. Reopen rate recalculated from full archive (25% lifetime). `src/swarm/pool.ts` remains the top problem file across multiple cycles — this module needs structural attention.
+Active bug count down by 1 (meta counter correction). Blocked ratio increased from 28% to 32.7% — 2 additional bugs moved to blocked status. `src/swarm/pool.ts` remains the top problem file across multiple cycles — this module needs structural attention. Pipeline remains fully stalled with zero throughput for a second consecutive cycle.
 
 ## Blocked — Needs Human Attention
 
@@ -102,6 +102,7 @@ Active bug count unchanged at 50. Throughput dropped from 12/day to 0 — no bug
 - **BUG-0262** (`medium` / `missing-error-handling`) — `packages/tools/src/web-search/brave.ts:45`: Fixer reports false positive — try-catch present.
 - **BUG-0268** (`medium` / `missing-error-handling`) — `src/harness/loop/index.ts:55`: Fix applied but status stuck at blocked.
 - **BUG-0275** (`high` / `api-contract-violation`) — `src/models/openrouter.ts:472`: Fixer reports false positive — already fixed.
+- **BUG-0277** (`high` / `missing-error-handling`) — `src/swarm/pool.ts:209`: Fixer reports false positive — try-catch already present.
 - **BUG-0278** (`high` / `type-error`) — `src/checkpointers/redis.ts:180`: Validation added but status stuck at blocked.
 - **BUG-0286** (`medium` / `security-config`) — `src/models/google.ts:383`: Fixer reports false positive — no raw content logging.
 
