@@ -188,6 +188,8 @@
 - **validator_completed:** `2026-03-15T13:02:00Z`
 - **validator_notes:** Confirmed source (line 189) and dist (line 146) both contain `new Map(this.skills)` with matching comment. Old shared-reference pattern absent from both files. Source and dist are in sync.
 - **archived:** `2026-03-15T13:03:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/skill-loader-fork-isolation.test.ts`
 
 ---
 

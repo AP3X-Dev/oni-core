@@ -10,23 +10,23 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-20T07:30:38Z` |
+| **Last Fixer Pass** | `2026-03-20T07:34:35Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T04:05:38Z` |
-| **Last Security Scan** | `2026-03-19T19:55:00Z` |
+| **Last Security Scan** | `2026-03-21T01:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T00:29:00Z` |
+| **Last TestGen Run** | `2026-03-20T10:15:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T03:40:43Z` |
 | **Last Supervisor Pass** | `2026-03-19T21:52:17Z` |
 | **Total Found** | `109` |
-| **Total Pending** | `11` |
+| **Total Pending** | `5` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `17` |
+| **Total Fixed** | `22` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `11` |
+| **Total Blocked** | `12` |
 | **Total Reopened** | `0` |
 
 ---
@@ -516,7 +516,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0256
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/a2a/src/server/index.ts`
 - **line:** `11`
@@ -524,11 +524,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `A2AServer` authentication is opt-in via an optional `apiKey` field — when omitted (the default), all RPC methods including `tasks/send` are publicly accessible with no authentication, rate limiting, or compensating control.
 - **context:** The `apiKey` option defaults to `undefined`, making unauthenticated deployment the path of least resistance. An unauthenticated server accepts `tasks/send` which executes the registered `TaskHandler` — potentially invoking LLM calls, tool execution, and database writes. No warning is logged when auth is disabled. A single shared API key also means no per-method authorization (read vs write). OWASP A07:2021 - Identification and Authentication Failures.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `fix/BUG-0256-a2a-server-apikey-warning`
 - **hunter_found:** `2026-03-19T19:55:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:34:29Z`
+- **fixer_completed:** `2026-03-20T07:34:35Z`
+- **fix_summary:** `Added A2AServerOptions with apiKey field and console.warn when omitted. Exported type from package index. tsc clean, all 5 tests pass.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -536,7 +536,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0257
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/a2a/src/server/index.ts`
 - **line:** `154`
@@ -544,11 +544,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `A2AServer` HTTP responses include no security headers — missing `X-Content-Type-Options: nosniff`, `X-Frame-Options`, `Content-Security-Policy`, and `Strict-Transport-Security` on all response paths.
 - **context:** The `requestHandler()` and `listen()` methods set only `Content-Type: application/json`. Without `X-Content-Type-Options: nosniff`, browsers may MIME-sniff JSON responses as HTML in edge cases, enabling XSS via crafted JSON payloads. Missing `X-Frame-Options` allows clickjacking if the server ever returns HTML. The CORS-by-omission approach (no `Access-Control-Allow-Origin` header) works but is fragile — a future debug addition could silently open cross-origin access. OWASP A05:2021 - Security Misconfiguration.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0257`
 - **hunter_found:** `2026-03-19T19:55:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:34:29Z`
+- **fixer_completed:** `2026-03-20T07:34:29Z`
+- **fix_summary:** `Added SECURITY_HEADERS to all A2AServer response paths.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -556,7 +556,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0258
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/integrations/src/adapter/auth-resolver.ts`
 - **line:** `48`
@@ -564,11 +564,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `storeAuthResolver` reads integration credentials (API keys, OAuth2 tokens) from a generic `SimpleStore` under a plain `["credentials"]` namespace with no encryption at rest, no access scoping, and no audit trail.
 - **context:** Any code with access to the `store` object can enumerate all integration credentials by iterating known integration keys via `store.get(["credentials"], key)`. The `SimpleStore` interface accepts any backing implementation — if a caller provides a store that persists to disk without file permissions or to an unencrypted database, credentials leak silently. The error message at line 51 also discloses the exact store path and key format, aiding enumeration. Contrast with production tool paths that use scoped access. OWASP A02:2021 - Cryptographic Failures.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `fix/BUG-0258-sanitize-auth-error`
 - **hunter_found:** `2026-03-19T19:55:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:34:29Z`
+- **fixer_completed:** `2026-03-20T07:34:35Z`
+- **fix_summary:** `Sanitized error message removing store namespace path and store.put() usage instructions. Core encryption/scoping is architectural. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -576,7 +576,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0259
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/harness/memory/ranker.ts`
 - **line:** `41`
@@ -586,9 +586,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Non-episodic memory units with zero tag overlap pass the relevance filter because the hardcoded `recencyScore = 1` for non-episodic types yields a minimum score of `0.2`, which equals the default `matchThreshold`.
 - **context:** `scoreRelevance` returns `tagScore * 0.8 + recencyScore * 0.2`. For semantic/procedural/identity units, `recencyScore` is always `1`. With zero tag overlap (`tagScore = 0`), the score is `0 * 0.8 + 1 * 0.2 = 0.2`. The filter at line 101 uses `score >= matchThreshold` where default threshold is `0.2`, so completely irrelevant non-episodic units pass. This wastes token budget on memory with no topical relationship to the current task.
 - **hunter_found:** `2026-03-19T15:11:42Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:34:29Z`
+- **fixer_completed:** `2026-03-20T07:34:35Z`
+- **fix_summary:** `False positive — recencyScore already 0 for non-episodic since file creation (commit 4aa5197). Hunter should re-evaluate.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -636,19 +636,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0263
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `100`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `fix/BUG-0263-duck-typed-handoff-opts-guard`
 - **description:** Duck-typed Handoff detection at line 100 checks `(result as any).isHandoff` but constructs `new Handoff((result as any).opts)` without verifying `.opts` exists, so a duck-typed object with `isHandoff: true` but no `opts` produces a malformed Handoff.
 - **context:** A third-party agent returning `{ isHandoff: true }` without an `opts` property passes the guard and feeds `undefined` to the `Handoff` constructor. Whether this crashes or produces silent corruption depends on the constructor's handling of `undefined`. Adding `&& (result as any).opts` to the guard would prevent this.
 - **hunter_found:** `2026-03-19T15:11:42Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:34:29Z`
+- **fixer_completed:** `2026-03-20T07:34:35Z`
+- **fix_summary:** `Added opts guard validating to/message strings before Handoff construction. Throws descriptive error for malformed duck-typed objects. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -656,19 +656,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0264
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/lsp/client.ts`
 - **line:** `526`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `fix/BUG-0264-jsonrpc-structural-validation`
 - **description:** Incoming JSON-RPC messages from the LSP server are cast directly to `JsonRpcResponse` (line 526) and `JsonRpcNotification` (line 533) via `as unknown as` without any structural validation.
 - **context:** Messages arrive from JSON parsing as `Record<string, unknown>`. If the LSP server sends a malformed message (missing `id`, wrong `method` shape, or extra fields), the cast silently succeeds and the typed handlers operate on structurally incorrect objects. A missing `id` field on a response would cause the pending request lookup to fail silently, leaving the Promise unresolved indefinitely.
 - **hunter_found:** `2026-03-19T15:11:42Z`
 - **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T07:34:35Z`
+- **fix_summary:** `Full JSON-RPC 2.0 structural validation in handleMessage(): jsonrpc version gate, id type check, method type check, result/error presence. Branch ready for merge. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -758,7 +758,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0269
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `low`
 - **file:** `src/swarm/snapshot.ts`
 - **line:** `174`
@@ -768,7 +768,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `deepEqual` cycle-detection uses two independent `WeakSet`s checked with AND, so an object seen in `seenA` from one comparison pair and an unrelated object seen in `seenB` from a different pair can both pass the check, returning `true` for non-equal cyclic structures.
 - **context:** The correct approach tracks `(a, b)` pairs together (e.g., a `Map<object, Set<object>>`). As written, cross-pair contamination in the WeakSets produces false equality for cyclic agent state snapshots, defeating change detection in the swarm snapshot system.
 - **hunter_found:** `2026-03-19T20:18:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T07:35:29Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -778,7 +778,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0270
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/pdf.ts`
 - **line:** `24`
@@ -788,7 +788,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `readFile(source)` is called outside any try/catch, so filesystem errors (ENOENT, EACCES) propagate as raw Node.js errors with no loader-level context.
 - **context:** The try/catch at line 16 only guards the dynamic `import()` of pdfjs-dist. A missing or inaccessible PDF file produces a raw `ENOENT` with no indication it came from the PDF loader. Same pattern in `docx.ts:20` and `csv.ts:10`.
 - **hunter_found:** `2026-03-19T20:18:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T07:35:29Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -964,7 +964,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0279
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/swarm/self-improvement/manifest.ts`
 - **line:** `50`
@@ -974,7 +974,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The regex-captured `m[3]` value is cast to `"minimize" | "maximize"` without validating the parsed string is one of those values, so a MANIFEST.md with `direction: sideways` is silently accepted.
 - **context:** Downstream code in `pattern-learner.ts` uses `r.direction ?? "minimize"` for gain calculation sign logic. An invalid direction value passes TypeScript's narrowing but produces incorrect metric evaluation at runtime, potentially inverting optimization decisions.
 - **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T07:35:29Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -984,7 +984,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0280
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/guardrails/filters.ts`
 - **line:** `128`
@@ -994,7 +994,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** When a filter returns `blocked: true` with a `redacted` value, the redaction path continues processing but the final return omits `blockedBy` and `reason` fields, losing audit information about which filter triggered the rewrite.
 - **context:** Callers that log or audit filter decisions lose visibility into redaction events. The block path (line 135) correctly includes `blockedBy` and `reason`, but the redact-and-continue path at line 129 drops that information from the return at line 143.
 - **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T07:35:29Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1004,7 +1004,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0281
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
 - **line:** `196`
@@ -1014,7 +1014,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `agent.hooks?.onStart?.()` is awaited without a try/catch, so a throwing `onStart` hook aborts the slot run entirely and bypasses the retry loop.
 - **context:** The `onError` hook handles retry exhaustion, but an `onStart` exception propagates directly to the `invoke()` caller with no retry attempt and no hook-level error isolation. The queued work is never attempted.
 - **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T07:35:29Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
