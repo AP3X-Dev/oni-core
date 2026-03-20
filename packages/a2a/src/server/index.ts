@@ -5,6 +5,12 @@ import { createSSEResponse } from "./sse.js";
 
 const MAX_BODY_SIZE = 1 * 1024 * 1024; // 1 MB
 
+const SECURITY_HEADERS: Record<string, string> = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Content-Security-Policy": "default-src 'none'",
+};
+
 export interface A2AServerOptions {
   /** Optional API key. When set, every request (except CORS preflight) must
    *  include an `Authorization: Bearer <key>` header matching this value. */
@@ -31,7 +37,7 @@ export class A2AServer {
       // no Access-Control-Allow-Origin header, which causes the browser to
       // block the subsequent actual request.
       if (req.method === "OPTIONS") {
-        return new Response(null, { status: 204 });
+        return new Response(null, { status: 204, headers: { ...SECURITY_HEADERS } });
       }
 
       // Optional API key authentication — if configured, require a matching
@@ -44,19 +50,19 @@ export class A2AServer {
         if (tokenBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(tokenBuf, expectedBuf)) {
           return new Response(
             JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Unauthorized" } }),
-            { status: 401, headers: { "Content-Type": "application/json" } },
+            { status: 401, headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } },
           );
         }
       }
 
       if (req.method === "GET" && url.pathname === "/.well-known/agent.json") {
         return new Response(JSON.stringify(this.agentCard), {
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...SECURITY_HEADERS },
         });
       }
 
       if (req.method !== "POST") {
-        return new Response("Method Not Allowed", { status: 405 });
+        return new Response("Method Not Allowed", { status: 405, headers: { ...SECURITY_HEADERS } });
       }
 
       // Require application/json Content-Type on POST requests. This is not a
@@ -67,24 +73,24 @@ export class A2AServer {
       if (!ct.includes("application/json")) {
         return new Response(
           JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Content-Type must be application/json" } }),
-          { status: 415, headers: { "Content-Type": "application/json" } },
+          { status: 415, headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } },
         );
       }
 
       // Enforce body size limit for Fetch-API callers (mirrors listen() guard)
       const contentLength = parseInt(req.headers.get("content-length") ?? "", 10);
       if (contentLength > MAX_BODY_SIZE) {
-        return new Response(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Request body too large" } }), { status: 413, headers: { "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Request body too large" } }), { status: 413, headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
       }
       let body: unknown;
       try {
         const text = await req.text();
         if (text.length > MAX_BODY_SIZE) {
-          return new Response(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Request body too large" } }), { status: 413, headers: { "Content-Type": "application/json" } });
+          return new Response(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Request body too large" } }), { status: 413, headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } });
         }
         body = JSON.parse(text);
       }
-      catch { return new Response(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }), { status: 400, headers: { "Content-Type": "application/json" } }); }
+      catch { return new Response(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }), { status: 400, headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } }); }
 
       const acceptsSSE = req.headers.get("Accept")?.includes("text/event-stream");
       const result = await handleJsonRPC(body, this.handler, this.agentCard);
@@ -104,12 +110,12 @@ export class A2AServer {
             id: (body as Record<string, unknown>)?.id ?? null,
             error: { code: -32600, message: "This method requires Accept: text/event-stream" },
           }),
-          { status: 406, headers: { "Content-Type": "application/json" } },
+          { status: 406, headers: { "Content-Type": "application/json", ...SECURITY_HEADERS } },
         );
       }
 
       return new Response(JSON.stringify(result.response), {
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...SECURITY_HEADERS },
       });
     };
   }
@@ -133,7 +139,7 @@ export class A2AServer {
                 totalBytes += c.length;
                 if (totalBytes > MAX_BODY_SIZE) {
                   req.destroy();
-                  res.writeHead(413, { "Content-Type": "text/plain" });
+                  res.writeHead(413, { "Content-Type": "text/plain", ...SECURITY_HEADERS });
                   res.end("Payload Too Large");
                   reject(new Error("Payload Too Large"));
                   return;
@@ -152,7 +158,7 @@ export class A2AServer {
         const fetchReq = new Request(url, { method: req.method, headers, body });
         const fetchRes = await handler(fetchReq);
 
-        res.writeHead(fetchRes.status, Object.fromEntries(fetchRes.headers.entries()));
+        res.writeHead(fetchRes.status, { ...Object.fromEntries(fetchRes.headers.entries()), ...SECURITY_HEADERS });
         const contentType = fetchRes.headers.get("content-type") ?? "";
         if (contentType.includes("text/event-stream") && fetchRes.body) {
           const reader = fetchRes.body.getReader();
@@ -171,7 +177,7 @@ export class A2AServer {
         }
       } catch (err) {
         if (!res.headersSent) {
-          res.writeHead(500, { "Content-Type": "text/plain" });
+          res.writeHead(500, { "Content-Type": "text/plain", ...SECURITY_HEADERS });
         }
         if (!res.writableEnded) {
           res.end("Internal Server Error");
