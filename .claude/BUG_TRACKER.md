@@ -17,7 +17,7 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T00:00:00Z` |
+| **Last TestGen Run** | `2026-03-20T00:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T04:00:00Z` (Cycle 160) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
@@ -1615,7 +1615,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0313
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `22`
@@ -1625,7 +1625,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Four `HookEvent` types (`AgentBeforeDecision`, `AgentAfterOutcome`, `SkillUsed`, `SkillRevised`) and their corresponding payload interfaces are declared but no `fire()` call with any of these event names exists anywhere in production code.
 - **context:** Users who register handlers for these events will have dead registrations that never trigger. The payload interfaces are also unreachable dead code, adding false API surface that misleads consumers.
 - **hunter_found:** `2026-03-20T17:18:28Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:20:49Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1635,7 +1635,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0314
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/swarm/factories.ts`
 - **line:** `534`
@@ -1645,7 +1645,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The conditional edge for `__coordinator__` in `buildHierarchicalMesh` returns `END` on both branches (`state.done` true and false), making it equivalent to a static edge to `END` — the else branch is dead routing logic.
 - **context:** Non-LLM coordinator strategies (round-robin, rule) rely on `Command.goto` for routing, but if the Pregel runner evaluates this conditional edge before respecting `Command.goto`, teams are unreachable through the fallback path, silently breaking hierarchical mesh routing.
 - **hunter_found:** `2026-03-20T17:18:28Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:20:49Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1655,7 +1655,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0315
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `examples/audit-system/audit-agent.ts`
 - **line:** `130`
@@ -1665,7 +1665,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `new RegExp(input.pattern, "gi")` compiles an LLM-supplied string directly into a regex with no validation, enabling ReDoS via catastrophic backtracking patterns like `(a+)+$`.
 - **context:** The `search_code` tool is exposed to the agent loop; the regex is applied to every line of every file in the target directory. A malicious or hallucinated pattern can hang the process indefinitely.
 - **hunter_found:** `2026-03-20T17:18:28Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:20:49Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1675,7 +1675,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0316
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `examples/audit-system/audit-agent.ts`
 - **line:** `53`
@@ -1685,7 +1685,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `project_tree` and `search_code` tools call `resolve(input.directory)` without any `process.cwd()` boundary check, allowing the LLM to enumerate arbitrary directories on the host (e.g., `/etc`, `/home`).
 - **context:** The `read_file` tool at line 100 correctly enforces a cwd boundary, but the two directory-accepting tools do not, creating an inconsistent trust boundary. An LLM hallucination or prompt injection can exfiltrate host filesystem structure.
 - **hunter_found:** `2026-03-20T17:18:28Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:20:49Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1695,7 +1695,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0317
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `233`
@@ -1705,7 +1705,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The `fire()` method checks `event === "PermissionRequest"` in the HookResult return branch, but `fire("PermissionRequest", ...)` is never called anywhere in production code, making this branch dead.
 - **context:** The `PermissionRequest` arm in the condition guard adds complexity without ever executing; if the event type is ever removed from the union, this dead branch will mask the removal.
 - **hunter_found:** `2026-03-20T17:18:28Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:20:49Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
