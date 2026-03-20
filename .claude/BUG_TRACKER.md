@@ -18,7 +18,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T23:59:02Z` (no new tests — all qualifying bugs already have test_generated:true) |
-| **Last Git Manager Pass** | `2026-03-20T09:00:00Z` (Cycle 172) |
+| **Last Git Manager Pass** | `2026-03-20T10:30:00Z` (Cycle 173) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -2895,7 +2895,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0377
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/swarm/factories.ts`
 - **line:** `600`
@@ -2905,7 +2905,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** In `buildRace`, agent promises only attach `.then()` with no `.catch()`, so if an agent promise rejects (unhandled throw inside the agent wrapper), `remaining` is never decremented and the outer race Promise never resolves — `buildRace` hangs indefinitely.
 - **context:** Regression introduced by the BUG-0368 fix. The restructuring added `resolved` and `acceptErrors` for the `accept()` throw case, but the underlying agent-promise rejection path was left without a `.catch()` handler. A rejected promise permanently strands `remaining`, causing a deadlock.
 - **hunter_found:** `2026-03-20T18:35:09Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T18:37:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2915,7 +2915,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0378
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/mcp/client.ts`
 - **line:** `163`
@@ -2925,7 +2925,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The BUG-0375 fix sets `this.state = "disconnected"` before `transport.stop()`, causing `_runConnect()`'s catch to re-throw, which is then silently swallowed by `disconnect()`'s `.catch(() => {})` — masking genuine transport initialization errors when `disconnect()` races an in-flight `connect()`.
 - **context:** Regression from the BUG-0375 fix. The ordering change was intended to fix the disconnect/connect race, but it creates a new class of silent error suppression where real transport failures are hidden behind the disconnect's catch-all.
 - **hunter_found:** `2026-03-20T18:35:09Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T18:37:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
