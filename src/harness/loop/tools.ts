@@ -15,6 +15,38 @@ import { validateToolArgs } from "../validate-args.js";
 import { makeMessage } from "./types.js";
 import { checkSafety } from "./safety.js";
 
+// ─── stripProtoKeys ─────────────────────────────────────────────────────────
+
+/** Keys that can trigger prototype pollution when spread / assigned. */
+const PROTO_POLLUTING_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+/**
+ * Recursively strip prototype-polluting keys from an object.
+ * Returns a shallow-or-deep-cloned object when pollution keys are found;
+ * returns the original reference when no stripping is needed (zero-alloc
+ * fast-path for clean inputs).
+ */
+function stripProtoKeys(obj: Record<string, unknown>): Record<string, unknown> {
+  let dirty = false;
+  const out: Record<string, unknown> = {};
+
+  for (const key of Object.keys(obj)) {
+    if (PROTO_POLLUTING_KEYS.has(key)) {
+      dirty = true;
+      continue;
+    }
+    const val = obj[key];
+    if (val !== null && typeof val === "object" && !Array.isArray(val)) {
+      const cleaned = stripProtoKeys(val as Record<string, unknown>);
+      if (cleaned !== val) dirty = true;
+      out[key] = cleaned;
+    } else {
+      out[key] = val;
+    }
+  }
+  return dirty ? out : obj;
+}
+
 // ─── buildLLMTools ──────────────────────────────────────────────────────────
 
 /** Convert ToolDefinition[] to LLMToolDef[] for the model adapter. */
@@ -59,6 +91,10 @@ export async function executeTools(
   const events: LoopMessage[] = [];
 
   for (const toolCall of toolCalls) {
+    // Strip prototype-polluting keys from LLM-supplied args before any
+    // processing — hooks, safety gates, and execute() all receive clean input.
+    toolCall.args = stripProtoKeys(toolCall.args);
+
     // Fire PreToolUse hook
     if (config.hooksEngine) {
       const preResult = await config.hooksEngine.fire("PreToolUse", {
