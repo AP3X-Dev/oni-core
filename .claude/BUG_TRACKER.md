@@ -9,26 +9,26 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-20T20:33:24Z` |
-| **Last Hunter Scan** | `2026-03-20T21:30:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-20T20:50:00Z` |
+| **Last Hunter Scan** | `2026-03-20T22:12:00Z` |
 | **Last Fixer Pass** | `2026-03-20T22:43:00Z` |
-| **Last Validator Pass** | `2026-03-20T20:36:30Z` |
-| **Last Digest Run** | `2026-03-20T20:31:54Z` |
+| **Last Validator Pass** | `2026-03-20T20:55:30Z` |
+| **Last Digest Run** | `2026-03-20T20:35:00Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T13:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T20:45:00Z` (Cycle 194) |
-| **Last Supervisor Pass** | `2026-03-20T20:45:30Z` |
-| **Total Found** | `321` |
-| **Total Pending** | `21` |
-| **Total In Progress** | `0` |
-| **Total Fixed** | `37` |
+| **Last Supervisor Pass** | `2026-03-20T20:55:30Z` |
+| **Total Found** | `329` |
+| **Total Pending** | `20` |
+| **Total In Progress** | `5` |
+| **Total Fixed** | `28` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `14` |
-| **Total Reopened** | `0` |
+| **Total Blocked** | `1` |
+| **Total Reopened** | `3` |
 
 ---
 
@@ -381,26 +381,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** ``
 - **fixer_completed:** `2026-03-20T07:34:35Z`
 - **fix_summary:** `Full JSON-RPC 2.0 structural validation in handleMessage(): jsonrpc version gate, id type check, method type check, result/error presence. Branch ready for merge. tsc clean.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0266
-- **status:** `fixed`
-- **severity:** `high`
-- **file:** `src/pregel/index.ts`
-- **line:** `1`
-- **category:** `test-regression`
-- **description:** Subgraph checkpoint namespace isolation is not implemented — child subgraph checkpoints are stored under the parent threadId instead of `"parentId:subgraphName"`, so `cp.list("parent-1:child")` returns zero results.
-- **context:** CI Sentinel detected regression on main branch. Test "subgraph checkpoints are isolated from parent" in `src/__tests__/checkpoint-namespace.test.ts` fails at line 40: `expected 0 to be greater than 0`. When a subgraph is added via `outer.addSubgraph("child", ...)`, the compiled inner graph should checkpoint using a namespaced threadId (`"parent-1:child"`) to prevent checkpoint key collisions between parent and child graphs sharing the same checkpointer. Currently all checkpoints land under the parent threadId, making namespace isolation impossible.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0266`
-- **hunter_found:** `2026-03-19T22:00:00Z`
-- **fixer_started:** `2026-03-19T23:21:32Z`
-- **fixer_completed:** `2026-03-19T23:21:32Z`
-- **fix_summary:** `In src/pregel/streaming.ts, computed namespacedThreadId as "parentThreadId:subgraphName" and passed it as the child graph's threadId instead of the opaque invocationKey. Registered parent checkpointer directly under the namespaced key. Also updated src/graph.ts addSubgraph fallback. Subgraph checkpoints now isolated under "parent-1:child" namespace.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -788,26 +768,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0304
-- **status:** `pending`
-- **severity:** `high`
-- **file:** `src/checkpointers/redis.ts`
-- **line:** `98`
-- **category:** `race-condition`
-- **description:** Non-atomic read-then-get in `get()`: `zrange` fetches all step members, then a separate `get` fetches the data key. Between these two round-trips a concurrent `put()` or `delete()` can invalidate the index entry, causing `get()` to silently return `null` for an existing thread.
-- **context:** The two-round-trip pattern has no transaction or Lua script wrapping. A concurrent writer calling `put()` (which uses an atomic Lua script) between the `zrange` and `get` calls can add a higher step, making the step selected by `get()` stale. Similarly, a concurrent `delete()` can remove the data key after `zrange` returned its index entry. Fix: wrap `zrange` + `get` in a single Lua script or Redis MULTI/EXEC transaction.
-- **reopen_count:** `0`
-- **branch:** ``
-- **hunter_found:** `2026-03-20T23:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0305
 - **status:** `fixed`
 - **severity:** `high`
@@ -889,7 +849,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0302
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/swarm/mermaid.ts`
 - **line:** `45`
@@ -899,7 +859,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-20T20:04:36Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T22:53:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1088,48 +1048,28 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0313
-- **status:** `fixed`
-- **severity:** `high`
-- **file:** `src/internal/validate-command.ts`
-- **line:** `16`
-- **category:** `security`
-- **description:** `DANGEROUS_CHARS` regex omits newline (`\n`), carriage return (`\r`), and null byte (`\0`). A command string with embedded control characters passes validation; the security property relies on `which`/`existsSync` rejecting them implicitly rather than explicit input sanitization.
-- **context:** The `which` call at line 33 happens to reject binaries with `\n` in the name, providing an implicit safety net. But any future code path using `trimmed` before the `which` check would be vulnerable. Additionally, spaces are not in `DANGEROUS_CHARS`, so command-with-args strings pass validation but fail at spawn time. Fix: add `\n\r\0` and space to `DANGEROUS_CHARS`.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0313`
-- **hunter_found:** `2026-03-21T00:05:00Z`
-- **fixer_started:** `2026-03-20T22:39:00Z`
-- **fixer_completed:** `2026-03-20T22:43:00Z`
-- **fix_summary:** `Added newline, carriage return, null byte, and space to the DANGEROUS_CHARS regex in validate-command.ts, ensuring explicit input sanitization at the validation boundary instead of relying on implicit downstream rejection.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0314
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `high`
 - **file:** `packages/tools/src/code-execution/e2b.ts`
 - **line:** `68`
 - **category:** `logic-bug`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0314`
 - **description:** When `timeoutPromise` wins `Promise.race`, the `codePromise` is left floating and `sandbox.close()` is called before it settles, causing an unhandled rejection from the orphaned code execution promise.
 - **context:** In sandbox timeout scenarios, the still-running code execution completes after the sandbox is closed, producing an unhandled promise rejection that can crash the process or pollute logs with misleading errors.
 - **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** `2026-03-20T22:39:00Z`
-- **fixer_completed:** `2026-03-20T22:43:00Z`
-- **fix_summary:** `Implemented timeout handling via Promise.race for E2B sandbox code execution. When timeout wins the race, a no-op .catch(() => {}) is attached to the orphaned codePromise before sandbox.close() to prevent unhandled rejection. Sandbox is now always closed via a finally block.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-20T20:55:00Z`
+- **validator_completed:** `2026-03-20T20:55:00Z`
+- **validator_notes:** `REOPENED: Branch fixes unhandled rejection via .catch(() => {}) in catch block, but lacks clearTimeout entirely. setTimeout timer ID is never stored, so the timer always leaks on the happy path (code finishes before timeout). Main already has clearTimeout in finally but lacks .catch(). Correct fix needs BOTH: codePromise.catch(() => {}) when timeout wins AND clearTimeout(timerId) in finally.`
 
 ---
 
 ### BUG-0315
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/swarm/tracer.ts`
 - **line:** `175`
@@ -1139,7 +1079,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `startTimeStacks` uses `shift()` (FIFO) instead of `pop()` (LIFO) to match agent start times with complete/error events, computing incorrect latencies for interleaved concurrent runs of the same agent.
 - **context:** When multiple concurrent invocations of the same agent overlap, each complete event gets paired with the wrong start time, producing inaccurate latency metrics in the trace output.
 - **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T22:53:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1148,28 +1088,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0316
-- **status:** `fixed`
-- **severity:** `high`
-- **file:** `src/checkpointers/postgres.ts`
-- **line:** `21`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0316`
-- **description:** The dynamic `import("pg")` call is not wrapped in a try/catch, so a missing optional peer dependency produces an unhandled module-not-found rejection instead of an actionable error message.
-- **context:** The equivalent `PostgresStore` in `packages/stores/src/postgres/index.ts` correctly wraps this import and checks for `ERR_MODULE_NOT_FOUND` to throw a human-readable install hint. The checkpointer crashes with an opaque Node internal error when `pg` is absent.
-- **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** `2026-03-20T22:39:00Z`
-- **fixer_completed:** `2026-03-20T22:43:00Z`
-- **fix_summary:** `Wrapped dynamic import("pg") in PostgresCheckpointer.create() with try/catch that detects ERR_MODULE_NOT_FOUND/MODULE_NOT_FOUND and throws a human-readable install hint, matching the pattern used by PostgresStore.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0317
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `packages/tools/src/slack/index.ts`
 - **line:** `78`
@@ -1179,7 +1099,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `client.chat.postMessage()` is returned directly from `execute` with no try/catch, so Slack API errors (rate limits, invalid channel, revoked token) become unhandled rejections that crash the agent loop.
 - **context:** Every other tool in `packages/tools/src/` wraps API calls in try/catch or checks response status. The Slack tool is the only one where SDK exceptions escape the execute boundary without being converted into tool-result error messages.
 - **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T22:53:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1189,7 +1109,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0318
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `packages/tools/src/stripe/index.ts`
 - **line:** `92`
@@ -1199,7 +1119,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** All three Stripe API calls (`customers.create`, `invoices.create`, `charges.list`) are awaited and returned without any try/catch, letting Stripe SDK errors propagate as unhandled rejections.
 - **context:** The Stripe SDK throws typed `StripeError` subclasses with actionable fields (type, code, decline_code). Without a catch block, these errors abort the agent loop rather than being surfaced as structured tool-result error content.
 - **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T22:53:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1259,6 +1179,166 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The mammoth module is cast directly as `MammothLib` without checking for a `.default` export wrapper, so when mammoth is a CJS module loaded via ESM dynamic `import()` the `extractRawText` function resolves to undefined.
 - **context:** CJS packages imported via ESM `import()` frequently expose their API under `.default`. The call to `extractRawText` will crash with "not a function" at runtime rather than surfacing a clear dependency-resolution error.
 - **hunter_found:** `2026-03-20T21:30:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0322
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/agents/define-agent.ts`
+- **line:** `159`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** maxTokens budget check strips toolCalls from the assistant message before breaking, producing a malformed conversation history where tool-call content has no matching toolCalls field.
+- **context:** When the token budget is exceeded mid-turn, the assistant message is pushed with toolCalls removed but tool-referencing content intact. LLM APIs that validate message sequencing will reject the subsequent request.
+- **hunter_found:** `2026-03-20T22:12:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0323
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/messages/index.ts`
+- **line:** `168`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** trimMessages hoists all system messages to the front of the array regardless of their original positions, destroying positional semantics when multiple system messages are interleaved with conversation turns.
+- **context:** Conversations that inject system messages mid-conversation will have their message ordering silently corrupted. The maxMessages limit also applies only to non-system messages.
+- **hunter_found:** `2026-03-20T22:12:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0324
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/inspect.ts`
+- **line:** `125`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** detectCycles DFS adds nodes to `visited` set but never removes them after backtracking, causing false negatives — cycles reachable only via alternate paths are missed.
+- **context:** topoOrder is set based on cycles.length === 0, so a graph with undetected cycles is incorrectly classified as acyclic and given a topological order, causing nodes to execute in dependency-violating order.
+- **hunter_found:** `2026-03-20T22:12:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0325
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/mcp/client.ts`
+- **line:** `240`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** callTool casts response.result (typed unknown) directly to MCPCallToolResult with no structural validation, so a malformed MCP server response causes a runtime crash when callers destructure the result.
+- **context:** Any MCP server returning a non-conforming result object will cause downstream crashes. The same unsafe cast pattern exists at line 121 for MCPInitializeResult.
+- **hunter_found:** `2026-03-20T22:12:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0326
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/stores/src/redis/index.ts`
+- **line:** `57`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Redis v4 fallback path assigns raw createClient result as RedisClient without a shim, but RedisClient.del uses rest params while redis v4 del expects an array — multi-key deletes on v4 backend will break.
+- **context:** The ioredis path correctly shims del with r.del(...keys), but the redis v4 branch has no such adapter.
+- **hunter_found:** `2026-03-20T22:12:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0327
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/graph.ts`
+- **line:** `53`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** SwarmGraph lazily creates a RequestReplyBroker (with active setTimeout handles) and PubSub but exposes no dispose method, so discarding the graph leaks timer handles and subscriber maps indefinitely.
+- **context:** In long-running processes that create and discard swarm graphs, timer handles accumulate and prevent GC of the entire graph closure.
+- **hunter_found:** `2026-03-20T22:12:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0328
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/tools/src/stripe/index.ts`
+- **line:** `59`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** loadStripeInstance creates a new Stripe SDK client on every tool invocation instead of caching, accumulating HTTP agent connection pools and socket handles over the session lifetime.
+- **context:** In long-running agent sessions with many Stripe tool calls, file descriptors grow without bound, eventually causing EMFILE or connection pool exhaustion.
+- **hunter_found:** `2026-03-20T22:12:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0329
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/tools/src/slack/index.ts`
+- **line:** `40`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** loadSlackClient creates a new WebClient on every tool invocation instead of caching, accumulating HTTP agent connection pools and socket handles over the session lifetime.
+- **context:** Same pattern as BUG-0328 but for Slack — per-call client creation causes socket handle growth in long-running sessions.
+- **hunter_found:** `2026-03-20T22:12:00Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
