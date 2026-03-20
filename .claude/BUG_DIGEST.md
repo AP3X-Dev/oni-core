@@ -1,7 +1,7 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T17:25:00Z
-**Period:** Last 24 hours (2026-03-19T17:25:00Z to 2026-03-20T17:25:00Z)
+**Generated:** 2026-03-20T20:00:00Z
+**Period:** Last 24 hours (2026-03-19T20:00:00Z to 2026-03-20T20:00:00Z)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 52 |
+| Active Bugs | 86 |
 | Pending | 1 |
-| In Progress | 0 |
-| Fixed (awaiting validation) | 35 |
+| In Progress | 5 |
+| Fixed (awaiting validation) | 80 |
 | Reopened | 0 |
 | Blocked | 16 |
 
@@ -20,9 +20,9 @@
 
 | Severity | Count |
 |----------|-------|
-| Critical | 1 |
-| High | 20 |
-| Medium | 34 |
+| Critical | 2 |
+| High | 38 |
+| Medium | 60 |
 | Low | 2 |
 
 ## 24h Activity
@@ -30,93 +30,95 @@
 | Metric | Value |
 |--------|-------|
 | Bugs Found | 0 |
-| Bugs Fixed | 0 |
-| Bugs Verified | 5 |
-| Throughput | 5 bugs/day |
-| Mean Time to Fix | n/a (insufficient data) |
+| Bugs Fixed | 5 |
+| Bugs Verified | 7 |
+| Throughput | 12 bugs/day |
+| Mean Time to Fix | ~3 min |
 | Mean Time to Verify | ~10 min |
-| Reopen Rate | 6.3% (6/95 archived bugs with reopens) |
-| First-Pass Fix Rate | 93.7% |
-| Queue Drain Rate | n/a (no new bugs found) |
-| Blocked Ratio | 30.8% |
+| Reopen Rate | 6.3% (6/95 archived bugs) |
+| First-Pass Fix Rate | 58.3% |
+| Queue Drain Rate | 12/102 (11.8%) |
+| Blocked Ratio | 15.7% |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
+| `src/pregel/streaming.ts` | 8 |
 | `src/swarm/pool.ts` | 6 |
-| `src/pregel/streaming.ts` | 4 |
+| `src/models/anthropic.ts` | 4 |
+| `src/checkpointers/redis.ts` | 3 |
+| `packages/a2a/src/server/index.ts` | 3 |
 | `src/harness/memory/ranker.ts` | 3 |
-| `src/models/anthropic.ts` | 3 |
-| `src/swarm/factories.ts` | 3 |
-| `src/pregel/execution.ts` | 3 |
-| `src/harness/hooks-engine.ts` | 3 |
-| `src/mcp/transport.ts` | 3 |
+| `src/lsp/client.ts` | 3 |
 
 ## Top Categories
 
-| Category | Count (active + archived) |
-|----------|--------------------------|
-| logic-bug | 43 |
-| missing-error-handling | 28 |
-| race-condition | 15 |
-| security-injection | 11 |
+| Category | Count |
+|----------|-------|
+| logic-bug | 23 |
+| missing-error-handling | 14 |
 | type-error | 9 |
+| race-condition | 9 |
+| test-regression | 8 |
+| memory-leak | 7 |
+| security-injection | 11 |
+| api-contract-violation | 6 |
+| security | 5 |
+| dead-code | 4 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-20T05:23:00Z | STALE (12h ago) |
-| Fixer | 2026-03-20T17:17:48Z | ACTIVE (7 min ago) |
-| Validator | 2026-03-20T04:07:00Z | STALE (13.3h ago) |
+| Hunter | 2026-03-20T05:23:00Z | Skipped (no new bugs detected) |
+| Fixer | 2026-03-20T17:46:37Z | Active (5 bugs in progress) |
+| Validator | 2026-03-20T04:07:00Z | Overdue (16 hours since last pass) |
 
 ## Bottleneck Analysis
 
-**Validator is the critical bottleneck:** 35 bugs sit in `fixed` status with no validation activity for 13+ hours. The Fixer is active (last pass 7 min ago) but has nothing left to fix — only 1 pending bug remains.
+**Primary Bottleneck:** Validator agent is significantly overdue. Last validation pass was 16 hours ago (2026-03-20T04:07:00Z). With 80 bugs in `fixed` status awaiting validation and zero bugs in `in-validation`, the Validator is either stalled or inactive. This is causing queue buildup and preventing verification throughput.
 
-- **Hunter offline:** No new bugs discovered in 12+ hours. Last scan was 2026-03-20T05:23:00Z.
-- **High Blocked Ratio (30.8%):** 16 of 52 active bugs are blocked, at least 9 are confirmed false positives needing manual closure.
+**Secondary Issue:** High blocked ratio (15.7%) indicates approximately 16 bugs are waiting on human intervention. Several are false positives (already fixed on main) and 2 are auto-blocked after 3 failed fix attempts.
 
-**Recommended action:** Restart Validator immediately to clear the 35-bug fixed queue. Triage blocked bugs — close the 9 confirmed false positives to reduce noise.
+**Recommendation:** Restart Validator agent immediately to process the 80-bug backlog. Consider human review for auto-blocked BUG-0205 and BUG-0246.
 
 ## Trend (vs Previous Digest)
 
-| Metric | Previous | Today | Direction |
-|--------|----------|-------|-----------|
-| Active Bugs | 52 | 52 | → |
-| Throughput | 0 bugs/day | 5 bugs/day | ↑ |
-| Reopen Rate | 25.3% | 6.3% | ↓ (corrected — previous used wrong denominator) |
-| Blocked Ratio | 30.8% | 30.8% | → |
-| Fixed Queue | 35 | 35 | → |
+| Metric | Previous | Current | Direction |
+|--------|----------|---------|-----------|
+| Active Bugs | 52 | 86 | ↑ +65% |
+| Bugs Verified | 5 | 7 | ↑ +40% |
+| Reopen Rate | 6.3% | 6.3% | → stable |
+| Blocked Ratio | 30.8% | 15.7% | ↓ -49% |
 
-**Assessment:** Slight improvement — 5 bugs were verified and archived since last cycle (BUG-0241, 0243, 0247, 0249, 0261), but new bugs backfilled the active count to hold steady at 52. The 35-bug fixed queue remains completely untouched. Validator has been offline for 13+ hours and is the primary bottleneck. The Fixer came back online recently but has nearly emptied its queue. Same top problem files persist — `src/swarm/pool.ts` continues to lead.
+**Assessment:** Significant pipeline activity increase. Fixer completed 5 fixes and brought 5 more into in-progress. Validator verified 7 bugs (up from 5). Active bug count jumped from 52 to 86 due to Fixer work — bugs progressed from pending to in-progress to fixed, increasing the total active count. Blocked ratio improved as some false positives were identified. Top problem files shifted — `src/pregel/streaming.ts` now leads with 8 bugs, surpassing `src/swarm/pool.ts` (6 bugs).
 
 ## Blocked — Needs Human Attention
 
-### Critical Security
-- **BUG-0205** (`critical` / `security-injection`) — `packages/tools/src/code-execution/node-eval.ts:57`: Unsandboxed code execution, full RCE risk. Auto-blocked after 3 attempts. Needs isolated-vm or container-level sandboxing.
+**Auto-Blocked (Human Review Required):**
+- **BUG-0205** — Auto-blocked after 3 failed fix attempts. Requires human review.
+- **BUG-0246** — Auto-blocked after 3 failed fix attempts. Requires human review.
 
-### Test Regressions
-- **BUG-0235** (`high` / `test-regression`) — `src/errors.ts:44`: `ONIError.toJSON()` field mismatch. 13 tests fail in CI.
-- **BUG-0236** (`high` / `test-regression`) — `src/checkpointers/redis.ts:52`: RedisCheckpointer mock issue.
+**False Positives (Can be archived):**
+- **BUG-0235** — Already fixed on main. toJSON() at lines 44-55 already returns properly.
+- **BUG-0236** — Confirmed false positive. No eval() in redis adapter.
+- **BUG-0244** — False positive — already fixed on main.
+- **BUG-0250** — False positive — timer handle already stored + .unref() called.
+- **BUG-0259** — False positive — recencyScore already 0 for non-episodic entries.
+- **BUG-0260** — False positive — line 96 already logs warning and throws.
+- **BUG-0262** — False positive — brave.ts already wraps res.json().
+- **BUG-0275** — False positive — already fixed on main.
+- **BUG-0277** — False positive — already fixed on main.
+- **BUG-0286** — False positive — no console.warn or raw content logged.
 
-### False Positives & Already-Fixed (9 bugs — need closure)
-- **BUG-0244** (`medium` / `security-injection`) — Already fixed on main.
-- **BUG-0246** (`high` / `race-condition`) — Auto-blocked after 3 attempts. Likely false positive.
-- **BUG-0250** (`medium` / `memory-leak`) — Already handled per fixer.
-- **BUG-0259** (`medium` / `logic-bug`) — False positive per fixer.
-- **BUG-0260** (`medium` / `logic-bug`) — Already logs warning.
-- **BUG-0262** (`medium` / `missing-error-handling`) — Already wrapped.
-- **BUG-0268** (`medium` / `missing-error-handling`) — Already wrapped.
-- **BUG-0277** (`high` / `missing-error-handling`) — Already fixed on main.
-- **BUG-0286** (`medium` / `security-config`) — Confirmed false positive.
+**Awaiting Architecture Decision:**
+- **BUG-0191** — Removing plugins field changes the public ONIConfig type. Requires API design decision.
 
-### Policy & Validation Blocks
-- **BUG-0191** (`low` / `dead-code`) — Unused `plugins` field. Awaiting API change decision.
-- **BUG-0253** (`medium` / `logic-bug`) — Fix applied, stuck in blocked.
-- **BUG-0275** (`high` / `api-contract-violation`) — Already fixed on main, needs closure.
-- **BUG-0278** (`high` / `type-error`) — Awaiting validation gate clear.
+**Fixed but Awaiting Rebase:**
+- **BUG-0268** — Removed throw err from fireSessionStart catch block.
+- **BUG-0253** — Added direction field and improvementDelta() utility.
+- **BUG-0278** — Added validation for pendingSends, metadata, and pending checks.
 
 ---
 
