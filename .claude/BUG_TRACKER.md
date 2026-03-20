@@ -17,8 +17,8 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T21:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T00:00:00Z` (Cycle 112) |
+| **Last TestGen Run** | `2026-03-20T22:30:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T00:00:00Z` (Cycle 114) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -394,6 +394,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** `2026-03-19T21:57:00Z`
 - **validator_completed:** `2026-03-19T22:01:00Z`
 - **validator_notes:** `REOPENED: Finally block fix is correct — synchronous runOnSlot() call closes the race window. However, addSlots() was NOT updated: (1) it still manually increments slot.activeTasks++ before calling runOnSlot(), but runOnSlot() now unconditionally increments too (the preIncremented parameter was removed), causing double-increment — slot appears at activeTasks=2 with only 1 task running, starving capacity. (2) addSlots() still uses Promise.resolve().then() for dispatch, retaining the original deferred-dispatch race in that code path. Fix must update addSlots() to remove manual increment and use synchronous dispatch.`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/pool-queue-drain-no-race.test.ts`
 
 ---
 
@@ -516,6 +518,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** `2026-03-20T04:07:00Z`
 - **validator_completed:** `2026-03-20T04:07:00Z`
 - **validator_notes:** `REOPENED: Promise.allSettled changes return type from S[] to PromiseSettledResult<S>[] but method signature not updated. tsc reports 2 errors: pool.ts(87) type mismatch and graph.ts(169) caller expects S[]. Also batchSettled() is now a duplicate. Fix must either update return type + all callers, or use a different approach to handle orphaned promises.`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/pool-batch-partial-results.test.ts`
 
 ---
 
@@ -722,6 +726,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/checkpoint-namespace.test.ts`
 
 ---
 
@@ -742,6 +748,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/handoff-execution.test.ts`
 
 ---
 
@@ -846,6 +854,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/debate-judge-maxrounds.test.ts`
 
 ---
 
@@ -888,6 +898,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/google-safety-filtered-no-content.test.ts`
 
 ---
 
