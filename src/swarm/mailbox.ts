@@ -38,10 +38,27 @@ export function consumeInbox(messages: SwarmMessage[], agentId: string): SwarmMe
   return messages.filter((m) => m.to !== agentId);
 }
 
+/**
+ * Sanitize a string for safe embedding in LLM context.
+ * Strips characters / sequences that could be used for prompt injection.
+ */
+function sanitize(input: string): string {
+  return input
+    .replace(/[<>]/g, "")           // strip angle brackets to prevent tag injection
+    .replace(/\r?\n{3,}/g, "\n\n")  // collapse excessive newlines
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ""); // strip control chars (preserve \t \n \r)
+}
+
 /** Format inbox as readable string for LLM context */
 export function formatInbox(messages: SwarmMessage[]): string {
   if (!messages.length) return "(no messages)";
   return messages
-    .map((m) => `[From: ${m.from}]${m.replyTo ? ` [Re: ${m.replyTo}]` : ""}\n${m.content}`)
+    .map((m) => {
+      const from    = sanitize(m.from);
+      const replyTo = m.replyTo ? sanitize(m.replyTo) : "";
+      const content = sanitize(m.content);
+      const header  = `[From: ${from}]${replyTo ? ` [Re: ${replyTo}]` : ""}`;
+      return `<swarm-message>\n${header}\n${content}\n</swarm-message>`;
+    })
     .join("\n---\n");
 }
