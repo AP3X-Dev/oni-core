@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T07:15:48Z
+**Generated:** 2026-03-20T07:32:09Z
 **Period:** Last 24 hours
 
 ---
@@ -9,19 +9,19 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 40 |
-| Pending | 12 |
-| In Progress | 0 |
+| Active Bugs | 38 |
+| Pending | 5 |
+| In Progress | 5 |
 | Fixed (awaiting validation) | 17 |
-| Reopened | 1 |
-| Blocked | 10 |
+| Reopened | 0 |
+| Blocked | 11 |
 
 ## Severity Breakdown
 
 | Severity | Count |
 |----------|-------|
 | Critical | 1 |
-| High | 15 |
+| High | 13 |
 | Medium | 22 |
 | Low | 2 |
 
@@ -38,15 +38,15 @@
 | Reopen Rate | 6.3% |
 | First-Pass Fix Rate | 93.7% |
 | Queue Drain Rate | 0.27 |
-| Blocked Ratio | 25.0% |
+| Blocked Ratio | 28.9% |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
 | `src/swarm/pool.ts` | 5 |
-| `packages/a2a/src/server/index.ts` | 3 |
 | `src/harness/memory/ranker.ts` | 3 |
+| `packages/a2a/src/server/index.ts` | 2 |
 | `src/swarm/agent-node.ts` | 2 |
 | `src/pregel/index.ts` | 2 |
 
@@ -54,38 +54,38 @@
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 7 |
-| test-regression | 6 |
+| logic-bug | 8 |
+| test-regression | 7 |
 | security (all variants) | 5 |
 | type-error | 5 |
-| missing-error-handling | 4 |
+| missing-error-handling | 5 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
 | Hunter | 2026-03-19T23:05:00Z | active |
-| Fixer | 2026-03-20T07:14:45Z | active |
+| Fixer | 2026-03-20T07:30:38Z | active |
 | Validator | 2026-03-20T04:07:00Z | active |
 
 ## Bottleneck Analysis
 
-**Validator is the bottleneck:** 17 bugs are fixed and awaiting validation, but only 12 were verified in 24h. The Fixer is outpacing the Validator. **Recommendation:** Prioritize validator runs to clear the fixed queue.
+**Validator is the bottleneck:** 17 bugs are fixed and awaiting validation with 0 currently in-validation. The Fixer is actively working (5 in-progress) while the Validator has been idle since 04:07Z. **Recommendation:** Trigger a Validator pass to clear the fixed queue.
 
-**Queue drain rate critically low at 0.27** — 12 verified vs 45 found. The Hunter is producing far faster than the pipeline can close. **Recommendation:** Consider pausing the Hunter to let downstream agents catch up.
+**Blocked ratio rising to 28.9%** — 11 of 38 active bugs are blocked (up from 10). BUG-0250 newly blocked as false positive. 8 of 11 blocked bugs are false positives needing Hunter re-evaluation or human triage.
 
-**Blocked ratio at 25.0%** — 10 of 40 active bugs are blocked. 7 are false positives reported by the Fixer (BUG-0235, BUG-0236, BUG-0244, BUG-0260, BUG-0262, BUG-0275, BUG-0277). These need Hunter re-evaluation or human triage to clear.
+**Queue drain rate at 0.27** — pipeline still falling behind. Hunter has been idle since 23:05Z which is helping stabilize the active count, but the verification backlog remains.
 
 ## Trend (vs Previous Digest)
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
-| Active Bugs | 39 | 40 | ↑ |
+| Active Bugs | 40 | 38 | ↓ |
 | Throughput | 12 | 12 | → |
 | Reopen Rate | 6.3% | 6.3% | → |
-| Blocked Ratio | 25.6% | 25.0% | → |
+| Blocked Ratio | 25.0% | 28.9% | ↑ |
 
-Pipeline state is largely stable. Active count ticked up by 1 as the Hunter continues to outpace verification. `src/swarm/pool.ts` remains the top problem file — this module likely needs structural attention beyond individual bug fixes. Fixed queue grew from 12 to 17, confirming the Validator bottleneck.
+Active bug count decreased by 2 as the Fixer continues resolving pending items. However, blocked ratio increased — BUG-0250 (memory-leak) newly blocked as false positive. `src/swarm/pool.ts` remains the persistent top problem file. The Fixer is now actively working 5 bugs simultaneously, which should continue reducing the pending queue.
 
 ## Blocked — Needs Human Attention
 
@@ -95,6 +95,7 @@ Pipeline state is largely stable. Active count ticked up by 1 as the Hunter cont
 - **BUG-0236** (`high` / `test-regression`) — `src/checkpointers/redis.ts:52`: Fixer reports false positive — no `eval()` call exists. Hunter should re-evaluate.
 - **BUG-0244** (`medium` / `security-injection`) — `src/cli/build.ts:41`: Fixer reports false positive — `shell: true` already removed on main. Hunter should re-evaluate.
 - **BUG-0246** (`high` / `race-condition`) — `src/guardrails/budget.ts:51`: Auto-blocked after 3 attempts. `record()` is synchronous — race may not apply. Needs human review.
+- **BUG-0250** (`medium` / `memory-leak`) — `src/harness/loop/inference.ts:156`: Fixer reports false positive — timer handle already stored with `.unref()`. Hunter should re-evaluate.
 - **BUG-0260** (`medium` / `logic-bug`) — `src/harness/memory/ranker.ts:94`: Fixer reports false positive — warning already logged. Hunter should re-evaluate.
 - **BUG-0262** (`medium` / `missing-error-handling`) — `packages/tools/src/web-search/brave.ts:45`: Fixer reports false positive — try-catch already present. Hunter should re-evaluate.
 - **BUG-0275** (`high` / `api-contract-violation`) — `src/models/openrouter.ts:472`: Fixer reports false positive — already fixed on main. Hunter should re-evaluate.
