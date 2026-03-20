@@ -44,10 +44,15 @@ export function parseManifest(content: string): ObjectiveManifest {
       manifest.goals = goalLines.map(line => {
         const m = /metric:\s*(\S+).*?target:\s*([\d.]+).*?direction:\s*(\S+)/.exec(line);
         if (!m) return null;
+        const rawDir = m[3];
+        if (rawDir !== "minimize" && rawDir !== "maximize") {
+          console.warn(`[manifest] Invalid direction value "${rawDir}" for metric "${m[1]}"; defaulting to "minimize"`);
+        }
+        const direction: "minimize" | "maximize" = (rawDir === "minimize" || rawDir === "maximize") ? rawDir : "minimize";
         return {
           metric: m[1]!,
           target: parseFloat(m[2]!),
-          direction: m[3] as "minimize" | "maximize",
+          direction,
         };
       }).filter(Boolean) as ManifestGoal[];
     }
