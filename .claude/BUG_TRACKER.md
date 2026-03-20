@@ -13,15 +13,15 @@
 | **Last Fixer Pass** | `2026-03-20T09:06:39Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T09:30:45Z` |
-| **Last Security Scan** | `2026-03-21T09:45:00Z` |
+| **Last Security Scan** | `2026-03-20T10:05:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T15:30:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T10:00:00Z` |
 | **Last Supervisor Pass** | `2026-03-21T01:20:00Z` |
-| **Total Found** | `293` |
-| **Total Pending** | `1` |
+| **Total Found** | `294` |
+| **Total Pending** | `2` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `32` |
 | **Total In Validation** | `0` |
@@ -1210,6 +1210,26 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T09:06:39Z`
 - **fixer_completed:** `2026-03-20T09:06:39Z`
 - **fix_summary:** `Sanitized node IDs in toMermaid() to prevent Mermaid injection via crafted names.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0293
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/harness/context-compactor.ts`
+- **line:** `322`
+- **category:** `test-regression`
+- **description:** `fallbackTruncation()` returns 3 messages (header + truncated message) but test "falls back to truncation on model error" in `harness-compactor.test.ts` expects only 2 (the header pair).
+- **context:** CI Sentinel detected regression on main. The prior fix for BUG about silent context loss changed `fallbackTruncation` to truncate oversized messages instead of dropping them — keeping a truncated copy in the result. The test was not updated to match the new 3-item return shape. The test expects `result.toHaveLength(2)` (header user + "Context loaded.") but now receives 3 items (header + truncated last message). The production code behavior is correct (truncating is better than silent context loss), but the test assertion must be updated to expect 3 items and verify the third item has truncated content.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T02:35:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
