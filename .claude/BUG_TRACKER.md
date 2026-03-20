@@ -10,7 +10,7 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T17:04:03Z` |
+| **Last Fixer Pass** | `2026-03-20T17:07:41Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T17:00:00Z` |
 | **Last Security Scan** | `2026-03-20T18:00:00Z` |
@@ -18,7 +18,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T23:45:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T17:02:00Z` (Cycle 157) |
+| **Last Git Manager Pass** | `2026-03-20T17:06:14Z` (Cycle 158) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -1375,19 +1375,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0301
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
 - **line:** `139`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0301`
 - **description:** `addSlots()` drains the queue in a while-loop calling `runOnSlot()` on newly-added slots, but concurrent `invoke()` calls can also pick and dispatch to the same new slots via `pickSlot()` before the drain loop claims them.
 - **context:** A queued item can be dispatched twice — once by the drain loop and once by a concurrent `invoke()` — resulting in duplicate agent executions for a single queued task.
 - **hunter_found:** `2026-03-20T16:54:16Z`
 - **fixer_started:** `2026-03-20T17:05:21Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:07:41Z`
+- **fix_summary:** `Pre-claim slot with activeTasks++ in drain loop before dispatch. Prevents concurrent invoke() double-dispatch. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1395,19 +1395,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0302
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/agents/functional-agent.ts`
 - **line:** `118`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0302-0306`
 - **description:** `pendingMessages` stores `content: unknown` from `ctx.send()`, but the merged `swarmMessages` objects type `content` as `string` per `SwarmMessage` interface — non-string payloads silently corrupt the content field.
 - **context:** Downstream `mailbox.ts` functions (`formatInbox`, `getInbox`) call string methods on `content`; if an agent passes an object or number to `ctx.send()`, those calls throw TypeError at runtime. The parallel `SwarmMessageView.content` is typed `unknown` but `SwarmMessage.content` is `string`, masking the mismatch.
 - **hunter_found:** `2026-03-20T17:04:19Z`
 - **fixer_started:** `2026-03-20T17:05:21Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:07:41Z`
+- **fix_summary:** `Coerced ctx.send() payload to String() at push-time matching SwarmMessage.content type. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1415,19 +1415,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0303
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/hitl/resume.ts`
 - **line:** `104`
 - **category:** `api-contract-violation`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0303`
 - **description:** `HITLInterruptException` does not extend `Error`, so it has no `stack`, `name`, or `message` property, yet it is thrown as a control-flow exception in `pregel/streaming.ts`.
 - **context:** Any error boundary, monitoring integration, or generic handler that reads `err.message` or `err.stack` gets `undefined`, silently losing diagnostic information and potentially causing null-dereference crashes in error reporting code.
 - **hunter_found:** `2026-03-20T17:04:19Z`
 - **fixer_started:** `2026-03-20T17:05:21Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:07:41Z`
+- **fix_summary:** `HITLInterruptException now extends Error with descriptive message, name, and stack. Object.setPrototypeOf for correct instanceof. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1435,19 +1435,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0304
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/models/anthropic.ts`
 - **line:** `382`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0304`
 - **description:** `b.id!` and `b.name!` apply non-null assertions on fields typed `id?: string` and `name?: string` inside the `tool_use` filter, but the filter only checks `b.type === "tool_use"` — not presence of `id` or `name`.
 - **context:** If the Anthropic API returns a `tool_use` block with missing `id` or `name` (e.g., malformed partial response), `undefined` flows into tool routing code expecting non-empty strings, causing silent tool call failures or `undefined` keys in result maps.
 - **hunter_found:** `2026-03-20T17:04:19Z`
 - **fixer_started:** `2026-03-20T17:05:21Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:07:41Z`
+- **fix_summary:** `Replaced non-null assertions with type-narrowing filter predicate guarding id and name existence. Malformed tool_use blocks skipped. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1475,19 +1475,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0306
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/agents/functional-agent.ts`
 - **line:** `114`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0302-0306`
 - **description:** `(result as Record<string, unknown>).swarmMessages` assumes `result` is a mutable plain object, but the user-supplied handler can return `null` or a primitive, causing TypeError on property assignment.
 - **context:** If a handler returns `null`, the assignment `(null as Record<string, unknown>).swarmMessages` throws. If it returns a primitive like `"done"`, the assignment is a silent no-op in non-strict mode, silently dropping all pending swarm messages without error.
 - **hunter_found:** `2026-03-20T17:04:19Z`
 - **fixer_started:** `2026-03-20T17:05:21Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:07:41Z`
+- **fix_summary:** `Added null/primitive guard before swarmMessages merge. Prevents TypeError on non-object handler returns. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
