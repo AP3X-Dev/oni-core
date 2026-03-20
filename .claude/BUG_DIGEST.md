@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T10:19:37Z
+**Generated:** 2026-03-20T10:42:46Z
 **Period:** Last 24 hours
 
 ---
@@ -29,15 +29,15 @@
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 10 |
-| Bugs Fixed | 32 |
-| Bugs Verified | 0 |
-| Throughput | 0 bugs/day |
-| Mean Time to Fix | N/A (no verifications) |
-| Mean Time to Verify | N/A (no verifications) |
+| Bugs Found | 50 |
+| Bugs Fixed | 56 |
+| Bugs Verified | 12 |
+| Throughput | 12 bugs/day |
+| Mean Time to Fix | ~10h |
+| Mean Time to Verify | ~3h |
 | Reopen Rate | 6.3% |
 | First-Pass Fix Rate | 93.7% |
-| Queue Drain Rate | 0.00 |
+| Queue Drain Rate | 0.24 |
 | Blocked Ratio | 28.0% |
 
 ## Top Problem Files
@@ -45,47 +45,47 @@
 | File | Bug Count |
 |------|-----------|
 | `src/swarm/pool.ts` | 5 |
+| `src/swarm/agent-node.ts` | 4 |
 | `src/harness/memory/ranker.ts` | 3 |
-| `packages/a2a/src/server/index.ts` | 2 |
+| `packages/a2a/src/server/index.ts` | 3 |
 | `src/models/google.ts` | 2 |
-| `src/swarm/self-improvement/experiment-log.ts` | 2 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| security-injection | 9 |
-| test-regression | 8 |
-| logic-bug | 8 |
-| type-error | 5 |
+| security-injection | 10 |
+| test-regression | 9 |
+| logic-bug | 7 |
 | missing-error-handling | 5 |
+| type-error | 4 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-20T03:11:41Z | active |
+| Hunter | 2026-03-20T03:22:00Z | active |
 | Fixer | 2026-03-20T10:16:26Z | active |
 | Validator | 2026-03-20T04:07:00Z | active |
 
 ## Bottleneck Analysis
 
-**Validator is the critical bottleneck:** 32 bugs are fixed and awaiting validation with 0 currently in-validation. Zero bugs were verified in the last 24 hours — throughput has dropped to 0. The Fixer has been highly productive but the fixed queue is not draining at all. **Recommendation:** Urgently trigger Validator passes to clear the massive fixed queue before it grows further.
+**Validator is the critical bottleneck:** 32 bugs are fixed and awaiting validation with 0 currently in-validation. The Validator last ran over 6 hours ago (04:07Z). The Fixer has been highly productive (56 fixes in 24h) but the fixed queue is not draining. **Recommendation:** Urgently trigger Validator passes to clear the massive fixed queue.
 
-**Queue Drain Rate at 0.00** — the pipeline is completely stalled on the verification side. 10 bugs found, 0 verified. Without Validator activity, the backlog will only grow.
+**Queue Drain Rate at 0.24** — the pipeline is falling far behind. 50 bugs found vs only 12 verified. Without increased Validator throughput, the backlog will grow indefinitely.
 
-**Blocked ratio at 28.0%** — 14 of 50 active bugs are blocked. Many are false positives (already fixed on main) or auto-blocked after 3 failed attempts. A bulk false-positive sweep would reduce noise.
+**Blocked ratio at 28.0%** — 14 of 50 active bugs are blocked. At least 8 are false positives (already fixed on main) needing Hunter re-evaluation or human triage. A bulk false-positive sweep would significantly reduce noise.
 
 ## Trend (vs Previous Digest)
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
 | Active Bugs | 50 | 50 | &rarr; |
-| Throughput | 12 | 0 | &darr; |
+| Throughput | 12 | 12 | &rarr; |
 | Reopen Rate | 6.3% | 6.3% | &rarr; |
 | Blocked Ratio | 32.0% | 28.0% | &darr; |
 
-Active bug count stable at 50. Throughput dropped from 12/day to 0 — Validator has not run a verification pass in this period. Blocked ratio improved slightly (2 fewer blocked). `src/swarm/pool.ts` remains the top problem file across cycles — this module needs structural attention. Security injection bugs continue to dominate new findings.
+Active bug count stable at 50. Throughput holding at 12/day from the same batch of verifications. Blocked ratio improved from 32% to 28% (2 fewer blocked bugs). `src/swarm/pool.ts` remains the top problem file across cycles — this module needs structural attention. Security injection bugs continue to dominate new findings.
 
 ## Blocked — Needs Human Attention
 
@@ -100,9 +100,9 @@ Active bug count stable at 50. Throughput dropped from 12/day to 0 — Validator
 - **BUG-0259** (`medium` / `logic-bug`) — `src/harness/memory/ranker.ts:41`: Fixer reports false positive — recencyScore already 0.
 - **BUG-0260** (`medium` / `logic-bug`) — `src/harness/memory/ranker.ts:94`: Fixer reports false positive — warning already logged.
 - **BUG-0262** (`medium` / `missing-error-handling`) — `packages/tools/src/web-search/brave.ts:45`: Fixer reports false positive — try-catch present.
-- **BUG-0268** (`medium` / `missing-error-handling`) — `src/harness/loop/index.ts:55`: Fix applied but status stuck at blocked.
 - **BUG-0275** (`high` / `api-contract-violation`) — `src/models/openrouter.ts:472`: Fixer reports false positive — already fixed.
 - **BUG-0278** (`high` / `type-error`) — `src/checkpointers/redis.ts:180`: Validation added but status stuck at blocked.
+- **BUG-0286** (`medium` / `security-config`) — `src/models/google.ts:383`: Fixer reports false positive — no raw content logging.
 
 ---
 
