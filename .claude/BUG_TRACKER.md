@@ -13,7 +13,7 @@
 | **Last Fixer Pass** | `2026-03-20T17:56:57Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T20:00:00Z` |
-| **Last Security Scan** | `2026-03-20T20:15:00Z` |
+| **Last Security Scan** | `2026-03-20T20:20:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -2375,7 +2375,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0351
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/dlq.ts`
 - **line:** `20`
@@ -2385,7 +2385,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `DeadLetterQueue.record()` stores the `input` object reference directly without cloning, so mutations to the original object after recording silently corrupt the stored dead letter audit trail.
 - **context:** Any code that calls `dlq.record(state, error)` and later mutates `state` will retroactively change the dead letter's `input` field, making post-mortem debugging unreliable — the stored snapshot no longer reflects the state at time of failure.
 - **hunter_found:** `2026-03-20T17:50:18Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:57:45Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2395,7 +2395,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0352
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/internal/validate-command.ts`
 - **line:** `64`
@@ -2405,7 +2405,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `execFileSync("which", [trimmed])` is used to verify PATH-resident binaries, but `which` is not available on Windows, causing every bare command name to throw a "not found on PATH" error even for valid binaries.
 - **context:** This makes LSP server configuration entirely non-functional on Windows. The `where` command is the Windows equivalent, but neither fallback nor platform check is present.
 - **hunter_found:** `2026-03-20T17:50:18Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:57:45Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
