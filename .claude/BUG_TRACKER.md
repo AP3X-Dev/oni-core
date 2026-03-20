@@ -17,8 +17,8 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T06:00:00Z` (no new tests — no qualifying bugs without test_generated:true meeting criteria) |
-| **Last Git Manager Pass** | `2026-03-20T23:30:00Z` (Cycle 174) |
+| **Last TestGen Run** | `2026-03-20T08:00:00Z` (no new tests — no qualifying bugs without test_generated:true meeting criteria) |
+| **Last Git Manager Pass** | `2026-03-21T05:00:00Z` (Cycle 175) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `297` |
 | **Total Pending** | `2` |
