@@ -13,7 +13,7 @@
 | **Last Fixer Pass** | `2026-03-20T12:36:39Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T16:37:00Z` |
-| **Last Security Scan** | `2026-03-20T16:38:00Z` |
+| **Last Security Scan** | `2026-03-20T17:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -1268,6 +1268,126 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T09:40:21Z`
 - **fixer_completed:** `2026-03-20T09:40:46Z`
 - **fix_summary:** `Updated test to expect 3 messages instead of 2. Added assertions for truncated third item. All 14 tests pass, tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0296
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/mcp/transport.ts`
+- **line:** `134`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `StdioTransport._doStart()` attaches a `stdout.on("data", ...)` listener that is never removed when `stop()` is called; only the process reference is nulled.
+- **context:** Repeated connect/stop cycles accumulate unreachable listener closures holding references to the entire transport instance (including its `pending` map and `buffer`), preventing GC until the underlying process object is collected.
+- **hunter_found:** `2026-03-20T16:54:16Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0297
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `269`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `_perInvocationParentUpdates` and `_perInvocationCheckpointer` Map entries are deleted only on the success path (lines 311-312); if the subgraph throws before reaching those lines, the keyed entries are never removed.
+- **context:** Every failed subgraph invocation leaks one entry per Map on the long-lived `ONIPregelRunner` instance; in workloads with frequent transient subgraph failures, the Maps grow without bound.
+- **hunter_found:** `2026-03-20T16:54:16Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0298
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `257`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `ctx._nextInvocationId.value++` is executed inside async node callbacks running concurrently under `Promise.allSettled()` with no mutual exclusion, causing duplicate `invocationKey` values when two subgraph nodes execute in the same superstep.
+- **context:** Duplicate keys cause the second subgraph to overwrite the first's `_perInvocationParentUpdates` entry, silently discarding `Command.PARENT` updates from whichever subgraph loses the race.
+- **hunter_found:** `2026-03-20T16:54:16Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0299
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `337`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `pendingInterrupt` is read-then-written across two statements inside concurrent node `catch` blocks; if two nodes throw `NodeInterruptSignal` and their catch blocks interleave, both see `isFirstInterrupt = true`.
+- **context:** Both nodes call `saveCheckpoint`, and the second overwrites the first with divergent `nextNodes`, corrupting HITL resume state.
+- **hunter_found:** `2026-03-20T16:54:16Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0300
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/pregel/execution.ts`
+- **line:** `57`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `nodeCache` Map is read, mutated, and size-checked from parallel async `executeNode` calls without synchronization; two concurrent misses for the same key both execute the node and both write results.
+- **context:** The LRU eviction logic also races between concurrent writers, potentially evicting entries just written by another task, making the cache non-deterministic and ineffective.
+- **hunter_found:** `2026-03-20T16:54:16Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0301
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/pool.ts`
+- **line:** `139`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `addSlots()` drains the queue in a while-loop calling `runOnSlot()` on newly-added slots, but concurrent `invoke()` calls can also pick and dispatch to the same new slots via `pickSlot()` before the drain loop claims them.
+- **context:** A queued item can be dispatched twice — once by the drain loop and once by a concurrent `invoke()` — resulting in duplicate agent executions for a single queued task.
+- **hunter_found:** `2026-03-20T16:54:16Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
