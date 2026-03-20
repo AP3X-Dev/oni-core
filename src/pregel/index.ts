@@ -10,6 +10,7 @@ import {
   type NodeReturn,
 } from "../types.js";
 import { CircuitBreaker } from "../circuit-breaker.js";
+import { BatchError } from "../swarm/pool.js";
 import { DeadLetterQueue, type DeadLetter } from "../dlq.js";
 import type { BaseStore } from "../store/index.js";
 import { HITLSessionStore } from "../hitl/index.js";
@@ -161,14 +162,21 @@ export class ONIPregelRunner<S extends Record<string, unknown>> {
   async batch(
     inputs: Partial<S>[],
     config?: ONIConfig
-  ): Promise<PromiseSettledResult<S>[]> {
-    return Promise.allSettled(
+  ): Promise<S[]> {
+    const settled = await Promise.allSettled(
       inputs.map((inp, i) =>
         this.invoke(inp, {
           ...config,
           threadId: config?.threadId ? `${config.threadId}-${i}` : undefined,
         })
       )
+    );
+    const hasFailure = settled.some((r) => r.status === "rejected");
+    if (hasFailure) {
+      throw new BatchError<S>(settled);
+    }
+    return settled.map(
+      (r) => (r as PromiseFulfilledResult<S>).value,
     );
   }
 

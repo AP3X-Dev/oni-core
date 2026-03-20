@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { AgentPool } from "../../swarm/pool.js";
+import { AgentPool, BatchError } from "../../swarm/pool.js";
 import type { SwarmAgentDef } from "../../swarm/types.js";
 
 function makeAgent<S extends Record<string, unknown>>(
@@ -42,7 +42,27 @@ describe("AgentPool", () => {
     expect(calls).toContain("b");
   });
 
-  it("batch() rejects entirely if any agent fails (Promise.all behavior)", async () => {
+  it("batch() returns S[] when all inputs succeed", async () => {
+    let callCount = 0;
+    const agent = makeAgent("worker", async () => {
+      callCount++;
+      return { result: callCount } as any;
+    }, 3);
+
+    const pool = new AgentPool([agent]);
+
+    const results = await pool.batch(
+      [{ task: "1" }, { task: "2" }, { task: "3" }] as any[],
+    );
+
+    expect(results).toHaveLength(3);
+    // All results are plain S objects
+    expect(results[0]!.result).toBeDefined();
+    expect(results[1]!.result).toBeDefined();
+    expect(results[2]!.result).toBeDefined();
+  });
+
+  it("batch() throws BatchError with .results and .errors when any input fails", async () => {
     let callCount = 0;
     const agent = makeAgent("worker", async () => {
       callCount++;
@@ -52,39 +72,26 @@ describe("AgentPool", () => {
 
     const pool = new AgentPool([agent]);
 
-    await expect(
-      pool.batch([{ task: "1" }, { task: "2" }, { task: "3" }] as any[])
-    ).rejects.toThrow("Agent 2 failed");
-  });
+    try {
+      await pool.batch([{ task: "1" }, { task: "2" }, { task: "3" }] as any[]);
+      expect.unreachable("batch() should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(BatchError);
+      const batchErr = err as BatchError<any>;
+      expect(batchErr.message).toMatch(/1 of 3 inputs failed/);
 
-  it("batchSettled() returns all results even when some agents fail", async () => {
-    let callCount = 0;
-    const agent = makeAgent("worker", async () => {
-      callCount++;
-      if (callCount === 2) throw new Error("Agent 2 failed");
-      return { result: callCount } as any;
-    }, 5);
+      // results: fulfilled slots have values, rejected slots are undefined
+      expect(batchErr.results).toHaveLength(3);
+      expect(batchErr.results[0]!.result).toBe(1);
+      expect(batchErr.results[1]).toBeUndefined();
+      expect(batchErr.results[2]!.result).toBe(3);
 
-    const pool = new AgentPool([agent]);
-
-    const results = await pool.batchSettled(
-      [{ task: "1" }, { task: "2" }, { task: "3" }] as any[]
-    );
-
-    expect(results).toHaveLength(3);
-
-    // First and third should succeed
-    expect(results[0]!.status).toBe("fulfilled");
-    expect((results[0] as PromiseFulfilledResult<any>).value.result).toBe(1);
-
-    // Second should fail
-    expect(results[1]!.status).toBe("rejected");
-    expect((results[1] as PromiseRejectedResult).reason).toBeInstanceOf(Error);
-    expect((results[1] as PromiseRejectedResult).reason.message).toBe("Agent 2 failed");
-
-    // Third should succeed
-    expect(results[2]!.status).toBe("fulfilled");
-    expect((results[2] as PromiseFulfilledResult<any>).value.result).toBe(3);
+      // errors: rejected slots have errors, fulfilled slots are undefined
+      expect(batchErr.errors).toHaveLength(3);
+      expect(batchErr.errors[0]).toBeUndefined();
+      expect((batchErr.errors[1] as Error).message).toBe("Agent 2 failed");
+      expect(batchErr.errors[2]).toBeUndefined();
+    }
   });
 
   it("respects concurrency limits and queues excess work", async () => {
