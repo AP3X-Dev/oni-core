@@ -17,7 +17,7 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:00:00Z` |
+| **Last TestGen Run** | `2026-03-20T23:30:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T08:00:00Z` (Cycle 123) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
@@ -287,6 +287,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** `CI Sentinel 2026-03-20T03:11:41Z: Confirmed real bug. Previous fixer false-positive assessment was incorrect. 13 tests fail in src/__tests__/errors.test.ts.`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/errors-tojson-stack-context.test.ts`
 
 ---
 
@@ -540,6 +542,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `packages/a2a/src/__tests__/server-apikey-warning.test.ts`
 
 ---
 
@@ -560,6 +564,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `packages/a2a/src/__tests__/server-security-headers.test.ts`
 
 ---
 
@@ -1155,6 +1161,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/google-structured-output-no-raw-log.test.ts`
 
 ---
 
@@ -1285,6 +1293,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/mermaid-injection-sanitize.test.ts`
 
 ---
 
@@ -1305,5 +1315,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/mermaid-injection-sanitize.test.ts`
 
 ---
