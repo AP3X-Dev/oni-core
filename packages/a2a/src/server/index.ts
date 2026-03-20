@@ -20,6 +20,7 @@ export class A2AServer {
     options?: A2AServerOptions,
   ) {
     this.apiKey = options?.apiKey;
+    if (!this.apiKey) console.warn("[A2AServer] WARNING: No apiKey configured — all endpoints are unauthenticated");
   }
 
   requestHandler(): (req: Request) => Promise<Response> {
