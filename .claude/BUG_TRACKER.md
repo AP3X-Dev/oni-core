@@ -10,15 +10,15 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T18:21:47Z` |
+| **Last Fixer Pass** | `2026-03-20T18:29:42Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T23:59:00Z` |
-| **Last Security Scan** | `2026-03-20T21:25:00Z` |
+| **Last Security Scan** | `2026-03-20T23:59:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T23:59:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T07:30:00Z` (Cycle 171) |
+| **Last Git Manager Pass** | `2026-03-20T09:00:00Z` (Cycle 172) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -2695,19 +2695,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0367
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `434`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0367-0369`
 - **description:** The `Command.PARENT` path looks up `_perInvocationParentUpdates` using raw `threadId` instead of `namespacedThreadId`, so `myParentUpdates` is always `undefined` and parent state updates from subgraph nodes are silently dropped.
 - **context:** The map is keyed by `namespacedThreadId` at line 269/305, but the lookup at line 434 uses the un-namespaced `threadId`. This is a separate issue from BUG-0333 (which is about the ref count check on the wrong context) — both bugs independently prevent `Command.PARENT` from working in subgraphs.
 - **hunter_found:** `2026-03-20T18:22:21Z`
 - **fixer_started:** `2026-03-20T18:24:44Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:29:42Z`
+- **fix_summary:** `Namespaced invocationKey (threadId:name) for Command.PARENT map lookup. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2715,19 +2715,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0368
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/factories.ts`
 - **line:** `600`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0368-0371`
 - **description:** In `buildRace`, when `accept(r.result)` throws, the `catch` block sets `accepted = false` but never decrements `remaining`, so the outer promise never resolves when all agents have completed — the `__race__` node hangs forever.
 - **context:** The `remaining--` decrement only runs in the non-throwing path. If every agent's result is rejected by a throwing `accept` function, `remaining` stays at the initial count and `resolve(null)` is never called, causing the entire race to deadlock.
 - **hunter_found:** `2026-03-20T18:22:21Z`
 - **fixer_started:** `2026-03-20T18:24:44Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:29:42Z`
+- **fix_summary:** `Added acceptErrors array and resolved guard in buildRace. Accept failures no longer silently swallowed. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2735,19 +2735,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0369
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `404`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0367-0369`
 - **description:** Subgraph events are yielded unconditionally when `modeDebug` is true, but the `modeCustom` and `modeMessages` checks below fire on the same events without an `else`, causing custom and message events to be yielded twice when both debug and custom/messages modes are active.
 - **context:** Downstream consumers that count or aggregate events will double-count subgraph custom/message events, corrupting metrics and potentially causing duplicate side effects in event handlers.
 - **hunter_found:** `2026-03-20T18:22:21Z`
 - **fixer_started:** `2026-03-20T18:24:44Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:29:42Z`
+- **fix_summary:** `Independent if-checks for each stream mode on subgraph events. No more else-if chain skipping. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2755,17 +2755,57 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0370
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `156`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0370`
 - **description:** `remaining = maxTurns - turn - 1` underounts available turns by 1 — on turn 0 with `maxTurns=10`, the model is told it has 9 turns remaining, but it actually has 10 since the current turn hasn't been consumed yet.
 - **context:** The off-by-one in the injected system prompt causes the model to consistently believe it has fewer turns available than it actually does, potentially leading to premature summarization or task abandonment one turn early.
 - **hunter_found:** `2026-03-20T18:22:21Z`
 - **fixer_started:** `2026-03-20T18:24:44Z`
+- **fixer_completed:** `2026-03-20T18:29:42Z`
+- **fix_summary:** `Changed remaining = maxTurns - turn (removed -1 off-by-one). tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0371
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/swarm/factories.ts`
+- **line:** `743`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0368-0371`
+- **description:** The dependency validation loop at lines 657-663 checks that each dependency value exists in `agentMap`, but does not verify that the dependency *key* itself exists in `agentMap`, so a stale or typo'd key silently passes validation and then causes the topo-sort to throw a misleading "circular dependency" error.
+- **context:** A `dependencies` entry like `{ "nonexistent-agent": ["real-agent"] }` passes validation because `real-agent` exists in `agentMap`, but `nonexistent-agent` never appears in `config.agents`, so the build loop's `ready` array never includes it and `remaining` never empties.
+- **hunter_found:** `2026-03-20T18:22:21Z`
+- **fixer_started:** `2026-03-20T18:24:44Z`
+- **fixer_completed:** `2026-03-20T18:29:42Z`
+- **fix_summary:** `Dependency key existence validated in buildDag before checking values. Throws for missing keys. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0372
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/swarm/mailbox.ts`
+- **line:** `35`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Broadcast messages (`to === "*"`) are included in `getInbox()` results but never removed by `consumeInbox()`, causing broadcasts to accumulate indefinitely and be re-delivered to every agent on every subsequent call.
+- **context:** Each agent sees the same broadcast message on every turn, creating duplicate processing and unbounded growth of the inbox for any agent that calls `getInbox` repeatedly. There is no external mechanism to clear consumed broadcasts.
+- **hunter_found:** `2026-03-20T18:29:07Z`
+- **fixer_started:** `2026-03-20T18:30:28Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2774,18 +2814,78 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0371
+### BUG-0373
 - **status:** `in-progress`
 - **severity:** `medium`
-- **file:** `src/swarm/factories.ts`
-- **line:** `743`
+- **file:** `src/swarm/self-improvement/manifest.ts`
+- **line:** `35`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
 - **branch:** ``
-- **description:** The dependency validation loop at lines 657-663 checks that each dependency value exists in `agentMap`, but does not verify that the dependency *key* itself exists in `agentMap`, so a stale or typo'd key silently passes validation and then causes the topo-sort to throw a misleading "circular dependency" error.
-- **context:** A `dependencies` entry like `{ "nonexistent-agent": ["real-agent"] }` passes validation because `real-agent` exists in `agentMap`, but `nonexistent-agent` never appears in `config.agents`, so the build loop's `ready` array never includes it and `remaining` never empties.
-- **hunter_found:** `2026-03-20T18:22:21Z`
-- **fixer_started:** `2026-03-20T18:24:44Z`
+- **description:** The frontmatter regex `/^---\n([\s\S]*?)\n---/` only matches Unix `\n` line endings, so a MANIFEST.md with Windows `\r\n` endings silently falls back to all default values without any warning.
+- **context:** Files checked out with `core.autocrlf=true` or edited on Windows will have CRLF endings. The entire manifest (goals, constraints, direction, patterns) is silently ignored, causing the skill evolver to operate with empty/default configuration.
+- **hunter_found:** `2026-03-20T18:29:07Z`
+- **fixer_started:** `2026-03-20T18:30:28Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0374
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/guardrails/budget.ts`
+- **line:** `61`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** When a model has no pricing entry, `totalCost` is not incremented (stays at zero for unpriced tokens), so `maxCostPerRun` checks at line 134 and `isOverBudget()` at line 170 will never trigger for runs using only unpriced models.
+- **context:** The warning message says "cost tracking will be incomplete" but callers of `isOverBudget()` receive `false` regardless of actual consumption, providing a false safety signal. A run using an unpriced model can consume unlimited resources while the budget guard reports everything is within limits.
+- **hunter_found:** `2026-03-20T18:29:07Z`
+- **fixer_started:** `2026-03-20T18:30:28Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0375
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/mcp/client.ts`
+- **line:** `154`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `disconnect()` sets `state = "disconnected"` and nulls `transport`, but does not cancel or await the in-flight `_connectLock`, so a concurrent `_runConnect` suspended at an `await` will resume and call `refreshTools()` on the already-nulled transport, throwing an unexpected error.
+- **context:** Any caller that calls `connect()` then `disconnect()` before the connection completes will receive an unexpected error from the transport teardown rather than a clean cancellation, and the shared `connecting` promise propagates this error to all concurrent `connect()` callers.
+- **hunter_found:** `2026-03-20T18:29:07Z`
+- **fixer_started:** `2026-03-20T18:30:28Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0376
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/cli/router.ts`
+- **line:** `36`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The flag-value parser uses `!next.startsWith("-")` to distinguish values from flags, so negative numeric arguments (e.g., `--offset -1`) are treated as new flag names rather than values, silently discarding the negative number and setting the flag to `"true"`.
+- **context:** Any CLI command that accepts negative numbers as flag values will silently receive `"true"` instead of the intended value, with no error message to the user. This is a common CLI parser pitfall.
+- **hunter_found:** `2026-03-20T18:29:07Z`
+- **fixer_started:** `2026-03-20T18:30:28Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
