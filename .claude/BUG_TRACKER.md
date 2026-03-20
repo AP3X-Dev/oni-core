@@ -13,7 +13,7 @@
 | **Last Fixer Pass** | `2026-03-20T18:29:42Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T23:59:00Z` |
-| **Last Security Scan** | `2026-03-22T21:16:00Z` |
+| **Last Security Scan** | `2026-03-20T22:45:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -2886,6 +2886,46 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **context:** Any CLI command that accepts negative numbers as flag values will silently receive `"true"` instead of the intended value, with no error message to the user. This is a common CLI parser pitfall.
 - **hunter_found:** `2026-03-20T18:29:07Z`
 - **fixer_started:** `2026-03-20T18:30:28Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0377
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/factories.ts`
+- **line:** `600`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0368-0371`
+- **description:** In `buildRace`, agent promises only attach `.then()` with no `.catch()`, so if an agent promise rejects (unhandled throw inside the agent wrapper), `remaining` is never decremented and the outer race Promise never resolves — `buildRace` hangs indefinitely.
+- **context:** Regression introduced by the BUG-0368 fix. The restructuring added `resolved` and `acceptErrors` for the `accept()` throw case, but the underlying agent-promise rejection path was left without a `.catch()` handler. A rejected promise permanently strands `remaining`, causing a deadlock.
+- **hunter_found:** `2026-03-20T18:35:09Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0378
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/mcp/client.ts`
+- **line:** `163`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0375`
+- **description:** The BUG-0375 fix sets `this.state = "disconnected"` before `transport.stop()`, causing `_runConnect()`'s catch to re-throw, which is then silently swallowed by `disconnect()`'s `.catch(() => {})` — masking genuine transport initialization errors when `disconnect()` races an in-flight `connect()`.
+- **context:** Regression from the BUG-0375 fix. The ordering change was intended to fix the disconnect/connect race, but it creates a new class of silent error suppression where real transport failures are hidden behind the disconnect's catch-all.
+- **hunter_found:** `2026-03-20T18:35:09Z`
+- **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
