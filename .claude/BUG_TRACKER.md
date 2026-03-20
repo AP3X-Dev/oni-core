@@ -10,9 +10,9 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-20T07:48:33Z` |
+| **Last Fixer Pass** | `2026-03-20T07:56:44Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
-| **Last Digest Run** | `2026-03-20T04:05:38Z` |
+| **Last Digest Run** | `2026-03-20T07:54:45Z` |
 | **Last Security Scan** | `2026-03-21T01:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
@@ -23,7 +23,7 @@
 | **Total Found** | `109` |
 | **Total Pending** | `1` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `27` |
+| **Total Fixed** | `30` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `12` |
@@ -1024,7 +1024,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0282
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/tools/src/github/index.ts`
 - **line:** `195`
@@ -1032,11 +1032,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `createPrTool` passes `head` and `base` branch names directly to the GitHub API body without validation. `owner` and `repo` are sanitized via `GITHUB_SLUG_RE`, but `head` (which supports cross-repo `owner:branch` syntax) and `base` have no equivalent check.
 - **context:** An LLM-supplied `head` value containing a malformed or specially crafted reference (e.g. excessively long, containing CRLF characters, or an unexpected cross-repo `owner:branch` format with embedded special characters) is forwarded verbatim to the GitHub REST API. The absence of client-side validation is inconsistent with the validated `owner`/`repo` paths and creates a latent injection surface for future callers who may compose URLs or log these values. Fix: validate `head` and `base` against a branch name regex (allowing `owner:branch` for cross-repo PRs, but rejecting control characters, CRLF, and oversized values). OWASP A03:2021 - Injection.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0282`
 - **hunter_found:** `2026-03-20T14:20:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:56:44Z`
+- **fixer_completed:** `2026-03-20T07:56:44Z`
+- **fix_summary:** `Validated head and base branch names in createPrTool against GITHUB_BRANCH_RE pattern.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1044,7 +1044,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0283
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/integrations/src/adapter/index.ts`
 - **line:** `42`
@@ -1052,11 +1052,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `adaptActivePiece.execute()` passes the raw LLM-supplied `input` object directly to `action.run({ propsValue: input })` without stripping prototype-polluting keys (`__proto__`, `constructor`, `prototype`).
 - **context:** The core harness at `src/harness/loop/tools.ts:86` explicitly strips `__proto__`, `constructor`, and `prototype` keys before merging modified tool input. The integrations adapter has no equivalent guard — an LLM-supplied JSON payload containing `{"__proto__": {"isAdmin": true}}` reaches `action.run()` unfiltered. If any integration piece implementation iterates `propsValue` using `Object.assign` or spread, prototype pollution would occur. The `propsToJsonSchema` function generates a schema but no runtime validation is applied against it at the execute boundary. Fix: apply key stripping (removing `__proto__`, `constructor`, `prototype`) to `input` inside `execute()` before forwarding to `action.run()`. OWASP A03:2021 - Injection.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0283`
 - **hunter_found:** `2026-03-20T14:20:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:56:44Z`
+- **fixer_completed:** `2026-03-20T07:56:44Z`
+- **fix_summary:** `Stripped prototype-polluting keys from integration input before passing to action.run.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1064,7 +1064,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0284
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `249`
@@ -1072,11 +1072,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `listNamespaces()` constructs a Redis `KEYS` glob pattern as `` `oni:store:idx:${this.prefix}:*` `` without validating `this.prefix` for Redis glob metacharacters (`*`, `?`, `[`, `]`).
 - **context:** `this.prefix` comes from caller-supplied `RedisStoreConfig.prefix` with no sanitization — `config.prefix ?? "default"` at line 65. A prefix containing Redis wildcards (e.g. `*` or `[a-z]`) causes the `KEYS` pattern to match keys outside the intended namespace, leaking key names from other prefixes or co-tenants sharing the Redis instance. Additionally, `KEYS` is O(N) over the entire keyspace — a wildcard prefix like `*` makes `listNamespaces()` scan every Redis key, causing latency spikes or DoS under load. Fix: validate `prefix` at `create()` time to reject values containing `*`, `?`, `[`, or `]`, or escape them before constructing the pattern. OWASP A01:2021 - Broken Access Control.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0284`
 - **hunter_found:** `2026-03-20T14:20:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:56:44Z`
+- **fixer_completed:** `2026-03-20T07:56:44Z`
+- **fix_summary:** `Escaped Redis glob metacharacters in listNamespaces prefix.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
