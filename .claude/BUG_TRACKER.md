@@ -13,15 +13,15 @@
 | **Last Fixer Pass** | `2026-03-20T10:16:26Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-21T04:17:00Z` |
-| **Last Security Scan** | `2026-03-23T01:35:00Z` |
+| **Last Security Scan** | `2026-03-20T13:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T21:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T02:00:00Z` (Cycle 184) |
+| **Last Git Manager Pass** | `2026-03-20T19:00:00Z` (Cycle 185) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
-| **Total Found** | `295` |
-| **Total Pending** | `5` |
+| **Total Found** | `296` |
+| **Total Pending** | `6` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `32` |
 | **Total In Validation** | `0` |
@@ -1268,6 +1268,25 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **branch:** ``
 - **hunter_found:** `2026-03-20T05:23:00Z`
 - **fixer_started:** `2026-03-20T12:26:49Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0295
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/errors.ts`
+- **line:** `58`
+- **category:** `information-disclosure`
+- **description:** `ONIError.toJSON()` and `toInternalJSON()` are identical — both expose `stack` in their output. The method names imply different audiences (external vs internal), but the external-facing `toJSON()` leaks call stack traces, revealing internal file paths and library versions to callers. Any code that serializes an `ONIError` to a client or log sink via `JSON.stringify()` or similar will inadvertently expose stack information. Fix: remove the `stack` field from `toJSON()` so only `toInternalJSON()` includes it. OWASP A05:2021 - Security Misconfiguration.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T13:00:00Z`
+- **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
