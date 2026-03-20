@@ -178,6 +178,31 @@ export function createSupervisorNode<S extends SupervisorState>(
 }
 
 // ----------------------------------------------------------------
+// Prompt-injection sanitisation
+// ----------------------------------------------------------------
+
+const SANITIZE_MAX_LEN = 2000;
+
+/**
+ * Sanitise untrusted text before embedding it in an LLM prompt.
+ *
+ * 1. Collapse newlines / carriage-returns → single space (prevents the
+ *    injected text from breaking out of its delimited section).
+ * 2. Truncate to `maxLen` characters so oversized payloads cannot push
+ *    the routing instruction out of the model's attention window.
+ * 3. Wrap the result in triple-backtick fences so the model treats it as
+ *    a quoted literal rather than an instruction.
+ */
+function sanitizeForPrompt(raw: string, maxLen = SANITIZE_MAX_LEN): string {
+  const collapsed = raw.replace(/[\r\n]+/g, " ").trim();
+  const truncated =
+    collapsed.length > maxLen
+      ? collapsed.slice(0, maxLen) + "…[truncated]"
+      : collapsed;
+  return "```\n" + truncated + "\n```";
+}
+
+// ----------------------------------------------------------------
 // Routing strategies
 // ----------------------------------------------------------------
 
@@ -191,11 +216,16 @@ async function routeViaLLM<S extends Record<string, unknown>>(
   const manifest = registry.toManifest();
   const agentIds = registry.getAll().map((a) => a.def.id);
 
-  const prompt = [
-    `TASK: ${task}`,
+  // Sanitise untrusted inputs before embedding in the routing prompt
+  const safeTask = sanitizeForPrompt(task);
+  const safeContext =
     context && Object.keys(context).length
-      ? `CONTEXT: ${JSON.stringify(context, null, 2)}`
-      : "",
+      ? sanitizeForPrompt(JSON.stringify(context))
+      : "";
+
+  const prompt = [
+    `TASK:\n${safeTask}`,
+    safeContext ? `CONTEXT:\n${safeContext}` : "",
     "",
     "AVAILABLE AGENTS:",
     manifest,
