@@ -9,7 +9,7 @@
 
 | Key | Value |
 |---|---|
-| **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
+| **Last Hunter Scan** | `2026-03-20T23:50:00Z` |
 | **Last Fixer Pass** | `2026-03-20T10:16:26Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T19:48:00Z` |
@@ -20,8 +20,8 @@
 | **Last TestGen Run** | `2026-03-20T23:45:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T23:30:00Z` (Cycle 190) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
-| **Total Found** | `299` |
-| **Total Pending** | `9` |
+| **Total Found** | `305` |
+| **Total Pending** | `15` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `32` |
 | **Total In Validation** | `0` |
@@ -1305,6 +1305,126 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-20T20:00:15Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0296
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/checkpointers/redis.ts`
+- **line:** `98`
+- **category:** `race-condition`
+- **description:** Non-atomic read-then-get in `get()`: `zrange` fetches all step members, then a separate `get` fetches the data key. Between these two round-trips a concurrent `put()` or `delete()` can invalidate the index entry, causing `get()` to silently return `null` for an existing thread.
+- **context:** The two-round-trip pattern has no transaction or Lua script wrapping. A concurrent writer calling `put()` (which uses an atomic Lua script) between the `zrange` and `get` calls can add a higher step, making the step selected by `get()` stale. Similarly, a concurrent `delete()` can remove the data key after `zrange` returned its index entry. Fix: wrap `zrange` + `get` in a single Lua script or Redis MULTI/EXEC transaction.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T23:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0297
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `119`
+- **category:** `missing-error-handling`
+- **description:** `onComplete` hook awaited without try/catch on both the handoff path (line 119) and normal return path (line 139). If `onComplete` throws, `registry.markIdle()` is never called, leaving the agent permanently in "busy" state.
+- **context:** The `onStart` hook (lines 40-45) and `onError` hook (lines 185-189) in the same file are properly guarded with try/catch, but `onComplete` is not. A throwing `onComplete` hook permanently bricks the agent slot by skipping `markIdle()`. Fix: wrap both `onComplete` calls in try/catch, ensuring `markIdle()` always runs.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T23:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0298
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/pool.ts`
+- **line:** `269`
+- **category:** `missing-error-handling`
+- **description:** `onError` hook awaited without try/catch. If `onError` itself throws, the hook exception replaces the original error (the `finally` block runs but the original `lastError` is lost), making diagnosis impossible.
+- **context:** Known bugs cover `onStart` (line 196) and `onComplete` (line 209) hooks in the same file — this is the third lifecycle hook (`onError` at line 269) with the same missing guard. Fix: wrap in try/catch, log the hook error, and re-throw the original `lastError`.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T23:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0299
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/scaling.ts`
+- **line:** `192`
+- **category:** `logic-bug`
+- **description:** `recentMaxLatencyMs` computation only processes `agent_complete` events, not `agent_error`. An agent that errors after a long run never has its start time popped from `recentStartTimes`, so its latency is excluded from the scale-up decision — slow-then-erroring agents never trigger latency-based scale-up.
+- **context:** The `agent_error` branch is missing from the latency loop at lines 187-200. A slow agent that eventually errors will have its start timestamp orphaned in `recentStartTimes`, and the high latency will never be compared against `scaleUpLatencyMs`. Fix: add an `agent_error` branch that pops the start time and computes latency the same way `agent_complete` does.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T23:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0300
+- **status:** `pending`
+- **severity:** `critical`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `295`
+- **category:** `race-condition`
+- **description:** Unsynchronized concurrent writes to shared subgraph runner state (`_subgraphRef.count`, `_perInvocationParentUpdates`, `_perInvocationCheckpointer`) when multiple parent nodes backed by the same subgraph execute in parallel via `Promise.allSettled`.
+- **context:** Two parallel parent nodes sharing the same subgraph runner instance both increment `_subgraphRef.count` and write to the same Maps keyed by `namespacedThreadId` (derived as `parentThreadId:name`, not unique per invocation). One invocation's Map entries can be overwritten by the other, and the `finally` cleanup `delete` can evict entries for a still-running sibling, causing it to lose its parent updates or checkpointer reference. Fix: make `namespacedThreadId` include an invocation counter, or use a mutex around the subgraph setup block.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T23:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0301
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/factories.ts`
+- **line:** `78`
+- **category:** `missing-error-handling`
+- **description:** All three lifecycle hooks (`onStart` at line 78, `onComplete` at line 87, `onError` at line 90) in the fanout `runAgent()` are awaited without individual try/catch guards. If `onStart` throws, the catch block calls `onError` which is also unguarded — a double-throwing hook escapes `runAgent()` entirely and surfaces as an unhandled rejection to `Promise.all`.
+- **context:** Unlike `agent-node.ts` which guards `onStart` and `onError`, the fanout runner in `factories.ts` has no hook isolation. A misbehaving hook causes the entire fanout to fail rather than just one agent slot. Fix: wrap each hook call in its own try/catch.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T23:45:00Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
