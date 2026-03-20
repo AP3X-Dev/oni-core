@@ -18,7 +18,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T00:00:00Z` (no new tests — all qualifying bugs already have test_generated:true) |
-| **Last Git Manager Pass** | `2026-03-20T10:30:00Z` (Cycle 173) |
+| **Last Git Manager Pass** | `2026-03-20T23:30:00Z` (Cycle 174) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -2928,6 +2928,66 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T18:37:00Z`
 - **fixer_completed:** `2026-03-20T18:39:33Z`
 - **fix_summary:** `Added disconnecting state. disconnect() sets disconnecting before stop, _runConnect catch swallows teardown errors. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0379
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/guardrails/budget.ts`
+- **line:** `126`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0374`
+- **description:** The `budget.unknown_pricing` audit entry fires on every `record()` call for unknown models with no deduplication guard, flooding the audit log with hundreds of identical entries per session.
+- **context:** Regression from BUG-0374 fix. `costIsUnknown` is set to `true` on the first unknown-model call and never reset; `!pricing` is true on every subsequent call. The `unknownModels` Set deduplicates model IDs but does not gate the audit entry emission.
+- **hunter_found:** `2026-03-20T18:42:16Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0380
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/guardrails/budget.ts`
+- **line:** `152`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0374`
+- **description:** The `budget.warning` with `costIsUnknown: true` fires unconditionally on every `record()` call when `maxCostPerRun` is set, replacing the normal 80%-threshold warning with a per-call warning that produces unbounded audit noise.
+- **context:** Regression from BUG-0374 fix. The `else if (this.costIsUnknown)` branch at line 152 runs regardless of how close `totalCost` is to the limit, making the 80%-threshold guard in the final `else` branch unreachable when cost tracking is incomplete.
+- **hunter_found:** `2026-03-20T18:42:16Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0381
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/self-improvement/manifest.ts`
+- **line:** `43`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0373`
+- **description:** The BUG-0373 CRLF fix updated regex lookaheads but left `goalsMatch[1].split("\n")` using plain `\n`, so on CRLF files each goal line retains a trailing `\r` that causes the metric-field regex to capture `"latency,"` (with trailing comma) instead of `"latency"`.
+- **context:** Regression from BUG-0373 fix. The inner `split("\n")` should be `split(/\r?\n/)` to match the outer CRLF-aware regex. Every `ManifestGoal.metric` value parsed from CRLF files will be wrong, breaking metric matching in the skill evolver.
+- **hunter_found:** `2026-03-20T18:42:16Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
