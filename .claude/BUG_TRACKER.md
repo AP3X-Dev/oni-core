@@ -13,12 +13,12 @@
 | **Last Fixer Pass** | `2026-03-20T09:40:46Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T09:30:45Z` |
-| **Last Security Scan** | `2026-03-20T10:25:00Z` |
+| **Last Security Scan** | `2026-03-20T10:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T15:30:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T10:00:00Z` |
+| **Last TestGen Run** | `2026-03-20T16:45:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T11:00:00Z` |
 | **Last Supervisor Pass** | `2026-03-21T01:20:00Z` |
 | **Total Found** | `294` |
 | **Total Pending** | `1` |
@@ -351,6 +351,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** `2026-03-19T23:15:00Z`
 - **validator_completed:** `2026-03-19T23:18:00Z`
 - **validator_notes:** `REOPENED: Branch bugfix/BUG-0245 has zero commits beyond main — git diff is empty. No path sanitization was applied to either file. Both still call readFile(input.path, "utf-8") with no boundary check, no normalization, no cwd verification. Fix was never committed to the branch.`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/audit-tool-path-boundary.test.ts`
 
 ---
 
@@ -572,6 +574,10 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/auth-resolver-scope-warning.test.ts`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/auth-resolver-scope-warning.test.ts`
 
 ---
 
