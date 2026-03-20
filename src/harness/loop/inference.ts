@@ -153,7 +153,11 @@ export async function runInference(
               resolve();
             }, delayMs);
           } else {
-            setTimeout(resolve, delayMs);
+            // No signal provided — timer is not externally cancellable.
+            // The closure is held for at most delayMs (bounded, not indefinite).
+            // Callers requiring cancellation must provide config.signal.
+            const timer = setTimeout(resolve, delayMs);
+            if (typeof timer === "object" && "unref" in timer) timer.unref();
           }
         });
       }
