@@ -17,8 +17,8 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T19:30:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T12:00:00Z` (Cycle 163) |
+| **Last TestGen Run** | `2026-03-20T21:00:00Z` |
+| **Last Git Manager Pass** | `2026-03-20T18:30:00Z` (Cycle 164) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -2066,6 +2066,126 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **context:** The intent of `pathMap` is to translate logical routing keys to node names; passing the raw key through defeats this purpose and produces a confusing error far from the routing decision point. A descriptive error at route-resolution time would make misconfigured conditional edges debuggable.
 - **hunter_found:** `2026-03-20T17:34:21Z`
 - **fixer_started:** `2026-03-20T17:36:50Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0336
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/checkpoint.ts`
+- **line:** `48`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `MemoryCheckpointer.list()` applies `opts.limit` by slicing from the front of the ascending-sorted array, so `limit: 1` returns the oldest checkpoint (step 0) instead of the most recent one.
+- **context:** Every consumer of `list()` (time-travel, fork, getStateAt) expects recency-oriented ordering. Getting the oldest checkpoint instead of the latest silently returns stale state, corrupting resume and fork operations.
+- **hunter_found:** `2026-03-20T17:41:14Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0337
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/checkpointing.ts`
+- **line:** `51`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `updateState` performs a non-atomic read-modify-write (`get` then `put` with same step) with no optimistic concurrency check, so concurrent HITL state updates for the same threadId cause lost updates.
+- **context:** Two simultaneous human-in-the-loop state patches will both read the same pre-update checkpoint; the second `put` silently overwrites the first, losing one user's state modification with no error or conflict detection.
+- **hunter_found:** `2026-03-20T17:41:14Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0338
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/checkpointers/redis.ts`
+- **line:** `155`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `delete()` fetches all step members, deletes data keys, then deletes the index key as separate non-atomic commands — a concurrent `put` between `zrange` and `del` can insert a new data key that becomes orphaned after the index is removed.
+- **context:** The thread enters a state where `get` returns `null` (index gone) but a dangling data key exists in Redis, leaking memory and potentially causing stale data to resurface if the same threadId is reused.
+- **hunter_found:** `2026-03-20T17:41:14Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0339
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/integrations/src/adapter/index.ts`
+- **line:** `34`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `sanitizeInput` recurses into nested objects but does not sanitize objects inside arrays — the array branch checks `Array.isArray(val)` and skips recursive sanitization of array elements, so `{ payload: [{ __proto__: { isAdmin: true } }] }` passes through with the dangerous key intact.
+- **context:** This bypasses the prototype-pollution protection added for BUG-0283. Any tool input containing an array of objects can carry `__proto__` keys through to `action.run()`, enabling prototype pollution in downstream integrations.
+- **hunter_found:** `2026-03-20T17:41:14Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0340
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/integrations/src/adapter/auth-resolver.ts`
+- **line:** `55`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `storeAuthResolver` ignores the `ctx` argument in `resolve()` entirely — the `options.scope` field is never checked against the caller context, so any caller can retrieve any integration's credentials regardless of scope.
+- **context:** The `scope` option only triggers a console warning if omitted; it is never enforced as an access control check, making credential scoping purely advisory and non-functional as a security boundary.
+- **hunter_found:** `2026-03-20T17:41:14Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0341
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/tools/src/code-execution/e2b.ts`
+- **line:** `61`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** When `Promise.race` resolves via `timeoutPromise`, the still-running `codePromise` is not cancelled, and `sandbox.close()` in the `finally` block races with the inflight `runCode` call, potentially producing an unhandled rejection from the orphaned promise.
+- **context:** `Promise.race` does not cancel the losing promise; the sandbox destruction while code is still executing can cause the `runCode` promise to reject after `close()` returns, surfacing as an unhandled rejection at the process level.
+- **hunter_found:** `2026-03-20T17:41:14Z`
+- **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
