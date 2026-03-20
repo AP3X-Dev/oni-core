@@ -93,6 +93,7 @@ export function rankAndLoad(
 ): LoadResult {
   const taskTags = extractTagsFromString(task);
   if (taskTags.length === 0) {
+    logFn(`[memory-ranker] No extractable tags from task "${task}" — skipping memory load`);
     return { units: [], totalTokens: 0, budget, dropped: [] };
   }
 
