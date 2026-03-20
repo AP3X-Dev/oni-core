@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T23:00:00Z
+**Generated:** 2026-03-21T00:17:00Z
 **Period:** Last 24 hours
 
 ---
@@ -9,107 +9,110 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 70 |
-| Pending | 42 |
-| In Progress | 6 |
-| Fixed (awaiting validation) | 22 |
-| Reopened | 4 |
-| Blocked | 1 |
+| Active Bugs | 62 |
+| Pending | 50 |
+| In Progress | 4 |
+| Fixed (awaiting validation) | 0 |
+| Reopened | 3 |
+| Blocked | 5 |
 
 ## Severity Breakdown
 
 | Severity | Count |
 |----------|-------|
 | Critical | 1 |
-| High | 11 |
-| Medium | 52 |
-| Low | 5 |
+| High | 10 |
+| Medium | 45 |
+| Low | 6 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 54 |
-| Bugs Fixed | 22 |
-| Bugs Verified | 16 |
-| Throughput | 16 bugs verified/day |
-| Mean Time to Fix | 6h 12m |
-| Mean Time to Verify | 2h 8m |
-| Reopen Rate | 18.5% (10/54 recent) |
-| First-Pass Fix Rate | 81.5% |
-| Queue Drain Rate | 88% (16 verified / 18 found) |
-| Blocked Ratio | 1.4% (1/70 active) |
+| Bugs Found | ~60 |
+| Bugs Fixed | 19 |
+| Bugs Verified | 20 |
+| Throughput | 20 bugs verified/day |
+| Mean Time to Fix | ~8h |
+| Mean Time to Verify | ~1h |
+| Reopen Rate | 22.7% (10/44 in log) |
+| First-Pass Fix Rate | 77.3% |
+| Queue Drain Rate | 0.33 (20 verified / 60 found) |
+| Blocked Ratio | 8.1% (5/62 active) |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
-| `src/swarm/pool.ts` | 4 |
 | `src/harness/hooks-engine.ts` | 4 |
 | `src/swarm/agent-node.ts` | 3 |
-| `packages/tools/src/stripe/index.ts` | 2 |
+| `packages/stores/src/postgres/index.ts` | 3 |
 | `packages/stores/src/redis/index.ts` | 2 |
+| `src/swarm/factories.ts` | 2 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 15 |
 | missing-error-handling | 11 |
-| security-injection | 10 |
-| race-condition | 6 |
+| logic-bug | 10 |
+| race-condition | 7 |
 | memory-leak | 6 |
+| security-injection | 6 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-20T22:24:00Z | Active |
-| Fixer | 2026-03-20T22:43:00Z | Active |
-| Validator | 2026-03-20T21:45:30Z | Active |
-| CI Sentinel | 2026-03-20T20:50:00Z | Active |
+| Hunter | 2026-03-20T22:34:00Z | Active |
+| Fixer | 2026-03-20T21:39:00Z | Active |
+| Validator | 2026-03-20T23:15:00Z | Active |
+| CI Sentinel | 2026-03-20T23:50:00Z | Active |
 
 ## Bottleneck Analysis
 
-**Pipeline is performing well.** All agents active within last 2-3 hours. Validator completed 16 bugs in last 24h with good throughput (88% queue drain rate).
+**Fixer is the bottleneck.** 50 bugs pending with 0 in the fixed queue — Fixer output is not keeping pace with Hunter discovery rate (~60 found vs 19 fixed in 24h). Four in-progress bugs (BUG-0289, 0297, 0298, 0304) are all stuck on poisoned branches from a catastrophic 216-file rewrite incident.
 
-**Reopen rate elevated (18.5%).** Recent fixes show 10 reopens out of 54 found. This is higher than the ~6% baseline but acceptable given bug complexity (race conditions, security issues, state management edge cases).
+**Blocked ratio elevated (8.1%).** Five bugs now blocked (up from 1), all auto-blocked after 3 failed fix attempts. The hooks-engine cluster (BUG-0296) and SSE headers (BUG-0285) share the same root cause: Fixer reusing poisoned branches instead of recreating from clean main.
 
-**Blocked ratio very low (1.4%)** — only BUG-0205 (security-injection in node-eval sandbox) requires human escalation. This critical item remains blocked pending architectural decision on isolation strategy.
+**Queue drain rate critical (0.33).** Pipeline is falling behind — finding bugs 3x faster than verifying them. Fixed queue is empty, so Validator has nothing to process.
 
 **Recommendations:**
-1. **Continue current pace** — pipeline is draining fixes at 88% efficiency
-2. **Monitor reopen trend** — elevated but manageable; validator is catching real issues
-3. **Keep Hunter/Fixer in sync** — both agents active; no stalls detected
+1. **URGENT:** Unblock Fixer — the 4 in-progress bugs on poisoned branches need manual `git branch -D` and recreation from main
+2. **Human review needed** for 5 blocked bugs, especially BUG-0205 (critical security — needs architectural decision on sandboxing)
+3. **Consider pausing Hunter** until Fixer catches up — 50 pending bugs is excessive backlog
 
-## Trend (vs Previous Digest at 20:35 UTC)
+## Trend (vs Previous Digest)
 
-| Metric | Previous | Current | Direction |
-|--------|----------|---------|-----------|
-| Active Bugs | 60 | 70 | ↑ +16.7% |
-| Pending | 24 | 42 | ↑ +75.0% |
-| Fixed Queue | 28 | 22 | ↓ -21.4% |
-| Reopened | 3 | 4 | ↑ +1 bug |
-| Blocked | 1 | 1 | → no change |
-| Throughput | 0 verified/day | 16 verified/day | ↑↑ +16 bugs |
-| Queue Drain Rate | 0% | 88% | ↑↑ Major improvement |
-| Reopen Rate | 37.5% | 18.5% | ↓ Improvement |
+| Metric | Yesterday | Today | Direction |
+|--------|-----------|-------|-----------|
+| Active Bugs | 70 | 62 | ↓ -11.4% |
+| Pending | 42 | 50 | ↑ +19.0% |
+| Fixed Queue | 22 | 0 | ↓ -100% (drained) |
+| Blocked | 1 | 5 | ↑ +4 bugs |
+| Throughput | 16/day | 20/day | ↑ +25% |
+| Reopen Rate | 18.5% | 22.7% | ↑ worsening |
+| Queue Drain Rate | 88% | 33% | ↓ significant decline |
 
-**Assessment:** Major improvement in pipeline efficiency. Previous digest showed Validator stalled (0 verifications). Current digest shows 16 verified in last 24h with 88% queue drain rate. Hunter found 54 bugs, Fixer completed 22, Validator verified 16 — all agents in sync.
+**Assessment:** Mixed signals. Throughput improved (16 → 20 verified/day) and active bugs decreased (70 → 62), but the fixed queue is now empty and pending backlog grew. The 5 blocked bugs (up from 1) indicate systemic Fixer failures — poisoned branches from a catastrophic rewrite are causing repeated fix failures.
 
 **Key changes:**
-- Validator unblocked — verifying at 16/day (was stalled 9+ hours ago)
-- Reopen rate halved (37.5% → 18.5%) — recent fixes are more stable
-- Queue drain exceptional (88%) — pipeline clearing backlog efficiently
-- Active bugs increased 16.7% (60 → 70) but this is expected as Hunter output increased to 54/day
+- Fixed queue fully drained (22 → 0) — Validator cleared all available work
+- Blocked bugs spiked (1 → 5) — auto-block threshold reached on multiple bugs
+- Queue drain rate collapsed (88% → 33%) — pipeline now falling behind
+- `hooks-engine.ts` remains the #1 problem file with 4 active bugs, all stuck
 
-**Pipeline Status: GREEN — All agents active, excellent queue drain, reopen rate improving.**
+**Pipeline Status: YELLOW — Validator healthy but starved; Fixer bottlenecked on poisoned branches; blocked count rising.**
 
 ## Blocked — Needs Human Attention
 
-1 bug currently blocked:
+5 bugs currently blocked:
 
-- **BUG-0205** (critical, security-injection): `node_eval` tool executes LLM-supplied code via `new Function()` with no sandbox. Auto-blocked after 3 failed fix attempts. Root issue: ESM import() of builtins bypasses CJS patches, network access still exploitable. Requires `isolated-vm` or container-level sandboxing — architectural decision needed.
+- **BUG-0205** (critical, security-injection): `node_eval` executes LLM-supplied code via `new Function()` with no sandbox. Network gap: ESM import() bypasses CJS patches. Requires `isolated-vm` or container-level sandboxing.
+- **BUG-0263** (medium, type-error): Duck-typed Handoff detection missing `opts.to` string validation. Auto-blocked after 3 cycles — code never updated.
+- **BUG-0264** (medium, type-error): LSP JSON-RPC messages cast without structural validation. Auto-blocked — 3 original failures persist unchanged across all fix cycles.
+- **BUG-0285** (medium, security-config): SSE response missing security headers. Auto-blocked — `sse.ts` was never modified across 3 cycles.
+- **BUG-0296** (high, security-injection): Base64-encoded payload bypass of Bash blocklist. Auto-blocked — Fixer never deleted poisoned branch.
 
 ---
 
