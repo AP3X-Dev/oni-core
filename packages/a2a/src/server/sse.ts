@@ -37,6 +37,10 @@ export function createSSEResponse(
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Content-Security-Policy": "default-src 'none'",
+      "X-XSS-Protection": "0",
     },
   });
 }
