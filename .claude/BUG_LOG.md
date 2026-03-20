@@ -1751,6 +1751,7 @@
 - **validator_notes:** `Confirmed crypto.timingSafeEqual() correctly applied with Buffer.from() on both token and expected key. Length guard is required by the API and acceptable tradeoff. tsc clean. No regressions.`
 - **archived:** `2026-03-19T19:42:00Z`
 - **test_generated:** `true`
+- **test_file:** `packages/a2a/src/__tests__/server-timing-safe-auth.test.ts`
 
 ---
 
