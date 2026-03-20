@@ -10,23 +10,23 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-19T23:26:27Z` |
+| **Last Fixer Pass** | `2026-03-20T03:24:59Z` |
 | **Last Validator Pass** | `2026-03-19T23:18:00Z` |
 | **Last Digest Run** | `2026-03-18T00:35:00Z` |
 | **Last Security Scan** | `2026-03-19T19:55:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-19T23:59:30Z` |
+| **Last TestGen Run** | `2026-03-19T01:17:00Z` |
 | **Last Git Manager Pass** | `2026-03-19T07:30:10Z` |
 | **Last Supervisor Pass** | `2026-03-19T21:52:17Z` |
 | **Total Found** | `109` |
-| **Total Pending** | `24` |
+| **Total Pending** | `19` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `9` |
+| **Total Fixed** | `12` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `6` |
+| **Total Blocked** | `8` |
 | **Total Reopened** | `0` |
 
 ---

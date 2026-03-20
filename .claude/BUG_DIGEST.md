@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-18T00:35:00Z
+**Generated:** 2026-03-20T03:18:28Z
 **Period:** Last 24 hours
 
 ---
@@ -9,76 +9,80 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 22 |
-| Pending | 5 |
-| In Progress | 1 |
-| Fixed (awaiting validation) | 13 |
-| In Validation | 2 |
+| Active Bugs | 40 |
+| Pending | 20 |
+| In Progress | 0 |
+| Fixed (awaiting validation) | 14 |
 | Reopened | 0 |
-| Blocked | 1 |
+| Blocked | 6 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 21 |
-| Bugs Fixed | 15 |
-| Bugs Verified | 0 |
-| Throughput | 0 bugs/day |
-| Mean Time to Fix | N/A (no verified bugs this cycle) |
-| Mean Time to Verify | N/A (no verified bugs this cycle) |
-| Reopen Rate | 7.5% |
-| First-Pass Fix Rate | N/A (no verified bugs this cycle) |
-| Queue Drain Rate | 0.00 |
-| Blocked Ratio | 4.5% |
+| Bugs Found | 45 |
+| Bugs Fixed | 26 |
+| Bugs Verified | 12 |
+| Throughput | 12 bugs/day |
+| Mean Time to Fix | ~11h 42m |
+| Mean Time to Verify | ~3h 4m |
+| Reopen Rate | 6.3% |
+| First-Pass Fix Rate | 100% |
+| Queue Drain Rate | 0.27 |
+| Blocked Ratio | 15.0% |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
-| `src/models/openai.ts` | 4 |
-| `src/swarm/supervisor.ts` | 4 |
-| `src/swarm/self-improvement/skill-evolver.ts` | 4 |
-| `src/harness/skill-loader.ts` | 4 |
-| `src/swarm/factories.ts` | 3 |
+| `src/swarm/pool.ts` | 5 |
+| `src/harness/memory/ranker.ts` | 3 |
+| `packages/a2a/src/server/index.ts` | 2 |
+| `src/swarm/agent-node.ts` | 2 |
+| `src/pregel/index.ts` | 2 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 39 |
-| security (all variants) | 19 |
-| missing-error-handling | 16 |
-| memory-leak | 12 |
-| race-condition | 9 |
+| test-regression | 7 |
+| logic-bug | 7 |
+| missing-error-handling | 5 |
+| security (all variants) | 5 |
+| type-error | 5 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-18T00:20:52Z | active |
-| Fixer | 2026-03-18T00:27:07Z | active (working on BUG-0218) |
-| Validator | 2026-03-17T23:52:00Z | skipped (saw 0 fixed at last pass; 13 now queued) |
+| Hunter | 2026-03-19T23:05:00Z | active |
+| Fixer | 2026-03-20T03:16:59Z | active |
+| Validator | 2026-03-19T23:18:00Z | active |
 
 ## Bottleneck Analysis
 
-**Validator is the bottleneck.** The Fixer completed 15 fixes in the last 24h, but the Validator verified 0 — all 13 fixed bugs are waiting in queue. The Validator's last pass at 23:52Z saw no fixed bugs (they were completed after that timestamp), so it skipped. The Validator needs to run again immediately to begin draining the 13-bug backlog.
+**Validator is the bottleneck.** 14 fixed bugs are awaiting validation, but the Validator's last pass was at 23:18Z. The Fixer completed a burst of fixes (BUG-0275 through BUG-0278) at 03:16Z that have not been validated yet. The Validator needs to run again to drain the 14-bug fixed queue.
 
-**Warning:** Queue drain rate is 0.00 — the pipeline is accumulating bugs with zero outflow. The Hunter found 21 new bugs while zero were verified. This is unsustainable; the Validator must catch up before the next Hunter scan adds more.
+**Pipeline is falling behind.** Queue drain rate is 0.27 (12 verified vs 45 found). The Hunter found a massive wave of 45 bugs in the last 24h. The Fixer kept pace (26 fixed) but the verification pipeline cannot absorb the volume. Active bug count nearly doubled from 22 to 40.
 
 ## Trend (vs Previous Digest)
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
-| Active Bugs | 3 | 22 | +19 |
-| Throughput | 3 bugs/day | 0 bugs/day | 0 |
-| Reopen Rate | 7.0% | 7.5% | ~ |
+| Active Bugs | 22 | 40 | ↑ (+18) |
+| Throughput | 0 bugs/day | 12 bugs/day | ↑ |
+| Reopen Rate | 7.5% | 6.3% | ↓ (improving) |
 
-The active bug count surged from 3 to 22 — the Hunter ran a productive scan cycle that found 21 new bugs across security, logic, and memory-leak categories. The Fixer kept pace (15 fixed) but the Validator has not yet processed any of these. The same files (`openai.ts`, `supervisor.ts`, `skill-evolver.ts`, `factories.ts`) continue appearing in Top Problem Files, indicating modules that need structural attention beyond individual bug fixes.
+Active bug count surged from 22 to 40 — the Hunter ran multiple productive scan cycles. Throughput jumped from 0 to 12 as the Validator finally began processing the backlog. `src/swarm/pool.ts` is the top problem file with 5 active bugs, indicating this module needs structural attention. The Fixer is keeping pace but the Validator is again falling behind the wave.
 
 ## Blocked — Needs Human Attention
 
-- **BUG-0191** (`low` / `dead-code`) — `src/config/types.ts:76`: The `plugins?: string[]` field in `ONIConfig` is declared but never consumed. Fixer blocked because removing it changes the public API, and implementing plugin loading is a feature, not a bug fix. **Action needed:** Decide whether to remove the field (breaking change) or implement plugin support.
+- **BUG-0191** (`low` / `dead-code`) — `src/config/types.ts:76`: `plugins?: string[]` declared but never consumed. Needs decision: remove field (API change) or implement plugin support.
+- **BUG-0205** (`critical` / `security-injection`) — `packages/tools/src/code-execution/node-eval.ts:57`: `node_eval` executes LLM code with no sandbox. Auto-blocked after 3 attempts. Needs isolated-vm or container-level sandboxing.
+- **BUG-0235** (`high` / `test-regression`) — `src/errors.ts:44`: Fixer reports false positive — tests pass on main. Hunter should re-evaluate.
+- **BUG-0236** (`high` / `test-regression`) — `src/checkpointers/redis.ts:52`: Fixer reports false positive — no `eval()` call exists. Hunter should re-evaluate.
+- **BUG-0244** (`medium` / `security-injection`) — `src/cli/build.ts:41`: Fixer reports false positive — `shell: true` already removed on main. Hunter should re-evaluate.
+- **BUG-0246** (`high` / `race-condition`) — `src/guardrails/budget.ts:51`: Auto-blocked after 3 attempts. `record()` is synchronous — race may not apply. Needs human review of whether the bug is in the async caller instead.
 
 ---
 
