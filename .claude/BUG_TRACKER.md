@@ -3014,6 +3014,66 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
+### BUG-0383
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/harness/skill-loader.ts`
+- **line:** `268`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `invoke()` interpolates `args` into the `<skill-instructions>` XML block without calling `escXml()`, so a caller-controlled `args` value containing `</skill-instructions>` can break out of the XML wrapper and inject arbitrary content into the agent's context.
+- **context:** `escXml()` is applied to `skill.name` and `skill.description` just above (fixed by an earlier bug for name), but was not applied to `args`, which may originate from user input or LLM-generated tool calls. This is a distinct field from the archived BUG in BUG_LOG (which fixed name injection at line 259).
+- **hunter_found:** `2026-03-20T18:51:59Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0384
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/harness/skill-loader.ts`
+- **line:** `52`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `parseFrontmatter` splits on `"\n"` only, leaving trailing `\r` in parsed key/value pairs on CRLF-encoded SKILL.md files, causing `skills.get(name)` lookups to fail silently.
+- **context:** The same CRLF issue was just fixed in `manifest.ts` (BUG-0373/0381) but `parseFrontmatter` in `skill-loader.ts` was not updated in parallel. On Windows or with `core.autocrlf=true`, every parsed skill name and metadata field carries an invisible `\r`.
+- **hunter_found:** `2026-03-20T18:51:59Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0385
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/self-improvement/manifest.ts`
+- **line:** `45`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The goal-line regex `direction:\s*(\S+)` captures a trailing comma (e.g., `"minimize,"` instead of `"minimize"`) when the goal line uses comma-separated fields, causing the validation guard to trigger and silently default to `"minimize"`.
+- **context:** The BUG-0381 fix addressed CRLF endings but did not fix the direction capture pattern. Any goal line with content after the direction value (e.g., `direction: minimize, weight: 1.0`) will have its direction silently overridden to the default.
+- **hunter_found:** `2026-03-20T18:51:59Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
 <!-- HUNTER: Append new bugs above this line -->
 
 ### BUG-0295
