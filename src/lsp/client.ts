@@ -480,6 +480,12 @@ export class LSPClient {
   }
 
   private handleMessage(message: Record<string, unknown>): void {
+    // Validate JSON-RPC 2.0 envelope
+    if (message.jsonrpc !== "2.0") {
+      console.warn("[lsp] Ignoring non-JSON-RPC 2.0 message");
+      return;
+    }
+
     // Server → client request (has id + method, needs response) — must be
     // checked BEFORE the response branch because requests also have a non-null
     // id; the response branch would otherwise capture them and return early.
@@ -518,8 +524,12 @@ export class LSPClient {
 
     // Response (has id but no method)
     if ("id" in message && message.id !== null) {
-      if (typeof message.id === "undefined") {
-        console.warn("[lsp] Malformed response: missing id");
+      if (typeof message.id !== "number" && typeof message.id !== "string") {
+        console.warn("[lsp] Malformed response: id must be a number or string, got " + typeof message.id);
+        return;
+      }
+      if (!("result" in message) && !("error" in message)) {
+        console.warn("[lsp] Malformed response: missing both result and error fields");
         return;
       }
       const id = message.id as number;
