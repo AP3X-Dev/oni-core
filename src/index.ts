@@ -81,7 +81,7 @@ export type { DeadLetter } from "./dlq.js";
 
 // -- Swarm primitives
 export {
-  SwarmGraph, AgentRegistry, AgentPool, AgentPool as Pool,
+  SwarmGraph, AgentRegistry, AgentPool, AgentPool as Pool, BatchError,
   Handoff, createSupervisorNode, baseSwarmChannels, quickAgent,
   createMessage, getInbox, consumeInbox, formatInbox,
   SwarmTracer, SwarmSnapshotStore, DynamicScalingMonitor, toSwarmMermaid,

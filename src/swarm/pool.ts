@@ -10,6 +10,29 @@ import type { SwarmAgentDef } from "./types.js";
 import type { ONIConfig } from "../types.js";
 import { runWithTimeout } from "../internal/timeout.js";
 
+// ---- BatchError ----
+
+export class BatchError<S> extends Error {
+  /** Per-input results for fulfilled promises */
+  readonly results: (S | undefined)[];
+  /** Per-input errors for rejected promises (undefined for fulfilled) */
+  readonly errors: (unknown | undefined)[];
+
+  constructor(settled: PromiseSettledResult<S>[]) {
+    const failures = settled.filter(
+      (r): r is PromiseRejectedResult => r.status === "rejected",
+    );
+    super(`batch(): ${failures.length} of ${settled.length} inputs failed`);
+    this.name = "BatchError";
+    this.results = settled.map((r) =>
+      r.status === "fulfilled" ? r.value : undefined,
+    );
+    this.errors = settled.map((r) =>
+      r.status === "rejected" ? r.reason : undefined,
+    );
+  }
+}
+
 interface PoolSlot<S extends Record<string, unknown>> {
   agent:       SwarmAgentDef<S>;
   activeTasks: number;
@@ -82,14 +105,20 @@ export class AgentPool<S extends Record<string, unknown>> {
     });
   }
 
-  /** Run N inputs across the pool in parallel */
+  /** Run N inputs across the pool in parallel.
+   *  Returns S[] when all inputs succeed.
+   *  Throws BatchError (with .results and .errors) when any input fails. */
   async batch(inputs: Partial<S>[], config?: ONIConfig): Promise<S[]> {
-    return Promise.all(inputs.map((inp) => this.invoke(inp, config)));
-  }
-
-  /** Run N inputs and return settled results (never rejects) */
-  async batchSettled(inputs: Partial<S>[], config?: ONIConfig): Promise<PromiseSettledResult<S>[]> {
-    return Promise.allSettled(inputs.map((inp) => this.invoke(inp, config)));
+    const settled = await Promise.allSettled(
+      inputs.map((inp) => this.invoke(inp, config)),
+    );
+    const hasFailure = settled.some((r) => r.status === "rejected");
+    if (hasFailure) {
+      throw new BatchError<S>(settled);
+    }
+    return settled.map(
+      (r) => (r as PromiseFulfilledResult<S>).value,
+    );
   }
 
   // ---- Stats ----
