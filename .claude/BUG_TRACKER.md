@@ -10,15 +10,15 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T18:20:43Z` |
+| **Last Fixer Pass** | `2026-03-20T18:21:47Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T23:59:00Z` |
-| **Last Security Scan** | `2026-03-20T20:45:00Z` |
+| **Last Security Scan** | `2026-03-20T21:10:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T13:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T06:30:00Z` (Cycle 170) |
+| **Last Git Manager Pass** | `2026-03-20T07:30:00Z` (Cycle 171) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -2688,6 +2688,106 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T18:18:39Z`
 - **fixer_completed:** `2026-03-20T18:20:43Z`
 - **fix_summary:** `Replaced non-null assertions with safe for-of loop + undefined guard in ToolRegistry.list(). tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0367
+- **status:** `in-progress`
+- **severity:** `high`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `434`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `Command.PARENT` path looks up `_perInvocationParentUpdates` using raw `threadId` instead of `namespacedThreadId`, so `myParentUpdates` is always `undefined` and parent state updates from subgraph nodes are silently dropped.
+- **context:** The map is keyed by `namespacedThreadId` at line 269/305, but the lookup at line 434 uses the un-namespaced `threadId`. This is a separate issue from BUG-0333 (which is about the ref count check on the wrong context) — both bugs independently prevent `Command.PARENT` from working in subgraphs.
+- **hunter_found:** `2026-03-20T18:22:21Z`
+- **fixer_started:** `2026-03-20T18:24:44Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0368
+- **status:** `in-progress`
+- **severity:** `high`
+- **file:** `src/swarm/factories.ts`
+- **line:** `600`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** In `buildRace`, when `accept(r.result)` throws, the `catch` block sets `accepted = false` but never decrements `remaining`, so the outer promise never resolves when all agents have completed — the `__race__` node hangs forever.
+- **context:** The `remaining--` decrement only runs in the non-throwing path. If every agent's result is rejected by a throwing `accept` function, `remaining` stays at the initial count and `resolve(null)` is never called, causing the entire race to deadlock.
+- **hunter_found:** `2026-03-20T18:22:21Z`
+- **fixer_started:** `2026-03-20T18:24:44Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0369
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `404`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Subgraph events are yielded unconditionally when `modeDebug` is true, but the `modeCustom` and `modeMessages` checks below fire on the same events without an `else`, causing custom and message events to be yielded twice when both debug and custom/messages modes are active.
+- **context:** Downstream consumers that count or aggregate events will double-count subgraph custom/message events, corrupting metrics and potentially causing duplicate side effects in event handlers.
+- **hunter_found:** `2026-03-20T18:22:21Z`
+- **fixer_started:** `2026-03-20T18:24:44Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0370
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/harness/loop/index.ts`
+- **line:** `156`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `remaining = maxTurns - turn - 1` underounts available turns by 1 — on turn 0 with `maxTurns=10`, the model is told it has 9 turns remaining, but it actually has 10 since the current turn hasn't been consumed yet.
+- **context:** The off-by-one in the injected system prompt causes the model to consistently believe it has fewer turns available than it actually does, potentially leading to premature summarization or task abandonment one turn early.
+- **hunter_found:** `2026-03-20T18:22:21Z`
+- **fixer_started:** `2026-03-20T18:24:44Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0371
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/swarm/factories.ts`
+- **line:** `743`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The dependency validation loop at lines 657-663 checks that each dependency value exists in `agentMap`, but does not verify that the dependency *key* itself exists in `agentMap`, so a stale or typo'd key silently passes validation and then causes the topo-sort to throw a misleading "circular dependency" error.
+- **context:** A `dependencies` entry like `{ "nonexistent-agent": ["real-agent"] }` passes validation because `real-agent` exists in `agentMap`, but `nonexistent-agent` never appears in `config.agents`, so the build loop's `ready` array never includes it and `remaining` never empties.
+- **hunter_found:** `2026-03-20T18:22:21Z`
+- **fixer_started:** `2026-03-20T18:24:44Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
