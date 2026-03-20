@@ -10,18 +10,18 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-20T08:11:25Z` |
+| **Last Fixer Pass** | `2026-03-20T08:33:00Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T07:54:45Z` |
 | **Last Security Scan** | `2026-03-21T04:10:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T17:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T16:00:00Z` |
+| **Last TestGen Run** | `2026-03-20T18:00:00Z` |
+| **Last Git Manager Pass** | `2026-03-20T20:30:00Z` |
 | **Last Supervisor Pass** | `2026-03-21T00:05:00Z` |
 | **Total Found** | `289` |
-| **Total Pending** | `1` |
+| **Total Pending** | `0` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `31` |
 | **Total In Validation** | `0` |
@@ -1040,6 +1040,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/github-branch-name-validation.test.ts`
 
 ---
 
@@ -1141,6 +1143,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/harness-tools-direct-args-proto-strip.test.ts`
 
 ---
 
