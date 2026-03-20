@@ -17,7 +17,13 @@ export class DocxLoader extends DocumentLoader {
       throw new Error("DocxLoader requires 'mammoth'. Install it: pnpm add mammoth");
     }
 
-    const result = await mammoth.extractRawText({ path: source });
+    let result: { value: string };
+    try {
+      result = await mammoth.extractRawText({ path: source });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`DOCX loader: failed to read file '${source}': ${msg}`);
+    }
     return [{ content: result.value, metadata: { type: "docx" }, source }];
   }
 }
