@@ -10,10 +10,10 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T17:46:37Z` |
+| **Last Fixer Pass** | `2026-03-20T17:50:23Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T17:25:00Z` |
-| **Last Security Scan** | `2026-03-20T18:30:00Z` |
+| **Last Security Scan** | `2026-03-20T23:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -2175,16 +2175,236 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0341
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/tools/src/code-execution/e2b.ts`
 - **line:** `61`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0341`
 - **description:** When `Promise.race` resolves via `timeoutPromise`, the still-running `codePromise` is not cancelled, and `sandbox.close()` in the `finally` block races with the inflight `runCode` call, potentially producing an unhandled rejection from the orphaned promise.
 - **context:** `Promise.race` does not cancel the losing promise; the sandbox destruction while code is still executing can cause the `runCode` promise to reject after `close()` returns, surfacing as an unhandled rejection at the process level.
 - **hunter_found:** `2026-03-20T17:41:14Z`
+- **fixer_started:** `2026-03-20T17:47:38Z`
+- **fixer_completed:** `2026-03-20T17:50:23Z`
+- **fix_summary:** `Added AbortController + Promise.race timeout enforcement + sandbox.close() in try/finally. Timeout clamped to [0, 120s]. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0342
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `packages/a2a/src/server/index.ts`
+- **line:** `126`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0342`
+- **description:** `A2AServer.listen()` creates an HTTP server via `createServer()` but never stores a reference to it and the class exposes no `close()` method, so the server and all its open sockets are unreachable and live until process exit.
+- **context:** Tests or long-running processes that call `listen()` multiple times accumulate unreachable HTTP server instances, each holding open socket handles. There is no way to gracefully shut down or drain the server.
+- **hunter_found:** `2026-03-20T17:46:51Z`
+- **fixer_started:** `2026-03-20T17:47:38Z`
+- **fixer_completed:** `2026-03-20T17:50:23Z`
+- **fix_summary:** `Added private httpServer field and async close() method to A2AServer. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0343
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/lsp/client.ts`
+- **line:** `267`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0343-0344`
+- **description:** When `fileVersions` LRU evicts its oldest entry (line 267-269), any pending `diagnosticsWaiters` entry for that evicted file path is never resolved or removed, leaking both the waiter promise and its associated timeout timer.
+- **context:** In long sessions with many files, evicted entries accumulate orphaned waiter entries in the `diagnosticsWaiters` Map that are only cleaned up when their individual timeouts fire, keeping the closure and timer alive indefinitely if the timeout is large.
+- **hunter_found:** `2026-03-20T17:46:51Z`
+- **fixer_started:** `2026-03-20T17:47:38Z`
+- **fixer_completed:** `2026-03-20T17:50:23Z`
+- **fix_summary:** `Added rejectWaitersForPath() called during LRU eviction to clean up leaked diagnosticsWaiters. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0344
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/lsp/client.ts`
+- **line:** `583`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0343-0344`
+- **description:** `handleProcessExit()` sets `this.process = null` without first calling `removeAllListeners()` on the ChildProcess, so the anonymous `stderr` listener (line 139) and `exit`/`error` listeners remain registered on the now-orphaned ChildProcess object, preventing its GC.
+- **context:** Each unexpected LSP server exit leaks the ChildProcess object and all closures captured by its event listeners. In sessions where LSP servers crash and are restarted repeatedly, this accumulates unreachable but non-GC'd process objects.
+- **hunter_found:** `2026-03-20T17:46:51Z`
+- **fixer_started:** `2026-03-20T17:47:38Z`
+- **fixer_completed:** `2026-03-20T17:50:23Z`
+- **fix_summary:** `removeAllListeners() on stdout/stderr/process before nulling in handleProcessExit, stop(), and error handler. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0345
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/graph.ts`
+- **line:** `206`
+- **category:** `api-contract-violation`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0345`
+- **description:** `getDeadLetters()` is unconditionally defined on every compiled skeleton but calls `runner.getDeadLetters()` which depends on `dlq` being non-null — when `deadLetterQueue: false` (the default), the call may throw or return incorrect results.
+- **context:** The `ONISkeletonV3` interface marks `getDeadLetters` as optional to signal it's only available when DLQ is enabled, but the implementation always attaches it. Callers trusting the method's presence as a signal that DLQ is active will get unexpected errors.
+- **hunter_found:** `2026-03-20T17:46:51Z`
+- **fixer_started:** `2026-03-20T17:47:38Z`
+- **fixer_completed:** `2026-03-20T17:50:23Z`
+- **fix_summary:** `getDeadLetters conditionally spread onto skeleton only when dlq configured. Updated test. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0346
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/tools/src/filesystem/index.ts`
+- **line:** `170`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `fs_create_directory` calls `checkAllowedPath(i.path)` before the directory exists, using `resolveReal` on a non-existent path, then calls `mkdir` — a TOCTOU window exists where a symlink can be created between the security check and the `mkdir` call, redirecting directory creation outside allowed paths.
+- **context:** The existing TOCTOU tests cover `read_file` and `write_file` but not `create_directory`. An attacker who can create symlinks in the target path between `resolveReal` and `mkdir` can escape the allowed-path sandbox for directory creation.
+- **hunter_found:** `2026-03-20T17:46:51Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0347
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/agents/define-agent.ts`
+- **line:** `119`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `config?.signal` is passed to `model.chat()`, but `ONIConfig` has no `signal` field — the access always returns `undefined`, silently making AbortSignal-based cancellation impossible through this code path.
+- **context:** Callers who pass an AbortSignal via config to cancel a long-running agent chat will see no effect — the signal is never forwarded to the model. This is a phantom property access that appears to support cancellation but does not.
+- **hunter_found:** `2026-03-20T17:50:18Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0348
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/config/loader.ts`
+- **line:** `213`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `loadConfig()` applies `expandEnvVars()` to file-sourced configs inside `loadSingleConfig()`, but the `inline` override is merged via `mergeConfig()` without env-var expansion, making `${VAR}` strings in inline config pass through verbatim.
+- **context:** Callers who use programmatic inline config with environment variable references (e.g., `${API_KEY}`) will get the literal string instead of the expanded value, while the same string in a file config would be expanded — a silent inconsistency.
+- **hunter_found:** `2026-03-20T17:50:18Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0349
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/hitl/resume.ts`
+- **line:** `43`
+- **category:** `dead-code`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `evict()` sets `s.status = "expired"` then immediately calls `this.sessions.delete(id)` in the same tick, making the expired status transition invisible to any observer and effectively dead code.
+- **context:** `HITLSession.status` declares `"expired"` as a valid value, suggesting callers are meant to observe it, but no `get()` call can ever return a session in expired state because it is deleted before the tick yields.
+- **hunter_found:** `2026-03-20T17:50:18Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0350
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/hitl/resume.ts`
+- **line:** `81`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `getByThread()` filters for `s.status === "pending"` only, silently omitting resumed sessions that have not yet been evicted and may still be relevant to the caller.
+- **context:** A caller checking active sessions for a thread immediately after `markResumed()` gets an empty list, potentially causing duplicate resume attempts. The method name implies "all sessions for this thread" but quietly drops non-pending ones.
+- **hunter_found:** `2026-03-20T17:50:18Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0351
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/dlq.ts`
+- **line:** `20`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `DeadLetterQueue.record()` stores the `input` object reference directly without cloning, so mutations to the original object after recording silently corrupt the stored dead letter audit trail.
+- **context:** Any code that calls `dlq.record(state, error)` and later mutates `state` will retroactively change the dead letter's `input` field, making post-mortem debugging unreliable — the stored snapshot no longer reflects the state at time of failure.
+- **hunter_found:** `2026-03-20T17:50:18Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0352
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/internal/validate-command.ts`
+- **line:** `64`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `execFileSync("which", [trimmed])` is used to verify PATH-resident binaries, but `which` is not available on Windows, causing every bare command name to throw a "not found on PATH" error even for valid binaries.
+- **context:** This makes LSP server configuration entirely non-functional on Windows. The `where` command is the Windows equivalent, but neither fallback nor platform check is present.
+- **hunter_found:** `2026-03-20T17:50:18Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
