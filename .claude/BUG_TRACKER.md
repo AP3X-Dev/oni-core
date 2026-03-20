@@ -10,10 +10,10 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T18:58:58Z` |
+| **Last Fixer Pass** | `2026-03-20T19:04:46Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T19:01:28Z` |
-| **Last Security Scan** | `2026-03-20T23:05:00Z` (Cycle 145 — no new source code, no new findings) |
+| **Last Security Scan** | `2026-03-20T23:20:00Z` (Cycle 146 — no new source code, no new findings) |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -3115,19 +3115,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0388
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/harness/skill-loader.ts`
 - **line:** `268`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0383-0384`
+- **branch:** `bugfix/BUG-0388`
 - **description:** The BUG-0383 fix escapes `name` and `args` in the XML wrapper but leaves `skill.content` (the raw skill file body) interpolated without any escaping, so a skill file containing `</skill-instructions>` can still break out of the XML wrapper.
 - **context:** Regression/incomplete fix from BUG-0383. The skill body is the largest untrusted input surface — it comes from files on disk that may be user-authored or modified by the self-improvement loop. The fix hardened two fields but left the primary injection vector open. Related to archived BUG at line 259 (name injection).
 - **hunter_found:** `2026-03-20T18:59:41Z`
 - **fixer_started:** `2026-03-20T19:00:46Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T19:04:46Z`
+- **fix_summary:** `skill.content wrapped in CDATA section with ]]> splitting. escXml() hoisted to module scope. 4 regression tests. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -3135,19 +3135,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0389
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/guardrails/permissions.ts`
 - **line:** `13`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0389`
 - **description:** `checkToolPermission` with wildcard `"*"` permissions returns without verifying that `toolName` exists in any known tool registry, while `getPermittedTools` correctly bounds wildcards to `allTools` — creating an inconsistency where wildcarded agents can pass permission checks for nonexistent tools.
 - **context:** A misconfigured or malicious tool name passes the wildcard permission check silently in `checkToolPermission` but would not appear in `getPermittedTools` results. This inconsistency can mask configuration errors and allows tool invocation to proceed for tools that don't exist, deferring the error to a later and less informative point.
 - **hunter_found:** `2026-03-20T18:59:41Z`
 - **fixer_started:** `2026-03-20T19:00:46Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T19:04:46Z`
+- **fix_summary:** `Added optional knownTools param to checkToolPermission. Wildcard now validates tool exists in registry. 2 tests. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
