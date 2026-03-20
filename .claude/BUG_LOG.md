@@ -251,6 +251,7 @@
 - **validator_completed:** `2026-03-15T13:02:00Z`
 - **validator_notes:** Confirmed fix present as the minimize branch of direction-aware ternary (lines 49-54). BUG-0052 layered direction-awareness on top without breaking this fix — `metricBefore - metricAfter` is the default (minimize) path. Maximize uses `metricAfter - metricBefore`. Both correct.
 - **archived:** `2026-03-15T13:03:00Z`
+- **test_generated:** `true`
 
 ---
 
@@ -634,6 +635,7 @@
 - **validator_completed:** `2026-03-15T14:17:00Z`
 - **validator_notes:** Confirmed readFileSync at line 24, getDocument({data}) at line 25. SSRF eliminated. Consistent with other loaders.
 - **archived:** `2026-03-15T14:18:00Z`
+- **test_generated:** `true`
 
 ---
 
@@ -1744,6 +1746,7 @@
 - **validator_completed:** `2026-03-19T19:40:00Z`
 - **validator_notes:** `Confirmed crypto.timingSafeEqual() correctly applied with Buffer.from() on both token and expected key. Length guard is required by the API and acceptable tradeoff. tsc clean. No regressions.`
 - **archived:** `2026-03-19T19:42:00Z`
+- **test_generated:** `true`
 
 ---
 
