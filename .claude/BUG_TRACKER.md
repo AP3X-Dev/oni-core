@@ -903,6 +903,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **category:** `api-contract-violation`
 - **reopen_count:** `0`
 - **branch:** `bugfix/BUG-0276`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/circuit-breaker-fallback-args.test.ts`
 - **description:** The circuit breaker fallback in `execution.ts` calls `fallback(state, err)` with two arguments, but `CircuitBreaker.execute()` in `circuit-breaker.ts:36` calls `this.config.fallback()` with zero arguments — the two invocation sites have incompatible signatures.
 - **context:** A user registering a fallback that expects `(state, error)` would have it work correctly when triggered from `execution.ts:160` but receive `undefined` for both parameters when triggered from the `CircuitBreaker` class directly. This makes the fallback contract unreliable depending on which code path triggers it.
 - **hunter_found:** `2026-03-19T23:05:00Z`
@@ -943,6 +945,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **category:** `type-error`
 - **reopen_count:** `0`
 - **branch:** `bugfix/BUG-0278`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/redis-checkpointer-corrupt.test.ts`
 - **description:** `JSON.parse(raw) as ONICheckpoint<S>` deserializes stored checkpoint data without any field validation, so a corrupted or truncated Redis entry yields a checkpoint object missing required fields that only blows up later.
 - **context:** The Postgres checkpointer (`src/checkpointers/postgres.ts:122`) has a full `deserialize()` method that validates each field and throws a typed `CheckpointCorruptError`. The Redis checkpointer skips all validation, so corruption in Redis silently produces a partial checkpoint that causes downstream failures far from the deserialization site.
 - **hunter_found:** `2026-03-19T23:05:00Z`
