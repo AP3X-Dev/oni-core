@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T06:08:11Z
+**Generated:** 2026-03-20T07:15:48Z
 **Period:** Last 24 hours
 
 ---
@@ -9,10 +9,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 39 |
-| Pending | 16 |
+| Active Bugs | 40 |
+| Pending | 12 |
 | In Progress | 0 |
-| Fixed (awaiting validation) | 12 |
+| Fixed (awaiting validation) | 17 |
 | Reopened | 1 |
 | Blocked | 10 |
 
@@ -22,68 +22,70 @@
 |----------|-------|
 | Critical | 1 |
 | High | 15 |
-| Medium | 21 |
+| Medium | 22 |
 | Low | 2 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 48 |
-| Bugs Fixed | 31 |
+| Bugs Found | 45 |
+| Bugs Fixed | 36 |
 | Bugs Verified | 12 |
 | Throughput | 12 bugs/day |
-| Mean Time to Fix | ~11.6h |
+| Mean Time to Fix | ~8h |
 | Mean Time to Verify | ~3h |
 | Reopen Rate | 6.3% |
 | First-Pass Fix Rate | 93.7% |
-| Queue Drain Rate | 0.25 |
-| Blocked Ratio | 25.6% |
+| Queue Drain Rate | 0.27 |
+| Blocked Ratio | 25.0% |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
 | `src/swarm/pool.ts` | 5 |
+| `packages/a2a/src/server/index.ts` | 3 |
 | `src/harness/memory/ranker.ts` | 3 |
-| `src/swarm/self-improvement/skill-evolver.ts` | 3 |
-| `src/pregel/streaming.ts` | 2 |
-| `src/models/anthropic.ts` | 2 |
+| `src/swarm/agent-node.ts` | 2 |
+| `src/pregel/index.ts` | 2 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| test-regression | 8 |
 | logic-bug | 7 |
-| missing-error-handling | 5 |
+| test-regression | 6 |
 | security (all variants) | 5 |
-| type-error | 4 |
+| type-error | 5 |
+| missing-error-handling | 4 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
 | Hunter | 2026-03-19T23:05:00Z | active |
-| Fixer | 2026-03-20T04:07:17Z | active |
+| Fixer | 2026-03-20T07:14:45Z | active |
 | Validator | 2026-03-20T04:07:00Z | active |
 
 ## Bottleneck Analysis
 
-**Queue drain rate critically low at 0.25** — the pipeline verified only 12 bugs against 48 found. The Hunter is producing far faster than the pipeline can close. Active bug count is stable at 39 only because the Fixer is keeping pace, but the Validator is the bottleneck: 12 bugs are fixed and awaiting validation. **Recommendation:** Consider pausing the Hunter to let the Validator catch up.
+**Validator is the bottleneck:** 17 bugs are fixed and awaiting validation, but only 12 were verified in 24h. The Fixer is outpacing the Validator. **Recommendation:** Prioritize validator runs to clear the fixed queue.
 
-**Blocked ratio at 25.6%** — 10 of 39 active bugs are blocked. 7 are reported as false positives by the Fixer (BUG-0235, BUG-0236, BUG-0244, BUG-0260, BUG-0262, BUG-0275, BUG-0277). These need Hunter re-evaluation or human triage to clear.
+**Queue drain rate critically low at 0.27** — 12 verified vs 45 found. The Hunter is producing far faster than the pipeline can close. **Recommendation:** Consider pausing the Hunter to let downstream agents catch up.
+
+**Blocked ratio at 25.0%** — 10 of 40 active bugs are blocked. 7 are false positives reported by the Fixer (BUG-0235, BUG-0236, BUG-0244, BUG-0260, BUG-0262, BUG-0275, BUG-0277). These need Hunter re-evaluation or human triage to clear.
 
 ## Trend (vs Previous Digest)
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
-| Active Bugs | 39 | 39 | → |
+| Active Bugs | 39 | 40 | ↑ |
 | Throughput | 12 | 12 | → |
 | Reopen Rate | 6.3% | 6.3% | → |
-| Blocked Ratio | 25.6% | 25.6% | → |
+| Blocked Ratio | 25.6% | 25.0% | → |
 
-Pipeline state is stable since last digest (~2h ago). No meaningful change in active count or throughput. `src/swarm/pool.ts` remains the top problem file for an eighth consecutive cycle — this module likely needs structural attention beyond individual bug fixes.
+Pipeline state is largely stable. Active count ticked up by 1 as the Hunter continues to outpace verification. `src/swarm/pool.ts` remains the top problem file — this module likely needs structural attention beyond individual bug fixes. Fixed queue grew from 12 to 17, confirming the Validator bottleneck.
 
 ## Blocked — Needs Human Attention
 
