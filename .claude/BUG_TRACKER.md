@@ -10,15 +10,15 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T18:08:16Z` |
+| **Last Fixer Pass** | `2026-03-20T18:11:23Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T20:00:00Z` |
 | **Last Security Scan** | `2026-03-22T20:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:58:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T04:30:00Z` (Cycle 168) |
+| **Last TestGen Run** | `2026-03-20T06:00:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T05:30:00Z` (Cycle 169) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -2495,19 +2495,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0357
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/models/ollama.ts`
 - **line:** `255`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0357`
 - **description:** Ollama in-stream error objects (`{"error":"...","done":true}`) are silently swallowed in the streaming path — the `error` field is never checked, and only a spurious zero-usage chunk is emitted.
 - **context:** The sync `chat` path (line 215) correctly checks for missing `message` and throws, but the streaming path reads `parsed["message"]` without checking `parsed["error"]`. An in-stream error like context-length-exceeded produces no error signal to the caller, who sees a normal stream end with 0 usage.
 - **hunter_found:** `2026-03-20T18:08:34Z`
 - **fixer_started:** `2026-03-20T18:09:06Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:11:23Z`
+- **fix_summary:** `Added error-field check in Ollama streaming loop. Error objects now throw instead of being silently swallowed. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2515,19 +2515,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0358
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/events/bus.ts`
 - **line:** `64`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0358`
 - **description:** `once()` captures `unsub` in a closure before it is assigned — if the event fires synchronously during `on()` registration (possible in test mocks or custom subclasses), `unsub` is `undefined` and the wrapper throws `TypeError: unsub is not a function`.
 - **context:** This is a classic uninitialized-closure race: `const unsub = this.on(type, (event) => { unsub(); ... })` — the handler references `unsub` before the assignment completes. Any synchronous event emission during registration crashes `once()`.
 - **hunter_found:** `2026-03-20T18:08:34Z`
 - **fixer_started:** `2026-03-20T18:09:06Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:11:23Z`
+- **fix_summary:** `Added called flag and optional chaining for unsub in once(). Handles synchronous emit during subscription. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2535,19 +2535,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0359
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/models/openai.ts`
 - **line:** `374`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0359`
 - **description:** When a streaming tool call delta re-sends the `id` field (which OpenAI can do in follow-up chunks), the `activeToolCalls` map entry is unconditionally overwritten, discarding the previously accumulated `name` and `args`.
 - **context:** The guard `if (tc["id"])` is used to detect "new" tool calls, but OpenAI may resend `id` in argument-continuation chunks. The overwrite resets `name` to `""` and `args` to the current chunk only, silently corrupting multi-chunk tool call accumulation.
 - **hunter_found:** `2026-03-20T18:08:34Z`
 - **fixer_started:** `2026-03-20T18:09:06Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:11:23Z`
+- **fix_summary:** `Added !activeToolCalls.has(index) guard. Re-sent id in follow-up chunks no longer creates duplicate tool calls. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2555,17 +2555,57 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0360
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/models/google.ts`
 - **line:** `435`
 - **category:** `api-contract-violation`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0360`
 - **description:** Gemini streaming `tool_call_start` chunks are emitted with fully-populated `args` instead of empty `{}`, violating the streaming contract where start carries empty args and end carries final args.
 - **context:** Consumers that display incremental tool call arguments (e.g., streaming UIs) will see the full args on `tool_call_start` and then nothing on `tool_call_end`, breaking the expected start-delta-end lifecycle. The sync path at line 358 does not have this issue.
 - **hunter_found:** `2026-03-20T18:08:34Z`
 - **fixer_started:** `2026-03-20T18:09:06Z`
+- **fixer_completed:** `2026-03-20T18:11:23Z`
+- **fix_summary:** `tool_call_start now emits args:{}, followed by tool_call_delta with actual args. Matches OpenAI/Anthropic pattern. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0361
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/swarm/compile-ext.ts`
+- **line:** `73`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0361`
+- **description:** `spawnAgent()` pushes a new conditional return edge directly into `_edgesBySource` without checking for duplicates, so calling `spawnAgent()` twice for the same agent ID (e.g., remove then re-spawn) creates duplicate conditional edges from that source.
+- **context:** `StateGraph.addEdge()` has duplicate detection (line 109 in graph.ts), but `spawnAgent()` bypasses `StateGraph` and writes directly to the runner's edge map. Duplicate edges can cause the router to evaluate the same conditional function twice per superstep, producing duplicate routing and potentially corrupted state.
+- **hunter_found:** `2026-03-20T18:08:34Z`
+- **fixer_started:** `2026-03-20T18:09:06Z`
+- **fixer_completed:** `2026-03-20T18:11:23Z`
+- **fix_summary:** `Duplicate-edge guard in spawnAgent via list.some() check before push. Repeated calls no longer create duplicates. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0362
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `examples/audit-system/verify-agent.ts`
+- **line:** `79`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `join(rootDir, file)` reads files using LLM-generated finding paths from `write_report` with no boundary check, allowing path traversal if the LLM reports a finding with a path like `../../etc/passwd`.
+- **context:** `runAuditAgent` stores findings with `f.file` set to whatever the LLM wrote; those strings are joined with `rootDir` and read directly. Unlike `read_file` in the audit agent which enforces a cwd boundary, the verify agent has no equivalent path validation.
+- **hunter_found:** `2026-03-20T18:12:53Z`
+- **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2574,18 +2614,38 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0361
-- **status:** `in-progress`
+### BUG-0363
+- **status:** `pending`
 - **severity:** `medium`
-- **file:** `src/swarm/compile-ext.ts`
-- **line:** `73`
+- **file:** `examples/audit-system/suppression.ts`
+- **line:** `47`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
 - **branch:** ``
-- **description:** `spawnAgent()` pushes a new conditional return edge directly into `_edgesBySource` without checking for duplicates, so calling `spawnAgent()` twice for the same agent ID (e.g., remove then re-spawn) creates duplicate conditional edges from that source.
-- **context:** `StateGraph.addEdge()` has duplicate detection (line 109 in graph.ts), but `spawnAgent()` bypasses `StateGraph` and writes directly to the runner's edge map. Duplicate edges can cause the router to evaluate the same conditional function twice per superstep, producing duplicate routing and potentially corrupted state.
-- **hunter_found:** `2026-03-20T18:08:34Z`
-- **fixer_started:** `2026-03-20T18:09:06Z`
+- **description:** `loadSuppressionsFromFile` uses `require("node:fs")` inside an ESM module context where `require` is not defined, causing a `ReferenceError` at runtime.
+- **context:** The entire codebase uses ESM (`import`/`export`). This function will crash when called, making suppression loading from files completely non-functional. Should use `import("node:fs")` or a top-level import instead.
+- **hunter_found:** `2026-03-20T18:12:53Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0364
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/tools/src/filesystem/index.ts`
+- **line:** `149`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `readdir` with `recursive: true` returns `Dirent` objects whose `name` property only contains the base filename (not the relative path from root) in Node < 20.1, so all nested files appear as if they are in the root directory.
+- **context:** The `list_directory` tool silently produces incorrect output for recursive listings on older Node versions — nested files lose their directory prefix, making the listing useless for navigation. Node 20.1+ added `Dirent.path` but the code reads only `entry.name`.
+- **hunter_found:** `2026-03-20T18:12:53Z`
+- **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
