@@ -611,6 +611,8 @@
 - **validator_completed:** `2026-03-15T14:17:00Z`
 - **validator_notes:** Confirmed guard at lines 91-96. Throwing is correct for malformed messages. No regressions.
 - **archived:** `2026-03-15T14:18:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/anthropic-tool-result-missing-id.test.ts`
 
 ---
 
@@ -1604,6 +1606,8 @@
 - **validator_completed:** `2026-03-16T05:15:00Z`
 - **validator_notes:** Confirmed randomUUID() from node:crypto replaces module-level msgCounter at line 9/19 of mailbox.ts. No shared mutable state remains — each createMessage() call generates a cryptographically unique ID. Fix on main via commits c55bef4/cd66c9c. Verified.
 - **archived:** `2026-03-16T05:16:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/mailbox-unique-ids.test.ts`
 
 ---
 
