@@ -115,6 +115,18 @@ export function createAgentNode<S extends BaseSwarmState>(
             ? rawHandoff
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             : new Handoff((rawHandoff as any).opts); // SAFE: duck-typing unknown agent return value
+
+          // BUG-0263: Guard against missing or non-string `to` field.
+          // When a handoff returns `{isHandoff: true, opts: {}}` (opts.to is
+          // undefined), we would silently misroute to `undefined`. Throw a
+          // descriptive error so the caller knows the handoff target is invalid.
+          if (typeof handoff.to !== "string" || handoff.to === "") {
+            throw new Error(
+              `Agent "${def.id}" returned a handoff with an invalid "to" target: ${JSON.stringify(handoff.to)}. ` +
+              `Handoff opts must include a non-empty string "to" field.`,
+            );
+          }
+
           // Fire onComplete for handoffs too
           await def.hooks?.onComplete?.(def.id, result);
           registry.markIdle(def.id);
