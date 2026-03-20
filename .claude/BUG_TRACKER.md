@@ -13,13 +13,13 @@
 | **Last Fixer Pass** | `2026-03-20T07:56:44Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T07:54:45Z` |
-| **Last Security Scan** | `2026-03-21T01:35:00Z` |
+| **Last Security Scan** | `2026-03-21T03:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T00:52:00Z` |
+| **Last TestGen Run** | `2026-03-20T08:10:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T12:30:00Z` |
-| **Last Supervisor Pass** | `2026-03-19T21:52:17Z` |
+| **Last Supervisor Pass** | `2026-03-21T00:05:00Z` |
 | **Total Found** | `109` |
 | **Total Pending** | `1` |
 | **Total In Progress** | `0` |
@@ -1040,6 +1040,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `packages/tools/src/__tests__/github-branch-validation.test.ts`
 
 ---
 
@@ -1060,6 +1062,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `packages/integrations/src/__tests__/adapter-prototype-pollution.test.ts`
 
 ---
 
