@@ -357,7 +357,7 @@ export class HooksEngine {
       /-O\s*\/tmp\/.*&&.*sh/,
       /LD_PRELOAD\s*=/,
       /chmod\s+.*\+s/,
-      /chmod\s+[0-7]*[4-7][0-7]{2}\s/,
+      /chmod\s+[0-7]*[4-7][0-7]{3}\s/,
       /\/dev\/tcp\//,
       /nc\s+.*-e/,
       /ncat\s+.*-e/,
@@ -366,6 +366,10 @@ export class HooksEngine {
       /perl\s+-e/,
       /ruby\s+-e/,
       /node\s+-e/,
+      // Base64-encoded payload injection (BUG-0296)
+      /base64\s+-d\s*\|\s*sh/,
+      /base64\s+-d\s*\|\s*bash/,
+      /base64\s+--decode\s*\|\s*(?:ba)?sh/,
     ];
 
     const sensitiveFilePatterns = [
