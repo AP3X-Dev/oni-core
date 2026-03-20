@@ -13,7 +13,7 @@
 | **Last Fixer Pass** | `2026-03-20T09:06:39Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T09:08:43Z` |
-| **Last Security Scan** | `2026-03-21T08:45:00Z` |
+| **Last Security Scan** | `2026-03-21T09:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
