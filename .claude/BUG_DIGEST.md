@@ -1,7 +1,7 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T16:14:00Z
-**Period:** Last 24 hours (2026-03-19T16:14:00Z to 2026-03-20T16:14:00Z)
+**Generated:** 2026-03-20T16:37:00Z
+**Period:** Last 24 hours (2026-03-19T16:37:00Z to 2026-03-20T16:37:00Z)
 
 ---
 
@@ -35,8 +35,8 @@
 | Throughput | 0 bugs/day |
 | Mean Time to Fix | n/a |
 | Mean Time to Verify | n/a |
-| Reopen Rate | 0% |
-| First-Pass Fix Rate | n/a |
+| Reopen Rate | 25% (historical, 6/24 archived bugs with reopens) |
+| First-Pass Fix Rate | 75% (historical) |
 | Queue Drain Rate | n/a (no activity) |
 | Blocked Ratio | 31.4% |
 
@@ -64,17 +64,17 @@
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-20T05:23:00Z | STALE (10.8h ago) |
-| Fixer | 2026-03-20T12:36:39Z | STALE (3.6h ago) |
-| Validator | 2026-03-20T04:07:00Z | STALE (12.1h ago) |
+| Hunter | 2026-03-20T05:23:00Z | STALE (11.2h ago) |
+| Fixer | 2026-03-20T12:36:39Z | STALE (4.0h ago) |
+| Validator | 2026-03-20T04:07:00Z | STALE (12.5h ago) |
 
 ## Bottleneck Analysis
 
 **PIPELINE FULLY STALLED:** Zero bugs moved through any stage in the last 24 hours.
 
 - **Validator is the critical bottleneck:** 35 bugs sit in `fixed` status with no validation activity for 12+ hours. This queue has not shrunk since the previous digest.
-- **Hunter offline:** No new bugs discovered. Last scan was 10.8 hours ago.
-- **Fixer idle:** No pending bugs to work on (queue empty), but last pass was 3.6 hours ago.
+- **Hunter offline:** No new bugs discovered. Last scan was 11.2 hours ago.
+- **Fixer idle:** No pending bugs to work on (queue empty), but last pass was 4.0 hours ago.
 - **High Blocked Ratio (31.4%):** 16 of 51 active bugs are blocked, many confirmed as false positives needing manual closure.
 
 **Recommended action:** Restart Validator immediately to clear the 35-bug backlog. Restart Hunter to resume scanning. Triage blocked bugs — at least 9 are confirmed false positives that can be closed.
@@ -83,13 +83,13 @@
 
 | Metric | Previous | Today | Direction |
 |--------|----------|-------|-----------|
-| Active Bugs | 52 | 51 | ↓ (-1) |
-| Throughput | 5 bugs/day | 0 bugs/day | ↓ |
-| Reopen Rate | 0% | 0% | → |
-| Blocked Ratio | 30.8% | 31.4% | ↑ |
+| Active Bugs | 51 | 51 | → |
+| Throughput | 0 bugs/day | 0 bugs/day | → |
+| Reopen Rate | 0% | 25% | ↑ (historical recalc) |
+| Blocked Ratio | 31.4% | 31.4% | → |
 | Fixed Queue | 35 | 35 | → |
 
-**Assessment:** Pipeline velocity has dropped to zero — a full stall compared to 5 verified bugs/day in the previous period. Active count dropped by 1 (likely a meta correction). The fixed queue of 35 bugs has not moved. All three agents appear dormant. Immediate restart of Validator and Hunter is needed.
+**Assessment:** Pipeline remains fully stalled. No movement since the previous digest. The 35-bug fixed queue and 16 blocked bugs are unchanged. All three agents remain dormant. Immediate intervention required to restart the Validator.
 
 ## Blocked — Needs Human Attention
 
