@@ -10,7 +10,7 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T17:25:39Z` |
+| **Last Fixer Pass** | `2026-03-20T17:29:19Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T17:25:00Z` |
 | **Last Security Scan** | `2026-03-22T17:10:00Z` |
@@ -18,7 +18,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T12:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T08:00:00Z` (Cycle 161) |
+| **Last Git Manager Pass** | `2026-03-20T17:27:00Z` (Cycle 162) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -1715,19 +1715,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0318
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/lsp/index.ts`
 - **line:** `207`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0318`
 - **description:** `LSPManager.getClientsForFile` deletes the `spawning` map entry immediately after `await spawnTask` resolves, so a concurrent caller arriving between the `spawning.get(key)` check and the delete will miss the in-flight entry and spawn a duplicate LSP server.
 - **context:** Two concurrent `touchFile()` calls for the same file type will race, spawning two LSP server processes for the same server ID; the first is orphaned and leaked when the second overwrites it in `this.clients`.
 - **hunter_found:** `2026-03-20T17:24:49Z`
 - **fixer_started:** `2026-03-20T17:26:35Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:29:19Z`
+- **fix_summary:** `Moved spawning.delete to finally block in spawnClient. Concurrent callers await inflight promise instead of spawning duplicates. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1735,19 +1735,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0319
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/inspect.ts`
 - **line:** `134`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0319`
 - **description:** `detectCycles` adds nodes to `visited` before fully exploring neighbors, causing a node that participates in multiple cycles to be skipped on re-entry, silently missing the second cycle.
 - **context:** `buildGraphDescriptor` can return an incomplete `cycles` array, causing `topoOrder` to be non-null for graphs that actually contain cycles, which downstream consumers (visualizers, validators) will incorrectly treat as a valid DAG.
 - **hunter_found:** `2026-03-20T17:24:49Z`
 - **fixer_started:** `2026-03-20T17:26:35Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:29:19Z`
+- **fix_summary:** `Separated DFS into inStack and visited sets. Nodes in multiple cycles no longer prematurely skipped. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1755,19 +1755,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0320
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `191`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0320`
 - **description:** Stale index cleanup calls (`void this.client.zrem(...)`) at lines 191, 200, and 207 are fire-and-forget with no `.catch()`, silently discarding any Redis connection error or WRONGTYPE error.
 - **context:** A transient Redis failure during `list()` leaves stale sorted-set index entries permanently, causing `list()` to return increasingly incorrect results over time as the index diverges from actual data keys.
 - **hunter_found:** `2026-03-20T17:24:49Z`
 - **fixer_started:** `2026-03-20T17:26:35Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:29:19Z`
+- **fix_summary:** `Added .catch() with console.warn to 3 fire-and-forget zrem calls in Redis store. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1775,19 +1775,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0321
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/stores/src/postgres/index.ts`
 - **line:** `125`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0321`
 - **description:** Expired-row DELETE calls in `get()` (line 125) and `list()` (line 185) use `void this.client.query(...)` with no `.catch()`, silently swallowing any query error.
 - **context:** A connection-pool error or deadlock during background cleanup is silently dropped, accumulating expired rows indefinitely; in older Node versions the unhandled rejection may crash the process.
 - **hunter_found:** `2026-03-20T17:24:49Z`
 - **fixer_started:** `2026-03-20T17:26:35Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:29:19Z`
+- **fix_summary:** `Added .catch() with console.warn to 2 fire-and-forget DELETE queries in Postgres store. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1795,19 +1795,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0322
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/hitl/interrupt.ts`
 - **line:** `75`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0322`
 - **description:** `_clearInterruptContext` calls `AsyncLocalStorage.enterWith(undefined as any)` to clear context, but `enterWith(undefined)` behavior is implementation-defined and may not reliably make subsequent `getStore()` return `undefined` across Node.js versions.
 - **context:** A subsequent `interrupt()` call in the same async context after clearing may see stale context from the previous invocation instead of getting the expected `undefined`, causing it to consume a `resumeValue` intended for a different node execution.
 - **hunter_found:** `2026-03-20T17:24:49Z`
 - **fixer_started:** `2026-03-20T17:26:35Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:29:19Z`
+- **fix_summary:** `Replaced enterWith(undefined as any) with ALS.disable() for proper context clearing. 25 HITL tests pass, tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``

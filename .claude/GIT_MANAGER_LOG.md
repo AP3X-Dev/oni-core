@@ -1,24 +1,3 @@
-[2026-03-20T23:50:00Z] Step 3: No branches eligible for deletion. 0/5 cap used. Cumulative deletions: ~93.
-[2026-03-20T23:50:00Z] Step 4: No in-progress branches. No stale warnings.
-[2026-03-20T23:50:00Z] Step 5: BUG-0289: 1 conflict marker (hooks-engine.ts dangerousBashPatterns; RETURNED after Cycle 153 clear — now Cycles 127-152, skip 153, 154). BUG-0292/0293/0294/0295: 0 conflicts.
-[2026-03-20T23:50:00Z] Step 5b: BUG-0289 skip rule in effect. All other fixed branches have 0 conflicts — no urgent rebase needed. Rebase cap: 0/1 used.
-[2026-03-20T23:50:00Z] Step 6: OVERLAP: src/swarm/compile-ext.ts (BUG-0292, BUG-0295). OVERLAP: src/inspect.ts (BUG-0294, BUG-0295). Merge order carry-forward.
-[2026-03-20T23:50:00Z] Step 7: No stale states. HEAD confirmed on main.
-[2026-03-20T23:50:00Z] Step 8: Cycle 154 % 6 != 0. Skip git gc. Next gc: Cycle 156.
-[2026-03-20T23:50:00Z] Step 9: Updated BUG_TRACKER.md Last Git Manager Pass -> 2026-03-20T23:50:00Z (Cycle 154). BRANCH_MAP.md updated to Cycle 154. Log trimmed to 150 lines.
-[2026-03-20T23:50:00Z] ALERT (CARRY): BUG-0246 status=blocked, reopen_count=3, 342 commits behind main. Human decision required.
-[2026-03-20T23:50:00Z] ALERT (CARRY): BUG-0286 branch has SafetyGate fix but tracker has no branch field. Fixer/Supervisor should reconcile.
-[2026-03-20T23:50:00Z] ALERT (CARRY): BUG-0293 tracker branch field says bugfix/BUG-0293-fix but actual branch is bugfix/BUG-0293.
-[2026-03-20T23:50:00Z] ALERT (CARRY): BUG-0289 rebase blocked (linter auto-reverts resolved file, proven Cycle 127). Conflict RETURNED after Cycle 153 clear — merge-tree again reports 1 marker in hooks-engine.ts dangerousBashPatterns. Manual intervention required.
-[2026-03-20T23:50:00Z] BRANCH COUNT: 7 active (2 blocked, 5 fixed/awaiting-Validator). 0 deletions this cycle. Cumulative deletions: ~93.
-[2026-03-20T23:50:00Z] === Git Manager Cycle 154 End ===
-[2026-03-21T00:10:00Z] === Git Manager Cycle 155 Start ===
-[2026-03-21T00:10:00Z] Pre-flight: TRACKER_LOCK detected — held by HUNTER since 2026-03-20T16:51:07Z (stale >7h). Git Manager is read-only on tracker; proceeding with branch audit. In-progress=0, In-validation=0. No skip conditions.
-[2026-03-21T00:10:00Z] Step 1: Found 7 bugfix branches: BUG-0246 (2026-03-19), BUG-0286 (2026-03-20), BUG-0289 (2026-03-20), BUG-0292 (2026-03-20), BUG-0293 (2026-03-20), BUG-0294 (2026-03-20), BUG-0295 (2026-03-20). Unchanged from Cycle 154.
-[2026-03-21T00:10:00Z] Step 2: Branch map built. BUG-0246=blocked(+1/345 behind). BUG-0286=blocked-discrepancy(+1/486 behind). BUG-0289=fixed/awaiting-Validator(+1/486 behind, bash blocklist — merge-tree 1 conflict marker hooks-engine.ts dangerousBashPatterns; rebase skip rule active per Cycle 127). BUG-0292=fixed/awaiting-Validator(+1/214 behind). BUG-0293=fixed/awaiting-Validator(+1/203 behind). BUG-0294=fixed/awaiting-Validator(+1/131 behind). BUG-0295=fixed/awaiting-Validator(+1/130 behind).
-[2026-03-21T00:10:00Z] Step 3: No branches eligible for deletion. 0/5 cap used. Cumulative deletions: ~93.
-[2026-03-21T00:10:00Z] Step 4: No in-progress branches. No stale warnings.
-[2026-03-21T00:10:00Z] Step 5: BUG-0289: 1 conflict marker (hooks-engine.ts dangerousBashPatterns; cleared Cycle 153, RETURNED Cycle 154, confirmed Cycle 155). BUG-0292/0293/0294/0295: 0 conflicts.
 [2026-03-21T00:10:00Z] Step 5b: BUG-0289 skip rule in effect per Cycle 127. All other fixed branches have 0 conflicts — no urgent rebase needed. Rebase cap: 0/1 used.
 [2026-03-21T00:10:00Z] Step 6: OVERLAP: src/swarm/compile-ext.ts (BUG-0292, BUG-0295). OVERLAP: src/inspect.ts (BUG-0294, BUG-0295). Merge order carry-forward.
 [2026-03-21T00:10:00Z] Step 7: No stale states. HEAD confirmed on main.
@@ -148,3 +127,24 @@
 [2026-03-21T08:00:00Z] STALE WARNING: BUG-0313/0314/0315/0316/0317 all in-progress since 2026-03-20T17:20:49Z (~14.6h). Fixer worktrees exist but no commits yet. Monitor for progress.
 [2026-03-21T08:00:00Z] BRANCH COUNT: 20 named (2 blocked, 18 fixed/awaiting-Validator) + 5 active worktrees (2 fixed, 3 in-progress). 0 deletions this cycle. Cumulative deletions: ~93.
 [2026-03-21T08:00:00Z] === Git Manager Cycle 161 End ===
+[2026-03-20T17:27:00Z] === Git Manager Cycle 162 Start ===
+[2026-03-20T17:27:00Z] Pre-flight: No TRACKER_LOCK. Meta: In-progress=0, In-validation=0. Last Fixer Pass=2026-03-20T17:25:39Z (BUG-0313/0314/0315/0316/0317 all marked fixed). Last Validator Pass=2026-03-20T04:07:00Z. 4 active worktrees (BUG-0300 agent-a4341204, BUG-0297-0298-0299 agent-a5b5d972, BUG-0313-0317 agent-a245d605, BUG-0315-0316 agent-a42e987a). Worktree agent-a42a1d19 released since Cycle 161; BUG-0314 now regular branch. Proceeding.
+[2026-03-20T17:27:00Z] Step 1: Found 23 bugfix branches: BUG-0246, BUG-0286, BUG-0289, BUG-0292, BUG-0293, BUG-0294, BUG-0295, BUG-0296, BUG-0297-0298-0299, BUG-0300, BUG-0301, BUG-0302-0306, BUG-0303, BUG-0304, BUG-0305, BUG-0307, BUG-0308, BUG-0310-0309, BUG-0311, BUG-0312, BUG-0313-0317, BUG-0314, BUG-0315-0316. +3 vs Cycle 161 (BUG-0313-0317/BUG-0315-0316 gained 1 commit each; BUG-0314 is now regular branch; agent-a42a1d19 worktree released).
+[2026-03-20T17:27:00Z] Step 2: Branch map built. BUG-0246=blocked(+1/367). BUG-0286=blocked-discrepancy(+1/508). BUG-0289=fixed/awaiting-Validator(+1/508, CONFLICT hooks-engine.ts, Cycles 127-162, rebase skip). BUG-0292=fixed/awaiting-Validator(+1/236, 0 conflicts). BUG-0293=fixed/awaiting-Validator(+1/225, 0 conflicts). BUG-0294=fixed/awaiting-Validator(+1/4, 0 conflicts). BUG-0295=fixed/awaiting-Validator(+1/152, 0 conflicts). BUG-0296=fixed/awaiting-Validator(+1/508, 0 conflicts). BUG-0297-0298-0299=fixed/awaiting-Validator(+1/508, CONFLICT streaming.ts, in worktree). BUG-0300=fixed/awaiting-Validator(+1/17, 0 conflicts, in worktree). BUG-0301=fixed/awaiting-Validator(+1/508, 0 conflicts). BUG-0302-0306=fixed/awaiting-Validator(+1/508, 0 conflicts). BUG-0303=fixed/awaiting-Validator(+1/508, 0 conflicts). BUG-0304=fixed/awaiting-Validator(+1/508, 0 conflicts). BUG-0305=fixed/awaiting-Validator(+1/508, 0 conflicts). BUG-0307=fixed/awaiting-Validator(+1/508, 0 conflicts). BUG-0308=fixed/awaiting-Validator(+1/508, 0 conflicts). BUG-0310-0309=fixed/awaiting-Validator(+1/508, 0 conflicts). BUG-0311=fixed/awaiting-Validator(+1/508, 0 conflicts). BUG-0312=fixed/awaiting-Validator(+1/508, 0 conflicts). BUG-0313-0317=fixed/awaiting-Validator(+1/508, 0 conflicts, worktree-locked). BUG-0314=fixed/awaiting-Validator(+1/3->0 post-rebase, 0 conflicts). BUG-0315-0316=fixed/awaiting-Validator(+1/508, 0 conflicts, worktree-locked).
+[2026-03-20T17:27:00Z] Step 3: No branches eligible for deletion. BUG-0313-0317 and BUG-0315-0316 are worktree-locked. All others fixed/awaiting-Validator or blocked. 0/5 cap used. Cumulative deletions: ~93.
+[2026-03-20T17:27:00Z] Step 4: No in-progress branches. No stale warnings.
+[2026-03-20T17:27:00Z] Step 5: BUG-0289: 1 conflict (hooks-engine.ts dangerousBashPatterns; persistent Cycles 127-162). BUG-0297-0298-0299: 1 conflict (src/pregel/streaming.ts). All others: 0 conflicts.
+[2026-03-20T17:27:00Z] Step 5b: REBASE: bugfix/BUG-0314 rebased onto main (was 3 behind, now 0 behind). BUG-0300 skipped (in active worktree agent-a4341204). BUG-0297-0298-0299 skipped (in active worktree agent-a5b5d972). BUG-0313-0317 and BUG-0315-0316 skipped (worktree-locked). BUG-0289 skip rule active per Cycle 127. Rebase cap: 1/1 used.
+[2026-03-20T17:27:00Z] Step 6: OVERLAP (carry): src/swarm/compile-ext.ts (BUG-0292, BUG-0295). OVERLAP (carry): src/inspect.ts (BUG-0294, BUG-0295). OVERLAP (carry): src/pregel/streaming.ts (BUG-0297-0298-0299, conflict). OVERLAP (carry): src/models/anthropic.ts (BUG-0304, BUG-0305). OVERLAP (carry): src/mcp/transport.ts (BUG-0296, BUG-0310-0309). NEW OVERLAP: src/swarm/factories.ts (BUG-0311, BUG-0314 — merge BUG-0311 before BUG-0314). BROAD OVERLAP: BUG-0313-0317 and BUG-0315-0316 touch ~170 files — Validator must merge all narrow-scope branches first. Merge orders: BUG-0292 before BUG-0295; BUG-0294 before BUG-0295; BUG-0304 before BUG-0305; BUG-0296 before BUG-0310-0309; BUG-0311 before BUG-0314; all narrow-scope before BUG-0313-0317 and BUG-0315-0316.
+[2026-03-20T17:27:00Z] Step 7: No stale states. HEAD confirmed on main.
+[2026-03-20T17:27:00Z] Step 8: Cycle 162 % 6 = 0 — RUN git gc --auto. Completed successfully.
+[2026-03-20T17:27:00Z] Step 9: Updated BUG_TRACKER.md Last Git Manager Pass -> 2026-03-20T17:27:00Z (Cycle 162). BRANCH_MAP.md updated to Cycle 162. Log trimmed to 150 lines.
+[2026-03-20T17:27:00Z] ALERT (CARRY): BUG-0246 status=blocked, reopen_count=3, 367 commits behind main. Human decision required.
+[2026-03-20T17:27:00Z] ALERT (CARRY): BUG-0286 branch has SafetyGate fix but tracker has no branch field. Fixer/Supervisor should reconcile.
+[2026-03-20T17:27:00Z] ALERT (CARRY): BUG-0293 tracker branch field says bugfix/BUG-0293-fix but actual branch is bugfix/BUG-0293.
+[2026-03-20T17:27:00Z] ALERT (CARRY): BUG-0289 rebase blocked (linter auto-reverts, proven Cycle 127). Conflict persistent Cycles 127-162. Manual intervention required.
+[2026-03-20T17:27:00Z] ALERT (CARRY): BUG-0297-0298-0299 has merge conflict in src/pregel/streaming.ts — 508 commits behind. Human or Fixer intervention required before Validator can merge.
+[2026-03-20T17:27:00Z] NEW OVERLAP: src/swarm/factories.ts now touched by both BUG-0311 and BUG-0314 — merge BUG-0311 first.
+[2026-03-20T17:27:00Z] BROAD OVERLAP ALERT: BUG-0313-0317 and BUG-0315-0316 each touch ~170 files (nearly entire codebase). Validator must sequence: merge all narrow-scope fixed branches before these two.
+[2026-03-20T17:27:00Z] BRANCH COUNT: 23 named (2 blocked, 21 fixed/awaiting-Validator) + 4 active worktrees (all fixed). 0 deletions this cycle. Cumulative deletions: ~93.
+[2026-03-20T17:27:00Z] === Git Manager Cycle 162 End ===
