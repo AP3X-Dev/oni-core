@@ -12,8 +12,8 @@
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
 | **Last Fixer Pass** | `2026-03-20T18:11:23Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
-| **Last Digest Run** | `2026-03-20T20:00:00Z` |
-| **Last Security Scan** | `2026-03-22T20:00:00Z` |
+| **Last Digest Run** | `2026-03-20T23:59:00Z` |
+| **Last Security Scan** | `2026-03-20T20:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -2595,7 +2595,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0362
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `examples/audit-system/verify-agent.ts`
 - **line:** `79`
@@ -2605,7 +2605,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `join(rootDir, file)` reads files using LLM-generated finding paths from `write_report` with no boundary check, allowing path traversal if the LLM reports a finding with a path like `../../etc/passwd`.
 - **context:** `runAuditAgent` stores findings with `f.file` set to whatever the LLM wrote; those strings are joined with `rootDir` and read directly. Unlike `read_file` in the audit agent which enforces a cwd boundary, the verify agent has no equivalent path validation.
 - **hunter_found:** `2026-03-20T18:12:53Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T18:14:54Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2615,7 +2615,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0363
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `examples/audit-system/suppression.ts`
 - **line:** `47`
@@ -2625,7 +2625,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `loadSuppressionsFromFile` uses `require("node:fs")` inside an ESM module context where `require` is not defined, causing a `ReferenceError` at runtime.
 - **context:** The entire codebase uses ESM (`import`/`export`). This function will crash when called, making suppression loading from files completely non-functional. Should use `import("node:fs")` or a top-level import instead.
 - **hunter_found:** `2026-03-20T18:12:53Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T18:14:54Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2635,7 +2635,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0364
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `packages/tools/src/filesystem/index.ts`
 - **line:** `149`
@@ -2645,7 +2645,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `readdir` with `recursive: true` returns `Dirent` objects whose `name` property only contains the base filename (not the relative path from root) in Node < 20.1, so all nested files appear as if they are in the root directory.
 - **context:** The `list_directory` tool silently produces incorrect output for recursive listings on older Node versions — nested files lose their directory prefix, making the listing useless for navigation. Node 20.1+ added `Dirent.path` but the code reads only `entry.name`.
 - **hunter_found:** `2026-03-20T18:12:53Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T18:14:54Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
