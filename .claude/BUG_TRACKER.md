@@ -10,15 +10,15 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T18:49:55Z` |
+| **Last Fixer Pass** | `2026-03-20T18:55:03Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T18:37:51Z` |
-| **Last Security Scan** | `2026-03-20T22:35:00Z` (Cycle 143 — no new source code, no new findings) |
+| **Last Security Scan** | `2026-03-20T22:50:00Z` (Cycle 144 — no new source code, no new findings) |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T08:00:00Z` (no new tests — no qualifying bugs without test_generated:true meeting criteria) |
-| **Last Git Manager Pass** | `2026-03-21T05:00:00Z` (Cycle 175) |
+| **Last Git Manager Pass** | `2026-03-21T09:00:00Z` (Cycle 176) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `297` |
 | **Total Pending** | `2` |
@@ -3015,19 +3015,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0383
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/harness/skill-loader.ts`
 - **line:** `268`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0383-0384`
 - **description:** `invoke()` interpolates `args` into the `<skill-instructions>` XML block without calling `escXml()`, so a caller-controlled `args` value containing `</skill-instructions>` can break out of the XML wrapper and inject arbitrary content into the agent's context.
 - **context:** `escXml()` is applied to `skill.name` and `skill.description` just above (fixed by an earlier bug for name), but was not applied to `args`, which may originate from user input or LLM-generated tool calls. This is a distinct field from the archived BUG in BUG_LOG (which fixed name injection at line 259).
 - **hunter_found:** `2026-03-20T18:51:59Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T18:52:41Z`
+- **fixer_completed:** `2026-03-20T18:55:03Z`
+- **fix_summary:** `Added escapeXml() for args in invoke(). Refactored getDescriptionsForContext to use shared helper. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -3035,16 +3035,56 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0384
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/skill-loader.ts`
 - **line:** `52`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0383-0384`
 - **description:** `parseFrontmatter` splits on `"\n"` only, leaving trailing `\r` in parsed key/value pairs on CRLF-encoded SKILL.md files, causing `skills.get(name)` lookups to fail silently.
 - **context:** The same CRLF issue was just fixed in `manifest.ts` (BUG-0373/0381) but `parseFrontmatter` in `skill-loader.ts` was not updated in parallel. On Windows or with `core.autocrlf=true`, every parsed skill name and metadata field carries an invisible `\r`.
 - **hunter_found:** `2026-03-20T18:51:59Z`
+- **fixer_started:** `2026-03-20T18:52:41Z`
+- **fixer_completed:** `2026-03-20T18:55:03Z`
+- **fix_summary:** `parseFrontmatter splits on /\r?\n/ instead of "\n" for CRLF support. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0385
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/swarm/self-improvement/manifest.ts`
+- **line:** `45`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0385`
+- **description:** The goal-line regex `direction:\s*(\S+)` captures a trailing comma (e.g., `"minimize,"` instead of `"minimize"`) when the goal line uses comma-separated fields, causing the validation guard to trigger and silently default to `"minimize"`.
+- **context:** The BUG-0381 fix addressed CRLF endings but did not fix the direction capture pattern. Any goal line with content after the direction value (e.g., `direction: minimize, weight: 1.0`) will have its direction silently overridden to the default.
+- **hunter_found:** `2026-03-20T18:51:59Z`
+- **fixer_started:** `2026-03-20T18:52:41Z`
+- **fixer_completed:** `2026-03-20T18:55:03Z`
+- **fix_summary:** `Changed regex capture from \S+ to [^\s,]+ excluding commas from metric/direction values. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0386
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/self-improvement/manifest.ts`
+- **line:** `45`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0385`
+- **description:** The BUG-0385 fix removed the direction-value validation guard (`rawDir !== "minimize" && rawDir !== "maximize"`) and now casts the parsed value directly via `m[3] as "minimize" | "maximize"`, so invalid direction values (e.g., `direction: up`) silently pass the type-cast without warning or defaulting.
+- **context:** Regression from BUG-0385 fix. The original defensive validation that warned and defaulted to `"minimize"` was intentional for malformed manifests. Without it, any typo or invalid value in the direction field produces an invalid `ManifestGoal` at runtime with no error signal.
+- **hunter_found:** `2026-03-20T18:55:38Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
@@ -3054,17 +3094,17 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0385
+### BUG-0387
 - **status:** `pending`
 - **severity:** `medium`
-- **file:** `src/swarm/self-improvement/manifest.ts`
-- **line:** `45`
-- **category:** `logic-bug`
+- **file:** `src/events/types.ts`
+- **line:** `100`
+- **category:** `api-contract-violation`
 - **reopen_count:** `0`
 - **branch:** ``
-- **description:** The goal-line regex `direction:\s*(\S+)` captures a trailing comma (e.g., `"minimize,"` instead of `"minimize"`) when the goal line uses comma-separated fields, causing the validation guard to trigger and silently default to `"minimize"`.
-- **context:** The BUG-0381 fix addressed CRLF endings but did not fix the direction capture pattern. Any goal line with content after the direction value (e.g., `direction: minimize, weight: 1.0`) will have its direction silently overridden to the default.
-- **hunter_found:** `2026-03-20T18:51:59Z`
+- **description:** `PermissionRepliedEvent` is missing the `agentName` field that its paired `PermissionAskedEvent` includes, making it impossible to correlate a permission reply back to the requesting agent without external state.
+- **context:** The two events form a request/reply pair for interactive tool permission decisions. Audit logs and permission-tracking consumers cannot attribute the decision to the correct agent since the reply only carries `toolName`, `decision`, and `timestamp`.
+- **hunter_found:** `2026-03-20T18:55:38Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
