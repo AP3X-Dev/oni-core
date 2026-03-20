@@ -10,20 +10,20 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-20T07:34:35Z` |
+| **Last Fixer Pass** | `2026-03-20T07:48:33Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T04:05:38Z` |
 | **Last Security Scan** | `2026-03-21T01:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T10:15:00Z` |
+| **Last TestGen Run** | `2026-03-20T11:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T03:40:43Z` |
 | **Last Supervisor Pass** | `2026-03-19T21:52:17Z` |
 | **Total Found** | `109` |
-| **Total Pending** | `5` |
+| **Total Pending** | `1` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `22` |
+| **Total Fixed** | `27` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `12` |
@@ -758,19 +758,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0269
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/swarm/snapshot.ts`
 - **line:** `174`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0269`
 - **description:** `deepEqual` cycle-detection uses two independent `WeakSet`s checked with AND, so an object seen in `seenA` from one comparison pair and an unrelated object seen in `seenB` from a different pair can both pass the check, returning `true` for non-equal cyclic structures.
 - **context:** The correct approach tracks `(a, b)` pairs together (e.g., a `Map<object, Set<object>>`). As written, cross-pair contamination in the WeakSets produces false equality for cyclic agent state snapshots, defeating change detection in the swarm snapshot system.
 - **hunter_found:** `2026-03-19T20:18:00Z`
-- **fixer_started:** `2026-03-20T07:35:29Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:48:33Z`
+- **fixer_completed:** `2026-03-20T07:48:33Z`
+- **fix_summary:** `Replaced WeakSets with Map-based pair tracking in deepEqual.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -778,19 +778,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0270
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/pdf.ts`
 - **line:** `24`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0270`
 - **description:** `readFile(source)` is called outside any try/catch, so filesystem errors (ENOENT, EACCES) propagate as raw Node.js errors with no loader-level context.
 - **context:** The try/catch at line 16 only guards the dynamic `import()` of pdfjs-dist. A missing or inaccessible PDF file produces a raw `ENOENT` with no indication it came from the PDF loader. Same pattern in `docx.ts:20` and `csv.ts:10`.
 - **hunter_found:** `2026-03-19T20:18:00Z`
-- **fixer_started:** `2026-03-20T07:35:29Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:48:33Z`
+- **fixer_completed:** `2026-03-20T07:48:33Z`
+- **fix_summary:** `Wrapped readFile in try/catch across pdf/docx/csv loaders.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -964,19 +964,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0279
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/self-improvement/manifest.ts`
 - **line:** `50`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0279`
 - **description:** The regex-captured `m[3]` value is cast to `"minimize" | "maximize"` without validating the parsed string is one of those values, so a MANIFEST.md with `direction: sideways` is silently accepted.
 - **context:** Downstream code in `pattern-learner.ts` uses `r.direction ?? "minimize"` for gain calculation sign logic. An invalid direction value passes TypeScript's narrowing but produces incorrect metric evaluation at runtime, potentially inverting optimization decisions.
 - **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** `2026-03-20T07:35:29Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:48:33Z`
+- **fixer_completed:** `2026-03-20T07:48:33Z`
+- **fix_summary:** `Validated direction field in manifest.ts parser.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -984,17 +984,57 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0280
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/guardrails/filters.ts`
 - **line:** `128`
 - **category:** `api-contract-violation`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0280`
 - **description:** When a filter returns `blocked: true` with a `redacted` value, the redaction path continues processing but the final return omits `blockedBy` and `reason` fields, losing audit information about which filter triggered the rewrite.
 - **context:** Callers that log or audit filter decisions lose visibility into redaction events. The block path (line 135) correctly includes `blockedBy` and `reason`, but the redact-and-continue path at line 129 drops that information from the return at line 143.
 - **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** `2026-03-20T07:35:29Z`
+- **fixer_started:** `2026-03-20T07:48:33Z`
+- **fixer_completed:** `2026-03-20T07:48:33Z`
+- **fix_summary:** `Added blockedBy and reason to redact-and-continue path in filters.ts.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0281
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/swarm/pool.ts`
+- **line:** `196`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0281`
+- **description:** `agent.hooks?.onStart?.()` is awaited without a try/catch, so a throwing `onStart` hook aborts the slot run entirely and bypasses the retry loop.
+- **context:** The `onError` hook handles retry exhaustion, but an `onStart` exception propagates directly to the `invoke()` caller with no retry attempt and no hook-level error isolation. The queued work is never attempted.
+- **hunter_found:** `2026-03-19T23:05:00Z`
+- **fixer_started:** `2026-03-20T07:48:33Z`
+- **fixer_completed:** `2026-03-20T07:48:33Z`
+- **fix_summary:** `Wrapped onStart hook in try/catch in pool.ts.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0282
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/tools/src/github/index.ts`
+- **line:** `195`
+- **category:** `security-injection`
+- **description:** `createPrTool` passes `head` and `base` branch names directly to the GitHub API body without validation. `owner` and `repo` are sanitized via `GITHUB_SLUG_RE`, but `head` (which supports cross-repo `owner:branch` syntax) and `base` have no equivalent check.
+- **context:** An LLM-supplied `head` value containing a malformed or specially crafted reference (e.g. excessively long, containing CRLF characters, or an unexpected cross-repo `owner:branch` format with embedded special characters) is forwarded verbatim to the GitHub REST API. The absence of client-side validation is inconsistent with the validated `owner`/`repo` paths and creates a latent injection surface for future callers who may compose URLs or log these values. Fix: validate `head` and `base` against a branch name regex (allowing `owner:branch` for cross-repo PRs, but rejecting control characters, CRLF, and oversized values). OWASP A03:2021 - Injection.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T14:20:00Z`
+- **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1003,18 +1043,38 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0281
-- **status:** `in-progress`
+### BUG-0283
+- **status:** `pending`
 - **severity:** `medium`
-- **file:** `src/swarm/pool.ts`
-- **line:** `196`
-- **category:** `missing-error-handling`
+- **file:** `packages/integrations/src/adapter/index.ts`
+- **line:** `42`
+- **category:** `security-injection`
+- **description:** `adaptActivePiece.execute()` passes the raw LLM-supplied `input` object directly to `action.run({ propsValue: input })` without stripping prototype-polluting keys (`__proto__`, `constructor`, `prototype`).
+- **context:** The core harness at `src/harness/loop/tools.ts:86` explicitly strips `__proto__`, `constructor`, and `prototype` keys before merging modified tool input. The integrations adapter has no equivalent guard — an LLM-supplied JSON payload containing `{"__proto__": {"isAdmin": true}}` reaches `action.run()` unfiltered. If any integration piece implementation iterates `propsValue` using `Object.assign` or spread, prototype pollution would occur. The `propsToJsonSchema` function generates a schema but no runtime validation is applied against it at the execute boundary. Fix: apply key stripping (removing `__proto__`, `constructor`, `prototype`) to `input` inside `execute()` before forwarding to `action.run()`. OWASP A03:2021 - Injection.
 - **reopen_count:** `0`
 - **branch:** ``
-- **description:** `agent.hooks?.onStart?.()` is awaited without a try/catch, so a throwing `onStart` hook aborts the slot run entirely and bypasses the retry loop.
-- **context:** The `onError` hook handles retry exhaustion, but an `onStart` exception propagates directly to the `invoke()` caller with no retry attempt and no hook-level error isolation. The queued work is never attempted.
-- **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** `2026-03-20T07:35:29Z`
+- **hunter_found:** `2026-03-20T14:20:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0284
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/stores/src/redis/index.ts`
+- **line:** `249`
+- **category:** `security-injection`
+- **description:** `listNamespaces()` constructs a Redis `KEYS` glob pattern as `` `oni:store:idx:${this.prefix}:*` `` without validating `this.prefix` for Redis glob metacharacters (`*`, `?`, `[`, `]`).
+- **context:** `this.prefix` comes from caller-supplied `RedisStoreConfig.prefix` with no sanitization — `config.prefix ?? "default"` at line 65. A prefix containing Redis wildcards (e.g. `*` or `[a-z]`) causes the `KEYS` pattern to match keys outside the intended namespace, leaking key names from other prefixes or co-tenants sharing the Redis instance. Additionally, `KEYS` is O(N) over the entire keyspace — a wildcard prefix like `*` makes `listNamespaces()` scan every Redis key, causing latency spikes or DoS under load. Fix: validate `prefix` at `create()` time to reject values containing `*`, `?`, `[`, or `]`, or escape them before constructing the pattern. OWASP A01:2021 - Broken Access Control.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T14:20:00Z`
+- **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
