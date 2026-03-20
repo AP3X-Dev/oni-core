@@ -10,18 +10,18 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T12:29:05Z` |
+| **Last Fixer Pass** | `2026-03-20T12:31:25Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-21T04:17:00Z` |
-| **Last Security Scan** | `2026-03-22T00:00:00Z` |
+| **Last Security Scan** | `2026-03-20T12:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T18:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T12:00:00Z` (Cycle 110) |
+| **Last TestGen Run** | `2026-03-20T18:30:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T00:00:00Z` (Cycle 111) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
-| **Total Found** | `295` |
-| **Total Pending** | `1` |
+| **Total Found** | `296` |
+| **Total Pending** | `2` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `34` |
 | **Total In Validation** | `0` |
@@ -1256,6 +1256,26 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 <!-- HUNTER: Append new bugs above this line -->
 
+### BUG-0295
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/inspect.ts`
+- **line:** `190`
+- **category:** `security-injection`
+- **description:** `toMermaidDetailed()` embeds raw node IDs (`edge.from`, `edge.to`) directly into Mermaid markup with no sanitization, enabling Mermaid injection via crafted node names containing newlines and embedded directives.
+- **context:** BUG-0292 and BUG-0294 applied sanitization to `compile-ext.ts` and `StateGraph.toMermaid()` respectively, but `toMermaidDetailed()` in `src/inspect.ts` was missed. Lines 190, 192, 194, and 199-202 embed node IDs verbatim: `${edge.from} --> ${edge.to}` (line 190), `${edge.from} -->|...| ${edge.from}_router` (line 192), `${edge.from}_router --> ${edge.to}` (line 194), and style lines for each node ID (lines 199-202). A crafted node name such as `"node\nstyle node fill:#ff0000\ninjected_directive"` or `'node\nclick node call alert("XSS")'` injects arbitrary Mermaid directives. `StateGraph.prototype.toMermaidDetailed` (graph.ts:297-301) calls this function, so any graph using the richer diagram generator is vulnerable. Additionally, `src/swarm/compile-ext.ts` lines 36 and 38 embed `from` and `edge.to` / `from` verbatim with no sanitization — both the static and conditional branches are affected. Fix: add a `sanitizeMermaid()` helper to `inspect.ts` (replace newlines, strip `[`, `]`, backticks) and apply it to all node ID interpolations in `toMermaidDetailed()` and `compile-ext.ts`. OWASP A03:2021 - Injection.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T12:35:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
 ### BUG-0294
 - **status:** `fixed`
 - **severity:** `medium`
@@ -1268,8 +1288,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **branch:** `bugfix/BUG-0294`
 - **hunter_found:** `2026-03-20T05:23:00Z`
 - **fixer_started:** `2026-03-20T12:29:05Z`
-- **fixer_completed:** `2026-03-20T12:29:05Z`
-- **fix_summary:** `Sanitized node names in StateGraph.toMermaid() via sanitize() helper to prevent Mermaid injection.`
+- **fixer_completed:** `2026-03-20T12:31:25Z`
+- **fix_summary:** `Applied sanitizeMermaid() in StateGraph.toMermaid() lbl() helper for non-START/END nodes. Strips injection-prone chars. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
