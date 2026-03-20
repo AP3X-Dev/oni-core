@@ -17,7 +17,7 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T14:30:00Z` |
+| **Last TestGen Run** | `2026-03-20T15:30:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T04:30:00Z` |
 | **Last Supervisor Pass** | `2026-03-21T01:20:00Z` |
 | **Total Found** | `293` |
@@ -1064,6 +1064,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `packages/integrations/src/__tests__/adapter-proto-pollution.test.ts`
 
 ---
 
@@ -1084,6 +1086,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `packages/stores/src/__tests__/redis-list-namespaces-glob-escape.test.ts`
 
 ---
 
