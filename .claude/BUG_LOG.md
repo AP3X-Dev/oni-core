@@ -252,6 +252,7 @@
 - **validator_notes:** Confirmed fix present as the minimize branch of direction-aware ternary (lines 49-54). BUG-0052 layered direction-awareness on top without breaking this fix — `metricBefore - metricAfter` is the default (minimize) path. Maximize uses `metricAfter - metricBefore`. Both correct.
 - **archived:** `2026-03-15T13:03:00Z`
 - **test_generated:** `true`
+- **test_file:** `src/__tests__/pattern-learner-metric-gain.test.ts`
 
 ---
 
@@ -638,6 +639,7 @@
 - **validator_notes:** Confirmed readFileSync at line 24, getDocument({data}) at line 25. SSRF eliminated. Consistent with other loaders.
 - **archived:** `2026-03-15T14:18:00Z`
 - **test_generated:** `true`
+- **test_file:** `packages/loaders/src/__tests__/pdf-no-ssrf.test.ts`
 
 ---
 
