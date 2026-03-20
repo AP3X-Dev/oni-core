@@ -10,20 +10,20 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-20T08:52:28Z` |
+| **Last Fixer Pass** | `2026-03-20T09:06:39Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
-| **Last Digest Run** | `2026-03-20T08:42:37Z` |
+| **Last Digest Run** | `2026-03-20T09:08:43Z` |
 | **Last Security Scan** | `2026-03-20T10:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T12:15:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T00:30:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T00:00:00Z` |
 | **Last Supervisor Pass** | `2026-03-21T01:05:00Z` |
-| **Total Found** | `292` |
+| **Total Found** | `293` |
 | **Total Pending** | `1` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `31` |
+| **Total Fixed** | `32` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `16` |
@@ -1193,7 +1193,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0292
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/compile-ext.ts`
 - **line:** `36`
@@ -1201,11 +1201,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `buildSwarmExtensions().toMermaid()` and `StateGraph.toMermaid()` embed node IDs directly into Mermaid markup without sanitization, enabling Mermaid injection via crafted agent or node names.
 - **context:** A prior fix (BUG-0290/BUG-0291) added `sanitizeMermaid()` in `src/inspect.ts` and applied it to `toMermaidDetailed()`. However, two sibling `toMermaid()` implementations were not updated: (1) `src/swarm/compile-ext.ts` line 36 embeds `from` and `edge.to` verbatim — these are agent IDs sourced from `SwarmAgentDef.id`, which is supplied at `spawnAgent()` call time; (2) `src/graph.ts` line 223 does the same for `edge.from` / `edge.to`. A crafted ID such as `"a\nstyle a fill:#ff0000\ninjected_directive"` would inject arbitrary Mermaid directives into the diagram output. Since Mermaid diagrams are rendered in web UIs, this can enable client-side script injection (XSS) in environments that render the Mermaid output. Fix: import and apply `sanitizeMermaid()` from `inspect.ts` to all node name interpolations in both affected files. OWASP A03:2021 - Injection.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0292`
 - **hunter_found:** `2026-03-20T08:20:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T09:06:39Z`
+- **fixer_completed:** `2026-03-20T09:06:39Z`
+- **fix_summary:** `Sanitized node IDs in toMermaid() to prevent Mermaid injection via crafted names.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``

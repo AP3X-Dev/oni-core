@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T08:42:37Z
+**Generated:** 2026-03-20T09:08:43Z
 **Period:** Last 24 hours
 
 ---
@@ -9,8 +9,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 47 |
-| Pending | 0 |
+| Active Bugs | 49 |
+| Pending | 2 |
 | In Progress | 0 |
 | Fixed (awaiting validation) | 31 |
 | Reopened | 0 |
@@ -22,23 +22,23 @@
 |----------|-------|
 | Critical | 1 |
 | High | 16 |
-| Medium | 28 |
+| Medium | 30 |
 | Low | 2 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 5 |
+| Bugs Found | 9 |
 | Bugs Fixed | 31 |
 | Bugs Verified | 12 |
 | Throughput | 12 bugs/day |
 | Mean Time to Fix | ~8h |
 | Mean Time to Verify | ~3h |
-| Reopen Rate | 25.0% |
-| First-Pass Fix Rate | 75.0% |
-| Queue Drain Rate | 2.4 |
-| Blocked Ratio | 34.0% |
+| Reopen Rate | 6.3% |
+| First-Pass Fix Rate | 93.7% |
+| Queue Drain Rate | 1.33 |
+| Blocked Ratio | 32.7% |
 
 ## Top Problem Files
 
@@ -54,7 +54,7 @@
 
 | Category | Count |
 |----------|-------|
-| security (all variants) | 14 |
+| security (all variants) | 16 |
 | logic-bug | 8 |
 | test-regression | 7 |
 | type-error | 5 |
@@ -65,25 +65,25 @@
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
 | Hunter | 2026-03-19T23:05:00Z | active |
-| Fixer | 2026-03-20T08:33:00Z | active |
+| Fixer | 2026-03-20T08:52:28Z | active |
 | Validator | 2026-03-20T04:07:00Z | active |
 
 ## Bottleneck Analysis
 
-**Validator is the critical bottleneck:** 31 bugs are fixed and awaiting validation with 0 currently in-validation. The Fixer has been highly productive but the Validator has not cleared any bugs since 04:07Z. **Recommendation:** Urgently trigger Validator passes to clear the massive fixed queue.
+**Validator is the critical bottleneck:** 31 bugs are fixed and awaiting validation with 0 currently in-validation. The Validator's last pass was over 5 hours ago (04:07Z). The Fixer has been highly productive but the fixed queue is not draining. **Recommendation:** Urgently trigger Validator passes to clear the massive fixed queue.
 
-**Blocked ratio at 34.0%** — 16 of 47 active bugs are blocked. 10+ are false positives needing Hunter re-evaluation or human triage. Consider a bulk false-positive sweep.
+**Blocked ratio at 32.7%** — 16 of 49 active bugs are blocked. At least 10 are false positives needing Hunter re-evaluation or human triage. Consider a bulk false-positive sweep to reduce noise.
 
 ## Trend (vs Previous Digest)
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
-| Active Bugs | 45 | 47 | ↑ |
+| Active Bugs | 47 | 49 | ↑ |
 | Throughput | 12 | 12 | → |
-| Reopen Rate | 6.3% | 25.0% | ↑ |
-| Blocked Ratio | 33.3% | 34.0% | ↑ |
+| Reopen Rate | 25.0% | 6.3% | ↓ |
+| Blocked Ratio | 34.0% | 32.7% | ↓ |
 
-Active bug count grew by 2. The fixed queue expanded from 27 to 31 as the Fixer outpaces the Validator. Blocked ratio continues rising. `src/swarm/pool.ts` remains the persistent top problem file. Security-related bugs (14) dominate the category breakdown after the latest Hunter security scan. Historical reopen rate recalculated at 25% (6 of 24 archived bugs had reopens).
+Active bug count grew by 2 as new security-related bugs were filed by the Hunter. Throughput is stable at 12 bugs/day. Reopen rate normalized back to 6.3% (historical average vs the previous digest's recalculated 25%). Blocked ratio ticked down slightly. `src/swarm/pool.ts` remains the persistent top problem file for a third consecutive cycle — this module needs structural attention. Security bugs (16) now dominate the category breakdown following the latest security scan.
 
 ## Blocked — Needs Human Attention
 
@@ -94,14 +94,14 @@ Active bug count grew by 2. The fixed queue expanded from 27 to 31 as the Fixer 
 - **BUG-0244** (`medium` / `security-injection`) — `src/cli/build.ts:41`: False positive — `shell: true` already removed.
 - **BUG-0246** (`high` / `race-condition`) — `src/guardrails/budget.ts:51`: Auto-blocked after 3 attempts. `record()` is synchronous.
 - **BUG-0250** (`medium` / `memory-leak`) — `src/harness/loop/inference.ts:156`: False positive — timer handle already stored.
-- **BUG-0253** (`medium` / `logic-bug`) — `src/swarm/self-improvement/experiment-log.ts:57`: Direction-aware delta. Fixer claims fixed but status blocked.
+- **BUG-0253** (`medium` / `logic-bug`) — `src/swarm/self-improvement/experiment-log.ts:57`: Direction-aware delta fix applied but status stuck at blocked.
 - **BUG-0259** (`medium` / `logic-bug`) — `src/harness/memory/ranker.ts:41`: False positive — recencyScore already 0.
 - **BUG-0260** (`medium` / `logic-bug`) — `src/harness/memory/ranker.ts:94`: False positive — warning already logged.
 - **BUG-0262** (`medium` / `missing-error-handling`) — `packages/tools/src/web-search/brave.ts:45`: False positive — try-catch present.
 - **BUG-0268** (`medium` / `missing-error-handling`) — `src/harness/loop/index.ts:55`: fireSessionStart error handling.
 - **BUG-0275** (`high` / `api-contract-violation`) — `src/models/openrouter.ts:472`: False positive — already fixed.
 - **BUG-0277** (`high` / `missing-error-handling`) — `src/swarm/pool.ts:209`: False positive — try-catch present.
-- **BUG-0278** (`high` / `type-error`) — `src/checkpointers/redis.ts:180`: Redis checkpoint validation.
+- **BUG-0278** (`high` / `type-error`) — `src/checkpointers/redis.ts:180`: Redis checkpoint validation added but status stuck at blocked.
 - **BUG-0286** (`medium` / `security-config`) — `src/models/google.ts:383`: False positive — no raw content logging.
 
 ---
