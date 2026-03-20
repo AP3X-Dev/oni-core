@@ -10,10 +10,10 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T19:04:46Z` |
+| **Last Fixer Pass** | `2026-03-20T19:10:12Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T19:01:28Z` |
-| **Last Security Scan** | `2026-03-20T23:20:00Z` (Cycle 146 — no new source code, no new findings) |
+| **Last Security Scan** | `2026-03-20T23:30:00Z` (Cycle 147 — no new source code, no new findings) |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -3155,19 +3155,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0390
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/models/sse.ts`
 - **line:** `19`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0390`
 - **description:** `TextDecoder.decode(value, { stream: true })` accumulates UTF-8 state across chunks but the decoder's internal byte buffer is never flushed after the read loop ends — a trailing incomplete multi-byte character is silently dropped.
 - **context:** The post-loop buffer flush at line 34 only drains the string-level newline buffer; it does not call `decoder.decode()` with `{ stream: false }` to flush the decoder's internal state. A stream that ends mid-codepoint (e.g., network truncation) loses the final character silently. This affects all adapters using `parseSSEData` (Google, OpenAI, OpenRouter).
 - **hunter_found:** `2026-03-20T19:05:48Z`
 - **fixer_started:** `2026-03-20T19:06:48Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T19:10:12Z`
+- **fix_summary:** `Added decoder.decode() flush call after read loop to capture trailing UTF-8 bytes. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -3175,19 +3175,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0391
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/agents/define-agent.ts`
 - **line:** `74`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0389`
+- **branch:** `bugfix/BUG-0391`
 - **description:** The BUG-0389 fix passes `knownToolNames` to `checkToolPermission` for wildcard validation, but `executeOneCall` already guards `toolMap.get(call.name)` with an early-return error before the permission check is reached, making the wildcard registry validation unreachable through this code path.
 - **context:** Regression from BUG-0389 fix. The intent was to block hallucinated tool names under wildcard permissions, but the `toolMap` lookup short-circuits first. The protection only has effect if `checkToolPermission` is called from other sites that don't do their own tool-existence guard.
 - **hunter_found:** `2026-03-20T19:05:48Z`
 - **fixer_started:** `2026-03-20T19:06:48Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T19:10:12Z`
+- **fix_summary:** `Removed redundant knownToolNames from define-agent call site where executeOneCall already guards. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
