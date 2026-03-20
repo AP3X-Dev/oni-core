@@ -9,7 +9,7 @@ export type { SwarmCompileOpts as SwarmCompileOptions } from "./graph.js";
 export { AgentRegistry }                      from "./registry.js";
 export type { AgentRecord }                   from "./registry.js";
 
-export { AgentPool }                          from "./pool.js";
+export { AgentPool, BatchError }               from "./pool.js";
 
 export { createSupervisorNode }               from "./supervisor.js";
 export type { SupervisorState }               from "./supervisor.js";
