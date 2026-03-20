@@ -17,7 +17,7 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:30:00Z` (no new tests — no qualifying bugs without test_generated:true meeting criteria) |
+| **Last TestGen Run** | `2026-03-20T23:45:00Z` (BUG-0009: generated src/__tests__/agent-loop-turns-remaining.test.ts — 3 tests pass) |
 | **Last Git Manager Pass** | `2026-03-21T17:00:00Z` (Cycle 178) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `297` |
@@ -3155,7 +3155,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0390
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/models/sse.ts`
 - **line:** `19`
@@ -3165,7 +3165,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `TextDecoder.decode(value, { stream: true })` accumulates UTF-8 state across chunks but the decoder's internal byte buffer is never flushed after the read loop ends — a trailing incomplete multi-byte character is silently dropped.
 - **context:** The post-loop buffer flush at line 34 only drains the string-level newline buffer; it does not call `decoder.decode()` with `{ stream: false }` to flush the decoder's internal state. A stream that ends mid-codepoint (e.g., network truncation) loses the final character silently. This affects all adapters using `parseSSEData` (Google, OpenAI, OpenRouter).
 - **hunter_found:** `2026-03-20T19:05:48Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T19:06:48Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -3175,7 +3175,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0391
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/agents/define-agent.ts`
 - **line:** `74`
@@ -3185,7 +3185,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The BUG-0389 fix passes `knownToolNames` to `checkToolPermission` for wildcard validation, but `executeOneCall` already guards `toolMap.get(call.name)` with an early-return error before the permission check is reached, making the wildcard registry validation unreachable through this code path.
 - **context:** Regression from BUG-0389 fix. The intent was to block hallucinated tool names under wildcard permissions, but the `toolMap` lookup short-circuits first. The protection only has effect if `checkToolPermission` is called from other sites that don't do their own tool-existence guard.
 - **hunter_found:** `2026-03-20T19:05:48Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T19:06:48Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
