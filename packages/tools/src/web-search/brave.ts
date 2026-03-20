@@ -42,7 +42,11 @@ export function braveSearch(config: { apiKey: string }): ToolDefinition {
         console.error(`[brave] API error ${res.status} ${res.statusText}`);
         throw new Error(`Brave Search API error: ${res.status} ${res.statusText}`);
       }
-      return res.json();
+      try {
+        return await res.json();
+      } catch {
+        throw new Error(`brave_search: invalid JSON response from https://api.search.brave.com/res/v1/web/search`);
+      }
     },
   };
 }

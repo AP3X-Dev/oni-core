@@ -43,7 +43,11 @@ export function tavilySearch(config: { apiKey: string }): ToolDefinition {
         console.error(`[tavily] API error ${res.status} ${res.statusText}`);
         throw new Error(`Tavily API error: ${res.status} ${res.statusText}`);
       }
-      return res.json();
+      try {
+        return await res.json();
+      } catch {
+        throw new Error(`tavily_search: invalid JSON response from https://api.tavily.com/search`);
+      }
     },
   };
 }

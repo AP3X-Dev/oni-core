@@ -48,7 +48,11 @@ export function firecrawlScrape(config: { apiKey: string }): ToolDefinition {
         console.error(`[firecrawl] API error ${res.status} ${res.statusText}`);
         throw new Error(`Firecrawl API error: ${res.status} ${res.statusText}`);
       }
-      return res.json();
+      try {
+        return await res.json();
+      } catch {
+        throw new Error(`firecrawl_scrape: invalid JSON response from https://api.firecrawl.dev/v0/scrape`);
+      }
     },
   };
 }
