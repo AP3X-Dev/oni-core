@@ -395,7 +395,12 @@ export function anthropic(
       }
     }
 
-    const stopReason = mapStopReason(json.stop_reason);
+    let stopReason = mapStopReason(json.stop_reason);
+
+    // When all tool_use blocks were synthetic (structured output), override stopReason
+    if (stopReason === "tool_use" && toolCalls.length === 0 && rfName) {
+      stopReason = "end";
+    }
 
     return {
       content,
