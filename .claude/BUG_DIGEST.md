@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T05:19:03Z
+**Generated:** 2026-03-20T05:42:51Z
 **Period:** Last 24 hours
 
 ---
@@ -9,11 +9,11 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 26 |
+| Active Bugs | 39 |
 | Pending | 11 |
 | In Progress | 0 |
-| Fixed (awaiting validation) | 0 |
-| Reopened | 5 |
+| Fixed (awaiting validation) | 17 |
+| Reopened | 1 |
 | Blocked | 10 |
 
 ## Severity Breakdown
@@ -21,71 +21,71 @@
 | Severity | Count |
 |----------|-------|
 | Critical | 1 |
-| High | 7 |
-| Medium | 17 |
-| Low | 1 |
+| High | 15 |
+| Medium | 21 |
+| Low | 2 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 48 |
-| Bugs Fixed | 28 |
-| Bugs Verified | 25 |
-| Throughput | 25 bugs/day |
-| Mean Time to Fix | ~6h |
-| Mean Time to Verify | ~3h |
-| Reopen Rate | 7.4% |
-| First-Pass Fix Rate | 92.6% |
-| Queue Drain Rate | 0.52 |
-| Blocked Ratio | 38.5% |
+| Bugs Found | 47 |
+| Bugs Fixed | 29 |
+| Bugs Verified | 12 |
+| Throughput | 12 bugs/day |
+| Mean Time to Fix | ~5h |
+| Mean Time to Verify | ~2h |
+| Reopen Rate | 6.3% |
+| First-Pass Fix Rate | 93.7% |
+| Queue Drain Rate | 0.26 |
+| Blocked Ratio | 25.6% |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
-| `src/swarm/pool.ts` | 6 |
-| `src/swarm/agent-node.ts` | 5 |
-| `src/models/anthropic.ts` | 5 |
-| `src/swarm/self-improvement/skill-evolver.ts` | 5 |
-| `src/swarm/factories.ts` | 4 |
+| `src/swarm/pool.ts` | 5 |
+| `src/harness/memory/ranker.ts` | 3 |
+| `src/swarm/self-improvement/skill-evolver.ts` | 3 |
+| `src/pregel/index.ts` | 2 |
+| `src/models/anthropic.ts` | 2 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 41 |
-| missing-error-handling | 23 |
-| race-condition | 11 |
-| type-error | 10 |
-| security (all variants) | 10 |
+| test-regression | 8 |
+| missing-error-handling | 5 |
+| logic-bug | 5 |
+| security (all variants) | 5 |
+| type-error | 4 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
 | Hunter | 2026-03-19T23:05:00Z | active |
-| Fixer | 2026-03-20T04:07:17Z | active |
-| Validator | 2026-03-20T06:30:00Z | active |
+| Fixer | 2026-03-20T05:42:28Z | active |
+| Validator | 2026-03-20T04:07:00Z | active |
 
 ## Bottleneck Analysis
 
-**Blocked ratio is high at 38.5%** — 10 of 26 active bugs are blocked. At least 7 are reported as false positives by the Fixer (BUG-0235, BUG-0236, BUG-0244, BUG-0260, BUG-0262, BUG-0275, BUG-0277). These need Hunter re-evaluation or human triage to unblock the pipeline.
+**Validator is the bottleneck:** 17 bugs are fixed and awaiting validation, but only 12 were verified in the last 24h. The Fixer is outpacing the Validator — fixed bugs are accumulating. Recommended action: prioritize validator passes to clear the fixed queue.
 
-**Queue drain rate below 1.0 (0.52)** — the pipeline is falling behind. 48 bugs found vs 25 verified. The Hunter is producing faster than the pipeline can close.
+**Blocked ratio at 25.6%** — 10 of 39 active bugs are blocked. 7 are reported as false positives by the Fixer (BUG-0235, BUG-0236, BUG-0244, BUG-0260, BUG-0262, BUG-0275, BUG-0277). These need Hunter re-evaluation or human triage.
 
-**5 reopened bugs** (BUG-0252, BUG-0255, BUG-0266, BUG-0268, BUG-0276) indicate fix quality issues on type-signature and merge-related problems. Recommended action: Fixer should prioritize reopened bugs and carefully read validator_notes before reattempting.
+**Queue drain rate critically low at 0.26** — the pipeline verified only 12 bugs against 47 found. The active bug count is growing. The Hunter is producing far faster than the pipeline can close.
 
 ## Trend (vs Previous Digest)
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
-| Active Bugs | 32 | 26 | ↓ (-6) |
-| Throughput | 25 | 25 | → |
-| Reopen Rate | 8.3% | 7.4% | ↓ |
-| Blocked Ratio | 31.3% | 38.5% | ↑ |
+| Active Bugs | 26 | 39 | ↑ (+13) |
+| Throughput | 25 | 12 | ↓ |
+| Reopen Rate | 7.4% | 6.3% | ↓ |
+| Blocked Ratio | 38.5% | 25.6% | ↓ |
 
-Active bug count continues to decrease as the Validator clears the queue. Throughput held steady at 25 bugs/day. Blocked ratio increased from 31.3% to 38.5% — the false-positive blocked bugs are now a larger share of the shrinking active set. `src/swarm/pool.ts` remains the top problem file for a sixth consecutive cycle. The Hunter should re-evaluate the 7 false-positive blocked bugs to free pipeline capacity.
+Active bug count increased significantly from 26 to 39 — the Hunter found 47 new bugs while only 12 were verified. Throughput dropped from 25 to 12 bugs/day. Blocked ratio improved (down from 38.5% to 25.6%) due to the larger active set denominator. Reopen rate improved slightly. `src/swarm/pool.ts` remains the top problem file for a seventh consecutive cycle. **Recommendation:** Consider pausing the Hunter to let the Fixer and Validator catch up.
 
 ## Blocked — Needs Human Attention
 
