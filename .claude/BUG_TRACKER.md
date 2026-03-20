@@ -10,7 +10,7 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T17:07:41Z` |
+| **Last Fixer Pass** | `2026-03-20T17:10:09Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T17:00:00Z` |
 | **Last Security Scan** | `2026-03-20T18:00:00Z` |
@@ -1455,19 +1455,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0305
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/models/anthropic.ts`
 - **line:** `368`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0305`
 - **description:** `json.content.filter(...)` is called without a null/undefined guard on `json.content`, unlike the OpenAI and Google adapter paths which both check for missing data before property access.
 - **context:** If the Anthropic API returns a 200 response with null or missing `content` field, this throws `TypeError: Cannot read properties of null (reading 'filter')` — an unintelligible crash instead of a structured error.
 - **hunter_found:** `2026-03-20T17:04:19Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T17:08:33Z`
+- **fixer_completed:** `2026-03-20T17:10:09Z`
+- **fix_summary:** `Added null guard for json.content before filter/find calls. Returns empty defaults when content is null, matching OpenAI/Google pattern. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1481,13 +1481,13 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **line:** `114`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0302-0306`
+- **branch:** `bugfix/BUG-0305`
 - **description:** `(result as Record<string, unknown>).swarmMessages` assumes `result` is a mutable plain object, but the user-supplied handler can return `null` or a primitive, causing TypeError on property assignment.
 - **context:** If a handler returns `null`, the assignment `(null as Record<string, unknown>).swarmMessages` throws. If it returns a primitive like `"done"`, the assignment is a silent no-op in non-strict mode, silently dropping all pending swarm messages without error.
 - **hunter_found:** `2026-03-20T17:04:19Z`
 - **fixer_started:** `2026-03-20T17:05:21Z`
-- **fixer_completed:** `2026-03-20T17:07:41Z`
-- **fix_summary:** `Added null/primitive guard before swarmMessages merge. Prevents TypeError on non-object handler returns. tsc clean.`
+- **fixer_completed:** `2026-03-20T17:10:09Z`
+- **fix_summary:** `Added null guard for json.content before filter/find calls. Returns empty defaults when content is null, matching OpenAI/Google pattern. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1505,11 +1505,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `toMermaidDetailed()` embeds raw node IDs (`edge.from`, `edge.to`) directly into Mermaid markup with no sanitization, enabling Mermaid injection via crafted node names containing newlines and embedded directives.
 - **context:** BUG-0292 and BUG-0294 applied sanitization to `compile-ext.ts` and `StateGraph.toMermaid()` respectively, but `toMermaidDetailed()` in `src/inspect.ts` was missed. Lines 190, 192, 194, and 199-202 embed node IDs verbatim: `${edge.from} --> ${edge.to}` (line 190), `${edge.from} -->|...| ${edge.from}_router` (line 192), `${edge.from}_router --> ${edge.to}` (line 194), and style lines for each node ID (lines 199-202). A crafted node name such as `"node\nstyle node fill:#ff0000\ninjected_directive"` or `'node\nclick node call alert("XSS")'` injects arbitrary Mermaid directives. `StateGraph.prototype.toMermaidDetailed` (graph.ts:297-301) calls this function, so any graph using the richer diagram generator is vulnerable. Additionally, `src/swarm/compile-ext.ts` lines 36 and 38 embed `from` and `edge.to` / `from` verbatim with no sanitization — both the static and conditional branches are affected. Fix: add a `sanitizeMermaid()` helper to `inspect.ts` (replace newlines, strip `[`, `]`, backticks) and apply it to all node ID interpolations in `toMermaidDetailed()` and `compile-ext.ts`. OWASP A03:2021 - Injection.
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0295`
+- **branch:** `bugfix/BUG-0305`
 - **hunter_found:** `2026-03-20T12:35:00Z`
 - **fixer_started:** `2026-03-20T12:36:39Z`
-- **fixer_completed:** `2026-03-20T12:36:39Z`
-- **fix_summary:** `Sanitized node IDs in toMermaidDetailed() via sanitize() helper to prevent Mermaid injection.`
+- **fixer_completed:** `2026-03-20T17:10:09Z`
+- **fix_summary:** `Added null guard for json.content before filter/find calls. Returns empty defaults when content is null, matching OpenAI/Google pattern. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1527,11 +1527,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `StateGraph.toMermaid()` embeds raw node names into Mermaid markup via `lbl(n as string)` without sanitization, enabling Mermaid injection via crafted node names containing newlines and embedded directives.
 - **context:** BUG-0292 fix applied `sanitizeMermaid()` to `src/swarm/compile-ext.ts` but missed `StateGraph.toMermaid()` in `src/graph.ts`. The `lbl()` helper at line 218-219 casts node names directly to string with no escaping. A crafted node name such as `"node\nstyle node fill:#ff0000\ninjected_directive"` or `'node\nclick node call alert("XSS")'` injects arbitrary Mermaid directives into the output. Since Mermaid diagrams are rendered in web UIs, this can enable XSS in environments that render the diagram. Two regression tests in `src/__tests__/mermaid-node-injection.test.ts` confirm this: "BUG-0292: crafted node ID containing newline should not inject Mermaid directives" and "BUG-0292: crafted node ID containing Mermaid click directive should be escaped" both fail. Fix: import `sanitizeMermaid` from `./inspect.js` and apply it in `lbl()` for non-START/non-END nodes. OWASP A03:2021 - Injection.
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0294`
+- **branch:** `bugfix/BUG-0305`
 - **hunter_found:** `2026-03-20T05:23:00Z`
 - **fixer_started:** `2026-03-20T12:29:05Z`
-- **fixer_completed:** `2026-03-20T12:31:25Z`
-- **fix_summary:** `Applied sanitizeMermaid() in StateGraph.toMermaid() lbl() helper for non-START/END nodes. Strips injection-prone chars. tsc clean.`
+- **fixer_completed:** `2026-03-20T17:10:09Z`
+- **fix_summary:** `Added null guard for json.content before filter/find calls. Returns empty defaults when content is null, matching OpenAI/Google pattern. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
