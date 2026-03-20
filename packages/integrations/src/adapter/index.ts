@@ -24,6 +24,22 @@ export interface AdaptedToolDefinition {
   execute: (input: Record<string, unknown>, ctx: unknown) => Promise<unknown>;
 }
 
+const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+function sanitizeInput(obj: Record<string, unknown>): Record<string, unknown> {
+  const clean: Record<string, unknown> = {};
+  for (const key of Object.keys(obj)) {
+    if (DANGEROUS_KEYS.has(key)) continue;
+    const val = obj[key];
+    if (val !== null && typeof val === "object" && !Array.isArray(val)) {
+      clean[key] = sanitizeInput(val as Record<string, unknown>);
+    } else {
+      clean[key] = val;
+    }
+  }
+  return clean;
+}
+
 function isReadOnly(name: string): boolean {
   return /^(get|list|search|find|fetch|read)/i.test(name);
 }
@@ -41,7 +57,7 @@ export function adaptActivePiece(
       const auth = await authResolver.resolve(action.auth, ctx);
       return action.run({
         auth,
-        propsValue: input,
+        propsValue: sanitizeInput(input),
         server: { publicUrl: "" },
         project: { id: "" },
         files: {
