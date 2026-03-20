@@ -10,15 +10,15 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T03:11:41Z` |
-| **Last Fixer Pass** | `2026-03-20T09:40:46Z` |
+| **Last Fixer Pass** | `2026-03-20T10:16:26Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T09:30:45Z` |
 | **Last Security Scan** | `2026-03-21T12:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T17:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T00:00:00Z` |
+| **Last TestGen Run** | `2026-03-20T18:30:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T12:00:00Z` |
 | **Last Supervisor Pass** | `2026-03-21T02:15:00Z` |
 | **Total Found** | `294` |
 | **Total Pending** | `4` |
@@ -271,7 +271,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0235
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `high`
 - **file:** `src/errors.ts`
 - **line:** `44`
@@ -282,8 +282,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **branch:** ``
 - **hunter_found:** `2026-03-19T00:16:00Z`
 - **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T10:16:26Z`
+- **fix_summary:** `Already fixed on main. toJSON() at lines 44-55 already returns all 8 fields including context and stack. All 18 tests pass. Fix in commit e28aef8.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** `CI Sentinel 2026-03-20T03:11:41Z: Confirmed real bug. Previous fixer false-positive assessment was incorrect. 13 tests fail in src/__tests__/errors.test.ts.`
@@ -302,8 +302,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **branch:** ``
 - **hunter_found:** `2026-03-19T00:16:00Z`
 - **fixer_started:** `2026-03-19T07:21:00Z`
-- **fixer_completed:** `2026-03-19T07:25:00Z`
-- **fix_summary:** `False positive. Current redis.ts has no eval() call at line 52 or anywhere. The ioredis mock does not need an eval stub. All 12 mocked tests pass (2 integration tests correctly skipped). Hunter should re-evaluate.`
+- **fixer_completed:** `2026-03-20T10:16:26Z`
+- **fix_summary:** `Confirmed false positive. No eval() in redis adapter (lines 43-52). Mock correctly stubs all used methods. All 12 tests pass.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
