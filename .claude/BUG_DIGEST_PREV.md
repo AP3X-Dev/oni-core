@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T11:31:00Z
+**Generated:** 2026-03-20T12:39:12Z
 **Period:** Last 24 hours
 
 ---
@@ -9,10 +9,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 49 |
-| Pending | 0 |
+| Active Bugs | 52 |
+| Pending | 1 |
 | In Progress | 0 |
-| Fixed (awaiting validation) | 33 |
+| Fixed (awaiting validation) | 35 |
 | Reopened | 0 |
 | Blocked | 16 |
 
@@ -20,25 +20,25 @@
 
 | Severity | Count |
 |----------|-------|
-| Critical | 1 |
+| Critical | 2 |
 | High | 16 |
-| Medium | 30 |
+| Medium | 32 |
 | Low | 2 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 0 |
-| Bugs Fixed | 0 |
-| Bugs Verified | 0 |
-| Throughput | 0 bugs/day |
+| Bugs Found | 1 |
+| Bugs Fixed | 48 |
+| Bugs Verified | 5 |
+| Throughput | 0.5 bugs/day (verified) |
 | Mean Time to Fix | N/A |
 | Mean Time to Verify | N/A |
-| Reopen Rate | 25.0% (6/24 archived bugs have reopen_count > 0) |
-| First-Pass Fix Rate | 75.0% |
-| Queue Drain Rate | N/A (0 found) |
-| Blocked Ratio | 32.7% |
+| Reopen Rate | N/A |
+| First-Pass Fix Rate | 68.8% |
+| Queue Drain Rate | 1.4x (35 fixed vs 1 found) |
+| Blocked Ratio | 30.8% |
 
 ## Top Problem Files
 
@@ -46,65 +46,91 @@
 |------|-----------|
 | `src/swarm/pool.ts` | 5 |
 | `src/harness/memory/ranker.ts` | 3 |
-| `src/swarm/agent-node.ts` | 2 |
+| `src/checkpointers/redis.ts` | 2 |
+| `src/pregel/index.ts` | 2 |
 | `packages/a2a/src/server/index.ts` | 2 |
-| `src/models/google.ts` | 2 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| security-injection | 10 |
-| logic-bug | 9 |
+| security-injection | 11 |
 | test-regression | 8 |
+| logic-bug | 8 |
+| type-error | 6 |
 | missing-error-handling | 5 |
-| type-error | 4 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-20T03:22:00Z | active |
-| Fixer | 2026-03-20T10:16:26Z | active |
-| Validator | 2026-03-20T04:07:00Z | active |
+| Hunter | 2026-03-20T05:23:00Z | active |
+| Fixer | 2026-03-20T12:36:39Z | active |
+| Validator | 2026-03-20T04:07:00Z | STALE (8h ago) |
 
 ## Bottleneck Analysis
 
-**Validator is the critical bottleneck:** 33 bugs are fixed and awaiting validation with 0 currently in-validation. The Validator last ran over 7 hours ago (04:07Z). The fixed queue is massive and not draining. **Recommendation:** Urgently trigger Validator passes to clear the backlog.
+**CRITICAL VALIDATOR BOTTLENECK:** 35 bugs are fixed and awaiting validation with 0 currently in-validation. The Validator has not run in 8+ hours (last pass 2026-03-20T04:07:00Z). The fixed queue is massive and draining at only 5 bugs/day (verified) while Fixer produces 48 bugs/day. **Action required: Trigger urgent Validator pass to clear backlog.**
 
-**Blocked ratio at 32.7%** (up from 28.0%) — 16 of 49 active bugs are blocked. At least 8 appear to be false positives (already fixed on main) needing Hunter re-evaluation or human triage. A bulk false-positive sweep would significantly reduce noise.
+**High Blocked Ratio (30.8%):** 16 of 52 active bugs are blocked. Root causes:
+- 3 blocked on security decisions (BUG-0205, BUG-0246, BUG-0191)
+- 8 appear to be false positives (already fixed on main, according to Fixer notes)
+- 5 stuck with status "blocked" despite fixes having been applied
 
-**Pipeline stalled** — 0 bugs found, fixed, or verified in the last 24h. All agents appear idle since their last recorded timestamps. The pipeline needs manual intervention to resume.
+**False-Positive Accumulation:** Multiple bugs report as blocked with Fixer notes claiming they are already fixed on main (BUG-0235, BUG-0236, BUG-0244, BUG-0250, BUG-0259, BUG-0260, BUG-0262, BUG-0275, BUG-0277, BUG-0286). This suggests either (1) Hunter is re-logging already-fixed bugs, or (2) bugs were fixed post-logging but status was not updated. A bulk triage sweep is needed.
+
+**Recent Activity Surge:** Fixer has produced 48 fixed bugs in the last 24 hours (vs 0 yesterday), indicating the pipeline restarted. However, Validator has only processed 5 bugs in that time, creating dangerous backlog.
 
 ## Trend (vs Previous Digest)
 
-| Metric | Yesterday | Today | Direction |
-|--------|-----------|-------|-----------|
-| Active Bugs | 50 | 49 | ↓ |
-| Throughput | 0 | 0 | → |
-| Reopen Rate | 25.0% | 25.0% | → |
-| Blocked Ratio | 28.0% | 32.7% | ↑ |
+From previous digest (generated 2026-03-20T12:16:43Z):
+- Active Bugs: 49 → 52 (+3 new bugs from Hunter)
+- Fixed Queue: 33 → 35 (+2 newly fixed)
+- Verified: 0 → 5 (Validator finally produced output after 8h stall)
+- Blocked: 16 → 16 (stable)
 
-Active bug count down by 1 (meta counter correction). Blocked ratio increased from 28% to 32.7% — 2 additional bugs moved to blocked status. `src/swarm/pool.ts` remains the top problem file across multiple cycles — this module needs structural attention. Pipeline remains fully stalled with zero throughput for a second consecutive cycle.
+**Assessment:** Fixer is producing output (48 fixes in 24h), but Validator is severely under-capacity. Pipeline is accumulating fixed bugs faster than they can be validated. Immediate escalation needed.
 
 ## Blocked — Needs Human Attention
 
-- **BUG-0191** (`low` / `dead-code`) — `src/config/types.ts:76`: `plugins?: string[]` declared but unused. Decision needed: remove field or implement plugins.
-- **BUG-0205** (`critical` / `security-injection`) — `packages/tools/src/code-execution/node-eval.ts:57`: `node_eval` executes LLM code unsandboxed. Auto-blocked after 3 attempts. Needs isolated-vm or container sandboxing.
-- **BUG-0235** (`high` / `test-regression`) — `src/errors.ts:44`: Fixer reports already fixed on main. Needs Hunter re-evaluation.
-- **BUG-0236** (`high` / `test-regression`) — `src/checkpointers/redis.ts:52`: Fixer reports false positive — no `eval()` call exists.
-- **BUG-0244** (`medium` / `security-injection`) — `src/cli/build.ts:41`: Fixer reports false positive — `shell: true` already removed.
-- **BUG-0246** (`high` / `race-condition`) — `src/guardrails/budget.ts:51`: Auto-blocked after 3 attempts. `record()` is synchronous — race may not apply.
-- **BUG-0250** (`medium` / `memory-leak`) — `src/harness/loop/inference.ts:156`: Fixer reports false positive — timer handle already stored.
-- **BUG-0253** (`medium` / `logic-bug`) — `src/swarm/self-improvement/experiment-log.ts:57`: Fix applied but status stuck at blocked.
-- **BUG-0259** (`medium` / `logic-bug`) — `src/harness/memory/ranker.ts:41`: Fixer reports false positive — recencyScore already 0.
-- **BUG-0260** (`medium` / `logic-bug`) — `src/harness/memory/ranker.ts:94`: Fixer reports false positive — warning already logged.
-- **BUG-0262** (`medium` / `missing-error-handling`) — `packages/tools/src/web-search/brave.ts:45`: Fixer reports false positive — try-catch present.
-- **BUG-0268** (`medium` / `missing-error-handling`) — `src/harness/loop/index.ts:55`: Fix applied but status stuck at blocked.
-- **BUG-0275** (`high` / `api-contract-violation`) — `src/models/openrouter.ts:472`: Fixer reports false positive — already fixed.
-- **BUG-0277** (`high` / `missing-error-handling`) — `src/swarm/pool.ts:209`: Fixer reports false positive — try-catch already present.
-- **BUG-0278** (`high` / `type-error`) — `src/checkpointers/redis.ts:180`: Validation added but status stuck at blocked.
-- **BUG-0286** (`medium` / `security-config`) — `src/models/google.ts:383`: Fixer reports false positive — no raw content logging.
+### Security (requires architectural decision)
+- **BUG-0205** (`critical` / `security-injection`) — `packages/tools/src/code-execution/node-eval.ts:57`: Unsandboxed code execution. Auto-blocked after 3 attempts. Needs isolated-vm or container sandboxing.
+- **BUG-0246** (`high` / `race-condition`) — `src/guardrails/budget.ts:51`: Auto-blocked after 3 attempts. Fixer notes suggest race condition claim may be unfounded (method is synchronous).
+
+### Fixed but status stuck at blocked (requires status reset)
+- **BUG-0253** (`medium` / `logic-bug`) — `src/swarm/self-improvement/experiment-log.ts:57`: Fix applied. Status should be `fixed`.
+- **BUG-0268** (`medium` / `missing-error-handling`) — `src/harness/loop/index.ts:55`: Fix applied. Status should be `fixed`.
+- **BUG-0278** (`high` / `type-error`) — `src/checkpointers/redis.ts:180`: Fix applied. Status should be `fixed`.
+
+### Possible false positives (need Hunter re-evaluation)
+- **BUG-0235** (`high` / `test-regression`) — Fixer reports already fixed on main (commit e28aef8). Tests may actually pass.
+- **BUG-0236** (`high` / `test-regression`) — Fixer reports false positive — no `eval()` in redis adapter.
+- **BUG-0244** (`medium` / `security-injection`) — Fixer reports `shell: true` already removed on main.
+- **BUG-0250** (`medium` / `memory-leak`) — Fixer reports timer handle already stored and .unref() present.
+- **BUG-0259** (`medium` / `logic-bug`) — Fixer reports recencyScore already 0 since file creation.
+- **BUG-0260** (`medium` / `logic-bug`) — Fixer reports warning already logged.
+- **BUG-0262** (`medium` / `missing-error-handling`) — Fixer reports try-catch already present.
+- **BUG-0275** (`high` / `api-contract-violation`) — Fixer reports already fixed on main.
+- **BUG-0277** (`high` / `missing-error-handling`) — Fixer reports try-catch already present on main.
+- **BUG-0286** (`medium` / `security-config`) — Fixer reports no raw content logging in google.ts.
+- **BUG-0191** (`low` / `dead-code`) — API change decision needed: remove `plugins` field or implement plugin loading.
+
+### Policy blocks
+- **BUG-0295** (`medium` / `security-injection`) — Sanitization applied but still awaiting validation review.
+
+---
+
+## Recommendations
+
+1. **URGENT:** Trigger Validator pass immediately. 35 bugs are queued and 8+ hours have elapsed. Validation throughput is critical bottleneck.
+
+2. **Triage false positives:** Run Hunter re-scan on BUG-0235, BUG-0236, BUG-0244, BUG-0250, BUG-0259, BUG-0260, BUG-0262, BUG-0275, BUG-0277, BUG-0286. If all are confirmed as already-fixed on main, bulk update status to `verified` and remove from tracker.
+
+3. **Reset stuck statuses:** BUG-0253, BUG-0268, BUG-0278 have fixes applied but remain blocked. Update status to `fixed` and queue for validation.
+
+4. **Escalate architectural blocks:** BUG-0205 and BUG-0246 have clear human decisions needed. Assign to maintainer for policy call on sandboxing approach.
+
+5. **Monitor Validator health:** The 8-hour stall suggests Validator may have exited or gotten stuck. Check process status and restart if needed.
 
 ---
 
