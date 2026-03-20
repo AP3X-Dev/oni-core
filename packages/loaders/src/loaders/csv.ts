@@ -7,7 +7,13 @@ export class CsvLoader extends DocumentLoader {
   }
 
   async load(source: string): Promise<Document[]> {
-    const raw = await readFile(source, "utf-8");
+    let raw: string;
+    try {
+      raw = await readFile(source, "utf-8");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`CSV loader: failed to read file '${source}': ${msg}`);
+    }
     const separator = source.endsWith(".tsv") ? "\t" : ",";
     const rows = parseCSV(raw, separator);
     if (rows.length === 0) return [];
