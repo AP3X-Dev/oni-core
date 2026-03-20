@@ -518,6 +518,10 @@ export class LSPClient {
 
     // Response (has id but no method)
     if ("id" in message && message.id !== null) {
+      if (typeof message.id === "undefined") {
+        console.warn("[lsp] Malformed response: missing id");
+        return;
+      }
       const id = message.id as number;
       const pending = this.pending.get(id);
       if (pending) {
@@ -530,6 +534,10 @@ export class LSPClient {
 
     // Notification (no id)
     if ("method" in message) {
+      if (typeof message.method !== "string") {
+        console.warn("[lsp] Malformed notification: missing method");
+        return;
+      }
       this.handleNotification(message as unknown as JsonRpcNotification);
     }
   }
