@@ -10,18 +10,18 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T18:39:33Z` |
+| **Last Fixer Pass** | `2026-03-20T18:49:55Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T18:37:51Z` |
-| **Last Security Scan** | `2026-03-22T22:15:00Z` |
+| **Last Security Scan** | `2026-03-20T22:35:00Z` (Cycle 143 — no new source code, no new findings) |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T06:00:00Z` (no new tests — no qualifying bugs without test_generated:true meeting criteria) |
 | **Last Git Manager Pass** | `2026-03-20T23:30:00Z` (Cycle 174) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
-| **Total Found** | `296` |
-| **Total Pending** | `1` |
+| **Total Found** | `297` |
+| **Total Pending** | `2` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `35` |
 | **Total In Validation** | `0` |
@@ -2935,19 +2935,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0379
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/guardrails/budget.ts`
 - **line:** `126`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0374`
+- **branch:** `bugfix/BUG-0379-0380`
 - **description:** The `budget.unknown_pricing` audit entry fires on every `record()` call for unknown models with no deduplication guard, flooding the audit log with hundreds of identical entries per session.
 - **context:** Regression from BUG-0374 fix. `costIsUnknown` is set to `true` on the first unknown-model call and never reset; `!pricing` is true on every subsequent call. The `unknownModels` Set deduplicates model IDs but does not gate the audit entry emission.
 - **hunter_found:** `2026-03-20T18:42:16Z`
 - **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:46:59Z`
+- **fix_summary:** `unknownPricingEmitted Set deduplicates audit entries per model. Only fires once per model. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2955,19 +2955,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0380
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/guardrails/budget.ts`
 - **line:** `152`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0374`
+- **branch:** `bugfix/BUG-0379-0380`
 - **description:** The `budget.warning` with `costIsUnknown: true` fires unconditionally on every `record()` call when `maxCostPerRun` is set, replacing the normal 80%-threshold warning with a per-call warning that produces unbounded audit noise.
 - **context:** Regression from BUG-0374 fix. The `else if (this.costIsUnknown)` branch at line 152 runs regardless of how close `totalCost` is to the limit, making the 80%-threshold guard in the final `else` branch unreachable when cost tracking is incomplete.
 - **hunter_found:** `2026-03-20T18:42:16Z`
 - **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:46:59Z`
+- **fix_summary:** `costUnknownWarningEmitted Set deduplicates warnings per model. Only fires once per model. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2975,19 +2975,39 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0381
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/self-improvement/manifest.ts`
 - **line:** `43`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0373`
+- **branch:** `bugfix/BUG-0381`
 - **description:** The BUG-0373 CRLF fix updated regex lookaheads but left `goalsMatch[1].split("\n")` using plain `\n`, so on CRLF files each goal line retains a trailing `\r` that causes the metric-field regex to capture `"latency,"` (with trailing comma) instead of `"latency"`.
 - **context:** Regression from BUG-0373 fix. The inner `split("\n")` should be `split(/\r?\n/)` to match the outer CRLF-aware regex. Every `ManifestGoal.metric` value parsed from CRLF files will be wrong, breaking metric matching in the skill evolver.
 - **hunter_found:** `2026-03-20T18:42:16Z`
 - **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:46:59Z`
+- **fix_summary:** `All .split("\n") changed to .split(/\r?\n/) + 3 regex patterns updated for CRLF. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0382
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/harness/loop/index.ts`
+- **line:** `159`
+- **category:** `security-injection`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0382`
+- **description:** `config.env` fields (cwd, platform, date, gitBranch, gitStatus) are interpolated verbatim into the LLM system prompt with no sanitization. A malicious or attacker-controlled env value (e.g. a git branch name containing `\n\nIgnore all previous instructions`) can inject arbitrary content into the system prompt, enabling prompt injection.
+- **context:** Lines 159–165 build `envLines` from raw `config.env` string fields and append them directly to `systemPrompt`. Git branch names and working directory paths are attacker-influenced if the repository is cloned from an untrusted source. Fix: strip or encode newlines and null bytes from each env field before interpolation (e.g. `value.replace(/[\r\n\0]/g, " ")`). OWASP A03:2021 - Injection.
+- **hunter_found:** `2026-03-20T22:21:00Z`
+- **fixer_started:** `2026-03-20T18:47:46Z`
+- **fixer_completed:** `2026-03-20T18:49:55Z`
+- **fix_summary:** `sanitizeEnvValue() strips newlines/NUL/tags, truncates to 512 chars. Applied to all 5 env fields. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -3005,11 +3025,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `toMermaidDetailed()` embeds raw node IDs (`edge.from`, `edge.to`) directly into Mermaid markup with no sanitization, enabling Mermaid injection via crafted node names containing newlines and embedded directives.
 - **context:** BUG-0292 and BUG-0294 applied sanitization to `compile-ext.ts` and `StateGraph.toMermaid()` respectively, but `toMermaidDetailed()` in `src/inspect.ts` was missed. Lines 190, 192, 194, and 199-202 embed node IDs verbatim: `${edge.from} --> ${edge.to}` (line 190), `${edge.from} -->|...| ${edge.from}_router` (line 192), `${edge.from}_router --> ${edge.to}` (line 194), and style lines for each node ID (lines 199-202). A crafted node name such as `"node\nstyle node fill:#ff0000\ninjected_directive"` or `'node\nclick node call alert("XSS")'` injects arbitrary Mermaid directives. `StateGraph.prototype.toMermaidDetailed` (graph.ts:297-301) calls this function, so any graph using the richer diagram generator is vulnerable. Additionally, `src/swarm/compile-ext.ts` lines 36 and 38 embed `from` and `edge.to` / `from` verbatim with no sanitization — both the static and conditional branches are affected. Fix: add a `sanitizeMermaid()` helper to `inspect.ts` (replace newlines, strip `[`, `]`, backticks) and apply it to all node ID interpolations in `toMermaidDetailed()` and `compile-ext.ts`. OWASP A03:2021 - Injection.
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0323`
+- **branch:** `bugfix/BUG-0382`
 - **hunter_found:** `2026-03-20T12:35:00Z`
 - **fixer_started:** `2026-03-20T12:36:39Z`
-- **fixer_completed:** `2026-03-20T17:31:53Z`
-- **fix_summary:** `Added ?? "" nullish coalescing on all 3 TextPart.text accesses in sendTask() and streamTask(). tsc clean.`
+- **fixer_completed:** `2026-03-20T18:49:55Z`
+- **fix_summary:** `sanitizeEnvValue() strips newlines/NUL/tags, truncates to 512 chars. Applied to all 5 env fields. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -3027,11 +3047,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `StateGraph.toMermaid()` embeds raw node names into Mermaid markup via `lbl(n as string)` without sanitization, enabling Mermaid injection via crafted node names containing newlines and embedded directives.
 - **context:** BUG-0292 fix applied `sanitizeMermaid()` to `src/swarm/compile-ext.ts` but missed `StateGraph.toMermaid()` in `src/graph.ts`. The `lbl()` helper at line 218-219 casts node names directly to string with no escaping. A crafted node name such as `"node\nstyle node fill:#ff0000\ninjected_directive"` or `'node\nclick node call alert("XSS")'` injects arbitrary Mermaid directives into the output. Since Mermaid diagrams are rendered in web UIs, this can enable XSS in environments that render the diagram. Two regression tests in `src/__tests__/mermaid-node-injection.test.ts` confirm this: "BUG-0292: crafted node ID containing newline should not inject Mermaid directives" and "BUG-0292: crafted node ID containing Mermaid click directive should be escaped" both fail. Fix: import `sanitizeMermaid` from `./inspect.js` and apply it in `lbl()` for non-START/non-END nodes. OWASP A03:2021 - Injection.
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0323`
+- **branch:** `bugfix/BUG-0382`
 - **hunter_found:** `2026-03-20T05:23:00Z`
 - **fixer_started:** `2026-03-20T12:29:05Z`
-- **fixer_completed:** `2026-03-20T17:31:53Z`
-- **fix_summary:** `Added ?? "" nullish coalescing on all 3 TextPart.text accesses in sendTask() and streamTask(). tsc clean.`
+- **fixer_completed:** `2026-03-20T18:49:55Z`
+- **fix_summary:** `sanitizeEnvValue() strips newlines/NUL/tags, truncates to 512 chars. Applied to all 5 env fields. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
