@@ -3075,7 +3075,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0386
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/swarm/self-improvement/manifest.ts`
 - **line:** `45`
@@ -3085,7 +3085,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The BUG-0385 fix removed the direction-value validation guard (`rawDir !== "minimize" && rawDir !== "maximize"`) and now casts the parsed value directly via `m[3] as "minimize" | "maximize"`, so invalid direction values (e.g., `direction: up`) silently pass the type-cast without warning or defaulting.
 - **context:** Regression from BUG-0385 fix. The original defensive validation that warned and defaulted to `"minimize"` was intentional for malformed manifests. Without it, any typo or invalid value in the direction field produces an invalid `ManifestGoal` at runtime with no error signal.
 - **hunter_found:** `2026-03-20T18:55:38Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T18:56:46Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -3095,7 +3095,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0387
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/events/types.ts`
 - **line:** `100`
@@ -3105,7 +3105,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `PermissionRepliedEvent` is missing the `agentName` field that its paired `PermissionAskedEvent` includes, making it impossible to correlate a permission reply back to the requesting agent without external state.
 - **context:** The two events form a request/reply pair for interactive tool permission decisions. Audit logs and permission-tracking consumers cannot attribute the decision to the correct agent since the reply only carries `toolName`, `decision`, and `timestamp`.
 - **hunter_found:** `2026-03-20T18:55:38Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T18:56:46Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
