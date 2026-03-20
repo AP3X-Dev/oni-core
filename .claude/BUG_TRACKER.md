@@ -10,7 +10,7 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T17:41:31Z` |
+| **Last Fixer Pass** | `2026-03-20T17:46:37Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T17:25:00Z` |
 | **Last Security Scan** | `2026-03-20T18:30:00Z` |
@@ -2075,19 +2075,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0336
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/checkpoint.ts`
 - **line:** `48`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0336`
 - **description:** `MemoryCheckpointer.list()` applies `opts.limit` by slicing from the front of the ascending-sorted array, so `limit: 1` returns the oldest checkpoint (step 0) instead of the most recent one.
 - **context:** Every consumer of `list()` (time-travel, fork, getStateAt) expects recency-oriented ordering. Getting the oldest checkpoint instead of the latest silently returns stale state, corrupting resume and fork operations.
 - **hunter_found:** `2026-03-20T17:41:14Z`
 - **fixer_started:** `2026-03-20T17:42:37Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:46:37Z`
+- **fix_summary:** `Reversed items array before limit slice so limit:N returns N newest checkpoints. Updated test helper + expectations. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2095,19 +2095,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0337
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/pregel/checkpointing.ts`
 - **line:** `51`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0337`
 - **description:** `updateState` performs a non-atomic read-modify-write (`get` then `put` with same step) with no optimistic concurrency check, so concurrent HITL state updates for the same threadId cause lost updates.
 - **context:** Two simultaneous human-in-the-loop state patches will both read the same pre-update checkpoint; the second `put` silently overwrites the first, losing one user's state modification with no error or conflict detection.
 - **hunter_found:** `2026-03-20T17:41:14Z`
 - **fixer_started:** `2026-03-20T17:42:37Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:46:37Z`
+- **fix_summary:** `Added optimistic concurrency check to updateState. Re-reads step before write, throws CheckpointConflictError on divergence. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2115,19 +2115,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0338
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `155`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0338`
 - **description:** `delete()` fetches all step members, deletes data keys, then deletes the index key as separate non-atomic commands — a concurrent `put` between `zrange` and `del` can insert a new data key that becomes orphaned after the index is removed.
 - **context:** The thread enters a state where `get` returns `null` (index gone) but a dangling data key exists in Redis, leaking memory and potentially causing stale data to resurface if the same threadId is reused.
 - **hunter_found:** `2026-03-20T17:41:14Z`
 - **fixer_started:** `2026-03-20T17:42:37Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:46:37Z`
+- **fix_summary:** `Redis delete() now uses MULTI/EXEC transaction for atomic DEL+ZREM. Added RedisPipeline interface. Fallback for clients without multi(). tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2135,19 +2135,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0339
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/integrations/src/adapter/index.ts`
 - **line:** `34`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0339`
 - **description:** `sanitizeInput` recurses into nested objects but does not sanitize objects inside arrays — the array branch checks `Array.isArray(val)` and skips recursive sanitization of array elements, so `{ payload: [{ __proto__: { isAdmin: true } }] }` passes through with the dangerous key intact.
 - **context:** This bypasses the prototype-pollution protection added for BUG-0283. Any tool input containing an array of objects can carry `__proto__` keys through to `action.run()`, enabling prototype pollution in downstream integrations.
 - **hunter_found:** `2026-03-20T17:41:14Z`
 - **fixer_started:** `2026-03-20T17:42:37Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:46:37Z`
+- **fix_summary:** `sanitizeInput now recurses into objects inside arrays instead of passing through. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2155,19 +2155,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0340
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/integrations/src/adapter/auth-resolver.ts`
 - **line:** `55`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0340`
 - **description:** `storeAuthResolver` ignores the `ctx` argument in `resolve()` entirely — the `options.scope` field is never checked against the caller context, so any caller can retrieve any integration's credentials regardless of scope.
 - **context:** The `scope` option only triggers a console warning if omitted; it is never enforced as an access control check, making credential scoping purely advisory and non-functional as a security boundary.
 - **hunter_found:** `2026-03-20T17:41:14Z`
 - **fixer_started:** `2026-03-20T17:42:37Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:46:37Z`
+- **fix_summary:** `storeAuthResolver now accepts ctx and validates agentId against scope allowlist. 4 new tests. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
