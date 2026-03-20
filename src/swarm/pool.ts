@@ -201,7 +201,11 @@ export class AgentPool<S extends Record<string, unknown>> {
 
     try {
       // Fire onStart hook
-      await agent.hooks?.onStart?.(agent.id, input as Record<string, unknown>);
+      try {
+        await agent.hooks?.onStart?.(agent.id, input as Record<string, unknown>);
+      } catch (hookErr) {
+        console.warn(`[pool] onStart hook threw for agent "${agent.id}":`, hookErr);
+      }
 
       let lastError: unknown;
 
