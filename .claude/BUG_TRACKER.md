@@ -10,10 +10,10 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T18:55:03Z` |
+| **Last Fixer Pass** | `2026-03-20T18:58:58Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T18:37:51Z` |
-| **Last Security Scan** | `2026-03-20T22:50:00Z` (Cycle 144 — no new source code, no new findings) |
+| **Last Security Scan** | `2026-03-20T23:05:00Z` (Cycle 145 — no new source code, no new findings) |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -3075,17 +3075,57 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0386
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/self-improvement/manifest.ts`
 - **line:** `45`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0385`
+- **branch:** `bugfix/BUG-0386`
 - **description:** The BUG-0385 fix removed the direction-value validation guard (`rawDir !== "minimize" && rawDir !== "maximize"`) and now casts the parsed value directly via `m[3] as "minimize" | "maximize"`, so invalid direction values (e.g., `direction: up`) silently pass the type-cast without warning or defaulting.
 - **context:** Regression from BUG-0385 fix. The original defensive validation that warned and defaulted to `"minimize"` was intentional for malformed manifests. Without it, any typo or invalid value in the direction field produces an invalid `ManifestGoal` at runtime with no error signal.
 - **hunter_found:** `2026-03-20T18:55:38Z`
 - **fixer_started:** `2026-03-20T18:56:46Z`
+- **fixer_completed:** `2026-03-20T18:58:58Z`
+- **fix_summary:** `Re-added direction validation guard with [^\s,]+ regex improvement. Invalid values default to minimize with warning. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0387
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/events/types.ts`
+- **line:** `100`
+- **category:** `api-contract-violation`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0387`
+- **description:** `PermissionRepliedEvent` is missing the `agentName` field that its paired `PermissionAskedEvent` includes, making it impossible to correlate a permission reply back to the requesting agent without external state.
+- **context:** The two events form a request/reply pair for interactive tool permission decisions. Audit logs and permission-tracking consumers cannot attribute the decision to the correct agent since the reply only carries `toolName`, `decision`, and `timestamp`.
+- **hunter_found:** `2026-03-20T18:55:38Z`
+- **fixer_started:** `2026-03-20T18:56:46Z`
+- **fixer_completed:** `2026-03-20T18:58:58Z`
+- **fix_summary:** `Added agentName field to PermissionRepliedEvent matching PermissionAskedEvent. Updated 3 test emissions. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0388
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/harness/skill-loader.ts`
+- **line:** `268`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0383-0384`
+- **description:** The BUG-0383 fix escapes `name` and `args` in the XML wrapper but leaves `skill.content` (the raw skill file body) interpolated without any escaping, so a skill file containing `</skill-instructions>` can still break out of the XML wrapper.
+- **context:** Regression/incomplete fix from BUG-0383. The skill body is the largest untrusted input surface — it comes from files on disk that may be user-authored or modified by the self-improvement loop. The fix hardened two fields but left the primary injection vector open. Related to archived BUG at line 259 (name injection).
+- **hunter_found:** `2026-03-20T18:59:41Z`
+- **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -3094,18 +3134,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0387
-- **status:** `in-progress`
+### BUG-0389
+- **status:** `pending`
 - **severity:** `medium`
-- **file:** `src/events/types.ts`
-- **line:** `100`
-- **category:** `api-contract-violation`
+- **file:** `src/guardrails/permissions.ts`
+- **line:** `13`
+- **category:** `logic-bug`
 - **reopen_count:** `0`
 - **branch:** ``
-- **description:** `PermissionRepliedEvent` is missing the `agentName` field that its paired `PermissionAskedEvent` includes, making it impossible to correlate a permission reply back to the requesting agent without external state.
-- **context:** The two events form a request/reply pair for interactive tool permission decisions. Audit logs and permission-tracking consumers cannot attribute the decision to the correct agent since the reply only carries `toolName`, `decision`, and `timestamp`.
-- **hunter_found:** `2026-03-20T18:55:38Z`
-- **fixer_started:** `2026-03-20T18:56:46Z`
+- **description:** `checkToolPermission` with wildcard `"*"` permissions returns without verifying that `toolName` exists in any known tool registry, while `getPermittedTools` correctly bounds wildcards to `allTools` — creating an inconsistency where wildcarded agents can pass permission checks for nonexistent tools.
+- **context:** A misconfigured or malicious tool name passes the wildcard permission check silently in `checkToolPermission` but would not appear in `getPermittedTools` results. This inconsistency can mask configuration errors and allows tool invocation to proceed for tools that don't exist, deferring the error to a later and less informative point.
+- **hunter_found:** `2026-03-20T18:59:41Z`
+- **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
