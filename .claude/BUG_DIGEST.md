@@ -1,7 +1,7 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T19:01:28Z
-**Period:** Last 24 hours (2026-03-19T19:01:28Z to 2026-03-20T19:01:28Z)
+**Generated:** 2026-03-20T19:48:00Z
+**Period:** Last 24 hours (2026-03-19T19:48:00Z to 2026-03-20T19:48:00Z)
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active Bugs | 145 |
-| Pending | 0 |
-| In Progress | 2 |
-| Fixed (awaiting validation) | 127 |
+| Active Bugs | 52 |
+| Pending | 2 |
+| In Progress | 1 |
+| Fixed (awaiting validation) | 33 |
 | Reopened | 0 |
 | Blocked | 16 |
 
@@ -20,138 +20,89 @@
 
 | Severity | Count |
 |----------|-------|
-| Critical | 3 |
-| High | 49 |
-| Medium | 93 |
-| Low | 4 |
+| Critical | 2 |
+| High | 16 |
+| Medium | 31 |
+| Low | 3 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 101 |
-| Bugs Fixed (fixer_completed) | 130 |
+| Bugs Found | 7 |
+| Bugs Fixed | 36 |
 | Bugs Verified | 0 |
-| Bugs Completed to Fixed State | 130 |
-| Throughput | 130 bugs/day |
-| Mean Time to Fix | ~1.5-2 min (130 fixes in ~2.5h window) |
-| Mean Time to Verify | N/A (no validation in 24h) |
-| Reopen Rate | 0% (0 reopens in 24h period) |
-| First-Pass Fix Rate | ~99%+ |
-| Queue Drain Rate | 130/130 (100% of queued items moved to fixed) |
-| Blocked Ratio | 11% (16/145 active) |
+| Throughput | 0 bugs/day |
+| Mean Time to Fix | N/A (no verifications to measure end-to-end) |
+| Mean Time to Verify | N/A |
+| Reopen Rate | 6.3% (6/95 archived bugs had reopens) |
+| First-Pass Fix Rate | 93.7% |
+| Queue Drain Rate | 0.00 (0 verified / 7 found) |
+| Blocked Ratio | 30.8% (16/52 active) |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
-| `src/pregel/streaming.ts` | 10 |
-| `src/swarm/pool.ts` | 6 |
-| `src/swarm/factories.ts` | 6 |
-| `src/swarm/self-improvement/manifest.ts` | 5 |
-| `src/models/google.ts` | 4 |
+| `src/swarm/self-improvement/skill-evolver.ts` | 5 |
+| `src/swarm/pool.ts` | 5 |
+| `src/swarm/agent-node.ts` | 5 |
+| `src/models/google.ts` | 5 |
+| `src/models/anthropic.ts` | 5 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 48 |
-| missing-error-handling | 16 |
-| race-condition | 12 |
-| security-injection | 12 |
-| type-error | 11 |
+| logic-bug | 41 |
+| missing-error-handling | 23 |
+| security-injection | 15 |
+| race-condition | 11 |
+| type-error | 10 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-20T18:59:41Z | **ACTIVE** (101 new bugs found in 24h) |
-| Fixer | 2026-03-20T18:58:58Z | **HIGHLY ACTIVE** (130 fixes completed in 24h) |
-| Validator | 2026-03-20T04:07:00Z | **STALLED** (no validation in 24h period) |
+| Hunter | 2026-03-20T05:23:00Z | Active |
+| Fixer | 2026-03-20T10:16:26Z | Active |
+| Validator | 2026-03-20T04:07:00Z | **STALLED** (15+ hours since last pass) |
 
 ## Bottleneck Analysis
 
-**CRITICAL ALERT:** Validator agent remains completely stalled. Over the past 24 hours:
-- Hunter found 101 new bugs
-- Fixer completed 130 fixes and processed all pending work
-- Validator completed **zero validations**
+**CRITICAL: Validator remains stalled.** 33 bugs sit in `fixed` status with zero verifications in the last 24 hours. The validator last ran over 15 hours ago.
 
-The fixed queue has grown from 116 to 127 bugs (11 net growth from 101 found - 0 verified). At this rate, the validation backlog is unsustainable.
+**Blocked ratio is dangerously high at 30.8%** (16/52 active bugs). This far exceeds the 20% threshold. Many bugs are stalling and need human attention or architectural decisions.
 
-**Key concerns:**
-1. Validator has been stalled since 2026-03-20T04:07:00Z (~15 hours)
-2. Fixed queue now contains 127 bugs with zero throughput on validation
-3. Fixer output (130 fixes/day) vastly exceeds validator capacity (~0 fixes/day)
-4. Without validator action, queue will reach 200+ bugs within 48 hours
+**Active bug count dropped sharply** from 133 to 52 — this is largely due to the previous cycle's aggressive fixing, but without validation, bugs are accumulating in `fixed` status or being blocked.
 
-**Recommendation:**
-1. **URGENT:** Immediately diagnose and restart Validator agent
-2. Investigate root cause (crash, infinite loop, configuration failure, resource exhaustion)
-3. If Validator cannot be recovered quickly, consider:
-   - Spinning up a secondary parallel validator instance
-   - Manual emergency validation of high-severity bugs only
-   - Temporary queue halt to prevent backlog explosion
+**Recommendations:**
+1. **URGENT:** Restart Validator agent — 33 fixed bugs awaiting validation, 0 verified in 24h
+2. **HIGH:** Triage 16 blocked bugs — blocked ratio (30.8%) is critically high
+3. Hunter/Fixer throughput has slowed (7 found, 36 fixed) compared to previous cycle (103 found, 134 fixed) — may indicate pipeline saturation or source depletion
 
 ## Trend (vs Previous Digest)
 
-| Metric | Previous | Current | Direction |
-|--------|----------|---------|-----------|
-| Active Bugs | 135 | 145 | ↑ +7.4% |
-| Pending | 0 | 0 | → (stable) |
-| Fixed Queue | 116 | 127 | ↑ +9.5% |
-| In Progress | 2 | 2 | → (stable) |
-| Critical Severity | 2 | 3 | ↑ +1 |
-| Blocked Ratio | 11.8% | 11% | ↓ -0.8% |
-| Bugs Found (24h) | 90 | 101 | ↑ +12.2% |
-| Bugs Fixed (24h) | 119 | 130 | ↑ +9.2% |
-| Bugs Verified (24h) | 1 | 0 | ↓ -100% (ALARM) |
-| Reopen Rate | 0% | 0% | → (stable) |
+| Metric | Yesterday | Today | Direction |
+|--------|-----------|-------|-----------|
+| Active Bugs | 133 | 52 | ↓ -60.9% |
+| Pending | 1 | 2 | ↑ |
+| Fixed Queue | 131 | 33 | ↓ -74.8% |
+| Blocked | 1 | 16 | ↑ +1500% |
+| Throughput | 7 bugs/day | 0 bugs/day | ↓ |
+| Reopen Rate | 6.3% | 6.3% | → |
+| Blocked Ratio | 0.8% | 30.8% | ↑ |
 
-**Assessment:** Hunter and Fixer productivity surged (+12.2% and +9.2% respectively), driving total active bugs from 135 to 145. However, Validator productivity collapsed from 1 verification to zero. The fixed queue grew by 11 bugs net despite 130 fixes, indicating Hunter is now outpacing Fixer input. Pipeline health is deteriorating rapidly — without validation gate recovery, saturation is imminent.
+**Assessment:** Active bugs dropped dramatically (133 → 52), but this masks a concerning shift — blocked bugs surged from 1 to 16, and the validator remains completely stalled with 0 verifications. The fixed queue shrank only because many bugs transitioned to `blocked`. Hunter and Fixer throughput dropped significantly (7 found vs 103; 36 fixed vs 134), suggesting the pipeline may be running out of actionable bugs while blocked ones pile up. Top problem files have shifted from `src/pregel/streaming.ts` to a more distributed pattern across `src/swarm/` and `src/models/`.
 
-**Pipeline Status: CRITICAL — Validation failure creates cascading risk to entire pipeline within 48-72 hours.**
+**Pipeline Status: DEGRADED — Validator stalled, blocked ratio critical.**
 
 ## Blocked Bugs — Needs Human Attention
 
-**Auto-Blocked (3 failed fix attempts — Human Review Required):**
-- **BUG-0205** (`critical` / `security-injection`) — Unsandboxed code execution (node_eval.ts). ESM import() bypasses restrictions. Needs isolated-vm or container-level sandbox.
-- **BUG-0246** (`high` / `race-condition`) — Synchronous record() method, no actual race possible in single-threaded JS. May be architectural misunderstanding — human review needed.
+16 bugs currently blocked (IDs: BUG-0191, BUG-0205, BUG-0235, BUG-0236, BUG-0244, BUG-0246, BUG-0250, BUG-0253, BUG-0259, BUG-0260, BUG-0262, BUG-0268, BUG-0275, BUG-0277, BUG-0278, BUG-0286).
 
-**False Positives & Already-Fixed (11 bugs — recommend closure):**
-- **BUG-0235** (`high` / `test-regression`) — toJSON() already returns all fields. False positive per latest check.
-- **BUG-0236** (`high` / `test-regression`) — No eval() in redis adapter. False positive per fixer review.
-- **BUG-0244** (`medium` / `security-injection`) — Already fixed on main. Hunter false positive.
-- **BUG-0250** (`medium` / `memory-leak`) — Timer handle already stored + .unref() at lines 159-160. False positive.
-- **BUG-0259** (`medium` / `logic-bug`) — recencyScore already 0 for non-episodic. False positive.
-- **BUG-0260** (`medium` / `logic-bug`) — Line 96 already logs warning. False positive.
-- **BUG-0262** (`medium` / `missing-error-handling`) — brave.ts already wraps res.json(). False positive.
-- **BUG-0275** (`high` / `api-contract-violation`) — Already fixed on main. Needs closure.
-- **BUG-0277** (`high` / `missing-error-handling`) — Already fixed on main. Needs closure.
-- **BUG-0286** (`medium` / `security-config`) — No raw content logged. False positive.
-- **BUG-0278** (`high` / `type-error`) — Awaiting validation gate to clear. Fix applied.
-
-**Policy/Architecture Blocks:**
-- **BUG-0191** (`low` / `dead-code`) — Unused `plugins` field in ONIConfig. Requires API design decision: remove field (breaking change) or implement plugin loading feature.
-
-**Stuck in Blocked (Fix Applied, Not Validated):**
-- **BUG-0253** (`medium` / `logic-bug`) — Direction-aware delta computed. Applied `fix/BUG-0253-direction-aware-delta`. Awaiting validation.
-- **BUG-0268** (`medium` / `missing-error-handling`) — Removed throw err from fireSessionStart catch. Awaiting validation.
-- **BUG-0278** (`high` / `type-error`) — Added validation for pendingSends. Awaiting validation.
+These require human review — most are auto-blocked after 3 failed fix attempts.
 
 ---
-
-## Summary
-
-The bug pipeline is experiencing critical validator failure. Over the past 24 hours, Hunter (+12% activity) and Fixer (+9% activity) reached high productivity states, finding 101 bugs and fixing 130 bugs respectively. However, the Validator agent has been completely stalled for 15 hours with zero validations, causing the fixed queue to grow to 127 bugs — a 9.5% increase from the previous digest despite aggressive fixer output.
-
-This creates a cascading risk: continued Hunter/Fixer activity will push the queue beyond 200+ bugs within 48 hours, likely requiring emergency manual validation or queue reset.
-
-**Critical actions required:**
-1. **Immediately diagnose Validator failure** — check logs, process status, resource usage
-2. **Restart or recover Validator agent** — queue is unsustainable at zero validation rate
-3. **If recovery fails, implement emergency validation** — consider parallel validation, manual triage, or temporary queue hold
-4. **Monitor Hunter/Fixer rates** — may need throttling if Validator remains offline
-
-Without validator recovery within the next 6-12 hours, the pipeline will experience full saturation and require emergency intervention to clear the backlog.
 
 *Generated by Bug Pipeline Digest Agent*
