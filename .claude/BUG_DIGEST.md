@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T11:31:00Z
+**Generated:** 2026-03-21T04:17:00Z
 **Period:** Last 24 hours
 
 ---
@@ -55,9 +55,9 @@
 | Category | Count |
 |----------|-------|
 | security-injection | 10 |
-| logic-bug | 9 |
-| test-regression | 8 |
-| missing-error-handling | 5 |
+| logic-bug | 7 |
+| test-regression | 6 |
+| missing-error-handling | 4 |
 | type-error | 4 |
 
 ## Agent Health
@@ -70,22 +70,22 @@
 
 ## Bottleneck Analysis
 
-**Validator is the critical bottleneck:** 33 bugs are fixed and awaiting validation with 0 currently in-validation. The Validator last ran over 7 hours ago (04:07Z). The fixed queue is massive and not draining. **Recommendation:** Urgently trigger Validator passes to clear the backlog.
+**Validator is the critical bottleneck:** 33 bugs are fixed and awaiting validation with 0 currently in-validation. The Validator last ran over 24 hours ago (2026-03-20T04:07:00Z). The fixed queue is massive and not draining. **Recommendation:** Urgently trigger Validator passes to clear the backlog.
 
-**Blocked ratio at 32.7%** (up from 28.0%) — 16 of 49 active bugs are blocked. At least 8 appear to be false positives (already fixed on main) needing Hunter re-evaluation or human triage. A bulk false-positive sweep would significantly reduce noise.
+**Blocked ratio at 32.7%** — 16 of 49 active bugs are blocked. At least 8 appear to be false positives (already fixed on main) needing Hunter re-evaluation or human triage. A bulk false-positive sweep would significantly reduce noise.
 
-**Pipeline stalled** — 0 bugs found, fixed, or verified in the last 24h. All agents appear idle since their last recorded timestamps. The pipeline needs manual intervention to resume.
+**Pipeline fully stalled for 3rd consecutive cycle** — 0 bugs found, fixed, or verified in the last 24h. All agents appear idle since their last recorded timestamps. The pipeline needs manual intervention to resume.
 
 ## Trend (vs Previous Digest)
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
-| Active Bugs | 50 | 49 | ↓ |
-| Throughput | 0 | 0 | → |
-| Reopen Rate | 25.0% | 25.0% | → |
-| Blocked Ratio | 28.0% | 32.7% | ↑ |
+| Active Bugs | 49 | 49 | -> |
+| Throughput | 0 | 0 | -> |
+| Reopen Rate | 25.0% | 25.0% | -> |
+| Blocked Ratio | 32.7% | 32.7% | -> |
 
-Active bug count down by 1 (meta counter correction). Blocked ratio increased from 28% to 32.7% — 2 additional bugs moved to blocked status. `src/swarm/pool.ts` remains the top problem file across multiple cycles — this module needs structural attention. Pipeline remains fully stalled with zero throughput for a second consecutive cycle.
+All metrics unchanged from previous cycle. Pipeline remains fully stalled with zero activity. `src/swarm/pool.ts` persists as top problem file across 3+ cycles — this module needs structural attention beyond individual bug fixes.
 
 ## Blocked — Needs Human Attention
 
