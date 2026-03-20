@@ -185,21 +185,26 @@ function topoSort(nodes: Set<string>, edges: GraphEdge[]): string[] {
 export function toMermaidDetailed(descriptor: GraphDescriptor): string {
   const lines: string[] = ["graph TD"];
 
+  /** Strip/escape Mermaid-special characters from node names. */
+  const sanitize = (s: string): string =>
+    s.replace(/[\n\r;|[\]`<>{}()#&]/g, "_");
+
   for (const edge of descriptor.edges) {
+    const from = sanitize(edge.from);
     if (edge.type === "static") {
-      lines.push(`    ${edge.from} --> ${edge.to}`);
+      lines.push(`    ${from} --> ${sanitize(edge.to)}`);
     } else {
-      lines.push(`    ${edge.from} -->|${edge.label ?? "?"}| ${edge.from}_router`);
-      lines.push(`    ${edge.from}_router:::conditional`);
-      lines.push(`    ${edge.from}_router --> ${edge.to}`);
+      lines.push(`    ${from} -->|${edge.label ?? "?"}| ${from}_router`);
+      lines.push(`    ${from}_router:::conditional`);
     }
   }
 
   for (const node of descriptor.nodes) {
-    if      (node.id === START)    lines.push(`    style ${node.id} fill:#7c3aed,color:#fff`);
-    else if (node.id === END)      lines.push(`    style ${node.id} fill:#1e1e2e,color:#fff`);
-    else if (node.isSubgraph)      lines.push(`    style ${node.id} fill:#0ea5e9,color:#fff`);
-    else if (node.hasRetry)        lines.push(`    style ${node.id} fill:#f59e0b,color:#000`);
+    const id = sanitize(node.id);
+    if      (node.id === START)    lines.push(`    style ${id} fill:#7c3aed,color:#fff`);
+    else if (node.id === END)      lines.push(`    style ${id} fill:#1e1e2e,color:#fff`);
+    else if (node.isSubgraph)      lines.push(`    style ${id} fill:#0ea5e9,color:#fff`);
+    else if (node.hasRetry)        lines.push(`    style ${id} fill:#f59e0b,color:#000`);
   }
 
   lines.push(`    classDef conditional fill:#6b7280,color:#fff`);
