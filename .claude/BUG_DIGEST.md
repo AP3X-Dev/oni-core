@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T05:42:51Z
+**Generated:** 2026-03-20T06:08:11Z
 **Period:** Last 24 hours
 
 ---
@@ -10,9 +10,9 @@
 | Metric | Value |
 |--------|-------|
 | Active Bugs | 39 |
-| Pending | 11 |
+| Pending | 16 |
 | In Progress | 0 |
-| Fixed (awaiting validation) | 17 |
+| Fixed (awaiting validation) | 12 |
 | Reopened | 1 |
 | Blocked | 10 |
 
@@ -29,15 +29,15 @@
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 47 |
-| Bugs Fixed | 29 |
+| Bugs Found | 48 |
+| Bugs Fixed | 31 |
 | Bugs Verified | 12 |
 | Throughput | 12 bugs/day |
-| Mean Time to Fix | ~5h |
-| Mean Time to Verify | ~2h |
+| Mean Time to Fix | ~11.6h |
+| Mean Time to Verify | ~3h |
 | Reopen Rate | 6.3% |
 | First-Pass Fix Rate | 93.7% |
-| Queue Drain Rate | 0.26 |
+| Queue Drain Rate | 0.25 |
 | Blocked Ratio | 25.6% |
 
 ## Top Problem Files
@@ -47,7 +47,7 @@
 | `src/swarm/pool.ts` | 5 |
 | `src/harness/memory/ranker.ts` | 3 |
 | `src/swarm/self-improvement/skill-evolver.ts` | 3 |
-| `src/pregel/index.ts` | 2 |
+| `src/pregel/streaming.ts` | 2 |
 | `src/models/anthropic.ts` | 2 |
 
 ## Top Categories
@@ -55,8 +55,8 @@
 | Category | Count |
 |----------|-------|
 | test-regression | 8 |
+| logic-bug | 7 |
 | missing-error-handling | 5 |
-| logic-bug | 5 |
 | security (all variants) | 5 |
 | type-error | 4 |
 
@@ -65,27 +65,25 @@
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
 | Hunter | 2026-03-19T23:05:00Z | active |
-| Fixer | 2026-03-20T05:42:28Z | active |
+| Fixer | 2026-03-20T04:07:17Z | active |
 | Validator | 2026-03-20T04:07:00Z | active |
 
 ## Bottleneck Analysis
 
-**Validator is the bottleneck:** 17 bugs are fixed and awaiting validation, but only 12 were verified in the last 24h. The Fixer is outpacing the Validator — fixed bugs are accumulating. Recommended action: prioritize validator passes to clear the fixed queue.
+**Queue drain rate critically low at 0.25** — the pipeline verified only 12 bugs against 48 found. The Hunter is producing far faster than the pipeline can close. Active bug count is stable at 39 only because the Fixer is keeping pace, but the Validator is the bottleneck: 12 bugs are fixed and awaiting validation. **Recommendation:** Consider pausing the Hunter to let the Validator catch up.
 
-**Blocked ratio at 25.6%** — 10 of 39 active bugs are blocked. 7 are reported as false positives by the Fixer (BUG-0235, BUG-0236, BUG-0244, BUG-0260, BUG-0262, BUG-0275, BUG-0277). These need Hunter re-evaluation or human triage.
-
-**Queue drain rate critically low at 0.26** — the pipeline verified only 12 bugs against 47 found. The active bug count is growing. The Hunter is producing far faster than the pipeline can close.
+**Blocked ratio at 25.6%** — 10 of 39 active bugs are blocked. 7 are reported as false positives by the Fixer (BUG-0235, BUG-0236, BUG-0244, BUG-0260, BUG-0262, BUG-0275, BUG-0277). These need Hunter re-evaluation or human triage to clear.
 
 ## Trend (vs Previous Digest)
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
-| Active Bugs | 26 | 39 | ↑ (+13) |
-| Throughput | 25 | 12 | ↓ |
-| Reopen Rate | 7.4% | 6.3% | ↓ |
-| Blocked Ratio | 38.5% | 25.6% | ↓ |
+| Active Bugs | 39 | 39 | → |
+| Throughput | 12 | 12 | → |
+| Reopen Rate | 6.3% | 6.3% | → |
+| Blocked Ratio | 25.6% | 25.6% | → |
 
-Active bug count increased significantly from 26 to 39 — the Hunter found 47 new bugs while only 12 were verified. Throughput dropped from 25 to 12 bugs/day. Blocked ratio improved (down from 38.5% to 25.6%) due to the larger active set denominator. Reopen rate improved slightly. `src/swarm/pool.ts` remains the top problem file for a seventh consecutive cycle. **Recommendation:** Consider pausing the Hunter to let the Fixer and Validator catch up.
+Pipeline state is stable since last digest (~2h ago). No meaningful change in active count or throughput. `src/swarm/pool.ts` remains the top problem file for an eighth consecutive cycle — this module likely needs structural attention beyond individual bug fixes.
 
 ## Blocked — Needs Human Attention
 
