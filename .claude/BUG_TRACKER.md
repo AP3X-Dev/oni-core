@@ -10,14 +10,14 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T17:56:57Z` |
+| **Last Fixer Pass** | `2026-03-20T18:01:16Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T20:00:00Z` |
 | **Last Security Scan** | `2026-03-20T20:20:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:45:00Z` |
+| **Last TestGen Run** | `2026-03-20T23:50:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T23:30:00Z` (Cycle 167) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
@@ -2375,19 +2375,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0351
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/dlq.ts`
 - **line:** `20`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0351`
 - **description:** `DeadLetterQueue.record()` stores the `input` object reference directly without cloning, so mutations to the original object after recording silently corrupt the stored dead letter audit trail.
 - **context:** Any code that calls `dlq.record(state, error)` and later mutates `state` will retroactively change the dead letter's `input` field, making post-mortem debugging unreliable — the stored snapshot no longer reflects the state at time of failure.
 - **hunter_found:** `2026-03-20T17:50:18Z`
 - **fixer_started:** `2026-03-20T17:57:45Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:01:16Z`
+- **fix_summary:** `Deep-cloned input via structuredClone in DLQ.record(). Prevents external mutation of stored entries. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2395,19 +2395,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0352
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/internal/validate-command.ts`
 - **line:** `64`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0352`
 - **description:** `execFileSync("which", [trimmed])` is used to verify PATH-resident binaries, but `which` is not available on Windows, causing every bare command name to throw a "not found on PATH" error even for valid binaries.
 - **context:** This makes LSP server configuration entirely non-functional on Windows. The `where` command is the Windows equivalent, but neither fallback nor platform check is present.
 - **hunter_found:** `2026-03-20T17:50:18Z`
 - **fixer_started:** `2026-03-20T17:57:45Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:01:16Z`
+- **fix_summary:** `Replaced execFileSync(which) with cross-platform PATH walk using PATHEXT on Windows. No child_process dependency. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
