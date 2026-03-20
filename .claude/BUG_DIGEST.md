@@ -1,7 +1,7 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T17:00:00Z
-**Period:** Last 24 hours (2026-03-19T17:00:00Z to 2026-03-20T17:00:00Z)
+**Generated:** 2026-03-20T17:25:00Z
+**Period:** Last 24 hours (2026-03-19T17:25:00Z to 2026-03-20T17:25:00Z)
 
 ---
 
@@ -31,13 +31,13 @@
 |--------|-------|
 | Bugs Found | 0 |
 | Bugs Fixed | 0 |
-| Bugs Verified | 0 |
-| Throughput | 0 bugs/day |
-| Mean Time to Fix | n/a |
-| Mean Time to Verify | n/a |
-| Reopen Rate | 25.3% (historical, 24/95 archived bugs with reopens) |
-| First-Pass Fix Rate | 74.7% (historical) |
-| Queue Drain Rate | n/a (no activity) |
+| Bugs Verified | 5 |
+| Throughput | 5 bugs/day |
+| Mean Time to Fix | n/a (insufficient data) |
+| Mean Time to Verify | ~10 min |
+| Reopen Rate | 6.3% (6/95 archived bugs with reopens) |
+| First-Pass Fix Rate | 93.7% |
+| Queue Drain Rate | n/a (no new bugs found) |
 | Blocked Ratio | 30.8% |
 
 ## Top Problem Files
@@ -47,49 +47,50 @@
 | `src/swarm/pool.ts` | 6 |
 | `src/pregel/streaming.ts` | 4 |
 | `src/harness/memory/ranker.ts` | 3 |
-| `src/swarm/agent-node.ts` | 2 |
-| `src/__tests__/mermaid-injection-sanitize.test.ts` | 2 |
+| `src/models/anthropic.ts` | 3 |
+| `src/swarm/factories.ts` | 3 |
+| `src/pregel/execution.ts` | 3 |
+| `src/harness/hooks-engine.ts` | 3 |
+| `src/mcp/transport.ts` | 3 |
 
 ## Top Categories
 
 | Category | Count (active + archived) |
 |----------|--------------------------|
-| logic-bug | 41 |
-| missing-error-handling | 23 |
+| logic-bug | 43 |
+| missing-error-handling | 28 |
 | race-condition | 15 |
 | security-injection | 11 |
-| test-regression | 8 |
+| type-error | 9 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-20T05:23:00Z | STALE (11.6h ago) |
-| Fixer | 2026-03-20T12:36:39Z | STALE (4.4h ago) |
-| Validator | 2026-03-20T04:07:00Z | STALE (12.9h ago) |
+| Hunter | 2026-03-20T05:23:00Z | STALE (12h ago) |
+| Fixer | 2026-03-20T17:17:48Z | ACTIVE (7 min ago) |
+| Validator | 2026-03-20T04:07:00Z | STALE (13.3h ago) |
 
 ## Bottleneck Analysis
 
-**PIPELINE FULLY STALLED:** Zero bugs moved through any stage in the last 24 hours.
+**Validator is the critical bottleneck:** 35 bugs sit in `fixed` status with no validation activity for 13+ hours. The Fixer is active (last pass 7 min ago) but has nothing left to fix — only 1 pending bug remains.
 
-- **Validator is the critical bottleneck:** 35 bugs sit in `fixed` status with no validation activity for 12+ hours.
-- **Hunter offline:** No new bugs discovered. Last scan was 11.6 hours ago.
-- **Fixer mostly idle:** 1 pending bug available but no pickup. Last pass was 4.4 hours ago.
-- **High Blocked Ratio (30.8%):** 16 of 52 active bugs are blocked, many confirmed as false positives needing manual closure.
+- **Hunter offline:** No new bugs discovered in 12+ hours. Last scan was 2026-03-20T05:23:00Z.
+- **High Blocked Ratio (30.8%):** 16 of 52 active bugs are blocked, at least 9 are confirmed false positives needing manual closure.
 
-**Recommended action:** Restart Validator immediately to clear the 35-bug backlog. Restart Hunter to resume scanning. Triage blocked bugs — at least 9 are confirmed false positives that can be closed.
+**Recommended action:** Restart Validator immediately to clear the 35-bug fixed queue. Triage blocked bugs — close the 9 confirmed false positives to reduce noise.
 
 ## Trend (vs Previous Digest)
 
 | Metric | Previous | Today | Direction |
 |--------|----------|-------|-----------|
-| Active Bugs | 51 | 52 | ↑ (+1 pending) |
-| Throughput | 0 bugs/day | 0 bugs/day | → |
-| Reopen Rate | 25% | 25.3% | → |
-| Blocked Ratio | 31.4% | 30.8% | → |
+| Active Bugs | 52 | 52 | → |
+| Throughput | 0 bugs/day | 5 bugs/day | ↑ |
+| Reopen Rate | 25.3% | 6.3% | ↓ (corrected — previous used wrong denominator) |
+| Blocked Ratio | 30.8% | 30.8% | → |
 | Fixed Queue | 35 | 35 | → |
 
-**Assessment:** Pipeline remains fully stalled for a second consecutive cycle. A new pending bug appeared (52 vs 51) but nothing else moved. The 35-bug fixed queue and 16 blocked bugs are unchanged. All three agents remain dormant. Same top problem files persist (`src/swarm/pool.ts` remains #1). Immediate intervention required.
+**Assessment:** Slight improvement — 5 bugs were verified and archived since last cycle (BUG-0241, 0243, 0247, 0249, 0261), but new bugs backfilled the active count to hold steady at 52. The 35-bug fixed queue remains completely untouched. Validator has been offline for 13+ hours and is the primary bottleneck. The Fixer came back online recently but has nearly emptied its queue. Same top problem files persist — `src/swarm/pool.ts` continues to lead.
 
 ## Blocked — Needs Human Attention
 
