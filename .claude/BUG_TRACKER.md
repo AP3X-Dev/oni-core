@@ -9,11 +9,11 @@
 
 | Key | Value |
 |---|---|
-| **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
+| **Last Hunter Scan** | `2026-03-20T03:11:41Z` |
 | **Last Fixer Pass** | `2026-03-20T09:40:46Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T09:30:45Z` |
-| **Last Security Scan** | `2026-03-20T16:30:00Z` |
+| **Last Security Scan** | `2026-03-21T12:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -21,12 +21,12 @@
 | **Last Git Manager Pass** | `2026-03-21T00:00:00Z` |
 | **Last Supervisor Pass** | `2026-03-21T02:15:00Z` |
 | **Total Found** | `294` |
-| **Total Pending** | `1` |
+| **Total Pending** | `4` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `33` |
+| **Total Fixed** | `32` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `16` |
+| **Total Blocked** | `14` |
 | **Total Reopened** | `0` |
 
 ---
@@ -271,22 +271,22 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0235
-- **status:** `blocked`
+- **status:** `pending`
 - **severity:** `high`
 - **file:** `src/errors.ts`
 - **line:** `44`
 - **category:** `test-regression`
 - **description:** Tests "toJSON() returns structured representation" and all "has correct fields" tests in errors.test.ts fail: `ONIError.toJSON()` omits `stack` (type `undefined` not `string`) and `context` fields that tests expect.
-- **context:** CI Sentinel detected regression on main branch. `toJSON()` returns 6 fields (`name`, `code`, `category`, `message`, `recoverable`, `suggestion`) but tests assert `typeof json.stack === "string"` and expect `context` in the result. The internal `toInternalJSON()` method contains both fields. Either `toJSON()` was refactored to remove `stack`/`context` without updating the 13 test assertions, or the tests were written against an expected API that was never implemented. 13 tests fail across all ONIError subclasses in `src/__tests__/errors.test.ts`.
-- **reopen_count:** `0`
+- **context:** CI Sentinel confirmed 2026-03-20T03:11:41Z — 13 tests fail. `toJSON()` lines 44-53 returns only 6 fields. `stack` and `context` are in `toInternalJSON()` only. Fix: add `context: this.context` and `stack: this.stack` to the public `toJSON()` return object.
+- **reopen_count:** `1`
 - **branch:** ``
 - **hunter_found:** `2026-03-19T00:16:00Z`
-- **fixer_started:** `2026-03-19T07:21:00Z`
-- **fixer_completed:** `2026-03-19T07:25:00Z`
-- **fix_summary:** `False positive. Current toJSON() in src/errors.ts already returns all 8 fields including stack and context. No toInternalJSON() method exists. All 18 tests in errors.test.ts pass on main. Hunter should re-evaluate.`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_notes:** `CI Sentinel 2026-03-20T03:11:41Z: Confirmed real bug. Previous fixer false-positive assessment was incorrect. 13 tests fail in src/__tests__/errors.test.ts.`
 
 ---
 
