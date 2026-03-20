@@ -21,7 +21,14 @@ export class PdfLoader extends DocumentLoader {
       throw new Error("PdfLoader requires 'pdfjs-dist'. Install it: pnpm add pdfjs-dist");
     }
 
-    const data = new Uint8Array(await readFile(source));
+    let fileBuffer: Buffer;
+    try {
+      fileBuffer = await readFile(source);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`PDF loader: failed to read file '${source}': ${msg}`);
+    }
+    const data = new Uint8Array(fileBuffer);
     const loadingTask = pdfjsLib.getDocument({ data });
     const pdf = await loadingTask.promise;
     const pages: string[] = [];
