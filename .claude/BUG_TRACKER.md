@@ -10,7 +10,7 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T17:10:09Z` |
+| **Last Fixer Pass** | `2026-03-20T17:15:33Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T17:00:00Z` |
 | **Last Security Scan** | `2026-03-20T18:00:00Z` |
@@ -18,7 +18,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T23:58:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T17:06:14Z` (Cycle 158) |
+| **Last Git Manager Pass** | `2026-03-20T23:59:00Z` (Cycle 159) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -1495,19 +1495,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0307
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/pregel/state-helpers.ts`
 - **line:** `49`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0307`
 - **description:** `applyUpdate` uses `update[key] !== undefined` to gate reducer calls, silently dropping any node return that deliberately sets a channel key to `undefined` to reset/clear state.
 - **context:** Nodes returning `{ someKey: undefined }` intending to clear a channel will have no effect — the reducer is never called and the previous value persists across supersteps, leading to stale state that the node explicitly tried to remove.
 - **hunter_found:** `2026-03-20T17:11:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T17:13:04Z`
+- **fixer_completed:** `2026-03-20T17:15:33Z`
+- **fix_summary:** `Replaced update[key] !== undefined with Object.hasOwn(update, key). Deliberate undefined values no longer dropped. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1515,19 +1515,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0308
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/pregel/execution.ts`
 - **line:** `107`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0308`
 - **description:** After PII redaction rewrites content, `JSON.parse(inputCheck.content)` in the catch block silently falls back to the original un-redacted state if parsing fails, with no error or audit event.
 - **context:** A redacting filter that breaks JSON structure (e.g., replacing a quoted PII value with a label containing special chars) causes the redaction to be silently discarded. The node executes with the original un-redacted state and no warning is emitted, defeating the PII protection.
 - **hunter_found:** `2026-03-20T17:11:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T17:13:04Z`
+- **fixer_completed:** `2026-03-20T17:15:33Z`
+- **fix_summary:** `PII redaction parse failure now emits filter.blocked event and throws instead of silently falling back to un-redacted state. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1535,19 +1535,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0309
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/mcp/transport.ts`
 - **line:** `124`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0310-0309`
 - **description:** The `process.on("exit", ...)` handler in `_doStart()` rejects in-flight request promises but never calls the outer Promise constructor's `reject`, so if the MCP server process dies before `resolve()` fires, `start()` hangs forever.
 - **context:** The caller's `await client.connect()` deadlocks until the separate spawn-timeout fires. If no timeout is configured, the promise never settles, leaking the connection attempt and blocking the agent indefinitely.
 - **hunter_found:** `2026-03-20T17:11:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T17:13:04Z`
+- **fixer_completed:** `2026-03-20T17:15:33Z`
+- **fix_summary:** `Added _startReject field. Process exit handler now rejects start() promise so callers dont hang. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1555,19 +1555,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0310
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `critical`
 - **file:** `src/mcp/transport.ts`
 - **line:** `135`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0310-0309`
 - **description:** The `stdout.on("data", ...)` callback calls `this.processBuffer()` without a try/catch; if `processBuffer` throws during JSON parse of a malformed NDJSON frame, the unhandled exception from the EventEmitter `data` handler crashes the Node.js process.
 - **context:** A single malformed message from an MCP server kills the entire application via Node's uncaughtException mechanism, rather than just rejecting the in-flight request or disconnecting the transport.
 - **hunter_found:** `2026-03-20T17:11:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T17:13:04Z`
+- **fixer_completed:** `2026-03-20T17:15:33Z`
+- **fix_summary:** `Wrapped processBuffer() in try/catch in stdout data handler. Malformed NDJSON no longer crashes Node. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1575,19 +1575,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0311
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/factories.ts`
 - **line:** `492`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0311`
 - **description:** In `buildHierarchicalMesh` round-robin routing, the termination check `round >= teamIds.length` fires after `target` is computed via modulo, causing the coordinator to terminate one round early and never route to the last team in the list.
 - **context:** With 3 teams, rounds 0-1-2 should each route to a team, but round 2 triggers `2 >= 3` which is false (OK), then round 3 triggers `3 >= 3` which terminates before using target index 0. The actual bug is that the done-check uses the wrong threshold — it should allow exactly `teamIds.length` rounds.
 - **hunter_found:** `2026-03-20T17:11:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T17:13:04Z`
+- **fixer_completed:** `2026-03-20T17:15:33Z`
+- **fix_summary:** `Moved round >= teamIds.length guard before target computation in round-robin routing. Last team no longer skipped. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
