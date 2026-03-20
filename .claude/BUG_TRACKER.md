@@ -17,7 +17,7 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T12:00:00Z` (no new tests — no qualifying bugs without test_generated:true meeting criteria) |
+| **Last TestGen Run** | `2026-03-20T23:30:00Z` (no new tests — no qualifying bugs without test_generated:true meeting criteria) |
 | **Last Git Manager Pass** | `2026-03-21T09:00:00Z` (Cycle 176) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `297` |
@@ -3115,7 +3115,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0388
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/harness/skill-loader.ts`
 - **line:** `268`
@@ -3125,7 +3125,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The BUG-0383 fix escapes `name` and `args` in the XML wrapper but leaves `skill.content` (the raw skill file body) interpolated without any escaping, so a skill file containing `</skill-instructions>` can still break out of the XML wrapper.
 - **context:** Regression/incomplete fix from BUG-0383. The skill body is the largest untrusted input surface — it comes from files on disk that may be user-authored or modified by the self-improvement loop. The fix hardened two fields but left the primary injection vector open. Related to archived BUG at line 259 (name injection).
 - **hunter_found:** `2026-03-20T18:59:41Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T19:00:46Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -3135,7 +3135,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0389
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/guardrails/permissions.ts`
 - **line:** `13`
@@ -3145,7 +3145,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `checkToolPermission` with wildcard `"*"` permissions returns without verifying that `toolName` exists in any known tool registry, while `getPermittedTools` correctly bounds wildcards to `allTools` — creating an inconsistency where wildcarded agents can pass permission checks for nonexistent tools.
 - **context:** A misconfigured or malicious tool name passes the wildcard permission check silently in `checkToolPermission` but would not appear in `getPermittedTools` results. This inconsistency can mask configuration errors and allows tool invocation to proceed for tools that don't exist, deferring the error to a later and less informative point.
 - **hunter_found:** `2026-03-20T18:59:41Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T19:00:46Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
