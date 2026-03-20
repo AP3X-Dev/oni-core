@@ -10,7 +10,7 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T18:11:23Z` |
+| **Last Fixer Pass** | `2026-03-20T18:17:17Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T23:59:00Z` |
 | **Last Security Scan** | `2026-03-20T20:30:00Z` |
@@ -18,7 +18,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T12:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T05:30:00Z` (Cycle 169) |
+| **Last Git Manager Pass** | `2026-03-21T06:30:00Z` (Cycle 170) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -2595,19 +2595,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0362
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `examples/audit-system/verify-agent.ts`
 - **line:** `79`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0362`
 - **description:** `join(rootDir, file)` reads files using LLM-generated finding paths from `write_report` with no boundary check, allowing path traversal if the LLM reports a finding with a path like `../../etc/passwd`.
 - **context:** `runAuditAgent` stores findings with `f.file` set to whatever the LLM wrote; those strings are joined with `rootDir` and read directly. Unlike `read_file` in the audit agent which enforces a cwd boundary, the verify agent has no equivalent path validation.
 - **hunter_found:** `2026-03-20T18:12:53Z`
 - **fixer_started:** `2026-03-20T18:14:54Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:17:17Z`
+- **fix_summary:** `Path traversal boundary check on LLM-generated finding paths in verify-agent.ts. Traversal attempts blocked with reason. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2615,17 +2615,57 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0363
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `examples/audit-system/suppression.ts`
 - **line:** `47`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0363`
 - **description:** `loadSuppressionsFromFile` uses `require("node:fs")` inside an ESM module context where `require` is not defined, causing a `ReferenceError` at runtime.
 - **context:** The entire codebase uses ESM (`import`/`export`). This function will crash when called, making suppression loading from files completely non-functional. Should use `import("node:fs")` or a top-level import instead.
 - **hunter_found:** `2026-03-20T18:12:53Z`
 - **fixer_started:** `2026-03-20T18:14:54Z`
+- **fixer_completed:** `2026-03-20T18:17:17Z`
+- **fix_summary:** `Replaced CJS require(node:fs) with ESM import { readFileSync }. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0364
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `packages/tools/src/filesystem/index.ts`
+- **line:** `149`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0364`
+- **description:** `readdir` with `recursive: true` returns `Dirent` objects whose `name` property only contains the base filename (not the relative path from root) in Node < 20.1, so all nested files appear as if they are in the root directory.
+- **context:** The `list_directory` tool silently produces incorrect output for recursive listings on older Node versions — nested files lose their directory prefix, making the listing useless for navigation. Node 20.1+ added `Dirent.path` but the code reads only `entry.name`.
+- **hunter_found:** `2026-03-20T18:12:53Z`
+- **fixer_started:** `2026-03-20T18:14:54Z`
+- **fixer_completed:** `2026-03-20T18:17:17Z`
+- **fix_summary:** `Fixed recursive readdir: pass i.recursive to readdir, use Dirent.parentPath for full relative paths. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0365
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/cli/inspect.ts`
+- **line:** `83`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `dynamic import(file)` path-traversal guard uses only a `startsWith(cwd + "/")` check and extension allow-list, but does not resolve symlinks — a symlink inside the project directory that points outside cwd bypasses the guard entirely.
+- **context:** An attacker who can create a symlink inside the project (e.g., via a malicious npm dependency's postinstall script) can point it to any file outside the cwd, and `import()` will follow the symlink after the prefix check passes. Related to the archived BUG in BUG_LOG at line 66 about arbitrary module loading, but this is the specific symlink bypass vector.
+- **hunter_found:** `2026-03-20T18:18:14Z`
+- **fixer_started:** `2026-03-20T18:18:39Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2634,18 +2674,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0364
+### BUG-0366
 - **status:** `in-progress`
-- **severity:** `medium`
-- **file:** `packages/tools/src/filesystem/index.ts`
-- **line:** `149`
-- **category:** `logic-bug`
+- **severity:** `low`
+- **file:** `packages/integrations/src/registry/index.ts`
+- **line:** `24`
+- **category:** `type-error`
 - **reopen_count:** `0`
 - **branch:** ``
-- **description:** `readdir` with `recursive: true` returns `Dirent` objects whose `name` property only contains the base filename (not the relative path from root) in Node < 20.1, so all nested files appear as if they are in the root directory.
-- **context:** The `list_directory` tool silently produces incorrect output for recursive listings on older Node versions — nested files lose their directory prefix, making the listing useless for navigation. Node 20.1+ added `Dirent.path` but the code reads only `entry.name`.
-- **hunter_found:** `2026-03-20T18:12:53Z`
-- **fixer_started:** `2026-03-20T18:14:54Z`
+- **description:** `list()` uses non-null assertions (`!`) on `this.resolvers.get(name)` and `this.actions.get(name)` inside the iteration loop, while the `get()` method handles the missing-resolver case gracefully with an `undefined` guard — creating inconsistent null safety between the two read paths.
+- **context:** Both maps are always written together in `register()`, but if any future code path modifies `resolvers` independently, `list()` will throw a confusing runtime error with no message, while `get()` would handle it gracefully.
+- **hunter_found:** `2026-03-20T18:18:14Z`
+- **fixer_started:** `2026-03-20T18:18:39Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
