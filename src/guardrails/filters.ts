@@ -116,6 +116,8 @@ export function runFilters(
   direction: "input" | "output",
 ): FilterPipelineResult {
   let currentContent = content;
+  let redactionBlockedBy: string | undefined;
+  let redactionReason: string | undefined;
 
   for (const filter of filters) {
     // Skip filters that don't apply to this direction
@@ -127,8 +129,12 @@ export function runFilters(
 
     if (result.blocked) {
       if (result.redacted !== undefined) {
-        // Redaction mode — update content and continue
+        // Redaction mode — update content and continue, but preserve audit info
         currentContent = result.redacted;
+        if (redactionBlockedBy === undefined) {
+          redactionBlockedBy = filter.name;
+          redactionReason = result.reason;
+        }
         continue;
       }
       return {
@@ -140,5 +146,5 @@ export function runFilters(
     }
   }
 
-  return { passed: true, content: currentContent };
+  return { passed: true, content: currentContent, blockedBy: redactionBlockedBy, reason: redactionReason };
 }
