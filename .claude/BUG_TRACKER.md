@@ -13,7 +13,7 @@
 | **Last Fixer Pass** | `2026-03-20T19:10:12Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T19:01:28Z` |
-| **Last Security Scan** | `2026-03-21T04:00:00Z` (Cycle 149 — audited src/config/types.ts, src/errors.ts, src/guardrails/budget.ts, src/models/google.ts; no new findings — all candidates already tracked) |
+| **Last Security Scan** | `2026-03-21T04:30:00Z` (Cycle 150 — no new source code since Cycle 149; no new findings) |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
