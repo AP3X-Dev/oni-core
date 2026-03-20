@@ -380,7 +380,7 @@ export function google(
         result.parsed = JSON.parse(content);
       } catch {
         console.warn(
-          `[oni-core/google] responseFormat requested structured JSON output, but the model returned non-JSON content that could not be parsed. Raw content: ${content}`,
+          `[oni-core/google] responseFormat requested structured JSON output, but the model returned non-JSON content that could not be parsed. Content length: ${content?.length ?? 0}`,
         );
       }
     }

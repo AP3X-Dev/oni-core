@@ -270,11 +270,13 @@ describe("ContextCompactor", () => {
 
       const result = await compactor.compact(msgs);
 
-      expect(result).toHaveLength(2);
+      expect(result).toHaveLength(3);
       expect(result[0].role).toBe("user");
       expect(result[0].content).toContain("conversation was truncated");
       expect(result[1].role).toBe("assistant");
       expect(result[1].content).toBe("Context loaded.");
+      // The most recent message is kept (truncated to fit budget)
+      expect(result[2].content).toContain("[truncated]");
     });
 
     it("passes compactInstructions to the model", async () => {
