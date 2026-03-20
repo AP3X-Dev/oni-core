@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T03:18:28Z
+**Generated:** 2026-03-20T03:42:00Z
 **Period:** Last 24 hours
 
 ---
@@ -9,27 +9,27 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 40 |
-| Pending | 20 |
+| Active Bugs | 39 |
+| Pending | 19 |
 | In Progress | 0 |
-| Fixed (awaiting validation) | 14 |
+| Fixed (awaiting validation) | 12 |
 | Reopened | 0 |
-| Blocked | 6 |
+| Blocked | 8 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 45 |
-| Bugs Fixed | 26 |
+| Bugs Found | 42 |
+| Bugs Fixed | 21 |
 | Bugs Verified | 12 |
 | Throughput | 12 bugs/day |
 | Mean Time to Fix | ~11h 42m |
 | Mean Time to Verify | ~3h 4m |
 | Reopen Rate | 6.3% |
 | First-Pass Fix Rate | 100% |
-| Queue Drain Rate | 0.27 |
-| Blocked Ratio | 15.0% |
+| Queue Drain Rate | 0.29 |
+| Blocked Ratio | 20.5% |
 
 ## Top Problem Files
 
@@ -45,10 +45,10 @@
 
 | Category | Count |
 |----------|-------|
-| test-regression | 7 |
+| test-regression | 8 |
 | logic-bug | 7 |
+| security (all variants) | 6 |
 | missing-error-handling | 5 |
-| security (all variants) | 5 |
 | type-error | 5 |
 
 ## Agent Health
@@ -56,24 +56,26 @@
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
 | Hunter | 2026-03-19T23:05:00Z | active |
-| Fixer | 2026-03-20T03:16:59Z | active |
+| Fixer | 2026-03-20T03:24:59Z | active |
 | Validator | 2026-03-19T23:18:00Z | active |
 
 ## Bottleneck Analysis
 
-**Validator is the bottleneck.** 14 fixed bugs are awaiting validation, but the Validator's last pass was at 23:18Z. The Fixer completed a burst of fixes (BUG-0275 through BUG-0278) at 03:16Z that have not been validated yet. The Validator needs to run again to drain the 14-bug fixed queue.
+**Validator is the bottleneck.** 12 fixed bugs are awaiting validation, but the Validator's last pass was at 23:18Z (over 4 hours ago). The Fixer completed a burst of fixes (BUG-0265 through BUG-0274) that have not been validated yet. The Validator needs to run again to drain the fixed queue.
 
-**Pipeline is falling behind.** Queue drain rate is 0.27 (12 verified vs 45 found). The Hunter found a massive wave of 45 bugs in the last 24h. The Fixer kept pace (26 fixed) but the verification pipeline cannot absorb the volume. Active bug count nearly doubled from 22 to 40.
+**Pipeline is falling behind.** Queue drain rate is 0.29 (12 verified vs 42 found). The Hunter found 42 bugs in the last 24h. The Fixer is keeping pace (21 fixed) but verification cannot absorb the volume.
+
+**Blocked ratio at threshold.** At 20.5%, the blocked ratio exceeds the 20% threshold. 3 of 8 blocked bugs are false positives (BUG-0235, BUG-0236, BUG-0244) that the Hunter should re-evaluate.
 
 ## Trend (vs Previous Digest)
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
-| Active Bugs | 22 | 40 | ↑ (+18) |
-| Throughput | 0 bugs/day | 12 bugs/day | ↑ |
-| Reopen Rate | 7.5% | 6.3% | ↓ (improving) |
+| Active Bugs | 40 | 39 | ↓ (-1) |
+| Throughput | 12 | 12 | → (stable) |
+| Reopen Rate | 6.3% | 6.3% | → (stable) |
 
-Active bug count surged from 22 to 40 — the Hunter ran multiple productive scan cycles. Throughput jumped from 0 to 12 as the Validator finally began processing the backlog. `src/swarm/pool.ts` is the top problem file with 5 active bugs, indicating this module needs structural attention. The Fixer is keeping pace but the Validator is again falling behind the wave.
+Active bug count stabilized — the surge from the previous cycle has leveled off. Throughput is holding steady at 12 bugs/day. `src/swarm/pool.ts` remains the top problem file for a second consecutive cycle, indicating this module needs structural attention. The Fixer's first-pass fix rate remains at 100% for recently verified bugs, indicating high fix quality.
 
 ## Blocked — Needs Human Attention
 

@@ -10,23 +10,23 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-20T03:24:59Z` |
+| **Last Fixer Pass** | `2026-03-20T03:42:19Z` |
 | **Last Validator Pass** | `2026-03-19T23:18:00Z` |
-| **Last Digest Run** | `2026-03-18T00:35:00Z` |
+| **Last Digest Run** | `2026-03-20T03:42:00Z` |
 | **Last Security Scan** | `2026-03-19T19:55:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-19T23:10:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T03:31:09Z` |
+| **Last Git Manager Pass** | `2026-03-20T03:40:43Z` |
 | **Last Supervisor Pass** | `2026-03-19T21:52:17Z` |
 | **Total Found** | `109` |
-| **Total Pending** | `19` |
+| **Total Pending** | `14` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `12` |
+| **Total Fixed** | `15` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `8` |
+| **Total Blocked** | `10` |
 | **Total Reopened** | `0` |
 
 ---
@@ -736,19 +736,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0268
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `55`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0268`
 - **description:** `fireSessionStart` is awaited outside the main `try` block, so a hook error aborts the entire agent loop before any turn executes with no error message yielded to the caller.
 - **context:** The `try` block wrapping the main loop begins at line 81. Every other hook call (`firePreCompact`, `firePostCompact`, `fireStop`, `fireSessionEnd`) is inside a guarded block. A throwing session-start hook kills the generator with an unhandled error and no cleanup.
 - **hunter_found:** `2026-03-19T20:18:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T03:42:19Z`
+- **fixer_completed:** `2026-03-20T03:42:19Z`
+- **fix_summary:** `Removed throw err from fireSessionStart catch block in src/harness/loop/index.ts. The catch already yields the error but then re-threw, aborting the generator. Now catches, yields, and continues — consistent with other hook error handlers.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -876,7 +876,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0275
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `high`
 - **file:** `src/models/openrouter.ts`
 - **line:** `472`
@@ -886,9 +886,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The `finish_reason` check for emitting `tool_call_end` events is nested inside `if (delta)`, so when the API sends a final chunk with `finish_reason: "tool_calls"` but no `delta` object, the event is never emitted.
 - **context:** The OpenAI adapter correctly reads `finishReason` from `choice` (outside the delta block). In `openrouter.ts` the check at line 472 is inside `if (delta)`, making it unreachable when delta is absent. This means streaming tool calls never receive an end event, leaving callers that depend on `tool_call_end` to finalize tool invocations stuck indefinitely.
 - **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T03:42:19Z`
+- **fixer_completed:** `2026-03-20T03:42:19Z`
+- **fix_summary:** `False positive — already fixed on main. The finish_reason check is already outside the if (delta) block at line 475, with a code comment confirming this. Hunter should re-evaluate.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -896,19 +896,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0276
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/pregel/execution.ts`
 - **line:** `160`
 - **category:** `api-contract-violation`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0276`
 - **description:** The circuit breaker fallback in `execution.ts` calls `fallback(state, err)` with two arguments, but `CircuitBreaker.execute()` in `circuit-breaker.ts:36` calls `this.config.fallback()` with zero arguments — the two invocation sites have incompatible signatures.
 - **context:** A user registering a fallback that expects `(state, error)` would have it work correctly when triggered from `execution.ts:160` but receive `undefined` for both parameters when triggered from the `CircuitBreaker` class directly. This makes the fallback contract unreliable depending on which code path triggers it.
 - **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T03:42:19Z`
+- **fixer_completed:** `2026-03-20T03:42:19Z`
+- **fix_summary:** `Added state parameter to CircuitBreaker.execute() in src/circuit-breaker.ts. Both fallback call sites (open and half_open) now pass state instead of undefined. Typed fallback as (state: unknown, error: Error) => unknown. Updated execution.ts to pass state to cb.execute(executeWithTimeout, state).`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -916,7 +916,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0277
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `high`
 - **file:** `src/swarm/pool.ts`
 - **line:** `209`
@@ -926,9 +926,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `agent.hooks?.onComplete?.()` is awaited without a try/catch, so a throwing `onComplete` hook causes `invoke()` to reject even though the agent task already succeeded, discarding the valid result.
 - **context:** The result is computed at line 205 but a hook error before the return statement at line 210 causes the caller to see a failure. Unlike PostToolUse error handling in `tools.ts`, there is no isolated try/catch around the completion hook. The successful computation is lost.
 - **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T03:42:19Z`
+- **fixer_completed:** `2026-03-20T03:42:19Z`
+- **fix_summary:** `False positive — already fixed on main. The onComplete hook at line 222 is already wrapped in try/catch that logs a warning and continues. Result is returned regardless. Hunter should re-evaluate.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -936,19 +936,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0278
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `180`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0278`
 - **description:** `JSON.parse(raw) as ONICheckpoint<S>` deserializes stored checkpoint data without any field validation, so a corrupted or truncated Redis entry yields a checkpoint object missing required fields that only blows up later.
 - **context:** The Postgres checkpointer (`src/checkpointers/postgres.ts:122`) has a full `deserialize()` method that validates each field and throws a typed `CheckpointCorruptError`. The Redis checkpointer skips all validation, so corruption in Redis silently produces a partial checkpoint that causes downstream failures far from the deserialization site.
 - **hunter_found:** `2026-03-19T23:05:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T03:42:19Z`
+- **fixer_completed:** `2026-03-20T03:42:19Z`
+- **fix_summary:** `Added validation for pendingSends, metadata, and pendingWrites in Redis checkpointer deserialize() in src/checkpointers/redis.ts. Each optional field checked for correct type and throws CheckpointCorruptError on mismatch, matching Postgres checkpointer pattern.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
