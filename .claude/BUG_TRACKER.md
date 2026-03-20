@@ -10,7 +10,7 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T17:50:23Z` |
+| **Last Fixer Pass** | `2026-03-20T17:56:57Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T20:00:00Z` |
 | **Last Security Scan** | `2026-03-20T20:15:00Z` |
@@ -2275,19 +2275,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0346
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/tools/src/filesystem/index.ts`
 - **line:** `170`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0346`
 - **description:** `fs_create_directory` calls `checkAllowedPath(i.path)` before the directory exists, using `resolveReal` on a non-existent path, then calls `mkdir` — a TOCTOU window exists where a symlink can be created between the security check and the `mkdir` call, redirecting directory creation outside allowed paths.
 - **context:** The existing TOCTOU tests cover `read_file` and `write_file` but not `create_directory`. An attacker who can create symlinks in the target path between `resolveReal` and `mkdir` can escape the allowed-path sandbox for directory creation.
 - **hunter_found:** `2026-03-20T17:46:51Z`
 - **fixer_started:** `2026-03-20T17:51:33Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:56:57Z`
+- **fix_summary:** `fs_create_directory validates parent dir via dirname(resolve(path)) instead of non-existent target. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2295,19 +2295,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0347
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/agents/define-agent.ts`
 - **line:** `119`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0347`
 - **description:** `config?.signal` is passed to `model.chat()`, but `ONIConfig` has no `signal` field — the access always returns `undefined`, silently making AbortSignal-based cancellation impossible through this code path.
 - **context:** Callers who pass an AbortSignal via config to cancel a long-running agent chat will see no effect — the signal is never forwarded to the model. This is a phantom property access that appears to support cancellation but does not.
 - **hunter_found:** `2026-03-20T17:50:18Z`
 - **fixer_started:** `2026-03-20T17:51:33Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:56:57Z`
+- **fix_summary:** `Added signal fallback from runCtx.config.signal. Fixed context.ts to forward signal in makeChatParams. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2315,19 +2315,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0348
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/config/loader.ts`
 - **line:** `213`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0348`
 - **description:** `loadConfig()` applies `expandEnvVars()` to file-sourced configs inside `loadSingleConfig()`, but the `inline` override is merged via `mergeConfig()` without env-var expansion, making `${VAR}` strings in inline config pass through verbatim.
 - **context:** Callers who use programmatic inline config with environment variable references (e.g., `${API_KEY}`) will get the literal string instead of the expanded value, while the same string in a file config would be expanded — a silent inconsistency.
 - **hunter_found:** `2026-03-20T17:50:18Z`
 - **fixer_started:** `2026-03-20T17:51:33Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:56:57Z`
+- **fix_summary:** `Applied expandEnvVars to options.inline before mergeConfig so env vars in inline configs expand. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2335,19 +2335,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0349
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/hitl/resume.ts`
 - **line:** `43`
 - **category:** `dead-code`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0349-0350`
 - **description:** `evict()` sets `s.status = "expired"` then immediately calls `this.sessions.delete(id)` in the same tick, making the expired status transition invisible to any observer and effectively dead code.
 - **context:** `HITLSession.status` declares `"expired"` as a valid value, suggesting callers are meant to observe it, but no `get()` call can ever return a session in expired state because it is deleted before the tick yields.
 - **hunter_found:** `2026-03-20T17:50:18Z`
 - **fixer_started:** `2026-03-20T17:51:33Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:56:57Z`
+- **fix_summary:** `Two-pass eviction: first sets expired + fires onExpire callback, next cycle deletes. Status observable. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2355,19 +2355,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0350
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/hitl/resume.ts`
 - **line:** `81`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0349-0350`
 - **description:** `getByThread()` filters for `s.status === "pending"` only, silently omitting resumed sessions that have not yet been evicted and may still be relevant to the caller.
 - **context:** A caller checking active sessions for a thread immediately after `markResumed()` gets an empty list, potentially causing duplicate resume attempts. The method name implies "all sessions for this thread" but quietly drops non-pending ones.
 - **hunter_found:** `2026-03-20T17:50:18Z`
 - **fixer_started:** `2026-03-20T17:51:33Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:56:57Z`
+- **fix_summary:** `getByThread filter broadened to include resumed sessions alongside pending. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
