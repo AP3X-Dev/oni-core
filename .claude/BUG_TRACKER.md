@@ -10,10 +10,10 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-20T09:06:39Z` |
+| **Last Fixer Pass** | `2026-03-20T09:40:46Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T09:30:45Z` |
-| **Last Security Scan** | `2026-03-20T10:05:00Z` |
+| **Last Security Scan** | `2026-03-20T10:25:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -21,9 +21,9 @@
 | **Last Git Manager Pass** | `2026-03-21T10:00:00Z` |
 | **Last Supervisor Pass** | `2026-03-21T01:20:00Z` |
 | **Total Found** | `294` |
-| **Total Pending** | `2` |
+| **Total Pending** | `1` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `32` |
+| **Total Fixed** | `33` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `16` |
@@ -1217,7 +1217,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0293
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/context-compactor.ts`
 - **line:** `322`
@@ -1225,11 +1225,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `fallbackTruncation()` returns 3 messages (header + truncated message) but test "falls back to truncation on model error" in `harness-compactor.test.ts` expects only 2 (the header pair).
 - **context:** CI Sentinel detected regression on main. The prior fix for BUG about silent context loss changed `fallbackTruncation` to truncate oversized messages instead of dropping them — keeping a truncated copy in the result. The test was not updated to match the new 3-item return shape. The test expects `result.toHaveLength(2)` (header user + "Context loaded.") but now receives 3 items (header + truncated last message). The production code behavior is correct (truncating is better than silent context loss), but the test assertion must be updated to expect 3 items and verify the third item has truncated content.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0293-fix`
 - **hunter_found:** `2026-03-20T02:35:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T09:40:21Z`
+- **fixer_completed:** `2026-03-20T09:40:46Z`
+- **fix_summary:** `Updated test to expect 3 messages instead of 2. Added assertions for truncated third item. All 14 tests pass, tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
