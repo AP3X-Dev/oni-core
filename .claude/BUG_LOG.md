@@ -740,6 +740,8 @@
 - **validator_completed:** `2026-03-15T14:47:00Z`
 - **validator_notes:** Confirmed guard at lines 173-176, fires at construction time. Error message names both env var and option. No regressions.
 - **archived:** `2026-03-15T14:48:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/openai-empty-api-key.test.ts`
 
 ---
 
