@@ -9,20 +9,21 @@
 
 | Key | Value |
 |---|---|
+| **Last CI Sentinel Pass** | `2026-03-20T16:00:00Z` |
 | **Last Hunter Scan** | `2026-03-21T00:06:00Z` |
 | **Last Fixer Pass** | `2026-03-20T10:16:26Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
-| **Last Digest Run** | `2026-03-21T03:30:00Z` |
+| **Last Digest Run** | `2026-03-20T20:31:54Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T13:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T00:00:00Z` (Cycle 191) |
-| **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
+| **Last Supervisor Pass** | `2026-03-20T20:30:00Z` |
 | **Total Found** | `313` |
-| **Total Pending** | `23` |
-| **Total In Progress** | `0` |
+| **Total Pending** | `19` |
+| **Total In Progress** | `5` |
 | **Total Fixed** | `32` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
@@ -1255,7 +1256,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0296
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `343`
@@ -1265,7 +1266,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-20T20:00:15Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T22:00:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1275,7 +1276,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0297
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `343`
@@ -1285,7 +1286,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-20T20:00:15Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T22:00:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1295,7 +1296,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0298
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `343`
@@ -1305,7 +1306,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-20T20:00:15Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T22:00:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1395,7 +1396,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0300
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `critical`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `295`
@@ -1405,7 +1406,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-20T23:45:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T22:00:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
