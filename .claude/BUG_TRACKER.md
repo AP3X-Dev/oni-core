@@ -13,7 +13,7 @@
 | **Last Fixer Pass** | `2026-03-20T18:01:16Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T20:00:00Z` |
-| **Last Security Scan** | `2026-03-20T20:20:00Z` |
+| **Last Security Scan** | `2026-03-20T23:58:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -2408,6 +2408,86 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T17:57:45Z`
 - **fixer_completed:** `2026-03-20T18:01:16Z`
 - **fix_summary:** `Replaced execFileSync(which) with cross-platform PATH walk using PATHEXT on Windows. No child_process dependency. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0353
+- **status:** `in-progress`
+- **severity:** `high`
+- **file:** `examples/audit-system/audit-agent.ts`
+- **line:** `24`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `assertWithinCwd` boundary check uses `!resolved.startsWith(process.cwd())` without a trailing path separator, allowing sibling directories to bypass the check (e.g., if cwd is `/app`, the path `/app-evil` passes because `"/app-evil".startsWith("/app")` is `true`).
+- **context:** This was introduced as a fix for BUG-0316 path traversal. The correct check should use `process.cwd() + path.sep` or verify the relative path doesn't start with `..`. Without the trailing separator, the fix itself is a security bypass.
+- **hunter_found:** `2026-03-20T18:03:07Z`
+- **fixer_started:** `2026-03-20T18:04:38Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0354
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/swarm/types.ts`
+- **line:** `84`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `Handoff.priority` getter is typed as returning `string` instead of the narrow union `"low" | "normal" | "high" | "critical"` declared in `HandoffOptions.priority`.
+- **context:** `AgentPool` uses `priority` as a key into `PRIORITY_ORDER` (a `Record<string, number>`), so the loose return type gives no compile-time protection against misspelled priority values. Any arbitrary string passes through to the queue ordering logic.
+- **hunter_found:** `2026-03-20T18:03:07Z`
+- **fixer_started:** `2026-03-20T18:04:38Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0355
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/swarm/types.ts`
+- **line:** `122`
+- **category:** `api-contract-violation`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `SwarmMeta` declares the inter-agent message channel as `messages: SwarmMessage[]`, but the runtime state type `BaseSwarmState` calls the same channel `swarmMessages: SwarmMessage[]` — the two interfaces are structurally incompatible.
+- **context:** Both types are publicly exported from `src/index.ts`. Code that tries to use a `BaseSwarmState` value where `SwarmMeta` is expected will fail at the `messages`/`swarmMessages` field boundary, making them impossible to satisfy with one state object.
+- **hunter_found:** `2026-03-20T18:03:07Z`
+- **fixer_started:** `2026-03-20T18:04:38Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0356
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/types.ts`
+- **line:** `195`
+- **category:** `api-contract-violation`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Two unrelated interfaces named `ONIConfig` exist: `src/types.ts` line 195 (runtime invocation config with threadId, recursionLimit) and `src/config/types.ts` line 62 (config-file schema with model, agents, permissions) — they are entirely different shapes sharing the same exported name.
+- **context:** The main barrel only exports the runtime version, but the name collision means any code importing from internal paths gets the wrong type silently. The config-file `ONIConfig` should be renamed to avoid confusion (e.g., `ONIFileConfig`).
+- **hunter_found:** `2026-03-20T18:03:07Z`
+- **fixer_started:** `2026-03-20T18:04:38Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
