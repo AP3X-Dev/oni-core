@@ -13,7 +13,7 @@
 | **Last Fixer Pass** | `2026-03-20T17:29:19Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T17:25:00Z` |
-| **Last Security Scan** | `2026-03-22T17:10:00Z` |
+| **Last Security Scan** | `2026-03-20T18:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -1815,7 +1815,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0323
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `packages/a2a/src/client/index.ts`
 - **line:** `59`
@@ -1825,7 +1825,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `sendTask()` accesses `task.artifacts[0].parts[0].text` after narrowing on `type === "text"`, but `TextPart.text` can be `undefined`, so the method can return `undefined` typed as `string`.
 - **context:** Downstream string consumers will silently operate on `undefined` rather than receiving a descriptive error, causing concatenation to produce `"undefined"` strings or `.length` to throw TypeError.
 - **hunter_found:** `2026-03-20T17:24:49Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:30:08Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
