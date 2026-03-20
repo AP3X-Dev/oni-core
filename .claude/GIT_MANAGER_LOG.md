@@ -145,3 +145,23 @@
 [2026-03-20T22:55:00Z] BROAD OVERLAP ALERT (CARRY): BUG-0313-0317, BUG-0315-0316, and BUG-0351 each touch ~170 files. Validator must merge all narrow-scope fixed branches before these three.
 [2026-03-20T22:55:00Z] BRANCH COUNT: 71 named (10 fixed/awaiting-Validator, 1 reopened, 60 orphaned). 5 deletions this cycle. Cumulative deletions: ~107.
 [2026-03-20T22:55:00Z] === Git Manager Cycle 195 End ===
+
+[2026-03-20T21:00:17Z] === Git Manager Cycle 196 Start ===
+[2026-03-20T21:00:17Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer Pass=2026-03-20T22:43:00Z (>60s ago). Last Validator Pass=2026-03-20T20:55:30Z (>60s ago). in-progress bugs: BUG-0302/0303/0315/0317/0318; fixer_started=2026-03-20T22:53:00Z (future timestamp, not within 5min of current clock). Proceeding.
+[2026-03-20T21:00:17Z] Step 1: Branch inventory — 71 bugfix branches listed.
+[2026-03-20T21:00:17Z] Step 2: Branch map built. Active (fixed/in-progress/reopened): BUG-0289/0292/0293/0294/0296/0297/0298/0300/0302/0304/0305/0313/0314/0315/0316/0317/0318. Orphaned (not in tracker or pending w/o branch field): BUG-0301/0303/0307/0308/0310-0309/0311/0312/0313-0317/0315-0316/0316/0318/0319/0320/0321/0341..0391 range. Merged (in BUG_LOG as verified): BUG-0304/0313/0316 (also have active branches with same IDs — tracked under active).
+[2026-03-20T21:00:17Z] Step 3: DELETED 5 orphaned branches (no tracker entry, no conflicts): bugfix/BUG-0345 (was aa2d380), bugfix/BUG-0347 (was 68f9fc7), bugfix/BUG-0348 (was 3e016f3), bugfix/BUG-0349-0350 (was 4174bab), bugfix/BUG-0354-0355 (was a458d1b). Cumulative deletions: ~112.
+[2026-03-20T21:00:17Z] Step 4: Stale branch detection — BUG-0302/0315/0317/0318 have fixer_started=2026-03-20T22:53:00Z (future per system clock); all have actual fix commits on branch. Likely tracker clock drift. Not deleting. BUG-0289/0292 are >12h since last commit but status=fixed (awaiting Validator), not stale per definition.
+[2026-03-20T21:00:17Z] Step 5: Conflict pre-detection on fixed branches — BUG-0289: 1 marker (carry, non-trivial eval vs split-download patterns). BUG-0292: 0. BUG-0293: 0. BUG-0294: 0. BUG-0297: 1 (carry). BUG-0298: 1 (carry). BUG-0300: 2 (carry). BUG-0304: 1 (carry). BUG-0305: 2 (carry). BUG-0313: 3 (carry, human required). BUG-0314: 2 (NEW — was 0 in Cycle 195; e2b.ts touched by newer commits). BUG-0315: 2 (NEW — in-progress branch with fix committed). BUG-0316: 0.
+[2026-03-20T21:00:17Z] ALERT (NEW): BUG-0314 conflict regressed — 2 markers detected this cycle (was 0 in Cycle 195). e2b.ts has been modified by intervening commits. Validator must rebase bugfix/BUG-0314 before merging.
+[2026-03-20T21:00:17Z] ALERT (NEW): BUG-0315 conflict detected — 2 markers (tracer.ts). Branch has fix committed (pop() vs shift()); Validator must rebase before merging.
+[2026-03-20T21:00:17Z] Step 5b: Rebase — BUG-0289 conflict is non-trivial (eval patterns vs split-download patterns both needed). No suitable trivially-resolvable candidate found. Rebase skipped this cycle.
+[2026-03-20T21:00:17Z] Step 6: File overlap — in-progress branches: BUG-0302 (mermaid.ts), BUG-0315 (tracer.ts), BUG-0317 (slack/index.ts), BUG-0318 (stripe/index.ts). Fixed branches: BUG-0289/0296/0297/0298 (hooks-engine.ts), BUG-0292 (compile-ext.ts), BUG-0294 (graph.ts), BUG-0300 (streaming.ts), BUG-0304 (budget.ts), BUG-0305 (agent-node.ts), BUG-0313 (validate-command.ts), BUG-0314 (e2b.ts), BUG-0316 (postgres.ts). No overlaps between in-progress and fixed branches.
+[2026-03-20T21:00:17Z] Step 7: No stale rebase/merge states found. HEAD is on main. Clean.
+[2026-03-20T21:00:17Z] Step 8: Cycle 196 % 6 ≠ 0. git gc --auto skipped. Next gc at Cycle 198.
+[2026-03-20T21:00:17Z] ALERT (CARRY): BUG-0289 conflict (1 marker) — non-trivial, carry forward. Validator may re-attempt once BUG-0296/0297/0298 merged.
+[2026-03-20T21:00:17Z] ALERT (CARRY): BUG-0297/0298/0304/0305/0313 conflict alerts carry forward — Validator must rebase each before merging. BUG-0313 human intervention required.
+[2026-03-20T21:00:17Z] ALERT (CARRY): BUG-0320/0321/0341/0342/0343-0344/0346/0352/0353/0359/0364/0365/0367-0369/0372/0374/0378/0388/0389/0391 conflict alerts carry forward — human resolution required.
+[2026-03-20T21:00:17Z] BROAD OVERLAP ALERT (CARRY): BUG-0313-0317, BUG-0315-0316, and BUG-0351 each touch ~170 files. Merge narrow-scope branches first.
+[2026-03-20T21:00:17Z] BRANCH COUNT: 66 named (after 5 deletions). ~112 cumulative deletions.
+[2026-03-20T21:00:17Z] === Git Manager Cycle 196 End ===
