@@ -13,7 +13,7 @@
 | **Last Fixer Pass** | `2026-03-20T17:04:03Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T17:00:00Z` |
-| **Last Security Scan** | `2026-03-22T15:20:00Z` |
+| **Last Security Scan** | `2026-03-20T18:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -1375,7 +1375,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0301
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
 - **line:** `139`
@@ -1385,7 +1385,107 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `addSlots()` drains the queue in a while-loop calling `runOnSlot()` on newly-added slots, but concurrent `invoke()` calls can also pick and dispatch to the same new slots via `pickSlot()` before the drain loop claims them.
 - **context:** A queued item can be dispatched twice — once by the drain loop and once by a concurrent `invoke()` — resulting in duplicate agent executions for a single queued task.
 - **hunter_found:** `2026-03-20T16:54:16Z`
+- **fixer_started:** `2026-03-20T17:05:21Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0302
+- **status:** `in-progress`
+- **severity:** `high`
+- **file:** `src/agents/functional-agent.ts`
+- **line:** `118`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `pendingMessages` stores `content: unknown` from `ctx.send()`, but the merged `swarmMessages` objects type `content` as `string` per `SwarmMessage` interface — non-string payloads silently corrupt the content field.
+- **context:** Downstream `mailbox.ts` functions (`formatInbox`, `getInbox`) call string methods on `content`; if an agent passes an object or number to `ctx.send()`, those calls throw TypeError at runtime. The parallel `SwarmMessageView.content` is typed `unknown` but `SwarmMessage.content` is `string`, masking the mismatch.
+- **hunter_found:** `2026-03-20T17:04:19Z`
+- **fixer_started:** `2026-03-20T17:05:21Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0303
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/hitl/resume.ts`
+- **line:** `104`
+- **category:** `api-contract-violation`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `HITLInterruptException` does not extend `Error`, so it has no `stack`, `name`, or `message` property, yet it is thrown as a control-flow exception in `pregel/streaming.ts`.
+- **context:** Any error boundary, monitoring integration, or generic handler that reads `err.message` or `err.stack` gets `undefined`, silently losing diagnostic information and potentially causing null-dereference crashes in error reporting code.
+- **hunter_found:** `2026-03-20T17:04:19Z`
+- **fixer_started:** `2026-03-20T17:05:21Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0304
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/models/anthropic.ts`
+- **line:** `382`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `b.id!` and `b.name!` apply non-null assertions on fields typed `id?: string` and `name?: string` inside the `tool_use` filter, but the filter only checks `b.type === "tool_use"` — not presence of `id` or `name`.
+- **context:** If the Anthropic API returns a `tool_use` block with missing `id` or `name` (e.g., malformed partial response), `undefined` flows into tool routing code expecting non-empty strings, causing silent tool call failures or `undefined` keys in result maps.
+- **hunter_found:** `2026-03-20T17:04:19Z`
+- **fixer_started:** `2026-03-20T17:05:21Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0305
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/models/anthropic.ts`
+- **line:** `368`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `json.content.filter(...)` is called without a null/undefined guard on `json.content`, unlike the OpenAI and Google adapter paths which both check for missing data before property access.
+- **context:** If the Anthropic API returns a 200 response with null or missing `content` field, this throws `TypeError: Cannot read properties of null (reading 'filter')` — an unintelligible crash instead of a structured error.
+- **hunter_found:** `2026-03-20T17:04:19Z`
 - **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0306
+- **status:** `in-progress`
+- **severity:** `high`
+- **file:** `src/agents/functional-agent.ts`
+- **line:** `114`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `(result as Record<string, unknown>).swarmMessages` assumes `result` is a mutable plain object, but the user-supplied handler can return `null` or a primitive, causing TypeError on property assignment.
+- **context:** If a handler returns `null`, the assignment `(null as Record<string, unknown>).swarmMessages` throws. If it returns a primitive like `"done"`, the assignment is a silent no-op in non-strict mode, silently dropping all pending swarm messages without error.
+- **hunter_found:** `2026-03-20T17:04:19Z`
+- **fixer_started:** `2026-03-20T17:05:21Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
