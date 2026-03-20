@@ -1,7 +1,7 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T20:15:00Z
-**Period:** Last 24 hours (2026-03-19T20:15:00Z to 2026-03-20T20:15:00Z)
+**Generated:** 2026-03-21T03:30:00Z
+**Period:** Last 24 hours (2026-03-20T03:30:00Z to 2026-03-21T03:30:00Z)
 
 ---
 
@@ -9,117 +9,103 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active Bugs | 133 |
-| Pending | 1 |
+| Active Bugs | 54 |
+| Pending | 19 |
 | In Progress | 0 |
-| Fixed (awaiting validation) | 131 |
+| Fixed (awaiting validation) | 32 |
 | Reopened | 0 |
-| Blocked | 1 |
+| Blocked | 14 |
 
 ## Severity Breakdown
 
 | Severity | Count |
 |----------|-------|
-| Critical | 3 |
-| High | 48 |
-| Medium | 94 |
+| Critical | 2 |
+| High | 15 |
+| Medium | 34 |
 | Low | 3 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 103 |
-| Bugs Fixed (fixer_completed) | 134 |
-| Bugs Verified | 7 |
-| Throughput | 7 bugs/day |
-| Mean Time to Fix | ~7.8 hours |
-| Mean Time to Verify | ~51 minutes |
-| Reopen Rate | 6.3% (6/95 archived bugs had reopens) |
-| First-Pass Fix Rate | 93.7% |
-| Queue Drain Rate | 0.07 (7 verified / 103 found) |
-| Blocked Ratio | 0.8% (1/133 active) |
+| Bugs Found | 7 |
+| Bugs Fixed | 0 |
+| Bugs Verified | 0 |
+| Throughput | 0 bugs/day |
+| Mean Time to Fix | N/A (no verifications to measure end-to-end) |
+| Mean Time to Verify | N/A |
+| Reopen Rate | N/A (0 verifications this period) |
+| First-Pass Fix Rate | N/A |
+| Queue Drain Rate | 0.00 (0 verified / 7 found) |
+| Blocked Ratio | 25.9% (14/54 active) |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
-| `src/pregel/streaming.ts` | 10 |
-| `src/swarm/pool.ts` | 6 |
-| `src/swarm/factories.ts` | 6 |
-| `src/swarm/self-improvement/manifest.ts` | 5 |
-| `src/models/google.ts` | 4 |
+| `src/swarm/pool.ts` | 5 |
+| `src/harness/hooks-engine.ts` | 4 |
+| `src/swarm/agent-node.ts` | 3 |
+| `src/models/google.ts` | 3 |
+| `src/pregel/index.ts` | 2 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 50 |
-| missing-error-handling | 16 |
-| type-error | 12 |
-| security-injection | 12 |
-| race-condition | 12 |
+| security-injection | 13 |
+| logic-bug | 8 |
+| test-regression | 6 |
+| security-auth | 4 |
+| type-error | 4 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-20T05:23:00Z | **ACTIVE** (103 bugs found today) |
-| Fixer | 2026-03-20T19:10:12Z | **HIGHLY ACTIVE** (134 fixes today) |
-| Validator | 2026-03-20T04:07:00Z | **STALLED** (last activity ~16h ago) |
-| Supervisor | 2026-03-21T03:30:00Z | Active |
-| Git Manager | 2026-03-21T00:00:00Z | Active (Cycle 182) |
-| Security Scanner | 2026-03-21T04:00:00Z | Active (Cycle 149, no new findings) |
+| Hunter | 2026-03-21T00:02:00Z | Active (3.5h ago) |
+| Fixer | 2026-03-20T10:16:26Z | **STALLED** (17+ hours since last pass) |
+| Validator | 2026-03-20T04:07:00Z | **STALLED** (23+ hours since last pass) |
 
 ## Bottleneck Analysis
 
-**CRITICAL: Validator remains stalled.** 131 bugs sit in `fixed` status with no validation throughput. The 7 verifications in the last 24h came from a brief window before the validator went silent (~16 hours ago).
+**CRITICAL: Both Fixer and Validator are stalled.** No fix attempts in 17 hours and no validations in 23 hours. 32 bugs sit in `fixed` status with zero verifications in the last 24 hours.
 
-**POSITIVE: Blocked queue massively reduced.** 15 of 16 previously blocked bugs were resolved (per recent commit `89f1d62`), dropping blocked ratio from 11% to 0.8%. This is a major improvement.
+**Active bug count increased from 52 to 54** — Hunter resumed activity (7 new bugs), but neither Fixer nor Validator have processed them. This suggests pipeline blockage preventing downstream agents from executing.
 
-**Fixer is NOT the bottleneck** — 134 fixes completed, only 1 pending bug remains. The Fixer has essentially cleared the entire queue.
+**Blocked ratio remains elevated at 25.9%** (14/54 active bugs), indicating many bugs require human intervention or architectural decisions.
 
-**Validator IS the bottleneck** — 131 fixed bugs awaiting validation vs 7 verified in 24h. At current rate, clearing the backlog would take ~19 days.
+**Pending queue has surged from 2 to 19** — new bugs are stacking up without being picked up by the Fixer. The Fixer may be waiting on something or may have crashed.
 
-**Recommendation:**
-1. **URGENT:** Diagnose and restart Validator agent — stalled for 16+ hours
-2. Consider parallel validation instances to clear 131-bug backlog
-3. Hunter/Fixer productivity is excellent; no throttling needed if Validator recovers
+**Recommendations:**
+1. **CRITICAL:** Diagnose and restart Fixer agent — 19 pending bugs accumulating, no fixes in 17 hours
+2. **CRITICAL:** Diagnose and restart Validator agent — 32 fixed bugs awaiting validation, no verifications in 23 hours
+3. **HIGH:** Triage 14 blocked bugs — many may be unblocked by human decisions
+4. Hunter throughput remains steady (7 found this period) but output is not flowing downstream
 
 ## Trend (vs Previous Digest)
 
-| Metric | Previous | Current | Direction |
-|--------|----------|---------|-----------|
-| Active Bugs | 145 | 133 | ↓ -8.3% |
-| Pending | 0 | 1 | ↑ +1 |
-| Fixed Queue | 127 | 131 | ↑ +3.1% |
-| In Progress | 2 | 0 | ↓ -2 |
-| Blocked | 16 | 1 | ↓ -93.8% |
-| Blocked Ratio | 11% | 0.8% | ↓ -10.2pp |
-| Critical Severity | 3 | 3 | → (stable) |
-| Bugs Found (24h) | 101 | 103 | ↑ +2% |
-| Bugs Fixed (24h) | 130 | 134 | ↑ +3.1% |
-| Bugs Verified (24h) | 0 | 7 | ↑ +7 |
-| Reopen Rate | 0% | 6.3% | ↑ (now measured from full archive) |
+| Metric | Yesterday | Today | Direction |
+|--------|-----------|-------|-----------|
+| Active Bugs | 52 | 54 | ↑ +3.8% |
+| Pending | 2 | 19 | ↑ +850% |
+| In Progress | 1 | 0 | ↓ |
+| Fixed Queue | 33 | 32 | ↓ -3.0% |
+| Blocked | 16 | 14 | ↓ -12.5% |
+| Throughput | 0 bugs/day | 0 bugs/day | → |
+| Blocked Ratio | 30.8% | 25.9% | ↓ |
 
-**Assessment:** Significant improvement in pipeline health. Active bug count dropped 8.3% (145 → 133) primarily driven by the massive blocked-bug resolution (16 → 1). Fixer continues at peak productivity (+3.1%). Validator showed brief signs of life (7 verifications) but has been stalled for 16 hours. The fixed queue grew only slightly (+3.1%) compared to previous period (+9.5%), indicating the pipeline is stabilizing. The top problem files remain unchanged — `src/pregel/streaming.ts` continues to dominate with 10 bugs.
+**Assessment:** The pending queue exploded 19x in one period (2 → 19), but in-progress dropped to 0. This suggests the Fixer picked up some bugs yesterday but has not started any new work today. Combined with zero validation activity, the pipeline appears to be in a dead state — Hunter is still finding bugs, but neither Fixer nor Validator have processed them. This is a severe regression from yesterday's state.
 
-**Pipeline Status: IMPROVING but Validator recovery remains URGENT.**
+**Pipeline Status: CRITICAL — Both Fixer and Validator stalled. Pending queue exploding.**
 
 ## Blocked Bugs — Needs Human Attention
 
-**Auto-Blocked (3 failed fix attempts — Human Review Required):**
-- **BUG-0205** (`critical` / `security-injection`) — Unsandboxed code execution via `new Function()` in node-eval.ts. ESM `import()` bypasses restrictions. Needs isolated-vm or container-level sandbox. This is the sole remaining blocked bug.
+14 bugs currently blocked (IDs: BUG-0191, BUG-0205, BUG-0246, BUG-0248, BUG-0251, BUG-0252, BUG-0253, BUG-0254, BUG-0255, BUG-0256, BUG-0257, BUG-0258, BUG-0263, BUG-0264).
+
+Most blocked bugs are security/race-condition issues requiring architectural changes or human review.
 
 ---
-
-## Summary
-
-The bug pipeline showed notable improvement this cycle. The blocked queue was slashed from 16 to 1 bug (a 93.8% reduction), and 7 bugs were verified — the first validation activity in over a day. Active bugs dropped from 145 to 133. Hunter and Fixer remain highly productive (103 found, 134 fixed). However, the Validator has been stalled for 16+ hours, leaving 131 bugs in the fixed queue. Without validator recovery, the backlog will continue to grow despite excellent producer-side throughput.
-
-**Priority actions:**
-1. **URGENT:** Restart Validator agent — 131 bugs await validation
-2. **BUG-0205** remains the sole blocked bug and requires an architectural decision on code sandboxing
-3. `src/pregel/streaming.ts` (10 bugs) warrants structural review — it has been the top problem file across multiple digest cycles
 
 *Generated by Bug Pipeline Digest Agent*
