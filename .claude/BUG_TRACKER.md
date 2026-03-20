@@ -10,10 +10,10 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T18:01:16Z` |
+| **Last Fixer Pass** | `2026-03-20T18:08:16Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T20:00:00Z` |
-| **Last Security Scan** | `2026-03-20T23:58:00Z` |
+| **Last Security Scan** | `2026-03-22T20:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -2415,19 +2415,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0353
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `examples/audit-system/audit-agent.ts`
 - **line:** `24`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0353`
 - **description:** The `assertWithinCwd` boundary check uses `!resolved.startsWith(process.cwd())` without a trailing path separator, allowing sibling directories to bypass the check (e.g., if cwd is `/app`, the path `/app-evil` passes because `"/app-evil".startsWith("/app")` is `true`).
 - **context:** This was introduced as a fix for BUG-0316 path traversal. The correct check should use `process.cwd() + path.sep` or verify the relative path doesn't start with `..`. Without the trailing separator, the fix itself is a security bypass.
 - **hunter_found:** `2026-03-20T18:03:07Z`
 - **fixer_started:** `2026-03-20T18:04:38Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:08:16Z`
+- **fix_summary:** `assertWithinCwd uses cwd + path.sep for startsWith check. Applied to all 3 LLM tools. Added resolve() to read_file. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2435,19 +2435,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0354
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/types.ts`
 - **line:** `84`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0354-0355`
 - **description:** `Handoff.priority` getter is typed as returning `string` instead of the narrow union `"low" | "normal" | "high" | "critical"` declared in `HandoffOptions.priority`.
 - **context:** `AgentPool` uses `priority` as a key into `PRIORITY_ORDER` (a `Record<string, number>`), so the loose return type gives no compile-time protection against misspelled priority values. Any arbitrary string passes through to the queue ordering logic.
 - **hunter_found:** `2026-03-20T18:03:07Z`
 - **fixer_started:** `2026-03-20T18:04:38Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:08:16Z`
+- **fix_summary:** `Handoff.priority getter return type narrowed to "low"|"normal"|"high"|"critical" union. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2455,17 +2455,57 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0355
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/types.ts`
 - **line:** `122`
 - **category:** `api-contract-violation`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0354-0355`
 - **description:** `SwarmMeta` declares the inter-agent message channel as `messages: SwarmMessage[]`, but the runtime state type `BaseSwarmState` calls the same channel `swarmMessages: SwarmMessage[]` — the two interfaces are structurally incompatible.
 - **context:** Both types are publicly exported from `src/index.ts`. Code that tries to use a `BaseSwarmState` value where `SwarmMeta` is expected will fail at the `messages`/`swarmMessages` field boundary, making them impossible to satisfy with one state object.
 - **hunter_found:** `2026-03-20T18:03:07Z`
 - **fixer_started:** `2026-03-20T18:04:38Z`
+- **fixer_completed:** `2026-03-20T18:08:16Z`
+- **fix_summary:** `SwarmMeta.messages aligned with BaseSwarmState as Array<{role:string,content:string}>. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0356
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/types.ts`
+- **line:** `195`
+- **category:** `api-contract-violation`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0356`
+- **description:** Two unrelated interfaces named `ONIConfig` exist: `src/types.ts` line 195 (runtime invocation config with threadId, recursionLimit) and `src/config/types.ts` line 62 (config-file schema with model, agents, permissions) — they are entirely different shapes sharing the same exported name.
+- **context:** The main barrel only exports the runtime version, but the name collision means any code importing from internal paths gets the wrong type silently. The config-file `ONIConfig` should be renamed to avoid confusion (e.g., `ONIFileConfig`).
+- **hunter_found:** `2026-03-20T18:03:07Z`
+- **fixer_started:** `2026-03-20T18:04:38Z`
+- **fixer_completed:** `2026-03-20T18:08:16Z`
+- **fix_summary:** `Renamed file-loader config to ONIFileConfig. Deprecated re-export for backward compat. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0357
+- **status:** `in-progress`
+- **severity:** `high`
+- **file:** `src/models/ollama.ts`
+- **line:** `255`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Ollama in-stream error objects (`{"error":"...","done":true}`) are silently swallowed in the streaming path — the `error` field is never checked, and only a spurious zero-usage chunk is emitted.
+- **context:** The sync `chat` path (line 215) correctly checks for missing `message` and throws, but the streaming path reads `parsed["message"]` without checking `parsed["error"]`. An in-stream error like context-length-exceeded produces no error signal to the caller, who sees a normal stream end with 0 usage.
+- **hunter_found:** `2026-03-20T18:08:34Z`
+- **fixer_started:** `2026-03-20T18:09:06Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2474,18 +2514,78 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0356
+### BUG-0358
 - **status:** `in-progress`
 - **severity:** `medium`
-- **file:** `src/types.ts`
-- **line:** `195`
+- **file:** `src/events/bus.ts`
+- **line:** `64`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `once()` captures `unsub` in a closure before it is assigned — if the event fires synchronously during `on()` registration (possible in test mocks or custom subclasses), `unsub` is `undefined` and the wrapper throws `TypeError: unsub is not a function`.
+- **context:** This is a classic uninitialized-closure race: `const unsub = this.on(type, (event) => { unsub(); ... })` — the handler references `unsub` before the assignment completes. Any synchronous event emission during registration crashes `once()`.
+- **hunter_found:** `2026-03-20T18:08:34Z`
+- **fixer_started:** `2026-03-20T18:09:06Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0359
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/models/openai.ts`
+- **line:** `374`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** When a streaming tool call delta re-sends the `id` field (which OpenAI can do in follow-up chunks), the `activeToolCalls` map entry is unconditionally overwritten, discarding the previously accumulated `name` and `args`.
+- **context:** The guard `if (tc["id"])` is used to detect "new" tool calls, but OpenAI may resend `id` in argument-continuation chunks. The overwrite resets `name` to `""` and `args` to the current chunk only, silently corrupting multi-chunk tool call accumulation.
+- **hunter_found:** `2026-03-20T18:08:34Z`
+- **fixer_started:** `2026-03-20T18:09:06Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0360
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/models/google.ts`
+- **line:** `435`
 - **category:** `api-contract-violation`
 - **reopen_count:** `0`
 - **branch:** ``
-- **description:** Two unrelated interfaces named `ONIConfig` exist: `src/types.ts` line 195 (runtime invocation config with threadId, recursionLimit) and `src/config/types.ts` line 62 (config-file schema with model, agents, permissions) — they are entirely different shapes sharing the same exported name.
-- **context:** The main barrel only exports the runtime version, but the name collision means any code importing from internal paths gets the wrong type silently. The config-file `ONIConfig` should be renamed to avoid confusion (e.g., `ONIFileConfig`).
-- **hunter_found:** `2026-03-20T18:03:07Z`
-- **fixer_started:** `2026-03-20T18:04:38Z`
+- **description:** Gemini streaming `tool_call_start` chunks are emitted with fully-populated `args` instead of empty `{}`, violating the streaming contract where start carries empty args and end carries final args.
+- **context:** Consumers that display incremental tool call arguments (e.g., streaming UIs) will see the full args on `tool_call_start` and then nothing on `tool_call_end`, breaking the expected start-delta-end lifecycle. The sync path at line 358 does not have this issue.
+- **hunter_found:** `2026-03-20T18:08:34Z`
+- **fixer_started:** `2026-03-20T18:09:06Z`
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0361
+- **status:** `in-progress`
+- **severity:** `medium`
+- **file:** `src/swarm/compile-ext.ts`
+- **line:** `73`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `spawnAgent()` pushes a new conditional return edge directly into `_edgesBySource` without checking for duplicates, so calling `spawnAgent()` twice for the same agent ID (e.g., remove then re-spawn) creates duplicate conditional edges from that source.
+- **context:** `StateGraph.addEdge()` has duplicate detection (line 109 in graph.ts), but `spawnAgent()` bypasses `StateGraph` and writes directly to the runner's edge map. Duplicate edges can cause the router to evaluate the same conditional function twice per superstep, producing duplicate routing and potentially corrupted state.
+- **hunter_found:** `2026-03-20T18:08:34Z`
+- **fixer_started:** `2026-03-20T18:09:06Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
