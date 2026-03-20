@@ -10,14 +10,14 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T18:29:42Z` |
+| **Last Fixer Pass** | `2026-03-20T18:36:16Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T23:59:00Z` |
 | **Last Security Scan** | `2026-03-20T22:45:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:59:00Z` (no new tests — all qualifying bugs already have test_generated:true) |
+| **Last TestGen Run** | `2026-03-20T23:59:02Z` (no new tests — all qualifying bugs already have test_generated:true) |
 | **Last Git Manager Pass** | `2026-03-20T09:00:00Z` (Cycle 172) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
@@ -2795,19 +2795,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0372
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/mailbox.ts`
 - **line:** `35`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0372`
 - **description:** Broadcast messages (`to === "*"`) are included in `getInbox()` results but never removed by `consumeInbox()`, causing broadcasts to accumulate indefinitely and be re-delivered to every agent on every subsequent call.
 - **context:** Each agent sees the same broadcast message on every turn, creating duplicate processing and unbounded growth of the inbox for any agent that calls `getInbox` repeatedly. There is no external mechanism to clear consumed broadcasts.
 - **hunter_found:** `2026-03-20T18:29:07Z`
 - **fixer_started:** `2026-03-20T18:30:28Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:36:16Z`
+- **fix_summary:** `Per-agent broadcast consumption tracking via consumedBroadcasts Map. 6 regression tests. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2815,19 +2815,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0373
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/self-improvement/manifest.ts`
 - **line:** `35`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0373`
 - **description:** The frontmatter regex `/^---\n([\s\S]*?)\n---/` only matches Unix `\n` line endings, so a MANIFEST.md with Windows `\r\n` endings silently falls back to all default values without any warning.
 - **context:** Files checked out with `core.autocrlf=true` or edited on Windows will have CRLF endings. The entire manifest (goals, constraints, direction, patterns) is silently ignored, causing the skill evolver to operate with empty/default configuration.
 - **hunter_found:** `2026-03-20T18:29:07Z`
 - **fixer_started:** `2026-03-20T18:30:28Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:36:16Z`
+- **fix_summary:** `Updated 3 regex patterns to use \r?\n for CRLF support in manifest parsing. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2835,19 +2835,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0374
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/guardrails/budget.ts`
 - **line:** `61`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0374`
 - **description:** When a model has no pricing entry, `totalCost` is not incremented (stays at zero for unpriced tokens), so `maxCostPerRun` checks at line 134 and `isOverBudget()` at line 170 will never trigger for runs using only unpriced models.
 - **context:** The warning message says "cost tracking will be incomplete" but callers of `isOverBudget()` receive `false` regardless of actual consumption, providing a false safety signal. A run using an unpriced model can consume unlimited resources while the budget guard reports everything is within limits.
 - **hunter_found:** `2026-03-20T18:29:07Z`
 - **fixer_started:** `2026-03-20T18:30:28Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:36:16Z`
+- **fix_summary:** `Unknown pricing tracking with costIsUnknown flag, audit events, and warning when maxCostPerRun configured. 6 tests. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2855,19 +2855,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0375
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/mcp/client.ts`
 - **line:** `154`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0375`
 - **description:** `disconnect()` sets `state = "disconnected"` and nulls `transport`, but does not cancel or await the in-flight `_connectLock`, so a concurrent `_runConnect` suspended at an `await` will resume and call `refreshTools()` on the already-nulled transport, throwing an unexpected error.
 - **context:** Any caller that calls `connect()` then `disconnect()` before the connection completes will receive an unexpected error from the transport teardown rather than a clean cancellation, and the shared `connecting` promise propagates this error to all concurrent `connect()` callers.
 - **hunter_found:** `2026-03-20T18:29:07Z`
 - **fixer_started:** `2026-03-20T18:30:28Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:36:16Z`
+- **fix_summary:** `disconnect() calls transport.stop() to reject pending requests, awaits _connectLock. No dangling promises. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2875,19 +2875,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0376
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/cli/router.ts`
 - **line:** `36`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0376`
 - **description:** The flag-value parser uses `!next.startsWith("-")` to distinguish values from flags, so negative numeric arguments (e.g., `--offset -1`) are treated as new flag names rather than values, silently discarding the negative number and setting the flag to `"true"`.
 - **context:** Any CLI command that accepts negative numbers as flag values will silently receive `"true"` instead of the intended value, with no error message to the user. This is a common CLI parser pitfall.
 - **hunter_found:** `2026-03-20T18:29:07Z`
 - **fixer_started:** `2026-03-20T18:30:28Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:36:16Z`
+- **fix_summary:** `looksLikeFlag() helper using isNaN(parseFloat) distinguishes negative numbers from flags. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
