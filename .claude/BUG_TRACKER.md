@@ -10,9 +10,9 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-20T03:42:19Z` |
-| **Last Validator Pass** | `2026-03-19T23:18:00Z` |
-| **Last Digest Run** | `2026-03-20T03:42:00Z` |
+| **Last Fixer Pass** | `2026-03-20T04:07:17Z` |
+| **Last Validator Pass** | `2026-03-20T04:07:00Z` |
+| **Last Digest Run** | `2026-03-20T04:05:38Z` |
 | **Last Security Scan** | `2026-03-19T19:55:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
@@ -21,13 +21,13 @@
 | **Last Git Manager Pass** | `2026-03-20T03:40:43Z` |
 | **Last Supervisor Pass** | `2026-03-19T21:52:17Z` |
 | **Total Found** | `109` |
-| **Total Pending** | `14` |
+| **Total Pending** | `18` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `15` |
+| **Total Fixed** | `0` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `10` |
-| **Total Reopened** | `0` |
+| **Total Reopened** | `4` |
 
 ---
 
@@ -496,12 +496,12 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0255
-- **status:** `pending`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
 - **line:** `74`
 - **category:** `logic-bug`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** ``
 - **description:** `AgentPool.batch()` uses `Promise.all`, so one failing slot invocation cancels the entire batch while remaining invocations continue running as orphaned promises.
 - **context:** Same class of issue as BUG-0252 (`ONIPregelRunner.batch()`). The pool already provides `batchSettled()` at line 78 which uses `Promise.allSettled`, but the primary `batch()` method gives callers no way to get partial results.
@@ -509,9 +509,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
-- **validator_started:** `2026-03-19T19:48:00Z`
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-20T04:07:00Z`
+- **validator_completed:** `2026-03-20T04:07:00Z`
+- **validator_notes:** `REOPENED: Promise.allSettled changes return type from S[] to PromiseSettledResult<S>[] but method signature not updated. tsc reports 2 errors: pool.ts(87) type mismatch and graph.ts(169) caller expects S[]. Also batchSettled() is now a duplicate. Fix must either update return type + all callers, or use a different approach to handle orphaned promises.`
 
 ---
 
@@ -596,7 +596,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0260
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/harness/memory/ranker.ts`
 - **line:** `94`
@@ -606,9 +606,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `rankAndLoad` silently returns an empty `LoadResult` when the task string contains only short words (<3 chars) or stopwords, with no warning or fallback.
 - **context:** `extractTagsFromString` strips words shorter than 3 characters and removes stopwords. Tasks like `"go"`, `"do it"`, `"run"`, or `"ok"` produce `taskTags = []`, causing the function to return `{ units: [], totalTokens: 0 }` with no log message. The caller (`MemoryLoader.match()`) receives an empty result with no indication that memory loading was skipped entirely. The agent proceeds with no domain context loaded.
 - **hunter_found:** `2026-03-19T15:11:42Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T04:07:17Z`
+- **fixer_completed:** `2026-03-20T04:07:17Z`
+- **fix_summary:** `False positive — line 96 already logs warning and returns empty result when taskTags empty. Hunter should re-evaluate.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -616,7 +616,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0262
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `packages/tools/src/web-search/brave.ts`
 - **line:** `45`
@@ -626,9 +626,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `res.json()` is returned without a try/catch after confirming `res.ok`, so a non-JSON 200 response (proxy page, truncated body) throws an unhandled `SyntaxError`.
 - **context:** Same pattern exists in `packages/tools/src/web-search/exa.ts:52`, `packages/tools/src/web-search/tavily.ts:46`, and `packages/tools/src/browser/firecrawl.ts:51`. During an API incident or proxy error, the raw `SyntaxError` propagates with no indication of which tool or URL caused it. The GitHub tool helper at `packages/tools/src/github/index.ts:67` has the same issue (tracked as BUG-0241).
 - **hunter_found:** `2026-03-19T15:11:42Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T04:07:17Z`
+- **fixer_completed:** `2026-03-20T04:07:17Z`
+- **fix_summary:** `False positive — brave.ts already wraps res.json() in try-catch at lines 46-49 with descriptive error. Hunter should re-evaluate.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
