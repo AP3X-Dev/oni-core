@@ -102,7 +102,7 @@ export function createAgentNode<S extends BaseSwarmState>(
         // direct case (Handoff returned by a raw NodeFn, not wrapped in a
         // skeleton) and the __pendingHandoff passthrough from the skeleton.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rawHandoff = (result instanceof Handoff || (result && (result as any).isHandoff))
+        const rawHandoff = (result instanceof Handoff || (result && (result as any).isHandoff && (result as any).opts))
           ? result
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           : ((result as any)?.__pendingHandoff instanceof Handoff || (result as any)?.__pendingHandoff?.isHandoff)
