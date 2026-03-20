@@ -1,21 +1,3 @@
-[2026-03-21T12:00:00Z] Step 2: Branch map built. Blocked: BUG-0246, BUG-0286. Fixed/awaiting Validator: BUG-0289, BUG-0292, BUG-0293. Stale worktree: BUG-0293-fix (agent-a89869fd, ~20h old). Orphaned fix/ branches: BUG-0250, BUG-0252, BUG-0253, BUG-0254, BUG-0256, BUG-0258, BUG-0263, BUG-0264, BUG-0284-content-length.
-[2026-03-21T12:00:00Z] Step 3: Orphaned/stale cleanup — (1) Removed stale worktree agent-a89869fd and deleted bugfix/BUG-0293-fix (last commit 2026-03-20T09:38Z, ~20h stale; duplicate of bugfix/BUG-0293). (2) Deleted fix/BUG-0252-batch-allSettled (BUG-0252 fixed/not merged). (3) Deleted fix/BUG-0254-streaming-events-dropped-on-throw (BUG-0254 fixed/not merged). (4) Deleted fix/BUG-0256-a2a-server-apikey-warning (BUG-0256 fixed/not merged). (5) Deleted fix/BUG-0258-sanitize-auth-error (BUG-0258 fixed/not merged). 5/5 deletion cap reached.
-[2026-03-21T12:00:00Z] NOTE: 4 additional orphaned fix/ branches remain (BUG-0250, BUG-0253, BUG-0263, BUG-0264) + fix/BUG-0284-content-length (no tracker entry). Flagged for deletion in Cycle 79+.
-[2026-03-21T12:00:00Z] Step 8: CYCLE 78 (divisible by 6) — ran git gc. Completed successfully.
-[2026-03-21T12:00:00Z] Step 9: Updated BUG_TRACKER.md Last Git Manager Pass → 2026-03-21T12:00:00Z. Updated BRANCH_MAP.md.
-[2026-03-21T12:00:00Z] BRANCH COUNT: 10 total (2 blocked, 3 fixed/awaiting-Validator, 5 orphaned fix/ branches). 5 deletions this cycle. Cumulative deletions: ~88.
-[2026-03-21T12:00:00Z] === Git Manager Cycle 78 End ===
-[2026-03-21T13:30:00Z] === Git Manager Cycle 79 Start ===
-[2026-03-21T13:30:00Z] Pre-flight: No TRACKER_LOCK. Last Fixer Pass=2026-03-20T09:40:46Z. Last Validator Pass=2026-03-20T04:07:00Z. In-progress: 0. In-validation: 0. No skip conditions. Proceeding.
-[2026-03-21T13:30:00Z] Step 1: Found 5 bugfix/* branches (BUG-0246, BUG-0286, BUG-0289, BUG-0292, BUG-0293) and 5 fix/* branches (BUG-0250, BUG-0253, BUG-0263, BUG-0264, BUG-0284-content-length). Total: 10 branches.
-[2026-03-21T13:30:00Z] Step 2: Branch map built. Blocked: BUG-0246 (race-condition, reopen_count=3), BUG-0286 (false positive per Fixer). Fixed/awaiting-Validator: BUG-0289, BUG-0292, BUG-0293 (each 1 commit ahead of main, not yet merged). Orphaned fix/*: all 5 — equivalent fixes confirmed on main via bugfix/* merges (c1615bf, da6a390/59feec8, 657f6df, 756d19c, 8ee925c).
-[2026-03-21T13:30:00Z] Step 3: Orphaned cleanup — force-deleted all 5 queued fix/* branches: fix/BUG-0250-settimeout-handle-no-signal-retry, fix/BUG-0253-direction-aware-delta, fix/BUG-0263-duck-typed-handoff-opts-guard, fix/BUG-0264-jsonrpc-structural-validation, fix/BUG-0284-content-length-bounds-check. Verified equivalent commits on main before deletion. 5/5 deletion cap used.
-[2026-03-21T13:30:00Z] Step 9: Updated BUG_TRACKER.md Last Git Manager Pass → 2026-03-21T13:30:00Z. Updated BRANCH_MAP.md.
-[2026-03-21T13:30:00Z] BRANCH COUNT: 5 active (2 blocked, 3 fixed/awaiting-Validator). 5 deletions this cycle. Cumulative deletions: ~93. Next gc: Cycle 84.
-[2026-03-21T13:30:00Z] === Git Manager Cycle 79 End ===
-
-[2026-03-21T14:00:00Z] === Git Manager Cycle 80 Start ===
-[2026-03-21T14:00:00Z] Pre-flight: No TRACKER_LOCK. Last Fixer Pass=2026-03-20T09:40:46Z. Last Validator Pass=2026-03-20T04:07:00Z. In-progress: 0. In-validation: 0. Safe to proceed.
 [2026-03-21T14:00:00Z] Step 1: Found 5 bugfix branches: BUG-0246 (2026-03-19), BUG-0286 (2026-03-20), BUG-0289 (2026-03-20), BUG-0292 (2026-03-20), BUG-0293 (2026-03-20).
 [2026-03-21T14:00:00Z] Step 2: Branch map built. BUG-0246=blocked(1 ahead/149 behind). BUG-0286=blocked(1 ahead/290 behind). BUG-0289=fixed/awaiting-Validator(1 ahead — bash blocklist patterns NOT yet on main, hooks-engine.ts unmodified). BUG-0292=fixed/awaiting-Validator(1 ahead — compile-ext.ts sanitizeId NOT on main, only security flagging commit aad0c24 present). BUG-0293=fixed/awaiting-Validator(1 ahead — harness-compactor.test.ts toHaveLength(2) not updated to toHaveLength(3) on main).
 [2026-03-21T14:00:00Z] Step 3: Orphaned cleanup — verified all 5 branches have genuine unmerged work. No branches eligible for deletion. 0/5 cap used. Cumulative deletions: ~93.
@@ -148,3 +130,21 @@
 [2026-03-20T23:00:00Z] ALERT (CARRY): BUG-0289 rebase blocked by linter auto-reverting resolved conflict file. Human or Supervisor should manually rebase with linter disabled, or cherry-pick fix commit onto main after Validator approval.
 [2026-03-20T23:00:00Z] BRANCH COUNT: 7 active (2 blocked, 5 fixed/awaiting-Validator). 0 deletions this cycle. Cumulative deletions: ~93.
 [2026-03-20T23:00:00Z] === Git Manager Cycle 134 End ===
+[2026-03-21T00:00:00Z] === Git Manager Cycle 135 Start ===
+[2026-03-21T00:00:00Z] Pre-flight: No TRACKER_LOCK. Meta: In-progress=0, In-validation=0. Last Fixer Pass=2026-03-20T12:36:39Z. Last Validator Pass=2026-03-20T04:07:00Z. No skip conditions. Proceeding.
+[2026-03-21T00:00:00Z] Step 1: Found 7 bugfix branches: BUG-0246 (2026-03-19), BUG-0286 (2026-03-20), BUG-0289 (2026-03-20), BUG-0292 (2026-03-20), BUG-0293 (2026-03-20), BUG-0294 (2026-03-20), BUG-0295 (2026-03-20). Unchanged from Cycle 134.
+[2026-03-21T00:00:00Z] Step 2: Branch map built. BUG-0246=blocked(+1/288 behind). BUG-0286=blocked-discrepancy(+1/429 behind, SafetyGate credential-scrubbing fix unreferenced in tracker). BUG-0289=fixed/awaiting-Validator(+1/429 behind, bash blocklist — CONFLICT in hooks-engine.ts dangerousBashPatterns, rebase blocked). BUG-0292=fixed/awaiting-Validator(+1/157 behind, Mermaid compile-ext.ts sanitization). BUG-0293=fixed/awaiting-Validator(+1/146 behind, harness-compactor.test.ts fallbackTruncation). BUG-0294=fixed/awaiting-Validator(+1/74 behind, graph.ts+inspect.ts lbl() sanitization). BUG-0295=fixed/awaiting-Validator(+1/73 behind, inspect.ts+compile-ext.ts Mermaid sanitization).
+[2026-03-21T00:00:00Z] Step 3: Orphaned/merged cleanup — all 7 branches have real unmerged fix commits or are blocked. No branches eligible for deletion. 0/5 cap used. Cumulative deletions: ~93.
+[2026-03-21T00:00:00Z] Step 4: Stale detection — no in-progress branches. No stale warnings.
+[2026-03-21T00:00:00Z] Step 5: Conflict pre-detection — BUG-0289: 1 conflict (additive dangerousBashPatterns in hooks-engine.ts, carry-forward). BUG-0292/0293/0294/0295: 0 conflicts.
+[2026-03-21T00:00:00Z] Step 5b: Trivial rebase — BUG-0289 skip rule in effect (linter auto-reverts resolved file, proven Cycle 127). No eligible trivial-rebase candidates. Rebase cap: 0/1 used.
+[2026-03-21T00:00:00Z] Step 6: File overlap detection. OVERLAP: src/swarm/compile-ext.ts (BUG-0292, BUG-0295). OVERLAP: src/inspect.ts (BUG-0294, BUG-0295). Merge order: BUG-0292 before BUG-0295; BUG-0294 before BUG-0295. Carry-forward.
+[2026-03-21T00:00:00Z] Step 7: No stale merge/rebase states. HEAD confirmed on main.
+[2026-03-21T00:00:00Z] Step 8: Cycle 135 % 6 ≠ 0. Skip git gc. Next gc: Cycle 138.
+[2026-03-21T00:00:00Z] Step 9: Updated BUG_TRACKER.md Last Git Manager Pass → 2026-03-21T00:00:00Z (Cycle 135). BRANCH_MAP.md updated to Cycle 135. Log trimmed to 150 lines.
+[2026-03-21T00:00:00Z] ALERT (CARRY): BUG-0246 status=blocked, reopen_count=3, 288 commits behind main. Human decision required — abandon or rebase.
+[2026-03-21T00:00:00Z] ALERT (CARRY): BUG-0286 branch has SafetyGate credential-scrubbing fix commit but tracker entry has no branch field. Fixer/Supervisor should reconcile.
+[2026-03-21T00:00:00Z] ALERT (CARRY): BUG-0293 tracker branch field says bugfix/BUG-0293-fix but actual branch is bugfix/BUG-0293. Fixer should correct tracker branch field.
+[2026-03-21T00:00:00Z] ALERT (CARRY): BUG-0289 rebase blocked by linter auto-reverting resolved conflict file. Human or Supervisor should manually rebase with linter disabled, or cherry-pick fix commit onto main after Validator approval.
+[2026-03-21T00:00:00Z] BRANCH COUNT: 7 active (2 blocked, 5 fixed/awaiting-Validator). 0 deletions this cycle. Cumulative deletions: ~93.
+[2026-03-21T00:00:00Z] === Git Manager Cycle 135 End ===
