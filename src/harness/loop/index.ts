@@ -52,12 +52,19 @@ export async function* agentLoop(
 
   // ── 1. Session Init ──────────────────────────────────────────────────
   if (config.hooksEngine) {
-    const hookResult = await fireSessionStart(
-      config.hooksEngine, sessionId, config.agentName, config.tools.map((t) => t.name),
-    );
-    if (hookResult?.additionalContext) {
-      messages.push({ role: "user", content: hookResult.additionalContext });
-      messages.push({ role: "assistant", content: "Context loaded." });
+    try {
+      const hookResult = await fireSessionStart(
+        config.hooksEngine, sessionId, config.agentName, config.tools.map((t) => t.name),
+      );
+      if (hookResult?.additionalContext) {
+        messages.push({ role: "user", content: hookResult.additionalContext });
+        messages.push({ role: "assistant", content: "Context loaded." });
+      }
+    } catch (err) {
+      yield makeMessage("error", sessionId, turn, {
+        content: `Session start hook failed: ${err instanceof Error ? err.message : String(err)}`,
+      });
+      throw err;
     }
   }
 
