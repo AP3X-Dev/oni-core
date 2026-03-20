@@ -9,19 +9,19 @@
 
 | Key | Value |
 |---|---|
-| **Last Hunter Scan** | `2026-03-20T23:50:00Z` |
+| **Last Hunter Scan** | `2026-03-21T00:02:00Z` |
 | **Last Fixer Pass** | `2026-03-20T10:16:26Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T19:48:00Z` |
-| **Last Security Scan** | `2026-03-23T03:35:00Z` |
+| **Last Security Scan** | `2026-03-20T20:10:48Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T12:00:00Z` |
+| **Last TestGen Run** | `2026-03-20T13:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T00:00:00Z` (Cycle 191) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
-| **Total Found** | `304` |
-| **Total Pending** | `14` |
+| **Total Found** | `306` |
+| **Total Pending** | `19` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `32` |
 | **Total In Validation** | `0` |
@@ -1314,7 +1314,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0296
+### BUG-0304
 - **status:** `pending`
 - **severity:** `high`
 - **file:** `src/checkpointers/redis.ts`
@@ -1334,7 +1334,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0297
+### BUG-0305
 - **status:** `pending`
 - **severity:** `high`
 - **file:** `src/swarm/agent-node.ts`
@@ -1354,7 +1354,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0298
+### BUG-0306
 - **status:** `pending`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
@@ -1465,6 +1465,106 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-20T20:04:36Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0307
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/mcp/transport.ts`
+- **line:** `162`
+- **category:** `memory-leak`
+- **description:** `StdioTransport.stop()` calls `this.process.kill("SIGTERM")` without removing `"error"` and `"exit"` listeners first. The listeners close over `this` and `this.pending`, preventing GC of the transport instance until Node cleans up the process handle. In MCP server crash-restart loops this causes steady listener accumulation.
+- **context:** Compare with `LSPClient.stop()` in `lsp/client.ts:208` which explicitly calls `removeAllListeners()` before killing. `StdioTransport` is missing this pattern. Fix: call `this.process.removeAllListeners()` before `this.process.kill()`.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-21T00:00:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0308
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/models/google.ts`
+- **line:** `163`
+- **category:** `api-contract-violation`
+- **description:** `mapFinishReason` never returns `"stop_sequence"`. The Gemini API returns `finishReason: "STOP_SEQUENCE"` when the model stops at a user-supplied stop sequence, but this function maps it to `"end"`. The Anthropic adapter correctly handles this case.
+- **context:** `ChatResponse.stopReason` declares `"end" | "tool_use" | "max_tokens" | "stop_sequence"`. Any caller differentiating `"stop_sequence"` from `"end"` (e.g. to detect partial output) will receive incorrect data from the Google adapter. Fix: add `if (reason === "STOP_SEQUENCE") return "stop_sequence"` before the fallback return.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-21T00:00:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0309
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/models/google.ts`
+- **line:** `432`
+- **category:** `api-contract-violation`
+- **description:** Google adapter `stream()` emits `tool_call_start` directly followed by `tool_call_end` with no `tool_call_delta` events, and populates complete `args` in `tool_call_start`. The OpenAI/Anthropic adapters emit `tool_call_start` with `args: {}` followed by delta events — the Google adapter violates this staged delivery contract.
+- **context:** Any stream consumer that accumulates args from `tool_call_delta` events will receive no deltas from Google and see empty args. Consumers that read `tool_call_start.args` will get complete data from Google but empty from OpenAI/Anthropic. Fix: emit `tool_call_start` with `args: {}`, then a single `tool_call_delta` with the complete args, then `tool_call_end`.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-21T00:00:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0304
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/guardrails/budget.ts`
+- **line:** `57`
+- **category:** `security-auth`
+- **description:** `BudgetTracker.record()` performs no validation on `usage.inputTokens` or `usage.outputTokens`, allowing NaN or negative values to permanently disable all budget enforcement.
+- **context:** If a model adapter returns `inputTokens: NaN` (e.g. from a malformed API response or parsing error), the cost calculation at line 67-69 produces `NaN`, and `this.totalCost += NaN` poisons the accumulator to `NaN` permanently. At line 138, `NaN > limit` evaluates to `false`, so the cost budget check never triggers again — the budget is silently bypassed for all subsequent calls. Similarly, negative token values (line 57-58) decrease the accumulator, effectively granting unlimited budget by "depositing" tokens. A compromised or buggy model adapter can exploit either path to bypass all cost and token limits. Fix: validate that `inputTokens` and `outputTokens` are finite non-negative numbers before accumulating, and treat NaN/negative as zero or throw. OWASP A01:2021 - Broken Access Control.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T20:08:29Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0305
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `122`
+- **category:** `security-auth`
+- **description:** Handoff context merge at line 122 (`{ ...state.context, ...handoff.context }`) performs an unfiltered shallow merge, allowing a handing-off agent to overwrite privileged shared state fields such as `__deadlineAbsolute` or `lastAgentError`.
+- **context:** When an agent executes a Handoff, `handoff.context` is spread directly into the shared `state.context` with no key filtering. An agent can craft a Handoff with `context: { __deadlineAbsolute: Infinity }` to disable deadline enforcement, or inject `lastAgentError: null` to clear error state and bypass supervisor error recovery. Since agent code can be influenced by prompt injection, this is an escalation vector: a prompt-injected agent can manipulate swarm-level control fields through the Handoff mechanism. Fix: filter handoff context keys against a denylist of privileged/internal fields (those starting with `__` or known supervisor control fields), or use an allowlist of user-defined context keys. OWASP A01:2021 - Broken Access Control.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T20:08:29Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
