@@ -10,24 +10,24 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-20T04:07:17Z` |
+| **Last Fixer Pass** | `2026-03-20T07:30:38Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T04:05:38Z` |
 | **Last Security Scan** | `2026-03-19T19:55:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T00:21:00Z` |
+| **Last TestGen Run** | `2026-03-20T00:29:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T03:40:43Z` |
 | **Last Supervisor Pass** | `2026-03-19T21:52:17Z` |
 | **Total Found** | `109` |
-| **Total Pending** | `18` |
+| **Total Pending** | `11` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `0` |
+| **Total Fixed** | `17` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `10` |
-| **Total Reopened** | `4` |
+| **Total Blocked** | `11` |
+| **Total Reopened** | `0` |
 
 ---
 
@@ -396,19 +396,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0250
-- **status:** `in-progress`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/harness/loop/inference.ts`
 - **line:** `156`
 - **category:** `memory-leak`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0250`
 - **description:** In the no-signal retry delay path, `setTimeout(resolve, delayMs)` is called without storing the timer handle, so it cannot be cleared if the calling agent loop is abandoned.
 - **context:** The `if (config.signal)` branch above (lines 147-154) correctly stores the handle and calls `clearTimeout` on abort. The `else` branch at line 156 discards the handle. Under sustained rate limiting (429s) with `maxRetries = 3`, each agent accumulates up to three long-lived dangling timers that hold their closure graph alive for the full retry delay duration.
 - **hunter_found:** `2026-03-19T18:45:00Z`
-- **fixer_started:** `2026-03-20T07:24:54Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:30:28Z`
+- **fixer_completed:** `2026-03-20T07:30:38Z`
+- **fix_summary:** `False positive — timer handle already stored + .unref() at lines 159-160. Hunter should re-evaluate.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -416,19 +416,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0251
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
 - **line:** `63`
 - **category:** `memory-leak`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0251`
 - **description:** `AgentPool` has no `dispose()` method to drain or reject queued items, so abandoning the pool mid-operation leaks all queued Promise resolvers and their captured state objects indefinitely.
 - **context:** The `queue` array holds `{ input, config, resolve, reject }` objects where `input` can be a large agent state. If the owning swarm shuts down without draining the queue, all queued items remain in memory with live Promise resolvers holding their closures. Contrast with `RequestReplyBroker.dispose()` and `EventBus.dispose()` which explicitly reject/clear pending state on teardown.
 - **hunter_found:** `2026-03-19T18:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:30:28Z`
+- **fixer_completed:** `2026-03-20T07:30:28Z`
+- **fix_summary:** `Added dispose() method to AgentPool.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -436,19 +436,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0252
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/pregel/index.ts`
 - **line:** `162`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `fix/BUG-0252-batch-allSettled`
 - **description:** `ONIPregelRunner.batch()` uses `Promise.all`, so one rejected invocation cancels the entire batch and discards results from all other invocations, which continue running as orphaned promises with no cleanup.
 - **context:** A caller invoking a batch of 10 independent inputs where input 2 fails gets nothing back, while inputs 3-10 continue executing silently in the background. The parallel fan-out inside `streamSupersteps` correctly uses `Promise.allSettled` (streaming.ts line 203) for exactly this reason.
 - **hunter_found:** `2026-03-19T18:45:00Z`
-- **fixer_started:** `2026-03-20T07:24:54Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:30:28Z`
+- **fixer_completed:** `2026-03-20T07:30:38Z`
+- **fix_summary:** `Changed ONIPregelRunner.batch() to allSettled. Partial failure throws AggregateError with partialResults. All 21 tests pass, tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -456,19 +456,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0253
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/self-improvement/experiment-log.ts`
 - **line:** `57`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `fix/BUG-0253-direction-aware-delta`
 - **description:** `ExperimentLog.summarize()` always computes delta as `metricAfter - metricBefore` regardless of experiment direction, so "minimize" metric improvements appear as negative deltas in the summary fed to the LLM.
 - **context:** `pattern-learner.ts` correctly handles direction-aware gain (BUG-0017 fix), but `summarize()` does not respect the `direction` field. A latency reduction of 50ms appears as `delta: -0.050` instead of `+0.050`, making successful "minimize" experiments look like regressions to the LLM. Regression of BUG-0017 in a different code path.
 - **hunter_found:** `2026-03-19T18:45:00Z`
-- **fixer_started:** `2026-03-20T07:24:54Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:30:28Z`
+- **fixer_completed:** `2026-03-20T07:30:38Z`
+- **fix_summary:** `Added direction field and improvementDelta() utility. summarize()/identifyPatterns() now direction-aware. 9 new tests. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -476,19 +476,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0254
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `372`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `fix/BUG-0254-streaming-events-dropped-on-throw`
 - **description:** Custom and message stream events from nodes that throw are silently dropped because `allCustomEvents.push(...)` and `allMessageEvents.push(...)` at lines 372-374 are after the try/catch/finally block and unreachable on the error path.
 - **context:** When a node emits custom/message events via `writerImpl` then subsequently throws, those events are captured in closure-local arrays but never pushed to the outer collection arrays. Stream consumers monitoring partial output lose all events emitted before the failure. Fix: move the push calls into the `finally` block.
 - **hunter_found:** `2026-03-19T18:45:00Z`
-- **fixer_started:** `2026-03-20T07:24:54Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-20T07:30:28Z`
+- **fixer_completed:** `2026-03-20T07:30:38Z`
+- **fix_summary:** `Moved event push calls into finally block so throwing nodes preserve events. All 1092 tests pass, tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -496,19 +496,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0255
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
 - **line:** `74`
 - **category:** `logic-bug`
-- **reopen_count:** `1`
-- **branch:** ``
+- **reopen_count:** `2`
+- **branch:** `bugfix/BUG-0255`
 - **description:** `AgentPool.batch()` uses `Promise.all`, so one failing slot invocation cancels the entire batch while remaining invocations continue running as orphaned promises.
 - **context:** Same class of issue as BUG-0252 (`ONIPregelRunner.batch()`). The pool already provides `batchSettled()` at line 78 which uses `Promise.allSettled`, but the primary `batch()` method gives callers no way to get partial results.
 - **hunter_found:** `2026-03-19T18:45:00Z`
 - **fixer_started:** `2026-03-20T07:24:54Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T07:30:38Z`
+- **fix_summary:** `allSettled internally, returns S[] on success, throws BatchError on failure. Removed batchSettled(). Fixed pregel batch return type. Exported BatchError. tsc clean, 33 tests pass.`
 - **validator_started:** `2026-03-20T04:07:00Z`
 - **validator_completed:** `2026-03-20T04:07:00Z`
 - **validator_notes:** `REOPENED: Promise.allSettled changes return type from S[] to PromiseSettledResult<S>[] but method signature not updated. tsc reports 2 errors: pool.ts(87) type mismatch and graph.ts(169) caller expects S[]. Also batchSettled() is now a duplicate. Fix must either update return type + all callers, or use a different approach to handle orphaned promises.`
@@ -692,6 +692,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/anthropic-chat-stopreason-override.test.ts`
 
 ---
 
@@ -812,6 +814,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/skill-evolver-path-traversal-order.test.ts`
 
 ---
 
