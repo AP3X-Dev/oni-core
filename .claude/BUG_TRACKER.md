@@ -17,7 +17,7 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T16:45:00Z` |
+| **Last TestGen Run** | `2026-03-21T13:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T11:00:00Z` |
 | **Last Supervisor Pass** | `2026-03-21T01:20:00Z` |
 | **Total Found** | `294` |
@@ -577,8 +577,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **test_generated:** `true`
 - **test_file:** `src/__tests__/auth-resolver-scope-warning.test.ts`
 - **test_generated:** `true`
-- **test_file:** `src/__tests__/auth-resolver-scope-warning.test.ts`
-
 ---
 
 ### BUG-0259
