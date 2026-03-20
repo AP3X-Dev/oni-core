@@ -18,7 +18,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T23:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T21:30:00Z` (Cycle 165) |
+| **Last Git Manager Pass** | `2026-03-20T22:30:00Z` (Cycle 166) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -2275,7 +2275,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0346
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `packages/tools/src/filesystem/index.ts`
 - **line:** `170`
@@ -2285,7 +2285,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `fs_create_directory` calls `checkAllowedPath(i.path)` before the directory exists, using `resolveReal` on a non-existent path, then calls `mkdir` — a TOCTOU window exists where a symlink can be created between the security check and the `mkdir` call, redirecting directory creation outside allowed paths.
 - **context:** The existing TOCTOU tests cover `read_file` and `write_file` but not `create_directory`. An attacker who can create symlinks in the target path between `resolveReal` and `mkdir` can escape the allowed-path sandbox for directory creation.
 - **hunter_found:** `2026-03-20T17:46:51Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:51:33Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2295,7 +2295,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0347
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/agents/define-agent.ts`
 - **line:** `119`
@@ -2305,7 +2305,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `config?.signal` is passed to `model.chat()`, but `ONIConfig` has no `signal` field — the access always returns `undefined`, silently making AbortSignal-based cancellation impossible through this code path.
 - **context:** Callers who pass an AbortSignal via config to cancel a long-running agent chat will see no effect — the signal is never forwarded to the model. This is a phantom property access that appears to support cancellation but does not.
 - **hunter_found:** `2026-03-20T17:50:18Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:51:33Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2315,7 +2315,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0348
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/config/loader.ts`
 - **line:** `213`
@@ -2325,7 +2325,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `loadConfig()` applies `expandEnvVars()` to file-sourced configs inside `loadSingleConfig()`, but the `inline` override is merged via `mergeConfig()` without env-var expansion, making `${VAR}` strings in inline config pass through verbatim.
 - **context:** Callers who use programmatic inline config with environment variable references (e.g., `${API_KEY}`) will get the literal string instead of the expanded value, while the same string in a file config would be expanded — a silent inconsistency.
 - **hunter_found:** `2026-03-20T17:50:18Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:51:33Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2335,7 +2335,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0349
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/hitl/resume.ts`
 - **line:** `43`
@@ -2345,7 +2345,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `evict()` sets `s.status = "expired"` then immediately calls `this.sessions.delete(id)` in the same tick, making the expired status transition invisible to any observer and effectively dead code.
 - **context:** `HITLSession.status` declares `"expired"` as a valid value, suggesting callers are meant to observe it, but no `get()` call can ever return a session in expired state because it is deleted before the tick yields.
 - **hunter_found:** `2026-03-20T17:50:18Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:51:33Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2355,7 +2355,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0350
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/hitl/resume.ts`
 - **line:** `81`
@@ -2365,7 +2365,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `getByThread()` filters for `s.status === "pending"` only, silently omitting resumed sessions that have not yet been evicted and may still be relevant to the caller.
 - **context:** A caller checking active sessions for a thread immediately after `markResumed()` gets an empty list, potentially causing duplicate resume attempts. The method name implies "all sessions for this thread" but quietly drops non-pending ones.
 - **hunter_found:** `2026-03-20T17:50:18Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:51:33Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
