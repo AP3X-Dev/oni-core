@@ -458,6 +458,8 @@
 - **validator_completed:** `2026-03-15T13:47:00Z`
 - **validator_notes:** Confirmed guard at line 129 prevents overwriting error status. Traced concurrent scenario correctly. Error recovery via setStatus() escape hatch. No regressions.
 - **archived:** `2026-03-15T13:48:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/registry-error-not-overwritten-by-idle.test.ts`
 
 ---
 
