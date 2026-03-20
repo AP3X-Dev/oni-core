@@ -13,12 +13,12 @@
 | **Last Fixer Pass** | `2026-03-20T17:41:31Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T17:25:00Z` |
-| **Last Security Scan** | `2026-03-20T18:15:00Z` |
+| **Last Security Scan** | `2026-03-20T18:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T21:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T18:30:00Z` (Cycle 164) |
+| **Last Git Manager Pass** | `2026-03-20T21:30:00Z` (Cycle 165) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -2075,7 +2075,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0336
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/checkpoint.ts`
 - **line:** `48`
@@ -2085,7 +2085,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `MemoryCheckpointer.list()` applies `opts.limit` by slicing from the front of the ascending-sorted array, so `limit: 1` returns the oldest checkpoint (step 0) instead of the most recent one.
 - **context:** Every consumer of `list()` (time-travel, fork, getStateAt) expects recency-oriented ordering. Getting the oldest checkpoint instead of the latest silently returns stale state, corrupting resume and fork operations.
 - **hunter_found:** `2026-03-20T17:41:14Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:42:37Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2095,7 +2095,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0337
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/pregel/checkpointing.ts`
 - **line:** `51`
@@ -2105,7 +2105,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `updateState` performs a non-atomic read-modify-write (`get` then `put` with same step) with no optimistic concurrency check, so concurrent HITL state updates for the same threadId cause lost updates.
 - **context:** Two simultaneous human-in-the-loop state patches will both read the same pre-update checkpoint; the second `put` silently overwrites the first, losing one user's state modification with no error or conflict detection.
 - **hunter_found:** `2026-03-20T17:41:14Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:42:37Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2115,7 +2115,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0338
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `155`
@@ -2125,7 +2125,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `delete()` fetches all step members, deletes data keys, then deletes the index key as separate non-atomic commands — a concurrent `put` between `zrange` and `del` can insert a new data key that becomes orphaned after the index is removed.
 - **context:** The thread enters a state where `get` returns `null` (index gone) but a dangling data key exists in Redis, leaking memory and potentially causing stale data to resurface if the same threadId is reused.
 - **hunter_found:** `2026-03-20T17:41:14Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:42:37Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2135,7 +2135,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0339
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `packages/integrations/src/adapter/index.ts`
 - **line:** `34`
@@ -2145,7 +2145,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `sanitizeInput` recurses into nested objects but does not sanitize objects inside arrays — the array branch checks `Array.isArray(val)` and skips recursive sanitization of array elements, so `{ payload: [{ __proto__: { isAdmin: true } }] }` passes through with the dangerous key intact.
 - **context:** This bypasses the prototype-pollution protection added for BUG-0283. Any tool input containing an array of objects can carry `__proto__` keys through to `action.run()`, enabling prototype pollution in downstream integrations.
 - **hunter_found:** `2026-03-20T17:41:14Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:42:37Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -2155,7 +2155,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0340
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `packages/integrations/src/adapter/auth-resolver.ts`
 - **line:** `55`
@@ -2165,7 +2165,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `storeAuthResolver` ignores the `ctx` argument in `resolve()` entirely — the `options.scope` field is never checked against the caller context, so any caller can retrieve any integration's credentials regardless of scope.
 - **context:** The `scope` option only triggers a console warning if omitted; it is never enforced as an access control check, making credential scoping purely advisory and non-functional as a security boundary.
 - **hunter_found:** `2026-03-20T17:41:14Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T17:42:37Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
