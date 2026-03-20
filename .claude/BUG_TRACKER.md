@@ -10,14 +10,14 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T18:17:17Z` |
+| **Last Fixer Pass** | `2026-03-20T18:20:43Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T23:59:00Z` |
-| **Last Security Scan** | `2026-03-20T20:30:00Z` |
+| **Last Security Scan** | `2026-03-20T20:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T12:00:00Z` |
+| **Last TestGen Run** | `2026-03-20T13:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T06:30:00Z` (Cycle 170) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
@@ -2655,19 +2655,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0365
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/cli/inspect.ts`
 - **line:** `83`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0365`
 - **description:** The `dynamic import(file)` path-traversal guard uses only a `startsWith(cwd + "/")` check and extension allow-list, but does not resolve symlinks — a symlink inside the project directory that points outside cwd bypasses the guard entirely.
 - **context:** An attacker who can create a symlink inside the project (e.g., via a malicious npm dependency's postinstall script) can point it to any file outside the cwd, and `import()` will follow the symlink after the prefix check passes. Related to the archived BUG in BUG_LOG at line 66 about arbitrary module loading, but this is the specific symlink bypass vector.
 - **hunter_found:** `2026-03-20T18:18:14Z`
 - **fixer_started:** `2026-03-20T18:18:39Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:20:43Z`
+- **fix_summary:** `Cross-platform path guard with normalize/resolve + path.sep + realpath for dynamic import. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -2675,19 +2675,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0366
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `packages/integrations/src/registry/index.ts`
 - **line:** `24`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0366`
 - **description:** `list()` uses non-null assertions (`!`) on `this.resolvers.get(name)` and `this.actions.get(name)` inside the iteration loop, while the `get()` method handles the missing-resolver case gracefully with an `undefined` guard — creating inconsistent null safety between the two read paths.
 - **context:** Both maps are always written together in `register()`, but if any future code path modifies `resolvers` independently, `list()` will throw a confusing runtime error with no message, while `get()` would handle it gracefully.
 - **hunter_found:** `2026-03-20T18:18:14Z`
 - **fixer_started:** `2026-03-20T18:18:39Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T18:20:43Z`
+- **fix_summary:** `Replaced non-null assertions with safe for-of loop + undefined guard in ToolRegistry.list(). tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
