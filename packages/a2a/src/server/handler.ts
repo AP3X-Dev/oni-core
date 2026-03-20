@@ -50,7 +50,7 @@ export async function handleJsonRPC(
       return { response: { jsonrpc: "2.0", id: req.id, error: { code: -32601, message: "Method not found: streaming not supported" } } };
     }
     try {
-      const result = handler(messageText, taskId);
+      const result = await handler(messageText, taskId);
       async function* safeStream(gen: AsyncGenerator<string>): AsyncGenerator<string> {
         yield* gen;
       }

@@ -202,7 +202,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0256
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `packages/a2a/src/server/index.ts`
 - **line:** `11`
@@ -215,9 +215,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T22:00:00Z`
 - **fixer_completed:** `2026-03-20T22:04:00Z`
 - **fix_summary:** `Added export type { A2AServerOptions } from "./server/index.js" to packages/a2a/src/index.ts barrel. 1 line added.`
-- **validator_started:** `2026-03-20T23:05:00Z`
-- **validator_completed:** `2026-03-20T23:05:00Z`
-- **validator_notes:** `REOPENED (3rd time): A2AServerOptions STILL not exported from packages/a2a/src/index.ts barrel. Line needed: export type { A2AServerOptions } from "./server/index.js". Server implementation correct. Will auto-block on next failure.`
+- **validator_started:** `2026-03-21T00:42:00Z`
+- **validator_completed:** ``
+- **validator_notes:** ``
 
 ---
 
