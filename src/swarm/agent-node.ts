@@ -128,8 +128,13 @@ export function createAgentNode<S extends BaseSwarmState>(
           }
 
           // Fire onComplete for handoffs too
-          await def.hooks?.onComplete?.(def.id, result);
-          registry.markIdle(def.id);
+          try {
+            await def.hooks?.onComplete?.(def.id, result);
+          } catch (onCompleteErr) {
+            console.warn(`[oni] onComplete hook for agent "${def.id}" threw:`, onCompleteErr);
+          } finally {
+            registry.markIdle(def.id);
+          }
           return new Command<S>({
             update: {
               context: { ...(state.context ?? {}), ...(handoff.context ?? {}) },
@@ -148,8 +153,13 @@ export function createAgentNode<S extends BaseSwarmState>(
         }
 
         // Fire onComplete hook
-        await def.hooks?.onComplete?.(def.id, result);
-        registry.markIdle(def.id);
+        try {
+          await def.hooks?.onComplete?.(def.id, result);
+        } catch (onCompleteErr) {
+          console.warn(`[oni] onComplete hook for agent "${def.id}" threw:`, onCompleteErr);
+        } finally {
+          registry.markIdle(def.id);
+        }
 
         // ---- Normal result ----
         return {
