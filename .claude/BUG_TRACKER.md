@@ -10,7 +10,7 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T17:15:33Z` |
+| **Last Fixer Pass** | `2026-03-20T17:17:48Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T17:00:00Z` |
 | **Last Security Scan** | `2026-03-20T18:00:00Z` |
@@ -18,7 +18,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T00:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T23:59:00Z` (Cycle 159) |
+| **Last Git Manager Pass** | `2026-03-21T04:00:00Z` (Cycle 160) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
 | **Total Pending** | `1` |
@@ -1595,16 +1595,116 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0312
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/tracer.ts`
 - **line:** `94`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0312`
 - **description:** In merged hooks created by `instrument()`, `await existing.onStart?.(id, state)` is called without try/catch before `await tracerHooks.onStart!(id, state)`, so a throwing user hook prevents the tracer hook from firing.
 - **context:** The tracer timeline misses the event, breaking observability, and the exception propagates up to the agent node or pool that awaited the hook — potentially crashing the agent since `agent-node.ts` only guards the outermost hook call, not exceptions within a merged chain.
 - **hunter_found:** `2026-03-20T17:11:00Z`
+- **fixer_started:** `2026-03-20T17:16:18Z`
+- **fixer_completed:** `2026-03-20T17:17:48Z`
+- **fix_summary:** `Wrapped each existing hook call in instrument() with try/catch. User hook errors logged via console.warn, tracer hook always fires. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0313
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/harness/hooks-engine.ts`
+- **line:** `22`
+- **category:** `dead-code`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Four `HookEvent` types (`AgentBeforeDecision`, `AgentAfterOutcome`, `SkillUsed`, `SkillRevised`) and their corresponding payload interfaces are declared but no `fire()` call with any of these event names exists anywhere in production code.
+- **context:** Users who register handlers for these events will have dead registrations that never trigger. The payload interfaces are also unreachable dead code, adding false API surface that misleads consumers.
+- **hunter_found:** `2026-03-20T17:18:28Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0314
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/factories.ts`
+- **line:** `534`
+- **category:** `dead-code`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The conditional edge for `__coordinator__` in `buildHierarchicalMesh` returns `END` on both branches (`state.done` true and false), making it equivalent to a static edge to `END` — the else branch is dead routing logic.
+- **context:** Non-LLM coordinator strategies (round-robin, rule) rely on `Command.goto` for routing, but if the Pregel runner evaluates this conditional edge before respecting `Command.goto`, teams are unreachable through the fallback path, silently breaking hierarchical mesh routing.
+- **hunter_found:** `2026-03-20T17:18:28Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0315
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `examples/audit-system/audit-agent.ts`
+- **line:** `130`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `new RegExp(input.pattern, "gi")` compiles an LLM-supplied string directly into a regex with no validation, enabling ReDoS via catastrophic backtracking patterns like `(a+)+$`.
+- **context:** The `search_code` tool is exposed to the agent loop; the regex is applied to every line of every file in the target directory. A malicious or hallucinated pattern can hang the process indefinitely.
+- **hunter_found:** `2026-03-20T17:18:28Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0316
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `examples/audit-system/audit-agent.ts`
+- **line:** `53`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `project_tree` and `search_code` tools call `resolve(input.directory)` without any `process.cwd()` boundary check, allowing the LLM to enumerate arbitrary directories on the host (e.g., `/etc`, `/home`).
+- **context:** The `read_file` tool at line 100 correctly enforces a cwd boundary, but the two directory-accepting tools do not, creating an inconsistent trust boundary. An LLM hallucination or prompt injection can exfiltrate host filesystem structure.
+- **hunter_found:** `2026-03-20T17:18:28Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0317
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/harness/hooks-engine.ts`
+- **line:** `233`
+- **category:** `dead-code`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `fire()` method checks `event === "PermissionRequest"` in the HookResult return branch, but `fire("PermissionRequest", ...)` is never called anywhere in production code, making this branch dead.
+- **context:** The `PermissionRequest` arm in the condition guard adds complexity without ever executing; if the event type is ever removed from the union, this dead branch will mask the removal.
+- **hunter_found:** `2026-03-20T17:18:28Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
@@ -1625,11 +1725,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `toMermaidDetailed()` embeds raw node IDs (`edge.from`, `edge.to`) directly into Mermaid markup with no sanitization, enabling Mermaid injection via crafted node names containing newlines and embedded directives.
 - **context:** BUG-0292 and BUG-0294 applied sanitization to `compile-ext.ts` and `StateGraph.toMermaid()` respectively, but `toMermaidDetailed()` in `src/inspect.ts` was missed. Lines 190, 192, 194, and 199-202 embed node IDs verbatim: `${edge.from} --> ${edge.to}` (line 190), `${edge.from} -->|...| ${edge.from}_router` (line 192), `${edge.from}_router --> ${edge.to}` (line 194), and style lines for each node ID (lines 199-202). A crafted node name such as `"node\nstyle node fill:#ff0000\ninjected_directive"` or `'node\nclick node call alert("XSS")'` injects arbitrary Mermaid directives. `StateGraph.prototype.toMermaidDetailed` (graph.ts:297-301) calls this function, so any graph using the richer diagram generator is vulnerable. Additionally, `src/swarm/compile-ext.ts` lines 36 and 38 embed `from` and `edge.to` / `from` verbatim with no sanitization — both the static and conditional branches are affected. Fix: add a `sanitizeMermaid()` helper to `inspect.ts` (replace newlines, strip `[`, `]`, backticks) and apply it to all node ID interpolations in `toMermaidDetailed()` and `compile-ext.ts`. OWASP A03:2021 - Injection.
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0305`
+- **branch:** `bugfix/BUG-0312`
 - **hunter_found:** `2026-03-20T12:35:00Z`
 - **fixer_started:** `2026-03-20T12:36:39Z`
-- **fixer_completed:** `2026-03-20T17:10:09Z`
-- **fix_summary:** `Added null guard for json.content before filter/find calls. Returns empty defaults when content is null, matching OpenAI/Google pattern. tsc clean.`
+- **fixer_completed:** `2026-03-20T17:17:48Z`
+- **fix_summary:** `Wrapped each existing hook call in instrument() with try/catch. User hook errors logged via console.warn, tracer hook always fires. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1647,11 +1747,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `StateGraph.toMermaid()` embeds raw node names into Mermaid markup via `lbl(n as string)` without sanitization, enabling Mermaid injection via crafted node names containing newlines and embedded directives.
 - **context:** BUG-0292 fix applied `sanitizeMermaid()` to `src/swarm/compile-ext.ts` but missed `StateGraph.toMermaid()` in `src/graph.ts`. The `lbl()` helper at line 218-219 casts node names directly to string with no escaping. A crafted node name such as `"node\nstyle node fill:#ff0000\ninjected_directive"` or `'node\nclick node call alert("XSS")'` injects arbitrary Mermaid directives into the output. Since Mermaid diagrams are rendered in web UIs, this can enable XSS in environments that render the diagram. Two regression tests in `src/__tests__/mermaid-node-injection.test.ts` confirm this: "BUG-0292: crafted node ID containing newline should not inject Mermaid directives" and "BUG-0292: crafted node ID containing Mermaid click directive should be escaped" both fail. Fix: import `sanitizeMermaid` from `./inspect.js` and apply it in `lbl()` for non-START/non-END nodes. OWASP A03:2021 - Injection.
 - **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0305`
+- **branch:** `bugfix/BUG-0312`
 - **hunter_found:** `2026-03-20T05:23:00Z`
 - **fixer_started:** `2026-03-20T12:29:05Z`
-- **fixer_completed:** `2026-03-20T17:10:09Z`
-- **fix_summary:** `Added null guard for json.content before filter/find calls. Returns empty defaults when content is null, matching OpenAI/Google pattern. tsc clean.`
+- **fixer_completed:** `2026-03-20T17:17:48Z`
+- **fix_summary:** `Wrapped each existing hook call in instrument() with try/catch. User hook errors logged via console.warn, tracer hook always fires. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
