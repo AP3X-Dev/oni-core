@@ -17,7 +17,7 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T19:00:00Z` |
+| **Last TestGen Run** | `2026-03-20T23:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T00:10:00Z` (Cycle 155) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
@@ -1275,7 +1275,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0296
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/mcp/transport.ts`
 - **line:** `134`
@@ -1285,7 +1285,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `StdioTransport._doStart()` attaches a `stdout.on("data", ...)` listener that is never removed when `stop()` is called; only the process reference is nulled.
 - **context:** Repeated connect/stop cycles accumulate unreachable listener closures holding references to the entire transport instance (including its `pending` map and `buffer`), preventing GC until the underlying process object is collected.
 - **hunter_found:** `2026-03-20T16:54:16Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T16:56:56Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1295,7 +1295,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0297
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `269`
@@ -1305,7 +1305,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `_perInvocationParentUpdates` and `_perInvocationCheckpointer` Map entries are deleted only on the success path (lines 311-312); if the subgraph throws before reaching those lines, the keyed entries are never removed.
 - **context:** Every failed subgraph invocation leaks one entry per Map on the long-lived `ONIPregelRunner` instance; in workloads with frequent transient subgraph failures, the Maps grow without bound.
 - **hunter_found:** `2026-03-20T16:54:16Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T16:56:56Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1315,7 +1315,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0298
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `257`
@@ -1325,7 +1325,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `ctx._nextInvocationId.value++` is executed inside async node callbacks running concurrently under `Promise.allSettled()` with no mutual exclusion, causing duplicate `invocationKey` values when two subgraph nodes execute in the same superstep.
 - **context:** Duplicate keys cause the second subgraph to overwrite the first's `_perInvocationParentUpdates` entry, silently discarding `Command.PARENT` updates from whichever subgraph loses the race.
 - **hunter_found:** `2026-03-20T16:54:16Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T16:56:56Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1335,7 +1335,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0299
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `337`
@@ -1345,7 +1345,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `pendingInterrupt` is read-then-written across two statements inside concurrent node `catch` blocks; if two nodes throw `NodeInterruptSignal` and their catch blocks interleave, both see `isFirstInterrupt = true`.
 - **context:** Both nodes call `saveCheckpoint`, and the second overwrites the first with divergent `nextNodes`, corrupting HITL resume state.
 - **hunter_found:** `2026-03-20T16:54:16Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T16:56:56Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1355,7 +1355,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0300
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/pregel/execution.ts`
 - **line:** `57`
@@ -1365,7 +1365,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The `nodeCache` Map is read, mutated, and size-checked from parallel async `executeNode` calls without synchronization; two concurrent misses for the same key both execute the node and both write results.
 - **context:** The LRU eviction logic also races between concurrent writers, potentially evicting entries just written by another task, making the cache non-deterministic and ineffective.
 - **hunter_found:** `2026-03-20T16:54:16Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T16:56:56Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
