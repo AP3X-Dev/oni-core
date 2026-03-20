@@ -18,7 +18,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T23:30:00Z` (no new tests — no qualifying bugs without test_generated:true meeting criteria) |
-| **Last Git Manager Pass** | `2026-03-21T13:00:00Z` (Cycle 177) |
+| **Last Git Manager Pass** | `2026-03-21T17:00:00Z` (Cycle 178) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `297` |
 | **Total Pending** | `2` |
@@ -3148,6 +3148,46 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T19:00:46Z`
 - **fixer_completed:** `2026-03-20T19:04:46Z`
 - **fix_summary:** `Added optional knownTools param to checkToolPermission. Wildcard now validates tool exists in registry. 2 tests. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0390
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/models/sse.ts`
+- **line:** `19`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `TextDecoder.decode(value, { stream: true })` accumulates UTF-8 state across chunks but the decoder's internal byte buffer is never flushed after the read loop ends — a trailing incomplete multi-byte character is silently dropped.
+- **context:** The post-loop buffer flush at line 34 only drains the string-level newline buffer; it does not call `decoder.decode()` with `{ stream: false }` to flush the decoder's internal state. A stream that ends mid-codepoint (e.g., network truncation) loses the final character silently. This affects all adapters using `parseSSEData` (Google, OpenAI, OpenRouter).
+- **hunter_found:** `2026-03-20T19:05:48Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0391
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/agents/define-agent.ts`
+- **line:** `74`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0389`
+- **description:** The BUG-0389 fix passes `knownToolNames` to `checkToolPermission` for wildcard validation, but `executeOneCall` already guards `toolMap.get(call.name)` with an early-return error before the permission check is reached, making the wildcard registry validation unreachable through this code path.
+- **context:** Regression from BUG-0389 fix. The intent was to block hallucinated tool names under wildcard permissions, but the `toolMap` lookup short-circuits first. The protection only has effect if `checkToolPermission` is called from other sites that don't do their own tool-existence guard.
+- **hunter_found:** `2026-03-20T19:05:48Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
