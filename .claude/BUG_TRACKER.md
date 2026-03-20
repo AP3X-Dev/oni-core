@@ -1040,8 +1040,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
-- **test_generated:** `true`
-- **test_file:** `packages/tools/src/__tests__/github-branch-validation.test.ts`
 
 ---
 
@@ -1062,8 +1060,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
-- **test_generated:** `true`
-- **test_file:** `packages/integrations/src/__tests__/adapter-prototype-pollution.test.ts`
 
 ---
 
