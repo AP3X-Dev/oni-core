@@ -104,6 +104,8 @@
 - **validator_completed:** `2026-03-15T12:47:00Z`
 - **validator_notes:** Confirmed Lua script (PUT_SCRIPT) atomically handles all 4 cases: new key, existing key, with/without TTL. createdAt preserved via pcall(cjson.decode) with graceful degradation on corrupt JSON. eval method added to RedisClient interface and wired for ioredis. Regression test exists for createdAt preservation.
 - **archived:** `2026-03-15T12:48:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/stores/src/__tests__/redis-put-atomic.test.ts`
 
 ---
 
@@ -369,6 +371,8 @@
 - **validator_completed:** `2026-03-15T13:32:00Z`
 - **validator_notes:** Confirmed [process.cwd()] default at line 37 and 3 new tests at lines 71, 79, 89. All 12 filesystem tests pass.
 - **archived:** `2026-03-15T13:33:00Z`
+- **test_generated:** `true`
+- **test_file:** `packages/tools/src/__tests__/filesystem-default-allowed-paths.test.ts`
 
 ---
 
