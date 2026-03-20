@@ -17,7 +17,7 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-19T23:10:00Z` |
+| **Last TestGen Run** | `2026-03-20T00:21:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T03:40:43Z` |
 | **Last Supervisor Pass** | `2026-03-19T21:52:17Z` |
 | **Total Found** | `109` |
@@ -396,7 +396,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0250
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/harness/loop/inference.ts`
 - **line:** `156`
@@ -406,7 +406,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** In the no-signal retry delay path, `setTimeout(resolve, delayMs)` is called without storing the timer handle, so it cannot be cleared if the calling agent loop is abandoned.
 - **context:** The `if (config.signal)` branch above (lines 147-154) correctly stores the handle and calls `clearTimeout` on abort. The `else` branch at line 156 discards the handle. Under sustained rate limiting (429s) with `maxRetries = 3`, each agent accumulates up to three long-lived dangling timers that hold their closure graph alive for the full retry delay duration.
 - **hunter_found:** `2026-03-19T18:45:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T07:24:54Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -436,7 +436,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0252
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/pregel/index.ts`
 - **line:** `162`
@@ -446,7 +446,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `ONIPregelRunner.batch()` uses `Promise.all`, so one rejected invocation cancels the entire batch and discards results from all other invocations, which continue running as orphaned promises with no cleanup.
 - **context:** A caller invoking a batch of 10 independent inputs where input 2 fails gets nothing back, while inputs 3-10 continue executing silently in the background. The parallel fan-out inside `streamSupersteps` correctly uses `Promise.allSettled` (streaming.ts line 203) for exactly this reason.
 - **hunter_found:** `2026-03-19T18:45:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T07:24:54Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -456,7 +456,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0253
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/swarm/self-improvement/experiment-log.ts`
 - **line:** `57`
@@ -466,7 +466,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `ExperimentLog.summarize()` always computes delta as `metricAfter - metricBefore` regardless of experiment direction, so "minimize" metric improvements appear as negative deltas in the summary fed to the LLM.
 - **context:** `pattern-learner.ts` correctly handles direction-aware gain (BUG-0017 fix), but `summarize()` does not respect the `direction` field. A latency reduction of 50ms appears as `delta: -0.050` instead of `+0.050`, making successful "minimize" experiments look like regressions to the LLM. Regression of BUG-0017 in a different code path.
 - **hunter_found:** `2026-03-19T18:45:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T07:24:54Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -476,7 +476,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0254
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `372`
@@ -486,7 +486,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Custom and message stream events from nodes that throw are silently dropped because `allCustomEvents.push(...)` and `allMessageEvents.push(...)` at lines 372-374 are after the try/catch/finally block and unreachable on the error path.
 - **context:** When a node emits custom/message events via `writerImpl` then subsequently throws, those events are captured in closure-local arrays but never pushed to the outer collection arrays. Stream consumers monitoring partial output lose all events emitted before the failure. Fix: move the push calls into the `finally` block.
 - **hunter_found:** `2026-03-19T18:45:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T07:24:54Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -496,7 +496,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0255
-- **status:** `reopened`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
 - **line:** `74`
@@ -506,7 +506,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `AgentPool.batch()` uses `Promise.all`, so one failing slot invocation cancels the entire batch while remaining invocations continue running as orphaned promises.
 - **context:** Same class of issue as BUG-0252 (`ONIPregelRunner.batch()`). The pool already provides `batchSettled()` at line 78 which uses `Promise.allSettled`, but the primary `batch()` method gives callers no way to get partial results.
 - **hunter_found:** `2026-03-19T18:45:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-20T07:24:54Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** `2026-03-20T04:07:00Z`
