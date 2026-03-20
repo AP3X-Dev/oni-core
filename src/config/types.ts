@@ -72,8 +72,6 @@ export interface ONIConfig {
   swarm?: SwarmConfig;
   /** LSP server config. Set to false to disable all LSP. */
   lsp?: Record<string, LSPServerConfig> | false;
-  /** Plugin paths (npm packages or local file paths) */
-  plugins?: string[];
 }
 
 /** Options for loadConfig(). */

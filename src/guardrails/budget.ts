@@ -47,11 +47,15 @@ export class BudgetTracker {
   record(agentName: string, modelId: string, usage: TokenUsage): AuditEntry[] {
     const entries: AuditEntry[] = [];
 
-    // Update agent-level counters
-    const existing = this.agentTokens.get(agentName) ?? { input: 0, output: 0 };
+    // Update agent-level counters — atomic in-place mutation: initialise entry on
+    // first access so the same object reference is always mutated (no read-then-set
+    // window where a concurrent call could overwrite a sibling's increments).
+    if (!this.agentTokens.has(agentName)) {
+      this.agentTokens.set(agentName, { input: 0, output: 0 });
+    }
+    const existing = this.agentTokens.get(agentName)!;
     existing.input += usage.inputTokens;
     existing.output += usage.outputTokens;
-    this.agentTokens.set(agentName, existing);
 
     // Update run-level counters
     this.totalInput += usage.inputTokens;

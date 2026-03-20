@@ -49,6 +49,8 @@ export class ONIError extends Error {
       message: this.message,
       recoverable: this.recoverable,
       suggestion: this.suggestion,
+      context: this.context,
+      stack: this.stack,
     };
   }
 

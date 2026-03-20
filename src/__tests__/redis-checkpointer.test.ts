@@ -40,6 +40,17 @@ const mockClient = {
     const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
     return [...store.keys()].filter(k => regex.test(k));
   }),
+  eval: vi.fn(async (_script: string, _numkeys: number, ...rest: unknown[]) => {
+    // Simulate the PUT_SCRIPT Lua: SET KEYS[1] ARGV[1], ZADD KEYS[2] ARGV[2] ARGV[2]
+    const dataKey = rest[0] as string;
+    const idxKey = rest[1] as string;
+    const json = rest[2] as string;
+    const step = rest[3] as number;
+    store.set(dataKey, json);
+    if (!sortedSets.has(idxKey)) sortedSets.set(idxKey, new Map());
+    sortedSets.get(idxKey)!.set(String(step), Number(step));
+    return "OK";
+  }),
   disconnect: vi.fn(async () => {}),
 };
 
