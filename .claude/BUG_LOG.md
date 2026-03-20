@@ -1908,6 +1908,8 @@
 - **validator_completed:** `2026-03-19T23:18:00Z`
 - **validator_notes:** `Confirmed _evaluating boolean guard prevents re-entrant evaluate() calls. Flag set before evaluate(), reset in finally block — cannot stay stuck true. First non-re-entrant call processes normally. No regressions.`
 - **archived:** `2026-03-19T23:18:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/scaling-reentrancy-guard.test.ts`
 
 ---
 
