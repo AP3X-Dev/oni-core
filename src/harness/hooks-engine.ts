@@ -362,6 +362,10 @@ export class HooksEngine {
       /nc\s+.*-e/,
       /ncat\s+.*-e/,
       /socat\s+.*exec/i,
+      /python[23]?\s+-c/,
+      /perl\s+-e/,
+      /ruby\s+-e/,
+      /node\s+-e/,
     ];
 
     const sensitiveFilePatterns = [
