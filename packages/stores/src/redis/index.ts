@@ -246,7 +246,8 @@ export class RedisStore extends BaseStore {
     opts?: { prefix?: Namespace; maxDepth?: number }
   ): Promise<Namespace[]> {
     // Scan all index keys to extract unique namespace portions
-    const pattern = `oni:store:idx:${this.prefix}:*`;
+    const escaped = this.prefix.replace(/([*?[\]])/g, '\\$1');
+    const pattern = `oni:store:idx:${escaped}:*`;
     const keys = await this.client.keys(pattern);
 
     const prefixStr = `oni:store:idx:${this.prefix}:`;
