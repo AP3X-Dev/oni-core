@@ -161,24 +161,22 @@ export class SwarmSnapshotStore {
 function deepEqual(
   a: unknown,
   b: unknown,
-  seenA = new WeakSet<object>(),
-  seenB = new WeakSet<object>(),
+  seenPairs = new Map<object, Set<object>>(),
 ): boolean {
   if (a === b) return true;
   if (a === null || b === null) return false;
   if (typeof a !== typeof b) return false;
   if (typeof a !== "object") return false;
 
-  // Cycle guard: if we've already started comparing this pair, assume equal
-  // (the non-cyclic portions have already matched at earlier recursion levels)
-  if (seenA.has(a as object) && seenB.has(b as object)) return true;
-  seenA.add(a as object);
-  seenB.add(b as object);
+  // Cycle guard: track (a, b) pairs together to prevent cross-pair contamination
+  if (seenPairs.get(a as object)?.has(b as object)) return true;
+  if (!seenPairs.has(a as object)) seenPairs.set(a as object, new Set());
+  seenPairs.get(a as object)!.add(b as object);
 
   if (Array.isArray(a)) {
     if (!Array.isArray(b)) return false;
     if (a.length !== b.length) return false;
-    return a.every((v, i) => deepEqual(v, (b as unknown[])[i], seenA, seenB));
+    return a.every((v, i) => deepEqual(v, (b as unknown[])[i], seenPairs));
   }
 
   const objA = a as Record<string, unknown>;
@@ -186,5 +184,5 @@ function deepEqual(
   const keysA = Object.keys(objA);
   const keysB = Object.keys(objB);
   if (keysA.length !== keysB.length) return false;
-  return keysA.every((k) => deepEqual(objA[k], objB[k], seenA, seenB));
+  return keysA.every((k) => deepEqual(objA[k], objB[k], seenPairs));
 }
