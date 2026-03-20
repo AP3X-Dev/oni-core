@@ -13,15 +13,15 @@
 | **Last Fixer Pass** | `2026-03-20T10:16:26Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T19:48:00Z` |
-| **Last Security Scan** | `2026-03-20T20:00:15Z` |
+| **Last Security Scan** | `2026-03-23T03:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:45:00Z` |
+| **Last TestGen Run** | `2026-03-20T12:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T23:30:00Z` (Cycle 190) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
-| **Total Found** | `305` |
-| **Total Pending** | `15` |
+| **Total Found** | `304` |
+| **Total Pending** | `14` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `32` |
 | **Total In Validation** | `0` |
@@ -1425,6 +1425,46 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-20T23:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0302
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/mermaid.ts`
+- **line:** `45`
+- **category:** `security-xss`
+- **description:** `toSwarmMermaid()` embeds agent `role` and capability `name` values directly into HTML tags (`<b>${entry.role}</b>`, `<i>${caps}</i>`) without escaping `<`, `>`, `&`, or `'` characters, enabling HTML injection in rendered Mermaid diagrams.
+- **context:** Line 60 escapes `"`, `[`, and `]` but not HTML metacharacters. An agent definition with `role: "</b><img src=x onerror=alert(1)><b>"` injects arbitrary HTML into the Mermaid label. Since Mermaid diagrams are rendered in web UIs (VS Code previews, documentation sites, dashboards), this is a stored XSS vector — the malicious role persists in the agent registry and fires every time the diagram is displayed. Prior fixes (BUG-0290/0291/0292) addressed `sanitizeMermaid()` for node IDs in `inspect.ts` and `compile-ext.ts`, but `mermaid.ts` uses a different code path with inline HTML labels that was not covered. Fix: escape `<>&'"` in `entry.role` and `c.name` before embedding in HTML tags, or apply the existing `sanitizeMermaid()` pattern. OWASP A03:2021 - Injection / A07:2021 - XSS.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T20:04:36Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0303
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/lsp/index.ts`
+- **line:** `134`
+- **category:** `security-injection`
+- **description:** `getErrorDiagnosticsText()` embeds `filePath` in an XML attribute (`<diagnostics file="${filePath}">`) without escaping, enabling XML attribute injection that can manipulate LLM context parsing.
+- **context:** The `filePath` parameter is passed directly into the XML attribute at line 134. A file path containing `"` followed by additional XML attributes or closing tags (e.g. `path" malicious="true`) would break out of the attribute context. While this output is consumed as LLM context (not browser HTML), it could affect how the LLM interprets diagnostic boundaries — a crafted file path could inject fake diagnostic blocks or override the file attribute to misattribute errors. Additionally, `formatDiagnostic()` at line 244 embeds `d.message` and `d.source` from LSP server responses without escaping. Fix: apply XML escaping to `filePath`, `d.message`, and `d.source` using the existing `escXml()` function from `skill-loader.ts`. OWASP A03:2021 - Injection.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T20:04:36Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
