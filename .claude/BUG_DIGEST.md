@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T18:30:00Z
+**Generated:** 2026-03-20T13:52:09Z
 **Period:** Last 24 hours
 
 ---
@@ -9,8 +9,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 51 |
-| Pending | 0 |
+| Active Bugs | 52 |
+| Pending | 1 |
 | In Progress | 0 |
 | Fixed (awaiting validation) | 35 |
 | In Validation | 0 |
@@ -22,24 +22,24 @@
 | Severity | Count |
 |----------|-------|
 | Critical | 1 |
-| High | 15 |
-| Medium | 32 |
+| High | 16 |
+| Medium | 33 |
 | Low | 2 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 40 |
-| Bugs Fixed | 52 |
-| Bugs Verified | 17 |
-| Throughput | 17 bugs/day |
-| Mean Time to Fix | 4.6h |
-| Mean Time to Verify | 0.9h |
+| Bugs Found | 8 |
+| Bugs Fixed | 11 |
+| Bugs Verified | 0 |
+| Throughput | 0 bugs/day |
+| Mean Time to Fix | N/A (no verifications) |
+| Mean Time to Verify | N/A (no verifications) |
 | Reopen Rate | 0% |
-| First-Pass Fix Rate | 90% |
-| Queue Drain Rate | 0.42 (17 verified / 40 found) |
-| Blocked Ratio | 31.4% |
+| First-Pass Fix Rate | N/A |
+| Queue Drain Rate | 0.00 (0 verified / 8 found) |
+| Blocked Ratio | 30.8% |
 
 ## Top Problem Files
 
@@ -65,52 +65,52 @@
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-20T05:23:00Z | STALE (13.1h ago) |
-| Fixer | 2026-03-20T12:36:39Z | STALE (5.9h ago) |
-| Validator | 2026-03-20T04:07:00Z | STALE (14.4h ago) |
+| Hunter | 2026-03-20T05:23:00Z | STALE (8.5h ago) |
+| Fixer | 2026-03-20T12:36:39Z | STALE (1.3h ago) |
+| Validator | 2026-03-20T04:07:00Z | STALE (9.8h ago) |
 
 ## Bottleneck Analysis
 
-**CRITICAL VALIDATOR BOTTLENECK:** 35 bugs are fixed and awaiting validation. The Validator has not run in 14+ hours (last pass at 04:07Z). Only 17 bugs were verified in the last 24h, well below the 35+ in queue. **Action required: Trigger urgent Validator pass to clear backlog.**
+**CRITICAL VALIDATOR BOTTLENECK:** 35 bugs are fixed and awaiting validation, but 0 bugs were verified in the last 24h. The Validator last ran at 04:07Z (~10h ago) and has completely stalled. **Action required: Restart Validator immediately to clear the 35-bug backlog.**
 
-**Very High Blocked Ratio (31.4%):** 16 of 51 active bugs are blocked. Multiple bugs report fixes applied but remain in blocked status (BUG-0253, BUG-0268, BUG-0277, BUG-0278). Manual triage needed to determine which can be marked fixed.
+**High Blocked Ratio (30.8%):** 16 of 52 active bugs are blocked. Several have fixes applied but are stuck in blocked status (BUG-0253, BUG-0259, BUG-0260, BUG-0262, BUG-0268, BUG-0277, BUG-0278). Manual triage needed.
 
-**Queue Drain Rate Critical (<0.5):** Only 17 of 40 bugs found were verified (0.42 drain rate). Pipeline is severely bottlenecked on validation — the Fixer is keeping pace with production (52 fixed in 24h) but the Validator cannot process the output fast enough.
+**Queue Drain Rate Critical (0.00):** Zero throughput — no bugs are making it through validation. The Fixer produced 11 fixes in the last 24h but the pipeline output is completely blocked at the validation stage.
 
-**Hunter Stale (13h):** Last Hunter scan at 05:23Z. Current time is 18:30Z. Hunter should run ~5min intervals. Restart required.
+**Hunter Stale (8.5h):** Last scan at 05:23Z. Should run every 5 minutes. Restart required.
 
-## Trend (vs Previous Digest at 13:03Z)
+## Trend (vs Previous Digest at 18:30Z)
 
 | Metric | Previous | Current | Direction |
 |--------|----------|---------|-----------|
-| Active Bugs | 52 | 51 | down |
-| Verified | 12 | 17 | up |
-| Fixed Queue | 35 | 35 | -> |
-| Blocked | 16 | 16 | -> |
-| Throughput | 12 bugs/day | 17 bugs/day | up |
+| Active Bugs | 51 | 52 | ↑ |
+| Throughput | 17 bugs/day | 0 bugs/day | ↓ |
+| Bugs Found (24h) | 40 | 8 | ↓ |
+| Bugs Fixed (24h) | 52 | 11 | ↓ |
+| Blocked Ratio | 31.4% | 30.8% | → |
 
-**Assessment:** Validator performed better this cycle (17 verified vs 12), improving throughput from 12 to 17 bugs/day. However, it remains stale and fallen behind — the 35-bug fixed queue has not shrunk. The Fixer produced 52 fixes in 24h (doubling the previous cycle's 58 total), showing strong production, but Validator cannot keep pace. Restart both Hunter and Validator agents immediately.
+**Assessment:** Pipeline output has dropped to zero — no bugs verified since the last digest. The Validator and Hunter are both stalled. The Fixer continued producing fixes (11 in 24h) but at reduced pace (down from 52). Active bug count ticked up by 1. The same top problem files persist (`src/swarm/pool.ts`, `src/harness/memory/ranker.ts`), indicating these modules need structural attention. **Immediate action: Restart Hunter and Validator agents.**
 
-## Blocked -- Needs Human Attention
+## Blocked — Needs Human Attention
 
 ### Security (requires architectural decision)
-- **BUG-0205** (`critical` / `security-injection`) -- `packages/tools/src/code-execution/node-eval.ts:57`: Unsandboxed code execution. Auto-blocked after 3 attempts.
-- **BUG-0246** (`high` / `race-condition`) -- `src/guardrails/budget.ts:51`: Auto-blocked after 3 attempts. May be false positive (synchronous method).
+- **BUG-0205** (`critical` / `security-injection`) — `packages/tools/src/code-execution/node-eval.ts:57`: Unsandboxed code execution. Auto-blocked after 3 attempts.
+- **BUG-0246** (`high` / `race-condition`) — `src/guardrails/budget.ts:51`: Auto-blocked after 3 attempts. May be false positive.
 
 ### Fixed but status stuck at blocked
-- **BUG-0253** (`medium` / `logic-bug`) -- `src/swarm/self-improvement/experiment-log.ts:57`: Fixer reports fix applied; needs Validator manual move to fixed.
-- **BUG-0259** (`medium` / `logic-bug`) -- `src/harness/memory/ranker.ts:41`: Fixer reports fix applied; needs Validator manual move to fixed.
-- **BUG-0260** (`medium` / `logic-bug`) -- `src/harness/memory/ranker.ts:94`: Fixer reports fix applied; needs Validator manual move to fixed.
-- **BUG-0262** (`medium` / `missing-error-handling`) -- `packages/tools/src/web-search/brave.ts:45`: Fixer reports fix applied; needs Validator manual move to fixed.
-- **BUG-0268** (`medium` / `missing-error-handling`) -- `src/harness/loop/index.ts:55`: Fixer reports fix applied; needs Validator manual move to fixed.
-- **BUG-0277** (`high` / `missing-error-handling`) -- `src/swarm/pool.ts:209`: Fixer reports fix applied; needs Validator manual move to fixed.
-- **BUG-0278** (`high` / `type-error`) -- `src/checkpointers/redis.ts:180`: Fixer reports fix applied; needs Validator manual move to fixed.
+- **BUG-0253** (`medium` / `logic-bug`) — `src/swarm/self-improvement/experiment-log.ts:57`
+- **BUG-0259** (`medium` / `logic-bug`) — `src/harness/memory/ranker.ts:41`
+- **BUG-0260** (`medium` / `logic-bug`) — `src/harness/memory/ranker.ts:94`
+- **BUG-0262** (`medium` / `missing-error-handling`) — `packages/tools/src/web-search/brave.ts:45`
+- **BUG-0268** (`medium` / `missing-error-handling`) — `src/harness/loop/index.ts:55`
+- **BUG-0277** (`high` / `missing-error-handling`) — `src/swarm/pool.ts:209`
+- **BUG-0278** (`high` / `type-error`) — `src/checkpointers/redis.ts:180`
 
-### Possible false positives (per Fixer)
-- **BUG-0235, BUG-0236, BUG-0244, BUG-0250, BUG-0259, BUG-0260, BUG-0262, BUG-0275, BUG-0277, BUG-0286** -- Fixer reports these are already fixed on main. Need Hunter re-evaluation or bulk triage.
+### Possible false positives
+- **BUG-0235, BUG-0236, BUG-0244, BUG-0250, BUG-0259, BUG-0260, BUG-0262, BUG-0275, BUG-0277, BUG-0286** — Fixer reports these are already fixed on main. Need Hunter re-evaluation or bulk triage.
 
 ### Policy blocks
-- **BUG-0191** (`low` / `dead-code`) -- `src/config/types.ts:76`: Plugin field in config unused. Awaiting API change decision.
+- **BUG-0191** (`low` / `dead-code`) — `src/config/types.ts:76`: Plugin field unused. Awaiting API change decision.
 
 ---
 
