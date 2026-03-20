@@ -9,10 +9,10 @@
 
 | Key | Value |
 |---|---|
-| **Last Hunter Scan** | `2026-03-21T00:02:00Z` |
+| **Last Hunter Scan** | `2026-03-21T00:06:00Z` |
 | **Last Fixer Pass** | `2026-03-20T10:16:26Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
-| **Last Digest Run** | `2026-03-20T19:48:00Z` |
+| **Last Digest Run** | `2026-03-21T03:30:00Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
@@ -20,8 +20,8 @@
 | **Last TestGen Run** | `2026-03-20T13:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T00:00:00Z` (Cycle 191) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
-| **Total Found** | `306` |
-| **Total Pending** | `19` |
+| **Total Found** | `313` |
+| **Total Pending** | `23` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `32` |
 | **Total In Validation** | `0` |
@@ -1565,6 +1565,86 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-20T20:08:29Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0310
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/streaming.ts`
+- **line:** `72`
+- **category:** `logic-bug`
+- **description:** `TokenStreamWriter.push()` has no guard against writes after `end()`. If `push(token)` is called after `end()` and the async iterator has already returned, the token is silently queued but never consumed — permanently dropped.
+- **context:** Triggered when a streaming LLM call emits a final token concurrently with a node timeout calling `end()`. The `push` method does not check `this.done` before enqueuing. Fix: add `if (this.done) return` at the top of `push()`.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-21T00:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0311
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/hitl/resume.ts`
+- **line:** `43`
+- **category:** `logic-bug`
+- **description:** `evict()` sets `s.status = "expired"` then immediately deletes the entry from the Map. A subsequent `get(resumeId)` returns `null`, making the expired status unreachable via the public API — callers cannot distinguish "expired" from "never existed".
+- **context:** The comment on `get()` says sessions remain visible so callers can observe final status, but that only holds for `"resumed"` sessions. Fix: keep expired sessions in the Map for a grace period before final deletion.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-21T00:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0312
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/coordination/pubsub.ts`
+- **line:** `34`
+- **category:** `race-condition`
+- **description:** `publish()` iterates `this.subscribers` Map with `for...of` while subscriber handlers can call `subscribe()` or unsubscribe during delivery. New subscriptions added mid-iteration may or may not be visited in the same `publish()` call, causing non-deterministic event delivery.
+- **context:** Per ECMAScript spec, entries added to a Map during `for...of` iteration will be visited if not yet passed. Handlers that add new subscriptions during delivery can receive the event that triggered them. Fix: snapshot subscribers before iterating (`[...this.subscribers.entries()]`).
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-21T00:05:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0313
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/internal/validate-command.ts`
+- **line:** `16`
+- **category:** `security`
+- **description:** `DANGEROUS_CHARS` regex omits newline (`\n`), carriage return (`\r`), and null byte (`\0`). A command string with embedded control characters passes validation; the security property relies on `which`/`existsSync` rejecting them implicitly rather than explicit input sanitization.
+- **context:** The `which` call at line 33 happens to reject binaries with `\n` in the name, providing an implicit safety net. But any future code path using `trimmed` before the `which` check would be vulnerable. Additionally, spaces are not in `DANGEROUS_CHARS`, so command-with-args strings pass validation but fail at spawn time. Fix: add `\n\r\0` and space to `DANGEROUS_CHARS`.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-21T00:05:00Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
