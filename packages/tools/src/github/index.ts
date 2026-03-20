@@ -74,6 +74,27 @@ async function githubRequest(
 
 const GITHUB_SLUG_RE = /^[a-zA-Z0-9._-]+$/;
 
+/** Allowed branch name pattern: word chars, hyphens, dots, slashes, colons. */
+const BRANCH_NAME_RE = /^[\w\-\.\/\:]+$/;
+const MAX_BRANCH_LENGTH = 255;
+
+function validateBranchName(name: string, label: string): void {
+  if (name.length === 0) {
+    throw new Error(`${label} branch name must not be empty`);
+  }
+  if (name.length > MAX_BRANCH_LENGTH) {
+    throw new Error(
+      `${label} branch name exceeds maximum length of ${MAX_BRANCH_LENGTH} characters`
+    );
+  }
+  if (!BRANCH_NAME_RE.test(name)) {
+    throw new Error(
+      `${label} branch name contains invalid characters — ` +
+        `only word characters, hyphens, dots, slashes, and colons are allowed`
+    );
+  }
+}
+
 export function githubTools(config: GitHubConfig): ToolDefinition[] {
   function resolveOwner(input: WithOwnerRepo): string {
     const owner = input.owner ?? config.defaultOwner;
@@ -189,11 +210,14 @@ export function githubTools(config: GitHubConfig): ToolDefinition[] {
       const i = input as CreatePrInput;
       const owner = resolveOwner(i);
       const repo = resolveRepo(i);
+      validateBranchName(i.head, "head");
+      const base = i.base ?? "main";
+      validateBranchName(base, "base");
       return githubRequest(`/repos/${owner}/${repo}/pulls`, "POST", config.token, {
         title: i.title,
         body: i.body,
         head: i.head,
-        base: i.base ?? "main",
+        base,
         draft: i.draft ?? false,
       });
     },
