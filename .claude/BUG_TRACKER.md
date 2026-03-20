@@ -13,13 +13,13 @@
 | **Last Hunter Scan** | `2026-03-21T00:25:00Z` |
 | **Last Fixer Pass** | `2026-03-20T22:04:00Z` |
 | **Last Validator Pass** | `2026-03-21T00:05:00Z` |
-| **Last Digest Run** | `2026-03-21T00:17:00Z` |
+| **Last Digest Run** | `2026-03-21T00:40:00Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T00:02:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T23:50:00Z` (Cycle 203) |
+| **Last Git Manager Pass** | `2026-03-21T00:45:00Z` (Cycle 206) |
 | **Last Supervisor Pass** | `2026-03-20T22:05:30Z` |
 | **Total Found** | `366` |
 | **Total Pending** | `49` |
@@ -242,7 +242,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0305
-- **status:** `reopened`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `119`
@@ -252,7 +252,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0305`
 - **hunter_found:** `2026-03-20T23:45:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T00:42:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** `2026-03-20T21:15:00Z`
@@ -862,7 +862,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0338
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/swarm/mailbox.ts`
 - **line:** `44`
@@ -872,7 +872,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `formatInbox()` renders `m.from` and `m.content` from swarm messages directly into LLM context string with no sanitization, enabling cross-agent prompt injection via crafted message content.
 - **context:** A compromised or malicious agent can embed LLM instruction overrides in its message content, which are injected verbatim into the receiving agent's context with no escaping or boundary markers.
 - **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T00:42:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -922,7 +922,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0341
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/hitl/interrupt.ts`
 - **line:** `69`
@@ -932,7 +932,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `_installInterruptContext` uses `AsyncLocalStorage.enterWith()` which mutates the current async context globally, instead of `als.run(ctx, fn)` which creates an isolated child scope — concurrent node executions sharing a parent context will bleed interrupt state across nodes.
 - **context:** Under `Promise.all` parallel node execution in Pregel, one node's interrupt context overwrites another's, causing interrupts to target the wrong node or be silently lost.
 - **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T00:42:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1082,7 +1082,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0349
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/swarm/compile-ext.ts`
 - **line:** `68`
@@ -1092,7 +1092,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `spawnAgent()` and `removeAgent()` mutate the live `runner.nodes` and `runner._edgesBySource` Maps while the Pregel execution loop may be concurrently iterating those same structures.
 - **context:** `streamSupersteps` iterates `ctx.nodes` and `ctx._edgesBySource` every superstep without any lock. A concurrent `spawnAgent` or `removeAgent` call during a live graph execution can add or delete entries mid-iteration, causing `NodeNotFoundError` or silently skipping a newly added agent.
 - **hunter_found:** `2026-03-20T22:26:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T00:42:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
@@ -1302,7 +1302,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0361
-- **status:** `pending`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `packages/a2a/src/server/handler.ts`
 - **line:** `53`
@@ -1312,7 +1312,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `handler()` call for `tasks/sendSubscribe` is not awaited — if handler returns a rejected Promise instead of a generator, the rejection is unhandled.
 - **context:** On line 53, `handler(messageText, taskId)` is called and immediately checked for `[Symbol.asyncIterator]` without awaiting. If `handler` returns a rejected Promise, the `catch` block on line 63 will not catch it — the error surfaces only when the stream is consumed by the SSE layer.
 - **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T00:42:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
