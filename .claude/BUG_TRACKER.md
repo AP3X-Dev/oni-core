@@ -10,10 +10,10 @@
 | Key | Value |
 |---|---|
 | **Last Hunter Scan** | `2026-03-20T05:23:00Z` |
-| **Last Fixer Pass** | `2026-03-20T17:17:48Z` |
+| **Last Fixer Pass** | `2026-03-20T17:25:39Z` |
 | **Last Validator Pass** | `2026-03-20T04:07:00Z` |
 | **Last Digest Run** | `2026-03-20T17:00:00Z` |
-| **Last Security Scan** | `2026-03-22T16:55:00Z` |
+| **Last Security Scan** | `2026-03-22T17:10:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -1615,19 +1615,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0313
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `22`
 - **category:** `dead-code`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0313-0317`
 - **description:** Four `HookEvent` types (`AgentBeforeDecision`, `AgentAfterOutcome`, `SkillUsed`, `SkillRevised`) and their corresponding payload interfaces are declared but no `fire()` call with any of these event names exists anywhere in production code.
 - **context:** Users who register handlers for these events will have dead registrations that never trigger. The payload interfaces are also unreachable dead code, adding false API surface that misleads consumers.
 - **hunter_found:** `2026-03-20T17:18:28Z`
 - **fixer_started:** `2026-03-20T17:20:49Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:25:39Z`
+- **fix_summary:** `Removed 4 dead HookEvent types and 4 dead payload interfaces confirmed unused across codebase. tsc clean, 17 tests pass.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1635,19 +1635,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0314
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/factories.ts`
 - **line:** `534`
 - **category:** `dead-code`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0314`
 - **description:** The conditional edge for `__coordinator__` in `buildHierarchicalMesh` returns `END` on both branches (`state.done` true and false), making it equivalent to a static edge to `END` — the else branch is dead routing logic.
 - **context:** Non-LLM coordinator strategies (round-robin, rule) rely on `Command.goto` for routing, but if the Pregel runner evaluates this conditional edge before respecting `Command.goto`, teams are unreachable through the fallback path, silently breaking hierarchical mesh routing.
 - **hunter_found:** `2026-03-20T17:18:28Z`
 - **fixer_started:** `2026-03-20T17:20:49Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:25:39Z`
+- **fix_summary:** `Coordinator false branch now returns teamIds[0] instead of END. Graph continues routing when not done. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1655,19 +1655,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0315
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `examples/audit-system/audit-agent.ts`
 - **line:** `130`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0315-0316`
 - **description:** `new RegExp(input.pattern, "gi")` compiles an LLM-supplied string directly into a regex with no validation, enabling ReDoS via catastrophic backtracking patterns like `(a+)+$`.
 - **context:** The `search_code` tool is exposed to the agent loop; the regex is applied to every line of every file in the target directory. A malicious or hallucinated pattern can hang the process indefinitely.
 - **hunter_found:** `2026-03-20T17:18:28Z`
 - **fixer_started:** `2026-03-20T17:20:49Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:25:39Z`
+- **fix_summary:** `Added safeRegExp() rejecting patterns >100 chars with try/catch. Added 5s Promise.race timeout on search. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1675,19 +1675,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0316
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `examples/audit-system/audit-agent.ts`
 - **line:** `53`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0315-0316`
 - **description:** `project_tree` and `search_code` tools call `resolve(input.directory)` without any `process.cwd()` boundary check, allowing the LLM to enumerate arbitrary directories on the host (e.g., `/etc`, `/home`).
 - **context:** The `read_file` tool at line 100 correctly enforces a cwd boundary, but the two directory-accepting tools do not, creating an inconsistent trust boundary. An LLM hallucination or prompt injection can exfiltrate host filesystem structure.
 - **hunter_found:** `2026-03-20T17:18:28Z`
 - **fixer_started:** `2026-03-20T17:20:49Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:25:39Z`
+- **fix_summary:** `Added assertWithinCwd() boundary check to project_tree and search_code. Verifies resolve() startsWith cwd. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1695,19 +1695,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0317
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `233`
 - **category:** `dead-code`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0313-0317`
 - **description:** The `fire()` method checks `event === "PermissionRequest"` in the HookResult return branch, but `fire("PermissionRequest", ...)` is never called anywhere in production code, making this branch dead.
 - **context:** The `PermissionRequest` arm in the condition guard adds complexity without ever executing; if the event type is ever removed from the union, this dead branch will mask the removal.
 - **hunter_found:** `2026-03-20T17:18:28Z`
 - **fixer_started:** `2026-03-20T17:20:49Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-20T17:25:39Z`
+- **fix_summary:** `Removed dead PermissionRequest HookEvent type. fire(PermissionRequest) never called anywhere. tsc clean.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
