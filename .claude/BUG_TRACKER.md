@@ -17,7 +17,7 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:45:00Z` |
+| **Last TestGen Run** | `2026-03-20T23:58:00Z` |
 | **Last Git Manager Pass** | `2026-03-20T17:06:14Z` (Cycle 158) |
 | **Last Supervisor Pass** | `2026-03-21T03:30:00Z` |
 | **Total Found** | `296` |
@@ -1488,6 +1488,126 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T17:05:21Z`
 - **fixer_completed:** `2026-03-20T17:10:09Z`
 - **fix_summary:** `Added null guard for json.content before filter/find calls. Returns empty defaults when content is null, matching OpenAI/Google pattern. tsc clean.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0307
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/state-helpers.ts`
+- **line:** `49`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `applyUpdate` uses `update[key] !== undefined` to gate reducer calls, silently dropping any node return that deliberately sets a channel key to `undefined` to reset/clear state.
+- **context:** Nodes returning `{ someKey: undefined }` intending to clear a channel will have no effect — the reducer is never called and the previous value persists across supersteps, leading to stale state that the node explicitly tried to remove.
+- **hunter_found:** `2026-03-20T17:11:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0308
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/execution.ts`
+- **line:** `107`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** After PII redaction rewrites content, `JSON.parse(inputCheck.content)` in the catch block silently falls back to the original un-redacted state if parsing fails, with no error or audit event.
+- **context:** A redacting filter that breaks JSON structure (e.g., replacing a quoted PII value with a label containing special chars) causes the redaction to be silently discarded. The node executes with the original un-redacted state and no warning is emitted, defeating the PII protection.
+- **hunter_found:** `2026-03-20T17:11:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0309
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/mcp/transport.ts`
+- **line:** `124`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `process.on("exit", ...)` handler in `_doStart()` rejects in-flight request promises but never calls the outer Promise constructor's `reject`, so if the MCP server process dies before `resolve()` fires, `start()` hangs forever.
+- **context:** The caller's `await client.connect()` deadlocks until the separate spawn-timeout fires. If no timeout is configured, the promise never settles, leaking the connection attempt and blocking the agent indefinitely.
+- **hunter_found:** `2026-03-20T17:11:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0310
+- **status:** `pending`
+- **severity:** `critical`
+- **file:** `src/mcp/transport.ts`
+- **line:** `135`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `stdout.on("data", ...)` callback calls `this.processBuffer()` without a try/catch; if `processBuffer` throws during JSON parse of a malformed NDJSON frame, the unhandled exception from the EventEmitter `data` handler crashes the Node.js process.
+- **context:** A single malformed message from an MCP server kills the entire application via Node's uncaughtException mechanism, rather than just rejecting the in-flight request or disconnecting the transport.
+- **hunter_found:** `2026-03-20T17:11:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0311
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/factories.ts`
+- **line:** `492`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** In `buildHierarchicalMesh` round-robin routing, the termination check `round >= teamIds.length` fires after `target` is computed via modulo, causing the coordinator to terminate one round early and never route to the last team in the list.
+- **context:** With 3 teams, rounds 0-1-2 should each route to a team, but round 2 triggers `2 >= 3` which is false (OK), then round 3 triggers `3 >= 3` which terminates before using target index 0. The actual bug is that the done-check uses the wrong threshold — it should allow exactly `teamIds.length` rounds.
+- **hunter_found:** `2026-03-20T17:11:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0312
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/tracer.ts`
+- **line:** `94`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** In merged hooks created by `instrument()`, `await existing.onStart?.(id, state)` is called without try/catch before `await tracerHooks.onStart!(id, state)`, so a throwing user hook prevents the tracer hook from firing.
+- **context:** The tracer timeline misses the event, breaking observability, and the exception propagates up to the agent node or pool that awaited the hook — potentially crashing the agent since `agent-node.ts` only guards the outermost hook call, not exceptions within a merged chain.
+- **hunter_found:** `2026-03-20T17:11:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
