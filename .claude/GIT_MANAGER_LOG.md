@@ -1,24 +1,3 @@
-[2026-03-20T19:00:00Z] BROAD OVERLAP ALERT (CARRY): BUG-0313-0317, BUG-0315-0316, and BUG-0351 each touch ~170 files. Validator must sequence: merge all narrow-scope fixed branches before these three.
-[2026-03-20T19:00:00Z] BRANCH COUNT: 81 named (2 blocked, 78 fixed/awaiting-Validator, 1 stale-in-progress, 0 active in-progress) + 0 active bugfix worktrees. 0 deletions this cycle. Cumulative deletions: ~93.
-[2026-03-20T19:00:00Z] === Git Manager Cycle 185 End ===
-[2026-03-20T20:00:00Z] === Git Manager Cycle 186 Start ===
-[2026-03-20T20:00:00Z] Pre-flight: No TRACKER_LOCK. Meta: In-progress=0, In-validation=0. Last Fixer Pass=2026-03-20T10:16:26Z. Last Validator Pass=2026-03-20T04:07:00Z. Active worktrees: NONE — 0 active bugfix worktrees. BUG-0294 stale-in-progress carry forward from Cycle 185. Proceeding.
-[2026-03-20T20:00:00Z] Step 1: Found 81 bugfix branches (unchanged from Cycle 185). No new branches this cycle.
-[2026-03-20T20:00:00Z] Step 2: Branch map updated. Main now at c0cff07. BUG-0363 found 2 behind main (recurring slip every cycle). All other branches unchanged from Cycle 185. BUG-0294 stale-in-progress: branch has commit but tracker fixer_completed empty (carry forward).
-[2026-03-20T20:00:00Z] Step 3: No orphaned/verified branches eligible for deletion. 0/5 deletions cap used. Cumulative deletions: ~93.
-[2026-03-20T20:00:00Z] Step 4: No in-progress bugs per tracker Meta (In-Progress=0). BUG-0294 stale-in-progress: not a live agent, stale tracker state — no active-agent stale alert.
-[2026-03-20T20:00:00Z] Step 5: All carry-forward conflict alerts unchanged. BUG-0391: 2 conflicts in src/agents/define-agent.ts + src/__tests__/guardrails-permissions.test.ts — human must resolve. BUG-0289/0297-0298-0299/0320/0321/0323/0334/0338/0339/0340/0341/0342/0343-0344/0346/0352/0353/0359/0364/0365/0367-0369/0372/0374/0378/0388/0389 carry forward.
-[2026-03-20T20:00:00Z] Step 5b: REBASE — bugfix/BUG-0363 re-rebased onto main (was 2 behind; recurring slip every cycle; now 1 ahead/0 behind; 0 conflicts; not worktree-locked; used git stash/pop). Rebase cap: 1/1 used. BUG-0289 skip rule active per Cycle 127.
-[2026-03-20T20:00:00Z] Step 6: No new file overlaps detected. All carry-forward overlap groups unchanged.
-[2026-03-20T20:00:00Z] Step 7: No merges completed this cycle. HEAD on main.
-[2026-03-20T20:00:00Z] Step 8: Cycle 186 % 6 = 0 → git gc --auto RUN. Completed successfully.
-[2026-03-20T20:00:00Z] ALERT (CARRY): BUG-0289 rebase blocked (linter auto-reverts, proven Cycle 127). Conflict persistent Cycles 127-186. Manual intervention required.
-[2026-03-20T20:00:00Z] ALERT (CARRY): BUG-0297-0298-0299 has merge conflict in src/pregel/streaming.ts — human resolution required.
-[2026-03-20T20:00:00Z] ALERT (CARRY): BUG-0320/0321/0323/0334/0338/0339/0340/0341/0342/0343-0344/0346/0352/0353/0359/0364/0365/0367-0369/0372/0374/0378/0388/0389/0391 conflict alerts carry forward — human resolution required.
-[2026-03-20T20:00:00Z] ALERT (CARRY): BUG-0294 stale in-progress — branch has commit but tracker fixer_completed is empty. Fixer must mark status: fixed and set fixer_completed + fix_summary + branch fields.
-[2026-03-20T20:00:00Z] BROAD OVERLAP ALERT (CARRY): BUG-0313-0317, BUG-0315-0316, and BUG-0351 each touch ~170 files. Validator must sequence: merge all narrow-scope fixed branches before these three.
-[2026-03-20T20:00:00Z] BRANCH COUNT: 81 named (2 blocked, 78 fixed/awaiting-Validator, 1 stale-in-progress, 0 in-progress) + 0 active bugfix worktrees. 0 deletions this cycle. Cumulative deletions: ~93.
-[2026-03-20T20:00:00Z] === Git Manager Cycle 186 End ===
 [2026-03-20T21:00:00Z] === Git Manager Cycle 187 Start ===
 [2026-03-20T21:00:00Z] Pre-flight: No TRACKER_LOCK. Meta: In-progress=0, In-validation=0. Last Fixer Pass=2026-03-20T10:16:26Z. Last Validator Pass=2026-03-20T04:07:00Z. Active worktrees: NONE — 0 active bugfix worktrees. BUG-0294 stale-in-progress carry forward from Cycle 186. Proceeding.
 [2026-03-20T21:00:00Z] Step 1: Found 81 bugfix branches (unchanged from Cycle 186). No new branches this cycle.
@@ -148,3 +127,21 @@
 [2026-03-20T20:45:00Z] BROAD OVERLAP ALERT (CARRY): BUG-0313-0317, BUG-0315-0316, and BUG-0351 each touch ~170 files. Validator must merge all narrow-scope fixed branches before these three.
 [2026-03-20T20:45:00Z] BRANCH COUNT: 76 named (7 fixed/awaiting-Validator, 4 in-progress, 1 stale-in-progress, 64 orphaned-not-in-tracker). 5 deletions this cycle. Cumulative deletions: ~102.
 [2026-03-20T20:45:00Z] === Git Manager Cycle 194 End ===
+[2026-03-20T22:55:00Z] === Git Manager Cycle 195 Start ===
+[2026-03-20T22:55:00Z] Pre-flight: No TRACKER_LOCK. Meta: In-progress=0, In-validation=0. Last Fixer Pass=2026-03-20T22:43:00Z (>60s ago). Last Validator Pass=2026-03-20T20:45:00Z (>60s ago). No in-progress/in-validation bugs. Proceeding.
+[2026-03-20T22:55:00Z] Step 1: Found 76 bugfix/BUG-* branches (unchanged from Cycle 194 start; 5 new branches: BUG-0304/0305/0313/0314/0316 created by Fixer this cycle; fixer_completed=22:43Z).
+[2026-03-20T22:55:00Z] Step 2: Branch map rebuilt. Active (fixed): BUG-0289/0292/0293/0294/0297/0298/0300/0304/0305/0313/0314/0316. Reopened: BUG-0296. Orphaned-pending (no branch field): BUG-0301/0302-0306/0303/0307/0308/0310-0309/0311/0312/0315-0316/0318/0319/0320/0321. Orphaned-not-in-tracker: BUG-0300(no entry), BUG-0313-0317, BUG-0330-0391 (excluding deleted). All branches committed 2026-03-20 — no stale branches.
+[2026-03-20T22:55:00Z] Step 3: DELETED bugfix/BUG-0330-0333 (orphaned, not in tracker, git branch -D). DELETED bugfix/BUG-0334 (orphaned, not in tracker, git branch -D). DELETED bugfix/BUG-0336 (orphaned, not in tracker, git branch -D). DELETED bugfix/BUG-0339 (orphaned, not in tracker, git branch -D). DELETED bugfix/BUG-0340 (orphaned, not in tracker, git branch -D). 5/5 deletions cap reached. Cumulative deletions: ~107.
+[2026-03-20T22:55:00Z] Step 4: No stale branches detected. All in-progress/fixed branches committed today (2026-03-20). No stale warnings this cycle.
+[2026-03-20T22:55:00Z] Step 5: Conflict pre-detection for newly fixed branches: BUG-0297=1 conflict (hooks-engine.ts), BUG-0298=1 conflict (hooks-engine.ts), BUG-0304=1 conflict (budget.ts), BUG-0305=2 conflicts (agent-node.ts), BUG-0313=3 conflicts (validate-command.ts), BUG-0314=0 conflicts (clean), BUG-0316=0 conflicts (clean).
+[2026-03-20T22:55:00Z] Step 5b: REBASE ATTEMPTED — bugfix/BUG-0313 (3 conflict markers in validate-command.ts). Non-trivial conflict (add/add in validate-command.ts between BUG-0313 and main). Rebase aborted with git rebase --abort. Returned to main, stash popped. Rebase cap: 0/1 remaining (1 attempt used but aborted without success). Human intervention required for BUG-0313 merge conflict.
+[2026-03-20T22:55:00Z] Step 6: FILE OVERLAP — src/harness/hooks-engine.ts: BUG-0289 (fixed), BUG-0296 (reopened), BUG-0297 (fixed/1 conflict), BUG-0298 (fixed/1 conflict). Validator must rebase BUG-0297 and BUG-0298 before merging. BUG-0296 reopened — do NOT merge until fixer resolves. BUG-0313-0317/BUG-0315-0316/BUG-0351 broad overlap (~170 files) carry forward.
+[2026-03-20T22:55:00Z] Step 7: No stale rebase/merge states found (ls .git/rebase-merge .git/rebase-apply both empty). HEAD on main.
+[2026-03-20T22:55:00Z] Step 8: Cycle 195 % 6 ≠ 0. git gc --auto skipped. Next gc at Cycle 198.
+[2026-03-20T22:55:00Z] ALERT (NEW): BUG-0296 REOPENED — Validator rejected: branch introduces critical regressions (75 test files deleted, fail-closed security removed, ReDoS-vulnerable regex, eval bypass patterns removed). Fixer must add ONLY 3 base64 patterns to hooks-engine.ts without reverting any existing code.
+[2026-03-20T22:55:00Z] ALERT (NEW): BUG-0297/0298/0304/0305 conflict markers detected this cycle — Validator must rebase each branch onto main before merging. BUG-0313 has 3 conflict markers; rebase attempt failed (non-trivial add/add conflict in validate-command.ts) — human intervention required.
+[2026-03-20T22:55:00Z] ALERT (CARRY): BUG-0289 conflict resolved per Cycle 194 (now 0 markers). Validator may re-attempt merge.
+[2026-03-20T22:55:00Z] ALERT (CARRY): BUG-0320/0321/0341/0342/0343-0344/0346/0352/0353/0359/0364/0365/0367-0369/0372/0374/0378/0388/0389/0391 conflict alerts carry forward — human resolution required.
+[2026-03-20T22:55:00Z] BROAD OVERLAP ALERT (CARRY): BUG-0313-0317, BUG-0315-0316, and BUG-0351 each touch ~170 files. Validator must merge all narrow-scope fixed branches before these three.
+[2026-03-20T22:55:00Z] BRANCH COUNT: 71 named (10 fixed/awaiting-Validator, 1 reopened, 60 orphaned). 5 deletions this cycle. Cumulative deletions: ~107.
+[2026-03-20T22:55:00Z] === Git Manager Cycle 195 End ===
