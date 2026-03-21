@@ -449,7 +449,12 @@ export function openai(
       throwModelHttpError("OpenAI", res.status, text, res.headers);
     }
 
-    const json = (await res.json()) as OpenAIEmbeddingResponse;
+    let json: OpenAIEmbeddingResponse;
+    try {
+      json = (await res.json()) as OpenAIEmbeddingResponse;
+    } catch {
+      throw new Error(`OpenAI embed: invalid JSON response from ${baseUrl}/v1/embeddings`);
+    }
     // Sort by index to ensure correct ordering
     return json.data
       .sort((a, b) => a.index - b.index)
