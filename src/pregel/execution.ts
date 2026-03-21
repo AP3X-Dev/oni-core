@@ -192,11 +192,11 @@ export async function executeNode<S extends Record<string, unknown>>(
 
       // Store in cache (reuse key computed above); evict oldest entry when full
       if (nodeDef.cache && cacheKey) {
-        if (ctx.nodeCache.size >= NODE_CACHE_MAX_SIZE) {
+        ctx.nodeCache.set(cacheKey, { result, timestamp: Date.now() });
+        while (ctx.nodeCache.size > NODE_CACHE_MAX_SIZE) {
           const oldest = ctx.nodeCache.keys().next().value;
           if (oldest !== undefined) ctx.nodeCache.delete(oldest);
         }
-        ctx.nodeCache.set(cacheKey, { result, timestamp: Date.now() });
       }
 
       return result;
