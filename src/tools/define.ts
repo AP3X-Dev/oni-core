@@ -1,5 +1,6 @@
 import type { ToolDefinition, DefineToolOptions, ToolContext } from "./types.js";
 import { getConfig, getStore, getCurrentState, getStreamWriter } from "../context.js";
+import { validateToolArgs } from "../harness/validate-args.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function defineTool<TInput = any, TOutput = any>( // SAFE: external boundary — any defaults are needed for generic ToolDefinition compatibility
@@ -42,6 +43,17 @@ export async function executeToolCalls(
         return { toolCallId: call.id, name: call.name, result: `Tool "${call.name}" not found`, isError: true };
       }
       try {
+        // Runtime schema validation — TInput erases to `any` in heterogeneous
+        // ToolDefinition[], so we validate args against the JSON Schema before
+        // passing them to execute(). This mirrors the validation in the harness
+        // loop (src/harness/loop/tools.ts) and closes the type-safety gap at
+        // this public API boundary.
+        if (tool.schema) {
+          const validationError = validateToolArgs(call.args, tool.schema, call.name);
+          if (validationError) {
+            return { toolCallId: call.id, name: call.name, result: validationError, isError: true };
+          }
+        }
         const result = await executeTool(tool, call.args);
         return { toolCallId: call.id, name: call.name, result };
       } catch (err) {
