@@ -43,9 +43,10 @@ export async function runCommand(args: ParsedArgs): Promise<void> {
 
   return new Promise((resolvePromise) => {
     child.on("close", (code) => {
+      const exitCode = code ?? 1;
       const duration = formatDuration(Date.now() - startTime);
-      console.log(`\n  Completed in ${duration} (exit code: ${code ?? 0})`);
-      if (code && code !== 0) process.exitCode = code;
+      console.log(`\n  Completed in ${duration} (exit code: ${exitCode})`);
+      if (exitCode !== 0) process.exitCode = exitCode;
       resolvePromise();
     });
 
