@@ -1,7 +1,7 @@
-# Branch Map — Cycle 336
+# Branch Map — Cycle 338
 
-**Generated:** 2026-03-22T21:10:00Z
-**Main HEAD:** dc140fb
+**Generated:** 2026-03-22T21:30:00Z
+**Main HEAD:** 7ad3e78
 **Total Branches:** 0 bugfix (0 active, 0 deleted this cycle)
 
 | Branch | Status | Classification | Notes |
@@ -16,15 +16,15 @@ None.
 
 None.
 
-## Status Changes Since C335
+## Status Changes Since C337
 
 No changes — repo remains quiescent.
 
 ## GC Note
 
-GC ran — 336 % 6 = 0. `git gc --auto` executed successfully.
+GC skipped — 338 % 6 = 2, not a gc cycle. Next scheduled at Cycle 342.
 
-## File Overlap Summary (Cycle 336)
+## File Overlap Summary (Cycle 338)
 
 No branches — no file overlaps to report.
 

