@@ -159,13 +159,16 @@ export class AgentRegistry<S extends Record<string, unknown> = Record<string, un
   // ---- Capability manifest (for LLM routing prompt) ----
 
   toManifest(): string {
+    const sanitize = (s: string): string =>
+      s.replace(/[\n\r]/g, " ").replace(/[<>]/g, "");
+
     return [...this.agents.values()]
       .filter((a) => a.status !== "terminated")
       .map((a) => {
         const caps = a.def.capabilities
-          .map((c) => `    - ${c.name}: ${c.description}`)
+          .map((c) => `    - ${sanitize(c.name)}: ${sanitize(c.description)}`)
           .join("\n");
-        return `Agent ID: "${a.def.id}" | Role: ${a.def.role}\n  Capabilities:\n${caps}\n  Status: ${a.status} (active tasks: ${a.activeTasks})`;
+        return `Agent ID: "${a.def.id}" | Role: ${sanitize(a.def.role)}\n  Capabilities:\n${caps}\n  Status: ${a.status} (active tasks: ${a.activeTasks})`;
       })
       .join("\n\n");
   }
