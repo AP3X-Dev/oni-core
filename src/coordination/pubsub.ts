@@ -78,6 +78,15 @@ export class PubSub {
     this.buffer = [];
     return msgs;
   }
+
+  /**
+   * Remove all subscribers and clear the message buffer.
+   * Call when the PubSub instance is no longer needed to allow GC.
+   */
+  dispose(): void {
+    this.subscribers.clear();
+    this.buffer = [];
+  }
 }
 
 /**

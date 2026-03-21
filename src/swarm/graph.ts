@@ -226,6 +226,19 @@ export class SwarmGraph<S extends BaseSwarmState> {
     return buildCompose(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
   }
 
+  // ---- Disposal ----
+
+  /**
+   * Dispose of the broker and pubsub instances to release timer handles
+   * and subscriber maps. Call when the SwarmGraph is no longer needed.
+   */
+  dispose(): void {
+    this._broker?.dispose();
+    this._pubsub?.dispose();
+    this._broker = undefined;
+    this._pubsub = undefined;
+  }
+
   // ---- Agent registration ----
 
   addAgent(def: SwarmAgentDef<S>): this {
