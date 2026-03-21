@@ -518,13 +518,12 @@ Returns: matching memory units or empty if nothing found.`,
   private hydrate(unit: MemoryUnit): MemoryUnit {
     if (unit.content) return unit;
     const fs = getFs();
-    if (!fs) { unit.content = `<!-- Failed to read: ${unit.path} -->`; return unit; }
+    if (!fs) { return { ...unit, content: `<!-- Failed to read: ${unit.path} -->` }; }
     try {
-      unit.content = fs.readFileSync(unit.path, "utf-8");
+      return { ...unit, content: fs.readFileSync(unit.path, "utf-8") };
     } catch {
-      unit.content = `<!-- Failed to read: ${unit.path} -->`;
+      return { ...unit, content: `<!-- Failed to read: ${unit.path} -->` };
     }
-    return unit;
   }
 
   private injectFrontmatter(content: string, type: MemoryType, relPath: string): string {
