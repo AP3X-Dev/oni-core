@@ -9,9 +9,9 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T21:00:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-21T21:30:00Z` |
 | **Last Hunter Scan** | `2026-03-21T00:25:00Z` |
-| **Last Fixer Pass** | `2026-03-21T04:20:00Z` |
+| **Last Fixer Pass** | `2026-03-21T04:32:00Z` |
 | **Last Validator Pass** | `2026-03-21T02:51:00Z` |
 | **Last Digest Run** | `2026-03-21T00:40:00Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
@@ -19,12 +19,12 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T21:25:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T05:10:00Z` (Cycle 216) |
-| **Last Supervisor Pass** | `2026-03-21T04:15:34Z` |
-| **Total Found** | `367` |
-| **Total Pending** | `31` |
+| **Last Git Manager Pass** | `2026-03-21T05:20:00Z` (Cycle 217) |
+| **Last Supervisor Pass** | `2026-03-21T04:25:31Z` |
+| **Total Found** | `369` |
+| **Total Pending** | `28` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `27` |
+| **Total Fixed** | `31` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `3` |
@@ -204,27 +204,27 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0256
-- **status:** `in-validation`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `packages/a2a/src/server/index.ts`
 - **line:** `11`
 - **category:** `security-auth`
 - **description:** `A2AServer` authentication is opt-in via an optional `apiKey` field — when omitted (the default), all RPC methods including `tasks/send` are publicly accessible with no authentication, rate limiting, or compensating control.
 - **context:** The `apiKey` option defaults to `undefined`, making unauthenticated deployment the path of least resistance. An unauthenticated server accepts `tasks/send` which executes the registered `TaskHandler` — potentially invoking LLM calls, tool execution, and database writes. No warning is logged when auth is disabled. A single shared API key also means no per-method authorization (read vs write). OWASP A07:2021 - Identification and Authentication Failures.
-- **reopen_count:** `3`
+- **reopen_count:** `4`
 - **branch:** `bugfix/BUG-0256`
 - **hunter_found:** `2026-03-19T19:55:00Z`
-- **fixer_started:** `2026-03-20T22:00:00Z`
-- **fixer_completed:** `2026-03-20T22:04:00Z`
-- **fix_summary:** `Added export type { A2AServerOptions } from "./server/index.js" to packages/a2a/src/index.ts barrel. 1 line added.`
-- **validator_started:** `2026-03-21T00:42:00Z`
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-21T04:21:49Z`
+- **validator_completed:** `2026-03-21T04:24:00Z`
+- **validator_notes:** `REOPENED: Fix summary says "Added export type { A2AServerOptions } from ./server/index.js to barrel" — this is a type re-export and has zero relation to the security-auth vulnerability (unauthenticated RPC access). The server still accepts all requests without auth when apiKey is omitted. No authentication logic was added. reopen_count now 4 — Fixer should auto-block per guardrail.`
 
 ---
 
 ### BUG-0264
-- **status:** `verified`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/lsp/client.ts`
 - **line:** `526`
@@ -246,7 +246,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0305
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `119`
@@ -261,9 +261,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T00:42:00Z`
 - **fixer_completed:** `2026-03-21T03:22:00Z`
 - **fix_summary:** `Wrapped both onComplete hook calls in try/catch/finally in src/swarm/agent-node.ts. markIdle() moved to finally block so it always runs. Existing onStart and onError guards preserved. Commit c8e3070 on main.`
-- **validator_started:** `2026-03-20T21:15:00Z`
-- **validator_completed:** `2026-03-20T21:15:00Z`
-- **validator_notes:** `REOPENED: onComplete wrapping is correct BUT branch removes onStart try/catch guard (BUG-0037 regression — throwing onStart leaves agent permanently busy) and removes onError try/catch guard (uncontrolled propagation). Also introduces tsc error: TS2304 Cannot find name setTimeout in agent-node.ts line 159. Fix must preserve existing onStart and onError guards while adding onComplete guards.`
+- **validator_started:** `2026-03-21T04:21:49Z`
+- **validator_completed:** `2026-03-21T04:24:00Z`
+- **validator_notes:** `Confirmed both onComplete calls wrapped in try/catch/finally — handoff path (lines 131-137) and normal return path (lines 156-162). markIdle() is in the finally block of both, guaranteeing it always runs. onStart guard (lines 40-45) intact with markError() on throw. onError guard (lines 207-211) intact, logging and swallowing hook errors. No tsc errors. Regression test exists at src/__tests__/swarm/agent-oncomplete-markidle-on-throw.test.ts. All prior reopening concerns addressed.`
 
 ---
 
@@ -748,19 +748,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0332
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `155`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0332`
 - **description:** `delete()` reads steps via `zrange` then issues separate `del` calls for each data key and the index key — a concurrent `put()` between the zrange and del leaves an orphaned data key with no index entry pointing to it.
 - **context:** Orphaned keys accumulate in Redis over time, consuming memory that is never reclaimed. Related to but distinct from BUG-0304 (non-atomic `get()`).
 - **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:32:00Z`
+- **fixer_completed:** `2026-03-21T04:32:00Z`
+- **fix_summary:** `Delete index key and data keys in single atomic del() call to prevent orphaned entries.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -768,19 +768,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0333
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/json.ts`
 - **line:** `10`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0333`
 - **description:** `readFile(source, "utf-8")` is called without any try/catch, so filesystem errors (ENOENT, EACCES) propagate as raw Node.js errors with no loader-level context.
 - **context:** Same pattern as BUG-0270 (pdf.ts) but in the JSON loader. The CSV loader correctly wraps readFile in try/catch with a descriptive message, but the JSON loader does not.
 - **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:32:00Z`
+- **fixer_completed:** `2026-03-21T04:32:00Z`
+- **fix_summary:** `Wrap readFile in try-catch with descriptive JsonLoader error message.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -788,19 +788,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0334
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/cli/init.ts`
 - **line:** `11`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0334`
 - **description:** `initProject()` calls `mkdir` and five `writeFile` operations with no try/catch — filesystem errors (permission denied, disk full) propagate as unhandled rejections with raw Node.js errors instead of user-friendly CLI messages.
 - **context:** Unlike other CLI commands (build, inspect) which wrap I/O in try/catch, `init` crashes with an unformatted stack trace on any filesystem error.
 - **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:32:00Z`
+- **fixer_completed:** `2026-03-21T04:32:00Z`
+- **fix_summary:** `Wrap initProject I-O in try-catch with user-friendly CLI error.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -808,19 +808,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0335
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/context-compactor.ts`
 - **line:** `279`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0335`
 - **description:** Caller-supplied `compactInstructions` is injected verbatim into the LLM summarization prompt with no sanitization, enabling prompt injection that can manipulate context compaction output.
 - **context:** An attacker who can influence harness configuration can inject instructions to exfiltrate conversation history or corrupt the compacted context fed into subsequent agent turns.
 - **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:32:00Z`
+- **fixer_completed:** `2026-03-21T04:32:00Z`
+- **fix_summary:** `XML-escape and fence compactInstructions before injection into LLM prompt.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -828,19 +828,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0336
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/cli/run.ts`
 - **line:** `33`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0336`
 - **description:** User-supplied file path from CLI arguments is passed directly to `spawn("npx", ["tsx", entryFile])` with no extension validation or cwd containment check, allowing execution of arbitrary files on the filesystem.
 - **context:** Unlike `cli/inspect.ts` which enforces ALLOWED_EXTENSIONS and cwd containment, `run.ts` does neither.
 - **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:32:00Z`
+- **fixer_completed:** `2026-03-21T04:32:00Z`
+- **fix_summary:** `Add extension validation and cwd containment check for CLI entry file.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1491,6 +1491,46 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-20T14:51:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0368
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/__tests__/pregel-nodes-snapshot-regression.test.ts`
+- **line:** `54`
+- **category:** `test-regression`
+- **description:** Test "parallel node execution succeeds when multiple nodes share a superstep" times out (5000ms) — regression since CI Cycle 8 (all-green).
+- **context:** CI Sentinel Cycle 9 detected this test hanging on `app.invoke({ results: [] })` in a simple parallel graph (START → branch-a AND branch-b → merge → END). The test was green in the previous cycle (Cycle 8, 2026-03-21T04:11:28Z). No changes to `src/pregel/streaming.ts` have been made since the last green run. Possible cause: deadlock or missing edge completion in the Pregel superstep scheduler when two parallel branches converge on a shared merge node. The `swarm/supervisor-routing-error.test.ts` worker also failed to start in the same run, suggesting potential infra contention, but the timeout is a hard 5s test timeout (not a vitest worker issue).
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-21T21:30:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0369
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/__tests__/swarm/supervisor-routing-error.test.ts`
+- **line:** `1`
+- **category:** `infrastructure`
+- **description:** Vitest pool worker failed to start for `swarm/supervisor-routing-error.test.ts` with "Timeout waiting for worker to respond" — test suite could not execute.
+- **context:** CI Sentinel Cycle 9 detected a vitest-pool worker startup failure: `[vitest-pool]: Failed to start forks worker for test files /home/cerebro/projects/oni-core/src/__tests__/swarm/supervisor-routing-error.test.ts. Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond`. The suite itself did not produce test results (0 tests reported). A similar ghost-suite failure was seen in Cycle 7 and resolved itself (stale cache). This may be a transient vitest worker pool exhaustion or deadlock triggered by the `pregel-nodes-snapshot-regression` test hanging for 5s and holding a worker slot. Could self-resolve on retry.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-21T21:30:00Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
