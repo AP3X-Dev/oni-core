@@ -153,12 +153,12 @@ export class RedisCheckpointer<S> implements ONICheckpointer<S> {
   }
 
   async delete(threadId: string): Promise<void> {
-    const steps = await this.client.zrange(this.idxKey(threadId), 0, -1);
+    const idxKey = this.idxKey(threadId);
+    const steps = await this.client.zrange(idxKey, 0, -1);
     const dataKeys = steps.map(s => this.dataKey(threadId, Number(s)));
-    if (dataKeys.length > 0) {
-      await this.client.del(...dataKeys);
-    }
-    await this.client.del(this.idxKey(threadId));
+    // Single atomic del() call for index + data keys to prevent
+    // concurrent put() from causing inconsistency between the two.
+    await this.client.del(idxKey, ...dataKeys);
   }
 
   async close(): Promise<void> {
