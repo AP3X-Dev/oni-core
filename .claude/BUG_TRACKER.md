@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T14:20:00Z` (Cycle 267 — 0 deletions, 1 rebase (BUG-0420 onto main 3d30b6b tip 84ab4f8); 4 bugfix branches remain, 0 conflicts; BUG-0420 VALIDATOR-READY; BUG-0343 in-validation 8 behind; BUG-0356/0359 blocked 13 behind) |
+| **Last Git Manager Pass** | `2026-03-21T14:35:00Z` (Cycle 268 — 0 deletions, 0 rebases; BUG-0420 confirmed merged to main (932f4f6) and branch deleted; 3 bugfix branches remain, 0 conflicts; BUG-0343/0356/0359 all blocked, human intervention required; next GC Cycle 270) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
@@ -470,28 +470,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0376
-- **status:** `fixed`
-- **severity:** `low`
-- **file:** `src/models/openai.ts`
-- **line:** `452`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0376`
-- **description:** embed() calls res.json() without a catch, so a malformed non-JSON embeddings response causes an unhandled rejection.
-- **context:** A 200 response with non-JSON content throws a raw SyntaxError with no context about which model or endpoint was involved.
-- **hunter_found:** `2026-03-20T22:10:00Z`
-- **fixer_started:** `2026-03-21T06:15:00Z`
-- **fixer_completed:** `2026-03-21T06:15:00Z`
-- **fix_summary:** `Wrap res.json() in try-catch in OpenAI embed().`
-- **validator_started:** `2026-03-22T00:35:00Z`
-- **validator_completed:** `2026-03-22T00:35:00Z`
-- **validator_notes:** `getDocument and per-page getTextContent wrapped in try/catch with PdfLoader-scoped error. Scope clean (1 file, 13+/7-). Verified.`
-
----
 
 ### BUG-0377
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/models/ollama.ts`
 - **line:** `214`
@@ -576,25 +557,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 
-### BUG-0390
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/checkpointers/namespaced.ts`
-- **line:** `17`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0390`
-- **description:** The `prefix` helper computes the namespaced key as `${threadId}:${ns}` (namespace is a suffix), but callers expecting the namespace as the leading segment for key-space isolation get inverted key ordering.
-- **context:** If Redis or other prefix-scan-based stores use this key format to enumerate all checkpoints under a namespace, the inverted order breaks that enumeration pattern — scans for `ns:*` will miss all keys.
-- **hunter_found:** `2026-03-20T22:30:00Z`
-- **fixer_started:** `2026-03-21T06:25:00Z`
-- **fixer_completed:** `2026-03-21T06:25:00Z`
-- **fix_summary:** `Swap namespace to leading segment in checkpointer key prefix.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
 
 ### BUG-0396
 - **status:** `blocked`
@@ -617,7 +579,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0400
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `packages/tools/src/browser/firecrawl.ts`
 - **line:** `40`
@@ -657,25 +619,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0410
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/swarm/agent-node.ts`
-- **line:** `176`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0410`
-- **description:** Non-handoff result path returns `handoffHistory` as a single-element array — if the channel reducer is not configured as an accumulator, this replaces all previous handoff history instead of appending.
-- **context:** Every agent completion silently discards all previous handoff history and replaces it with a single entry, making the audit trail useless for multi-agent runs unless the `handoffHistory` channel explicitly uses an append reducer.
-- **hunter_found:** `2026-03-20T18:42:00Z`
-- **fixer_started:** `2026-03-21T10:05:00Z`
-- **fixer_completed:** `2026-03-21T10:05:00Z`
-- **fix_summary:** `Manually accumulate handoffHistory by spreading state.handoffHistory before new entry.`
-- **validator_started:** `2026-03-22T00:45:00Z`
-- **validator_completed:** `2026-03-22T00:45:00Z`
-- **validator_notes:** ``
-
----
 
 ### BUG-0411
 - **status:** `blocked`
@@ -698,7 +641,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0415
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/store/index.ts`
 - **line:** `174`
@@ -738,7 +681,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0420
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/coordination/pubsub.ts`
 - **line:** `56`
@@ -858,25 +801,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 
-### BUG-0452
-- **status:** `verified`
-- **severity:** `high`
-- **file:** `src/pregel/checkpointing.ts`
-- **line:** `51`
-- **category:** `race-condition`
-- **reopen_count:** `1`
-- **branch:** ``
-- **description:** `updateState()` performs a non-atomic read-modify-write on the checkpoint store — concurrent calls for the same threadId can clobber each other's writes.
-- **context:** Lines 51–53 do get → applyUpdate → put with no locking or versioning. Two async flows (e.g., HITL resume and a parallel node completion) calling updateState concurrently on the same threadId will both fetch the same base checkpoint and the second put overwrites the first.
-- **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** `2026-03-21T13:37:22Z`
-- **fixer_completed:** `2026-03-21T13:48:21Z`
-- **fix_summary:** `Already fixed on main. updateState() at line 72 of src/pregel/checkpointing.ts is wrapped with withThreadLock(threadId, ...), same shared lock used by getState() and forkFrom(). No separate _updateLocks map. No branch needed.`
-- **validator_started:** `2026-03-22T01:45:00Z`
-- **validator_completed:** `2026-03-22T01:45:00Z`
-- **validator_notes:** `REOPENED: Uses separate _updateLocks map instead of shared withThreadLock from BUG-0453. No cleanup (leak). Must rebase onto main and use withThreadLock(threadId, ...) like getState and forkFrom.`
-
----
 
 
 <!-- HUNTER: Append new bugs above this line -->
