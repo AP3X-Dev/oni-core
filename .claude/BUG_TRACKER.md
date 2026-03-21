@@ -11,7 +11,7 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T23:31:31Z` |
 | **Last Hunter Scan** | `2026-03-20T19:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T10:35:00Z` |
+| **Last Fixer Pass** | `2026-03-21T11:05:00Z` |
 | **Last Validator Pass** | `2026-03-21T06:43:59Z` |
 | **Last Digest Run** | `2026-03-21T06:41:21Z` |
 | **Last Security Scan** | `2026-03-23T20:20:00Z` |
@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T15:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T07:30:00Z` (Cycle 236) |
+| **Last Git Manager Pass** | `2026-03-21T01:30:00Z` (Cycle 238) |
 | **Last Supervisor Pass** | `2026-03-21T06:55:33Z` |
 | **Total Found** | `419` |
 | **Total Pending** | `8` |
@@ -1578,7 +1578,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0411
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `high`
 - **file:** `src/coordination/request-reply.ts`
 - **line:** `71`
@@ -1588,9 +1588,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The `resolved` flag is checked and set non-atomically across the timeout closure and the `reply()` method, creating a TOCTOU window where both can observe `resolved === false` and proceed concurrently.
 - **context:** Under high load, both the timeout callback and reply() can pass the `!req.resolved` guard before either sets the flag, leading to a promise settled twice (first settlement wins, second silently swallowed) and potentially stale entries left in the `pending` map.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T11:05:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `Duplicate of verified BUG-0330 (same TOCTOU race in request-reply.ts).`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1598,18 +1598,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0412
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/graph.ts`
 - **line:** `53`
 - **category:** `memory-leak`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0412`
 - **description:** Sub-SwarmGraph instances created by `hierarchicalMesh()` and `compose()` are never tracked or disposed, leaking broker/pubsub instances with pending timeout handles.
 - **context:** Each sub-graph may own a `RequestReplyBroker` with active per-request timeouts. Without a lifecycle hook tying sub-graphs to the parent's `dispose()`, their timers are never cleared in long-running processes.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T11:05:00Z`
+- **fixer_completed:** `2026-03-21T11:05:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1618,18 +1618,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0413
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/internal/validate-command.ts`
 - **line:** `19`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0413`
 - **description:** The `PATH_TRAVERSAL` regex `/\.\.\//` only matches `../` and misses `..\\` on Windows and bare `..` at end of path (e.g. `/bin/..`).
 - **context:** A command like `/usr/local/../../bin/evil` passes the traversal check because there is no trailing slash after the final `..`, yet resolves to `/bin/evil` after path normalization — incomplete protection against path traversal attacks.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T11:05:00Z`
+- **fixer_completed:** `2026-03-21T11:05:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1638,18 +1638,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0414
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `packages/tools/src/code-execution/e2b.ts`
 - **line:** `53`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0414`
 - **description:** If `SandboxClass.create()` throws, the `finally` block calls `sandbox.close()` on an undefined variable, masking the original error with a secondary TypeError.
 - **context:** The sandbox variable is declared outside the try block. A failed create() (bad API key, network error) triggers finally where `sandbox` is still undefined, causing a ReferenceError/TypeError that hides the root cause.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T11:05:00Z`
+- **fixer_completed:** `2026-03-21T11:05:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1658,18 +1658,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0415
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/store/index.ts`
 - **line:** `174`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0415`
 - **description:** `list()` deletes expired keys from `this.data` Map while iterating over it with `for...of`, which is undefined behavior per the ECMAScript spec for Map iteration during deletion.
 - **context:** While V8 currently handles this correctly, the spec does not guarantee it. A future engine update could cause entries to be skipped, returning incomplete results from `list()` and leaving stale entries in `this.vectors`.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T11:05:00Z`
+- **fixer_completed:** `2026-03-21T11:05:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1718,18 +1718,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0418
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/cli/build.ts`
 - **line:** `56`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0418`
 - **description:** A signal-killed tsc process passes `null` as exit code, which the `if (exitCode && exitCode !== 0)` check treats as falsy success, printing "Build complete!" for a killed build.
 - **context:** When the process is killed by a signal, `exitCode` is null. `null && null !== 0` evaluates to falsy, so the error branch is never taken and the user sees a false success message.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T11:05:00Z`
+- **fixer_completed:** `2026-03-21T11:05:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1778,18 +1778,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0421
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/store/index.ts`
 - **line:** `109`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0421`
 - **description:** `isExpired` returns `false` when `item.ttl` is `0`, treating zero-millisecond TTL as "no expiry" instead of "expire immediately" because `!item.ttl` is falsy for both `undefined` and `0`.
 - **context:** A caller passing `ttl: 0` intending immediate expiration creates an immortal item instead. The two semantically distinct cases (no TTL vs zero TTL) are conflated by the falsy check.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T11:05:00Z`
+- **fixer_completed:** `2026-03-21T11:05:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
