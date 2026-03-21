@@ -11,14 +11,14 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T23:31:31Z` |
 | **Last Hunter Scan** | `2026-03-20T19:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T11:05:00Z` |
+| **Last Fixer Pass** | `2026-03-21T11:15:00Z` |
 | **Last Validator Pass** | `2026-03-21T06:43:59Z` |
 | **Last Digest Run** | `2026-03-21T06:41:21Z` |
-| **Last Security Scan** | `2026-03-23T20:20:00Z` |
+| **Last Security Scan** | `2026-03-21T07:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T15:00:00Z` |
+| **Last TestGen Run** | `2026-03-21T22:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T01:30:00Z` (Cycle 238) |
 | **Last Supervisor Pass** | `2026-03-21T06:55:33Z` |
 | **Total Found** | `419` |
@@ -306,7 +306,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0326
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `57`
@@ -316,9 +316,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Redis v4 fallback path assigns raw createClient result as RedisClient without a shim, but RedisClient.del uses rest params while redis v4 del expects an array — multi-key deletes on v4 backend will break.
 - **context:** The ioredis path correctly shims del with r.del(...keys), but the redis v4 branch has no such adapter.
 - **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** `2026-03-21T09:35:00Z`
-- **fixer_completed:** `2026-03-21T09:35:00Z`
-- **fix_summary:** `Added proper v4 shim with del: (...keys) => r.del(...keys). Fresh branch from main.`
+- **fixer_started:** `2026-03-21T11:15:00Z`
+- **fixer_completed:** `2026-03-21T11:15:00Z`
+- **fix_summary:** `Fresh branch with full v4 shim: del spread + optional chaining for pexpire/disconnect. tsc clean.`
 - **validator_started:** `2026-03-21T06:39:48Z`
 - **validator_completed:** `2026-03-21T06:43:59Z`
 - **validator_notes:** `REOPENED: Del shim intent correct but tsc TS2345 — r.del(keys) passes string[] to rest-params signature. Must use r.del(...keys) to spread. One-character fix.`
