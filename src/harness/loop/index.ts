@@ -300,7 +300,11 @@ export async function* agentLoop(
         console.warn("[oni] fireSessionEnd hook failed:", e);
       }
     }
-    finalizeMemory(memoryLoader, sessionId, prompt, turn, sessionOutcome, config);
+    try {
+      finalizeMemory(memoryLoader, sessionId, prompt, turn, sessionOutcome, config);
+    } catch (e) {
+      console.warn("[oni] finalizeMemory failed:", e);
+    }
   }
 }
 
