@@ -1,12 +1,3 @@
-[2026-03-21T08:32:20Z] Step 2: Branch map rebuilt. 62 branches. Fixed/clean: 55. Blocked: 4. Verified w/ branches: 3 (BUG-0344, BUG-0345, BUG-0347). 34 branches at 706 behind.
-[2026-03-21T08:32:20Z] Step 3: 0 deletions. Verified branches (BUG-0344/0345/0347) retain commits not in main — cannot delete safely. 0/5 cap used.
-[2026-03-21T08:32:20Z] Step 4: No stale branches by time. Behind-count warnings logged for 34 critical-stale (706 behind) branches.
-[2026-03-21T08:32:20Z] Step 5: Top 10 priority branches ALL CLEAN (0 conflict markers). 34 critical-stale branches not analyzed.
-[2026-03-21T08:32:20Z] Step 5b: REBASE SUCCESS — bugfix/BUG-0295 onto main. Was 2 behind, now 0 behind, 1 ahead. 1/1 cap used.
-[2026-03-21T08:32:20Z] Step 6: FILE OVERLAPS unchanged — redis/index.ts (BUG-0326+0355), ollama.ts (BUG-0357+0377, safe), pool.ts (BUG-0306+0378), agent-node.ts (BUG-0305-ctx+0379).
-[2026-03-21T08:32:20Z] Step 7: HEAD confirmed on main. Stash pop restored working tree.
-[2026-03-21T08:32:20Z] Step 8: GC skipped. Next at Cycle 246.
-[2026-03-21T08:32:20Z] ALERT: BUG-0295 — rebased to main HEAD. Validator-ready. PRIORITY #1.
 [2026-03-21T08:32:20Z] ALERT: 34 branches 706 commits behind main (critical). Fixer must recreate from main before validation.
 [2026-03-21T08:32:20Z] ALERT: BUG-0294 — 80 behind, 2 commits ahead, blocked+severely diverged. Human intervention required.
 [2026-03-21T08:32:20Z] BRANCH COUNT: 62 branches (was 61 at C240 end). 0 deletions, 1 rebase (BUG-0295). Cumulative: ~191.
@@ -139,3 +130,21 @@
 [2026-03-21T09:54:09Z] BRANCH COUNT: 52 branches (was 54). 2 deletions (BUG-0429 merged, BUG-0342 verified), 1 rebase (BUG-0295). Cumulative: ~208.
 [2026-03-21T09:54:09Z] Step 9: Updated Last Git Manager Pass to 2026-03-21T09:54:09Z (Cycle 249). Log trimmed to 150 lines.
 [2026-03-21T09:54:09Z] Step 10: HEAD confirmed on main. Clean state. === Cycle 249 End ===
+[2026-03-21T17:00:00Z] ## Cycle 250 — 2026-03-21T17:00:00Z
+[2026-03-21T17:00:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T15:05:00Z (>60s). Last Validator=2026-03-22T00:06:00Z (>60s). In-progress=0, In-validation=3 (BUG-0351/0431/0433/0434). Proceeding (none <15min by log).
+[2026-03-21T17:00:00Z] Step 1: Found 54 bugfix/BUG-* branches at cycle start. No new branches since C249.
+[2026-03-21T17:00:00Z] Step 2: Branch map rebuilt. 54 branches. Fixed: 47. In-validation: 4 (BUG-0351/0431/0433/0434). 35 branches critically stale (>700 behind main).
+[2026-03-21T17:00:00Z] Step 3: 0 deletions. No merged branches (git merge-base checks: all NOT_MERGED). No verified orphans eligible this cycle. 0/5 cap used.
+[2026-03-21T17:00:00Z] Step 4: STALE WARNINGS — 35 branches >700 behind main. BUG-0295 current (0 behind, rebased). BUG-0431/0433 near-current (4 behind). Cohort unchanged from C249.
+[2026-03-21T17:00:00Z] Step 5: CONFLICT BRANCHES (7): BUG-0355 (1), BUG-0356 (2), BUG-0374 (1), BUG-0378 (1), BUG-0413 (1), BUG-0430 (1), BUG-0434 (2, in-validation). All clean otherwise (47 branches clean).
+[2026-03-21T17:00:00Z] Step 5b: REBASED BUG-0295 onto main (was 2 behind base=affde1f, now 0 behind base=ca6f7af). 1/1 cap used. Clean, 1-file fix (src/errors.ts).
+[2026-03-21T17:00:00Z] Step 6: FILE OVERLAPS — (1) pool.ts: BUG-0378+0407+0434. (2) agent-node.ts: BUG-0379+0410. (3) store/index.ts: BUG-0415+0421. (4) firecrawl.ts: BUG-0400+0428. (5) ollama.ts: BUG-0357+0377 (safe). NEW: hitl/interrupt.ts+pregel/*: BUG-0351+BUG-0360 overlap with uncommitted working-tree changes on main.
+[2026-03-21T17:00:00Z] Step 7: HEAD confirmed on main. Stash pop restored working tree.
+[2026-03-21T17:00:00Z] Step 8: GC skipped. Next at Cycle 252.
+[2026-03-21T17:00:00Z] ALERT: BUG-0295 — rebased C250. ON MAIN HEAD (ca6f7af). Validator-ready PRIORITY #1.
+[2026-03-21T17:00:00Z] ALERT: BUG-0434 — in-validation but has 2 merge conflicts and 723 behind main. Validator must abort and fixer must recreate.
+[2026-03-21T17:00:00Z] ALERT: BUG-0351 — in-validation, overlaps with uncommitted working-tree changes on main (src/pregel/streaming.ts). Coordinate with active developer.
+[2026-03-21T17:00:00Z] ALERT: BUG-0360 — fixed, touches src/pregel/execution.ts which has uncommitted changes on main. Merge may cause conflicts when main is committed.
+[2026-03-21T17:00:00Z] BRANCH COUNT: 54 branches (unchanged). 0 deletions, 1 rebase (BUG-0295). Cumulative: ~209.
+[2026-03-21T17:00:00Z] Step 9: Updated Last Git Manager Pass to 2026-03-21T17:00:00Z (Cycle 250). Log trimmed to 150 lines.
+[2026-03-21T17:00:00Z] Step 10: HEAD confirmed on main. Clean state. === Cycle 250 End ===

@@ -9,7 +9,7 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T02:52:03Z` (Cycle 38 — 5 failures all known cooldowns BUG-0312 + BUG-0363; no new regressions; test count stable at 1390) |
+| **Last CI Sentinel Pass** | `2026-03-21T10:02:49Z` (Cycle 39 — 5 failures all known cooldowns BUG-0312 + BUG-0363; no new regressions; test count stable at 1390) |
 | **Last Hunter Scan** | `2026-03-22T00:02:00Z` |
 | **Last Fixer Pass** | `2026-03-21T15:05:00Z` |
 | **Last Validator Pass** | `2026-03-22T00:06:00Z` |
@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T03:01:38Z` |
-| **Last Git Manager Pass** | `2026-03-21T09:54:09Z` (Cycle 249 — deleted BUG-0429/BUG-0342, rebased BUG-0295 to main HEAD) |
+| **Last Git Manager Pass** | `2026-03-21T17:00:00Z` (Cycle 250 — 0 deletions, rebased BUG-0295 to main HEAD ca6f7af; 7 conflict branches flagged; BUG-0434 in-validation has 2 conflicts) |
 | **Last Supervisor Pass** | `2026-03-21T10:00:25Z` |
 | **Total Found** | `425` |
 | **Total Pending** | `2` |
@@ -628,7 +628,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0351
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `296`
@@ -641,9 +641,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T12:55:00Z`
 - **fixer_completed:** `2026-03-21T12:55:00Z`
 - **fix_summary:** `Derive childStreamMode from parent flags instead of hard-coding. Fresh branch from main.`
-- **validator_started:** `2026-03-21T08:12:00Z`
-- **validator_completed:** `2026-03-21T08:32:14Z`
-- **validator_notes:** `REOPENED: Branch commit fixes dlq.ts (deep-clone in DeadLetterQueue.record), not streaming.ts. childStreamMode still hard-coded ["debug","values"]. Fixer must: modify streaming.ts to derive childStreamMode from parent config.`
+- **validator_started:** `2026-03-22T00:10:00Z`
+- **validator_completed:** `2026-03-22T00:14:00Z`
+- **validator_notes:** `Confirmed commit cc6999f modifies only streaming.ts (7+/1-), replacing hard-coded ["debug","values"] with dynamic array from parent mode flags. Downstream event-filtering at line 384 already handles modeCustom/modeMessages — previously dead code now active. Verified.`
 
 ---
 
@@ -1818,22 +1818,22 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0429
-- **status:** `in-validation`
+- **status:** `reopened`
 - **severity:** `high`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `297`
 - **category:** `missing-error-handling`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0429`
 - **description:** `fireSessionEnd()` is called in the finally block without a try/catch, so a throwing session-end hook propagates out of the generator and masks the actual session outcome.
 - **context:** The finally block is the guaranteed cleanup path for every agent loop execution; a hook error here suppresses the real result and leaves callers' for-await-of loop in an unrecoverable error state with no actionable message.
 - **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** `2026-03-21T14:35:00Z`
-- **fixer_completed:** `2026-03-21T14:35:00Z`
-- **fix_summary:** `Wrap fireSessionEnd in try-catch in finally block. Fires for all outcomes.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-22T00:10:00Z`
+- **validator_completed:** `2026-03-22T00:14:00Z`
+- **validator_notes:** `REOPENED: Branch bugfix/BUG-0429 was deleted by Git Manager Cycle 249 without being merged to main. Code at src/harness/loop/index.ts lines 295-300 still shows fireSessionEnd() called bare in finally block with no try/catch. Fix never landed. Fixer must: recreate branch from main, wrap fireSessionEnd() in try/catch in the finally block.`
 
 ---
 
@@ -1858,7 +1858,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0431
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/swarm/self-improvement/skill-evolver.ts`
 - **line:** `170`
@@ -1871,9 +1871,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T14:35:00Z`
 - **fixer_completed:** `2026-03-21T14:35:00Z`
 - **fix_summary:** `Wrap testFn in try-catch returning failed ExperimentResult on error.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:10:00Z`
+- **validator_completed:** `2026-03-22T00:14:00Z`
+- **validator_notes:** `Confirmed try/catch wraps previously un-awaited testFn call. Catch returns valid ExperimentResult (all 6 fields match interface: hypothesis, success:false, metricBefore:0, metricAfter:null, rolledBack:false, reason with error). Scoped to single if(testFn) branch. Verified.`
 
 ---
 
@@ -1898,22 +1898,22 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0433
-- **status:** `in-validation`
+- **status:** `reopened`
 - **severity:** `high`
 - **file:** `src/graph.ts`
 - **line:** `180`
 - **category:** `race-condition`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0433`
 - **description:** The HITL `resume()` method validates a session then awaits `runner.invoke()` before calling `markResumed()`, creating a TOCTOU race where two concurrent resume() calls for the same resumeId both pass validation.
 - **context:** A duplicate resume() call during the first's async gap will both proceed past the guard, causing the node to execute twice with the human-provided value, potentially producing duplicate side-effects or corrupted state.
 - **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** `2026-03-21T14:35:00Z`
-- **fixer_completed:** `2026-03-21T14:35:00Z`
-- **fix_summary:** `Move markResumed before invoke to prevent TOCTOU race on duplicate resume.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-22T00:10:00Z`
+- **validator_completed:** `2026-03-22T00:14:00Z`
+- **validator_notes:** `REOPENED: Moving markResumed() before invoke() is necessary but insufficient. The guard only checks !session || session.threadId !== cfg.threadId — never inspects session.status. store.get() returns sessions regardless of status. Second concurrent call passes the guard and invokes again. Fix must add: if (session.status !== "pending") check before markResumed().`
 
 ---
 
