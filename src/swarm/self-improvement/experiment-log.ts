@@ -21,7 +21,7 @@ export interface ExperimentRecord {
 
 export class ExperimentLog {
   private static readonly MAX_RECORDS = 1000;
-  private readonly records: ExperimentRecord[] = [];
+  private records: ExperimentRecord[] = [];
 
   log(record: Omit<ExperimentRecord, "id" | "timestamp">): ExperimentRecord {
     const full: ExperimentRecord = {
@@ -29,10 +29,9 @@ export class ExperimentLog {
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
     };
-    this.records.push(full);
-    if (this.records.length > ExperimentLog.MAX_RECORDS) {
-      this.records.splice(0, this.records.length - ExperimentLog.MAX_RECORDS);
-    }
+    // Atomic reassignment: concurrent readers see the old snapshot while
+    // the new array is built, preventing over-trim on concurrent calls.
+    this.records = [...this.records, full].slice(-ExperimentLog.MAX_RECORDS);
     return full;
   }
 
