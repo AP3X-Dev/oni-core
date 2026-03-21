@@ -40,6 +40,7 @@ export function firecrawlScrape(config: { apiKey: string }): ToolDefinition {
           url: i.url,
           pageOptions: {
             includeHtml: (i.formats ?? ["markdown"]).includes("html"),
+            includeMarkdown: (i.formats ?? ["markdown"]).includes("markdown"),
             onlyMainContent: i.onlyMainContent ?? true,
           },
         }),
