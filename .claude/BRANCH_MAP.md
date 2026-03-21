@@ -1,14 +1,14 @@
-# Branch Map — Cycle 296
+# Branch Map — Cycle 297
 
-**Generated:** 2026-03-22T19:00:00Z
-**Main HEAD:** 04479b9
+**Generated:** 2026-03-22T20:00:00Z
+**Main HEAD:** 9f1916c
 **Total Branches:** 3 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
 |---|---|---|---|---|---|
-| bugfix/BUG-0343 | blocked | 40 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout fix correct but branch has 7-file scope contamination (redis/index.ts, checkpointers/redis.ts, pool.ts, .claude/ docs); reopen_count=3; auto-blocked; human must cherry-pick safety-gate.ts line only (commit ddec8f5) |
-| bugfix/BUG-0356 | blocked | 45 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — auto-blocked after 3 failed attempts; branch has out-of-scope regressions; human must cherry-pick single postgres .catch() line (commit 28a4811) |
-| bugfix/BUG-0359 | blocked | 45 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked (reopen_count=3); human intervention required (commit 27d8480) |
+| bugfix/BUG-0343 | blocked | 42 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout fix correct but branch has 7-file scope contamination (redis/index.ts, checkpointers/redis.ts, pool.ts, .claude/ docs); reopen_count=3; auto-blocked; human must cherry-pick safety-gate.ts line only (commit ddec8f5) |
+| bugfix/BUG-0356 | blocked | 47 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — auto-blocked after 3 failed attempts; branch has out-of-scope regressions; human must cherry-pick single postgres .catch() line (commit 28a4811) |
+| bugfix/BUG-0359 | blocked | 47 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked (reopen_count=3); human intervention required (commit 27d8480) |
 
 ## Active Worktrees
 
@@ -27,15 +27,15 @@ No active agent worktrees.
 
 No conflict branches this cycle. All 3 remaining bugfix branches are conflict-free via `git merge-tree`.
 
-## Status Changes Since C295
+## Status Changes Since C296
 
-No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts each increased by 1 (C295→C296: BUG-0343 39→40; BUG-0356/0359 44→45) due to 1 git-manager cycle commit on main (04479b9).
+No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts each increased by 2 (C296→C297: BUG-0343 40→42; BUG-0356/0359 45→47) due to 2 commits on main since C296 (9f1916c git-manager Cycle 296, 856f1fd ci-sentinel Cycle 55).
 
 ## GC Note
 
-`git gc --auto` executed at Cycle 294 (scheduled). Next scheduled GC at Cycle 300 (4 cycles away).
+`git gc --auto` executed at Cycle 294 (scheduled). Next scheduled GC at Cycle 300 (3 cycles away).
 
-## File Overlap Summary (Cycle 295)
+## File Overlap Summary (Cycle 297)
 
 No overlaps — all 3 remaining bugfix branches touch distinct files:
 - `src/harness/safety-gate.ts` (BUG-0343)
