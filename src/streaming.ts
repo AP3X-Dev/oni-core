@@ -78,9 +78,9 @@ export class TokenStreamWriter {
   }
 
   end(): void {
-    this.done = true;
     for (const waiter of this.waiters) waiter(null);
     this.waiters = [];
+    this.done = true;
   }
 
   async *[Symbol.asyncIterator](): AsyncGenerator<string> {
@@ -93,7 +93,14 @@ export class TokenStreamWriter {
         const token = await new Promise<string | null>((resolve) => {
           this.waiters.push(resolve);
         });
-        if (token === null) return;
+        if (token === null) {
+          // end() was called — flush any tokens that were push()ed
+          // between the last queue check and the waiter resolution
+          while (this.queue.length > 0) {
+            yield this.queue.shift()!;
+          }
+          return;
+        }
         yield token;
       }
     }
