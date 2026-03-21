@@ -83,6 +83,7 @@ export class HITLSessionStore<S> {
   }
 
   markResumed(resumeId: string): void {
+    this.evict();
     const s = this.sessions.get(resumeId);
     if (s) s.status = "resumed";
   }
@@ -93,6 +94,7 @@ export class HITLSessionStore<S> {
   }
 
   all(): HITLSession<S>[] {
+    this.evict();
     return [...this.sessions.values()];
   }
 }
