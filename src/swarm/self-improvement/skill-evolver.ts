@@ -168,7 +168,19 @@ export class SkillEvolver {
     const testFn = runTest ?? this.runTest;
 
     if (testFn) {
-      return testFn(skillName, revisedContent, testTask);
+      try {
+        return await testFn(skillName, revisedContent, testTask);
+      } catch (err) {
+        console.warn(`[SkillEvolver] testFn threw for skill "${skillName}":`, err);
+        return {
+          hypothesis: `Skill revision for ${skillName}`,
+          success: false,
+          metricBefore: 0,
+          metricAfter: null,
+          rolledBack: false,
+          reason: `testFn threw: ${err instanceof Error ? err.message : String(err)}`,
+        };
+      }
     }
 
     // No test callback provided — optimistically allow the commit so the
