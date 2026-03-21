@@ -129,3 +129,18 @@
 [2026-03-21T04:27:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T04:27:00Z (Cycle 214).
 [2026-03-21T04:27:00Z] Step 10: HEAD confirmed on main. Clean state.
 [2026-03-21T04:27:00Z] === Git Manager Cycle 214 End ===
+[2026-03-21T04:44:00Z] === Git Manager Cycle 215 Start ===
+[2026-03-21T04:44:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer Pass=2026-03-21T04:02:00Z (>60s). Last Validator Pass=2026-03-21T02:51:00Z (>60s). In-progress=0, In-validation=0 per Meta. Proceeding.
+[2026-03-21T04:44:00Z] Step 1: Found 30 bugfix/BUG-* branches (pre-deletion).
+[2026-03-21T04:44:00Z] Step 2: Branch map rebuilt. New branches since Cycle 214: BUG-0319/0321/0322/0323/0325 (worktree-created). BUG-0385–0389 confirmed orphaned (no tracker entry).
+[2026-03-21T04:44:00Z] Step 3: DELETED bugfix/BUG-0385 (-D, orphaned). DELETED bugfix/BUG-0386 (-D, orphaned). DELETED bugfix/BUG-0387 (-D, orphaned). DELETED bugfix/BUG-0388 (-D, orphaned). DELETED bugfix/BUG-0389 (-D, orphaned). 5/5 cap reached. Cumulative deletions: ~166. BLOCKED: BUG-0319/0321/0322 held by active worktrees (merged into main but worktree prevents -d deletion).
+[2026-03-21T04:44:00Z] Step 4: STALE WARNING — BUG-0342/0343-0344/0346/0351/0353/0356/0357/0366 all >24h with no fixer activity.
+[2026-03-21T04:44:00Z] Step 5: Fixed branches — BUG-0301/0305-ctx/0310/0341/0349/0363/0364: all CLEAN (0 conflict markers). BUG-0323/0325 (worktree-held, fixed): not checked.
+[2026-03-21T04:44:00Z] Step 5b: REBASE — bugfix/BUG-0307 rebased onto main (was 2 behind, 0 conflicts). Rebase cap: 1/1 used. Note: HEAD left on bugfix/BUG-0307 post-rebase; main held by worktree agent-abcbd77b.
+[2026-03-21T04:44:00Z] Step 6: OVERLAP — BUG-0341 vs BUG-0349 share src/hitl/interrupt.ts+src/pregel/execution.ts. BUG-0305-ctx/BUG-0363/BUG-0364 — large snapshot branches, all source files overlap.
+[2026-03-21T04:44:00Z] Step 7: Cannot checkout main — held by worktree agent-abcbd77b (BUG-0322). HEAD remains on bugfix/BUG-0307.
+[2026-03-21T04:44:00Z] Step 8: Cycle 215 % 6 = 3 ≠ 0. gc skipped. Next gc at Cycle 216.
+[2026-03-21T04:44:00Z] BRANCH COUNT: 27 named bugfix/BUG-* branches remain. 5 deletions this cycle. Cumulative: ~166.
+[2026-03-21T04:44:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T04:44:00Z (Cycle 215). Log trimmed: N/A (150 line trim applied post-append).
+[2026-03-21T04:44:00Z] Step 10: HEAD on bugfix/BUG-0307. Cannot switch to main (worktree lock by agent-abcbd77b).
+[2026-03-21T04:44:00Z] === Git Manager Cycle 215 End ===
