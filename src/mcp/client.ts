@@ -58,13 +58,13 @@ export class MCPClient {
    * 4. Discover available tools
    */
   async connect(): Promise<void> {
-    if (this.state === "ready") return;
-
     // Coalesce concurrent connect calls — wait for the in-flight attempt and
     // share its result rather than each spawning their own transport process.
     if (this._connectLock !== null) {
       return this._connectLock;
     }
+
+    if (this.state === "ready") return;
 
     this.state = "connecting";
     this.error = undefined;
