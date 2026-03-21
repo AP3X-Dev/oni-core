@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-20T23:00:00Z
+**Generated:** 2026-03-21T02:04:44Z
 **Period:** Last 24 hours
 
 ---
@@ -9,107 +9,97 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 70 |
-| Pending | 42 |
-| In Progress | 6 |
-| Fixed (awaiting validation) | 22 |
-| Reopened | 4 |
-| Blocked | 1 |
+| Active Bugs | 64 |
+| Pending | 52 |
+| In Progress | 5 |
+| Fixed (awaiting validation) | 1 |
+| Verified (awaiting archive) | 4 |
+| Reopened | 0 |
+| Blocked | 2 |
 
 ## Severity Breakdown
 
 | Severity | Count |
 |----------|-------|
 | Critical | 1 |
-| High | 11 |
-| Medium | 52 |
-| Low | 5 |
+| High | 10 |
+| Medium | 48 |
+| Low | 6 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 54 |
-| Bugs Fixed | 22 |
-| Bugs Verified | 16 |
-| Throughput | 16 bugs verified/day |
-| Mean Time to Fix | 6h 12m |
-| Mean Time to Verify | 2h 8m |
-| Reopen Rate | 18.5% (10/54 recent) |
-| First-Pass Fix Rate | 81.5% |
-| Queue Drain Rate | 88% (16 verified / 18 found) |
-| Blocked Ratio | 1.4% (1/70 active) |
+| Bugs Found | 62 |
+| Bugs Fixed | 4 |
+| Bugs Verified/Archived | 0 |
+| Throughput | 0 bugs/day |
+| Mean Time to Fix | N/A (no bugs archived this period) |
+| Mean Time to Verify | N/A |
+| Reopen Rate | 25.0% (6/24 historical) |
+| First-Pass Fix Rate | 75.0% (18/24 historical) |
+| Queue Drain Rate | 0.00 (0 verified / 62 found) |
+| Blocked Ratio | 3.1% (2/64) |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
-| `src/swarm/pool.ts` | 4 |
-| `src/harness/hooks-engine.ts` | 4 |
-| `src/swarm/agent-node.ts` | 3 |
-| `packages/tools/src/stripe/index.ts` | 2 |
-| `packages/stores/src/redis/index.ts` | 2 |
+| `src/swarm/self-improvement/skill-evolver.ts` | 5 |
+| `src/swarm/factories.ts` | 5 |
+| `src/swarm/agent-node.ts` | 5 |
+| `src/models/google.ts` | 5 |
+| `packages/stores/src/redis/index.ts` | 5 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 15 |
-| missing-error-handling | 11 |
-| security-injection | 10 |
-| race-condition | 6 |
-| memory-leak | 6 |
+| logic-bug | 47 |
+| missing-error-handling | 31 |
+| race-condition | 19 |
+| security | 16 |
+| memory-leak | 15 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-20T22:24:00Z | Active |
-| Fixer | 2026-03-20T22:43:00Z | Active |
-| Validator | 2026-03-20T21:45:30Z | Active |
-| CI Sentinel | 2026-03-20T20:50:00Z | Active |
+| Hunter | 2026-03-21T00:48:00Z | Active |
+| Fixer | 2026-03-20T22:04:00Z | Stalled (4h+) |
+| Validator | 2026-03-21T00:05:00Z | Active |
+| TestGen | 2026-03-21T00:02:00Z | Active |
+| Git Manager | 2026-03-21T00:45:00Z | Active |
 
 ## Bottleneck Analysis
 
-**Pipeline is performing well.** All agents active within last 2-3 hours. Validator completed 16 bugs in last 24h with good throughput (88% queue drain rate).
-
-**Reopen rate elevated (18.5%).** Recent fixes show 10 reopens out of 54 found. This is higher than the ~6% baseline but acceptable given bug complexity (race conditions, security issues, state management edge cases).
-
-**Blocked ratio very low (1.4%)** — only BUG-0205 (security-injection in node-eval sandbox) requires human escalation. This critical item remains blocked pending architectural decision on isolation strategy.
+**Fixer is the bottleneck:** 52 bugs pending with only 4 fixed in the last 24h. The Hunter found 62 new bugs while the Fixer completed just 4 fixes. Queue drain rate is 0.00 — the pipeline is falling behind rapidly. The Fixer has been stalled for 4+ hours (last activity 2026-03-20T22:04:00Z).
 
 **Recommendations:**
-1. **Continue current pace** — pipeline is draining fixes at 88% efficiency
-2. **Monitor reopen trend** — elevated but manageable; validator is catching real issues
-3. **Keep Hunter/Fixer in sync** — both agents active; no stalls detected
+1. **Investigate Fixer stall** — no activity for 4+ hours; may be stuck or crashed.
+2. **Throttle Hunter** — 62 new bugs/day far exceeds fix capacity. Consider pausing Hunter until pending queue drops below 20.
+3. **4 verified bugs awaiting archive** — Git Manager should pick these up.
 
-## Trend (vs Previous Digest at 20:35 UTC)
+## Trend (vs Previous Digest)
 
-| Metric | Previous | Current | Direction |
-|--------|----------|---------|-----------|
-| Active Bugs | 60 | 70 | ↑ +16.7% |
-| Pending | 24 | 42 | ↑ +75.0% |
-| Fixed Queue | 28 | 22 | ↓ -21.4% |
-| Reopened | 3 | 4 | ↑ +1 bug |
-| Blocked | 1 | 1 | → no change |
-| Throughput | 0 verified/day | 16 verified/day | ↑↑ +16 bugs |
-| Queue Drain Rate | 0% | 88% | ↑↑ Major improvement |
-| Reopen Rate | 37.5% | 18.5% | ↓ Improvement |
+| Metric | Yesterday | Today | Direction |
+|--------|-----------|-------|-----------|
+| Active Bugs | 99 | 64 | ↓ -35% |
+| Pending | 49 | 52 | ↑ +6% |
+| In Progress | 0 | 5 | ↑ (Fixer picking up work) |
+| Fixed Queue | 46 | 1 | ↓ -98% (mass validation or state reset) |
+| Blocked | 3 | 2 | ↓ -33% |
+| Throughput | ~12/day | 0/day | ↓ |
+| Reopen Rate | ~1% | 25% | ↑ (historical rate, not period) |
 
-**Assessment:** Major improvement in pipeline efficiency. Previous digest showed Validator stalled (0 verifications). Current digest shows 16 verified in last 24h with 88% queue drain rate. Hunter found 54 bugs, Fixer completed 22, Validator verified 16 — all agents in sync.
-
-**Key changes:**
-- Validator unblocked — verifying at 16/day (was stalled 9+ hours ago)
-- Reopen rate halved (37.5% → 18.5%) — recent fixes are more stable
-- Queue drain exceptional (88%) — pipeline clearing backlog efficiently
-- Active bugs increased 16.7% (60 → 70) but this is expected as Hunter output increased to 54/day
-
-**Pipeline Status: GREEN — All agents active, excellent queue drain, reopen rate improving.**
+**Assessment:** Active bug count dropped significantly (99 → 64), but this appears driven by the fixed queue draining (46 → 1) rather than new fixes. Pending count grew slightly (49 → 52). Fixer has 5 bugs in-progress which is positive movement. The pipeline has shifted from validator-bound to fixer-bound. Zero throughput this period is concerning.
 
 ## Blocked — Needs Human Attention
 
-1 bug currently blocked:
+2 bugs currently blocked:
 
-- **BUG-0205** (critical, security-injection): `node_eval` tool executes LLM-supplied code via `new Function()` with no sandbox. Auto-blocked after 3 failed fix attempts. Root issue: ESM import() of builtins bypasses CJS patches, network access still exploitable. Requires `isolated-vm` or container-level sandboxing — architectural decision needed.
+- **BUG-0205** (critical, security-injection): `node_eval` arbitrary code execution — requires architectural decision on sandboxing approach.
+- **BUG-0264** (medium, type-error): LSP JSON-RPC message validation — structural validation missing for `id`, `result`, `error` fields.
 
 ---
 

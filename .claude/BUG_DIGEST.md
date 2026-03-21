@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-21T02:04:44Z
+**Generated:** 2026-03-21T02:35:22Z
 **Period:** Last 24 hours
 
 ---
@@ -9,12 +9,12 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 64 |
-| Pending | 52 |
+| Active Bugs | 65 |
+| Pending | 53 |
 | In Progress | 5 |
-| Fixed (awaiting validation) | 1 |
+| Fixed (awaiting validation) | 0 |
 | Verified (awaiting archive) | 4 |
-| Reopened | 0 |
+| Reopened | 1 |
 | Blocked | 2 |
 
 ## Severity Breakdown
@@ -31,75 +31,75 @@
 | Metric | Value |
 |--------|-------|
 | Bugs Found | 62 |
-| Bugs Fixed | 4 |
+| Bugs Fixed | 3 |
 | Bugs Verified/Archived | 0 |
 | Throughput | 0 bugs/day |
 | Mean Time to Fix | N/A (no bugs archived this period) |
 | Mean Time to Verify | N/A |
-| Reopen Rate | 25.0% (6/24 historical) |
-| First-Pass Fix Rate | 75.0% (18/24 historical) |
+| Reopen Rate | 6.3% (6/95 historical) |
+| First-Pass Fix Rate | 93.7% (89/95 historical) |
 | Queue Drain Rate | 0.00 (0 verified / 62 found) |
-| Blocked Ratio | 3.1% (2/64) |
+| Blocked Ratio | 3.1% (2/65) |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
-| `src/swarm/self-improvement/skill-evolver.ts` | 5 |
-| `src/swarm/factories.ts` | 5 |
-| `src/swarm/agent-node.ts` | 5 |
-| `src/models/google.ts` | 5 |
-| `packages/stores/src/redis/index.ts` | 5 |
+| `packages/stores/src/postgres/index.ts` | 3 |
+| `src/swarm/pool.ts` | 2 |
+| `src/swarm/factories.ts` | 2 |
+| `src/swarm/compile-ext.ts` | 2 |
+| `src/swarm/agent-node.ts` | 2 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 47 |
-| missing-error-handling | 31 |
-| race-condition | 19 |
-| security | 16 |
-| memory-leak | 15 |
+| logic-bug | 14 |
+| missing-error-handling | 13 |
+| race-condition | 10 |
+| memory-leak | 7 |
+| security | 6 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
 | Hunter | 2026-03-21T00:48:00Z | Active |
-| Fixer | 2026-03-20T22:04:00Z | Stalled (4h+) |
-| Validator | 2026-03-21T00:05:00Z | Active |
+| Fixer | 2026-03-20T22:04:00Z | Stalled (4.5h+) |
+| Validator | 2026-03-21T02:24:00Z | Active |
 | TestGen | 2026-03-21T00:02:00Z | Active |
 | Git Manager | 2026-03-21T00:45:00Z | Active |
 
 ## Bottleneck Analysis
 
-**Fixer is the bottleneck:** 52 bugs pending with only 4 fixed in the last 24h. The Hunter found 62 new bugs while the Fixer completed just 4 fixes. Queue drain rate is 0.00 — the pipeline is falling behind rapidly. The Fixer has been stalled for 4+ hours (last activity 2026-03-20T22:04:00Z).
+**Fixer is the bottleneck:** 53 bugs pending with only 3 fixed in the last 24h. Hunter found 62 new bugs while Fixer completed just 3 fixes. Queue drain rate is 0.00 — pipeline is falling behind rapidly. Fixer has been stalled for 4.5+ hours (last activity 2026-03-20T22:04:00Z).
 
 **Recommendations:**
-1. **Investigate Fixer stall** — no activity for 4+ hours; may be stuck or crashed.
+1. **Investigate Fixer stall** — no activity for 4.5+ hours; may be stuck or crashed.
 2. **Throttle Hunter** — 62 new bugs/day far exceeds fix capacity. Consider pausing Hunter until pending queue drops below 20.
-3. **4 verified bugs awaiting archive** — Git Manager should pick these up.
+3. **4 verified bugs awaiting archive** — Git Manager should pick these up next cycle.
 
 ## Trend (vs Previous Digest)
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
-| Active Bugs | 99 | 64 | ↓ -35% |
-| Pending | 49 | 52 | ↑ +6% |
-| In Progress | 0 | 5 | ↑ (Fixer picking up work) |
-| Fixed Queue | 46 | 1 | ↓ -98% (mass validation or state reset) |
-| Blocked | 3 | 2 | ↓ -33% |
-| Throughput | ~12/day | 0/day | ↓ |
-| Reopen Rate | ~1% | 25% | ↑ (historical rate, not period) |
+| Active Bugs | 64 | 65 | → (stable) |
+| Pending | 52 | 53 | → (stable) |
+| In Progress | 5 | 5 | → |
+| Fixed Queue | 1 | 0 | ↓ -1 |
+| Blocked | 2 | 2 | → |
+| Throughput | 0/day | 0/day | → |
+| Reopen Rate | 25.0% | 6.3% | ↓ (corrected to historical rate) |
 
-**Assessment:** Active bug count dropped significantly (99 → 64), but this appears driven by the fixed queue draining (46 → 1) rather than new fixes. Pending count grew slightly (49 → 52). Fixer has 5 bugs in-progress which is positive movement. The pipeline has shifted from validator-bound to fixer-bound. Zero throughput this period is concerning.
+**Assessment:** Pipeline state is essentially unchanged from last digest 30 minutes ago. Active bug count stable at 65. The fixed queue drained from 1 → 0 but no new fixes are being produced. Fixer remains stalled. The pipeline continues to be fixer-bound with zero throughput. The previous digest's 25% reopen rate was a period-specific anomaly; the historical rate is 6.3% (6/95 total archived bugs with reopens).
 
 ## Blocked — Needs Human Attention
 
 2 bugs currently blocked:
 
-- **BUG-0205** (critical, security-injection): `node_eval` arbitrary code execution — requires architectural decision on sandboxing approach.
-- **BUG-0264** (medium, type-error): LSP JSON-RPC message validation — structural validation missing for `id`, `result`, `error` fields.
+- **BUG-0205** (critical, security-injection): `node_eval` arbitrary code execution in `packages/tools/src/code-execution/node-eval.ts` — requires architectural decision on sandboxing approach.
+- **BUG-0309** (api-contract-violation): Google adapter `stream()` tool call event contract violation — emits complete args in `tool_call_start` instead of staged delta delivery.
 
 ---
 
