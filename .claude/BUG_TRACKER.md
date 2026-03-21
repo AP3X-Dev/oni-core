@@ -11,16 +11,16 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T23:31:31Z` |
 | **Last Hunter Scan** | `2026-03-21T08:40:00Z` |
-| **Last Fixer Pass** | `2026-03-21T08:25:00Z` |
-| **Last Validator Pass** | `2026-03-21T06:17:36Z` |
+| **Last Fixer Pass** | `2026-03-21T09:15:00Z` |
+| **Last Validator Pass** | `2026-03-21T06:33:09Z` |
 | **Last Digest Run** | `2026-03-21T05:52:59Z` |
-| **Last Security Scan** | `2026-03-23T18:55:00Z` |
+| **Last Security Scan** | `2026-03-23T19:20:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T23:58:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T08:30:00Z` (Cycle 232) |
-| **Last Supervisor Pass** | `2026-03-21T06:35:30Z` |
+| **Last Git Manager Pass** | `2026-03-21T06:37:20Z` (Cycle 234) |
+| **Last Supervisor Pass** | `2026-03-21T06:40:31Z` |
 | **Total Found** | `399` |
 | **Total Pending** | `2` |
 | **Total In Progress** | `0` |
@@ -286,107 +286,27 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0305
-- **status:** `fixed`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `122`
 - **category:** `security-auth`
 - **description:** Handoff context merge at line 122 (`{ ...state.context, ...handoff.context }`) performs an unfiltered shallow merge, allowing a handing-off agent to overwrite privileged shared state fields such as `__deadlineAbsolute` or `lastAgentError`.
 - **context:** When an agent executes a Handoff, `handoff.context` is spread directly into the shared `state.context` with no key filtering. An agent can craft a Handoff with `context: { __deadlineAbsolute: Infinity }` to disable deadline enforcement, or inject `lastAgentError: null` to clear error state and bypass supervisor error recovery. Since agent code can be influenced by prompt injection, this is an escalation vector: a prompt-injected agent can manipulate swarm-level control fields through the Handoff mechanism. Fix: filter handoff context keys against a denylist of privileged/internal fields (those starting with `__` or known supervisor control fields), or use an allowlist of user-defined context keys. OWASP A01:2021 - Broken Access Control.
-- **reopen_count:** `2`
+- **reopen_count:** `3`
 - **branch:** `bugfix/BUG-0305-ctx`
 - **hunter_found:** `2026-03-20T20:08:29Z`
-- **fixer_started:** `2026-03-21T08:25:00Z`
-- **fixer_completed:** `2026-03-21T08:25:00Z`
-- **fix_summary:** `Fresh branch from current main. Filter __-prefixed keys from handoff context. +4/-1 lines.`
-- **validator_started:** `2026-03-21T06:13:41Z`
-- **validator_completed:** `2026-03-21T06:17:36Z`
-- **validator_notes:** `REOPENED (2nd time): Fix code is correct (+5/-1 Object.fromEntries filter) but branch is 691 commits behind main. Merging would revert BUG-0305/0263/0285/0296/0240/0239 fixes in agent-node.ts. Fixer must: delete stale branch, create fresh from current main, apply the 5-line filter, commit.`
-
----
-
-### BUG-0320
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `src/swarm/compile-ext.ts`
-- **line:** `57`
-- **category:** `type-error`
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0320`
-- **description:** `def` is double-cast via `as SwarmAgentDef<Record<string, unknown>> as any` when registering a dynamically spawned agent, completely erasing the generic state type parameter `S`.
-- **context:** The registry stores the agent with the wrong state type, so `createAgentNode` receives a state typed as `Record<string, unknown>` instead of the actual swarm state type, making strongly-typed state field access invisible to the type checker.
-- **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** `2026-03-21T08:25:00Z`
-- **fixer_completed:** `2026-03-21T08:25:00Z`
-- **fix_summary:** `Removed double cast. registry.register(def) compiles clean since S matches.`
+- **fixer_started:** `2026-03-21T09:15:00Z`
+- **fixer_completed:** ``
+- **fix_summary:** `Auto-blocked after 3 failed fix attempts. Worktree agents create branches from stale commit points. Requires human to: git branch -D bugfix/BUG-0305-ctx; git checkout -b bugfix/BUG-0305-ctx main; apply 5-line safeHandoffCtx filter; commit.`
 - **validator_started:** `2026-03-21T06:27:03Z`
 - **validator_completed:** `2026-03-21T06:33:09Z`
-- **validator_notes:** `Verified on bugfix/BUG-0320. Double cast removed, plain registry.register(def). Types align (same S generic). tsc --noEmit exits 0. Previous reopen (branch missing) resolved.`
-
----
-
-### BUG-0322
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `src/agents/define-agent.ts`
-- **line:** `159`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0322`
-- **description:** maxTokens budget check strips toolCalls from the assistant message before breaking, producing a malformed conversation history where tool-call content has no matching toolCalls field.
-- **context:** When the token budget is exceeded mid-turn, the assistant message is pushed with toolCalls removed but tool-referencing content intact. LLM APIs that validate message sequencing will reject the subsequent request.
-- **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Push full assistantMsg with toolCalls intact when breaking on budget.`
-- **validator_started:** `2026-03-21T06:27:03Z`
-- **validator_completed:** `2026-03-21T06:33:09Z`
-- **validator_notes:** `Verified on bugfix/BUG-0322. Budget break now pushes full assistantMsg with toolCalls intact instead of manually constructed partial object. tsc clean.`
-
----
-
-### BUG-0323
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `src/messages/index.ts`
-- **line:** `168`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0323`
-- **description:** trimMessages hoists all system messages to the front of the array regardless of their original positions, destroying positional semantics when multiple system messages are interleaved with conversation turns.
-- **context:** Conversations that inject system messages mid-conversation will have their message ordering silently corrupted. The maxMessages limit also applies only to non-system messages.
-- **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Only hoist first system message; preserve positions of interleaved system messages.`
-- **validator_started:** `2026-03-21T06:27:03Z`
-- **validator_completed:** `2026-03-21T06:33:09Z`
-- **validator_notes:** `Verified on bugfix/BUG-0323. Only first system message hoisted. Interleaved system messages preserve position. tsc clean.`
-
----
-
-### BUG-0325
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/mcp/client.ts`
-- **line:** `240`
-- **category:** `type-error`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0325`
-- **description:** callTool casts response.result (typed unknown) directly to MCPCallToolResult with no structural validation, so a malformed MCP server response causes a runtime crash when callers destructure the result.
-- **context:** Any MCP server returning a non-conforming result object will cause downstream crashes. The same unsafe cast pattern exists at line 121 for MCPInitializeResult.
-- **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Validate MCP server response structure before casting at callTool and initialize.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_notes:** `REOPENED (3rd time): Branch STILL 694 commits behind main — not fresh. Diff is -59/+15, destructive. Merging reverts onStart/onComplete/onError guards and other prior fixes. The __-prefix filter is not even visible in the diff output. reopen_count=3 — Fixer should auto-block. The branch must be deleted and recreated from current main HEAD.`
 
 ---
 
 ### BUG-0326
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `57`
@@ -406,7 +326,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0328
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `packages/tools/src/stripe/index.ts`
 - **line:** `59`
@@ -426,7 +346,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0329
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `packages/tools/src/slack/index.ts`
 - **line:** `40`
@@ -446,7 +366,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0330
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/coordination/request-reply.ts`
 - **line:** `78`
