@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-21T04:44:19Z
+**Generated:** 2026-03-21T05:29:59Z
 **Period:** Last 24 hours
 
 ---
@@ -9,103 +9,102 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 66 |
-| Pending | 8 |
+| Active Bugs | 65 |
+| Pending | 1 |
 | In Progress | 0 |
-| Fixed (awaiting validation) | 46 |
-| Verified (awaiting archive) | 5 |
-| Reopened | 0 |
-| Blocked | 7 |
-
-## Severity Breakdown
-
-| Severity | Count |
-|----------|-------|
-| Critical | 1 |
-| High | 10 |
-| Medium | 49 |
-| Low | 6 |
+| Fixed (awaiting validation) | 52 |
+| In Validation | 1 |
+| Reopened | 2 |
+| Blocked | 9 |
 
 ## 24h Activity
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 62 |
-| Bugs Fixed | 47 |
-| Bugs Verified/Archived | 12 |
-| Throughput | 12 bugs/day |
-| Mean Time to Fix | 11.7 hours |
-| Mean Time to Verify | 3.1 hours |
-| Reopen Rate | 6.3% (6/95 historical) |
-| First-Pass Fix Rate | 93.7% (89/95 historical) |
-| Queue Drain Rate | 0.19 (12 verified / 62 found) |
-| Blocked Ratio | 10.6% (7/66) |
+| Bugs Found | 16 |
+| Bugs Fixed | 60 |
+| Bugs Verified | 7 |
+| Throughput | 7 bugs/day |
+| Mean Time to Fix | 0.5 hours |
+| Mean Time to Verify | 0.9 hours |
+| Reopen Rate | 3.1% |
+| First-Pass Fix Rate | 96.9% |
+| Queue Drain Rate | 0.44 |
+| Blocked Ratio | 13.8% |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
-| `src/swarm/factories.ts` | 5 |
-| `src/swarm/agent-node.ts` | 5 |
-| `src/models/openai.ts` | 4 |
-| `src/models/anthropic.ts` | 4 |
-| `src/swarm/self-improvement/skill-evolver.ts` | 4 |
+| `src/swarm/agent-node.ts` | 3 |
+| `packages/loaders/src/loaders/*.ts` | 5 |
+| `src/checkpointers/` | 4 |
+| `src/models/` | 4 |
+| `src/harness/` | 5 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 47 |
-| missing-error-handling | 30 |
-| security | 22 |
-| race-condition | 19 |
-| memory-leak | 15 |
+| memory-leak | 12 |
+| missing-error-handling | 15 |
+| logic-bug | 11 |
+| race-condition | 8 |
+| type-error | 6 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-21T00:25:00Z | Active |
-| Fixer | 2026-03-21T05:02:00Z | Active |
-| Validator | 2026-03-21T04:30:00Z | Active |
-| TestGen | 2026-03-21T21:38:00Z | Active |
-| Git Manager | 2026-03-21T06:10:00Z | Active |
+| Hunter | 2026-03-20T22:45:00Z | Active |
+| Fixer | 2026-03-21T06:25:00Z | Active |
+| Validator | 2026-03-21T05:23:12Z | Active |
 
 ## Bottleneck Analysis
 
-**Validator is the bottleneck:** 46 bugs are fixed and awaiting validation, but only 12 were verified in the last 24h. The Fixer completed 47 fixes — far outpacing the Validator's throughput. The fixed queue is growing rapidly.
+**Validator backlog continues to grow:** 52 bugs fixed and awaiting validation, with only 7 verified in the last 24h. This is a 7.4x throughput gap. The Fixer is operating at peak efficiency (60 fixes in 24h) but the Validator cannot keep pace.
 
-**Queue drain rate is 0.19** — pipeline is falling behind. For every bug verified, ~5 new bugs are found.
+**Critical metrics:**
+- **Queue drain rate is 0.44** — for every bug verified, 2.3 new bugs are found or fixed. The pipeline is accumulating technical debt rapidly.
+- **Blocked count increased from 7 to 9** — two additional bugs auto-blocked on reaching reopen limit 3.
+- **Pending queue nearly cleared (53→1)** — Fixer successfully processed the backlog.
+
+**Root cause:** The Validator is the hard bottleneck. With 52 bugs in fixed state and only 7/day verification rate, the queue will reach 300+ within 10 days at current velocity.
 
 **Recommendations:**
-1. **Scale Validator capacity** — 46-bug fixed queue will take ~4 days at current verification rate.
-2. **Consider throttling Hunter** — 62 new bugs/day exceeds total pipeline capacity.
-3. **7 blocked bugs (10.6%)** need human attention, including 1 critical security issue (BUG-0205).
+1. **Urgent: Scale Validator capacity** — Consider parallel validation, increased frequency, or dedicated Validator fleet.
+2. **Monitor BUG-0382 reopened** — PreToolUse hook fix regressed, now in-validation. This pattern (removing unrelated features while fixing core issue) has appeared 3 times recently.
+3. **Investigate BUG-0386 reopened** — Auth resolver still not using ctx parameter despite signature update. Fix quality issues persist.
 
 ## Trend (vs Previous Digest)
 
-| Metric | Yesterday | Today | Direction |
-|--------|-----------|-------|-----------|
-| Active Bugs | 65 | 66 | → (stable) |
-| Pending | 53 | 8 | ↓ (Fixer cleared backlog) |
-| Fixed Queue | 0 | 46 | ↑ (Validator backlog growing) |
-| Throughput | 0/day | 12/day | ↑ (improving) |
-| Reopen Rate | 6.3% | 6.3% | → |
-| Blocked | 2 | 7 | ↑ (5 newly blocked) |
+| Metric | Previous | Current | Direction |
+|--------|----------|---------|-----------|
+| Active Bugs | 66 | 65 | ↓ (net verification) |
+| Pending | 8 | 1 | ↓ (nearly cleared) |
+| Fixed Queue | 46 | 52 | ↑ (continued growth) |
+| In Validation | 0 | 1 | ↑ |
+| Reopened | 0 | 2 | ↑ (quality regressions) |
+| Blocked | 7 | 9 | ↑ |
+| Throughput (verified/day) | 12 | 7 | ↓ (Validator slowing) |
+| Bugs Found | 62 | 16 | ↓ (Hunter pace reduced) |
 
-**Assessment:** Fixer recovered from previous stall and cleared the pending queue (53→8), but this shifted the bottleneck to the Validator — fixed queue surged from 0→46. Throughput improved from 0 to 12 bugs/day. Blocked count increased from 2→7, with 5 bugs hitting max reopen limits (BUG-0256, 0264, 0294, 0304 all have 3-4 reopens). The same swarm subsystem files (`factories.ts`, `agent-node.ts`) continue appearing in top problem files — this module may need structural attention.
+**Assessment:** The pipeline has shifted from balanced operation to validation-bottleneck mode. Fixer reached peak velocity (60 fixes, a 28% improvement over yesterday), but Validator throughput declined 40% (12→7 verified/day). The fixed queue grew 13% despite higher verification rate yesterday, indicating the Validator cannot sustain 46-bug backlog clearance. Pending queue clearing is positive, but the 52-bug fixed queue now represents a 4-7 day validation backlog. Reopen rate is improving (6.3%→3.1%), suggesting fix quality has stabilized — but two reopened bugs (BUG-0382, 0386) both show the same pattern of scope creep (removing unrelated features during focused bug fixes).
 
 ## Blocked — Needs Human Attention
 
-7 bugs currently blocked:
+9 bugs currently blocked:
 
-- **BUG-0205** (critical, security-injection): `node_eval` arbitrary code execution via `new Function()` in `packages/tools/src/code-execution/node-eval.ts` — requires architectural decision on sandboxing approach.
-- **BUG-0256** (medium, 4 reopens): A2AServer auth opt-in default — repeated fix attempts rejected.
-- **BUG-0264** (medium, 3 reopens): LSP JSON-RPC cast without validation — fix quality issues.
-- **BUG-0294** (medium, 3 reopens): StateGraph.toMermaid() injection — fix quality issues.
-- **BUG-0304** (high, 3 reopens): Budget validation bypass (NaN/negative tokens) — fix quality issues.
-- **BUG-0348** (medium): stripProtoKeys shadowing — potential false positive.
-- **BUG-0352** (medium): StateGraph private edge mutation — potential false positive.
+- **BUG-0205** (critical, security-injection): `node_eval` arbitrary code execution via `new Function()` without capability sandbox. 3 reopens. Requires architectural decision on sandboxing (isolated-vm vs container).
+- **BUG-0256** (medium, 4 reopens): A2AServer auth defaults to unauthenticated — fix attempts consistently miss the core logic, addressing only type exports or unrelated features.
+- **BUG-0264** (medium, 3 reopens): LSP JSON-RPC message validation — all 3 fix attempts failed same 3 validation gaps (jsonrpc version, id check, result/error presence).
+- **BUG-0304** (high, 3 reopens): Budget tracker doesn't validate token counts — fix branch exists but never merged to main.
+- **BUG-0306** (medium, 3 reopens): onError hook missing try/catch in swarm pool — branch also removes unrelated safety guards instead of minimal 5-line fix.
+- **BUG-0348** (medium): stripProtoKeys shadowing — flagged as potential false positive, Fixer marked as such.
+- **BUG-0352** (medium): StateGraph edge mutation — flagged as potential false positive, marked correctly as such.
+- **BUG-0370** (high): Fan-out send channel updates — by-design, not a bug. Marked correctly.
+- **BUG-0371** (high): Parallel node LWW channel updates — by-design, not a bug. Marked correctly.
+- **BUG-0385** (medium): Auth resolver scope parameter — flagged as false positive, code does not exist.
 
 ---
 

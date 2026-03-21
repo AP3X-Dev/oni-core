@@ -13,7 +13,7 @@
 | **Last Hunter Scan** | `2026-03-20T22:31:00Z` |
 | **Last Fixer Pass** | `2026-03-21T06:35:00Z` |
 | **Last Validator Pass** | `2026-03-21T05:23:12Z` |
-| **Last Digest Run** | `2026-03-20T00:17:00Z` |
+| **Last Digest Run** | `2026-03-21T05:29:59Z` |
 | **Last Security Scan** | `2026-03-23T14:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
@@ -266,7 +266,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0303
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `low`
 - **file:** `src/lsp/index.ts`
 - **line:** `134`
@@ -1804,7 +1804,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0399
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `169`
