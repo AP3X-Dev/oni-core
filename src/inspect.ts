@@ -109,9 +109,10 @@ function detectCycles(
   for (const id of nodes) adj.set(id, []);
   for (const e of edges) {
     if (e.to === "conditional") {
-      // Unknown routing (no pathMap) — conservatively add edges to all nodes
-      // to prevent false-negative cycle detection.
-      for (const target of nodes) adj.get(e.from)?.push(target);
+      // Unknown routing (no pathMap) — skip; we cannot infer targets, and
+      // adding edges to every node creates false cycles that force topoOrder
+      // to null even in acyclic graphs (BUG-0447).
+      continue;
     } else {
       adj.get(e.from)?.push(e.to);
     }
