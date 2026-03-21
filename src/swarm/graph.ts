@@ -52,6 +52,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
   private _broker?: RequestReplyBroker;
   private _pubsub?: PubSub;
+  private subGraphs: SwarmGraph<S>[] = [];
 
   private get broker(): RequestReplyBroker {
     return this._broker ??= new RequestReplyBroker();
@@ -156,10 +157,15 @@ export class SwarmGraph<S extends BaseSwarmState> {
   static hierarchicalMesh<S extends BaseSwarmState>(
     config: HierarchicalMeshConfig<S>,
   ): SwarmGraph<S> {
+    const parent = new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>);
     return buildHierarchicalMesh(
       config,
-      new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>),
-      (ch) => new SwarmGraph<S>(ch),
+      parent,
+      (ch) => {
+        const sub = new SwarmGraph<S>(ch);
+        parent.subGraphs.push(sub);
+        return sub;
+      },
     );
   }
 
@@ -223,7 +229,11 @@ export class SwarmGraph<S extends BaseSwarmState> {
   static compose<S extends BaseSwarmState>(
     config: { stages: Array<{ id: string; swarm: SwarmGraph<S> }>; channels?: Partial<ChannelSchema<S>> },
   ): SwarmGraph<S> {
-    return buildCompose(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+    const parent = new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>);
+    for (const stage of config.stages) {
+      parent.subGraphs.push(stage.swarm);
+    }
+    return buildCompose(config, parent);
   }
 
   // ---- Disposal ----
@@ -356,6 +366,23 @@ export class SwarmGraph<S extends BaseSwarmState> {
     }
     this.inner.addEdge(agentIds[agentIds.length - 1]!, END);
     return this;
+  }
+
+  // ---- Dispose ----
+
+  /**
+   * Dispose the swarm graph, cleaning up broker timeouts, pubsub
+   * subscribers, and any tracked sub-graphs created by
+   * hierarchicalMesh() or compose().
+   */
+  dispose(): void {
+    for (const sub of this.subGraphs) {
+      sub.dispose();
+    }
+    this.subGraphs.length = 0;
+    this._broker?.dispose();
+    this._broker = undefined;
+    this._pubsub = undefined;
   }
 
   // ---- Compile ----
