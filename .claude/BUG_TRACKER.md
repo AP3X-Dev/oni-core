@@ -9,25 +9,25 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-20T22:42:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-20T22:51:00Z` |
 | **Last Hunter Scan** | `2026-03-20T22:31:00Z` |
 | **Last Fixer Pass** | `2026-03-21T07:35:00Z` |
-| **Last Validator Pass** | `2026-03-21T05:37:00Z` |
-| **Last Digest Run** | `2026-03-21T05:29:59Z` |
-| **Last Security Scan** | `2026-03-23T15:40:00Z` |
+| **Last Validator Pass** | `2026-03-21T05:53:04Z` |
+| **Last Digest Run** | `2026-03-21T05:52:59Z` |
+| **Last Security Scan** | `2026-03-23T16:20:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T22:48:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T20:00:00Z` (Cycle 226) |
-| **Last Supervisor Pass** | `2026-03-21T05:45:30Z` |
-| **Total Found** | `398` |
+| **Last TestGen Run** | `2026-03-20T23:35:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T06:00:00Z` (Cycle 227) |
+| **Last Supervisor Pass** | `2026-03-21T05:55:29Z` |
+| **Total Found** | `399` |
 | **Total Pending** | `2` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `67` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `15` |
+| **Total Blocked** | `16` |
 | **Total Reopened** | `2` |
 
 ---
@@ -282,66 +282,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** `2026-03-21T05:29:48Z`
 - **validator_completed:** `2026-03-21T05:37:00Z`
 - **validator_notes:** `REOPENED: escapeXml() handles &, <, >, " but missing single-quote (&apos;). Branch also introduces tsc errors in unrelated pregel files (TS2554, TS2741). Fixer must: add single-quote escape, delete old branch, create fresh from main.`
-
----
-
-### BUG-0307
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/mcp/transport.ts`
-- **line:** `162`
-- **category:** `memory-leak`
-- **description:** `StdioTransport.stop()` calls `this.process.kill("SIGTERM")` without removing `"error"` and `"exit"` listeners first. The listeners close over `this` and `this.pending`, preventing GC of the transport instance until Node cleans up the process handle. In MCP server crash-restart loops this causes steady listener accumulation.
-- **context:** Compare with `LSPClient.stop()` in `lsp/client.ts:208` which explicitly calls `removeAllListeners()` before killing. `StdioTransport` is missing this pattern. Fix: call `this.process.removeAllListeners()` before `this.process.kill()`.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0307`
-- **hunter_found:** `2026-03-21T00:00:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Added removeAllListeners() before kill() in StdioTransport.stop().`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0308
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/models/google.ts`
-- **line:** `163`
-- **category:** `api-contract-violation`
-- **description:** `mapFinishReason` never returns `"stop_sequence"`. The Gemini API returns `finishReason: "STOP_SEQUENCE"` when the model stops at a user-supplied stop sequence, but this function maps it to `"end"`. The Anthropic adapter correctly handles this case.
-- **context:** `ChatResponse.stopReason` declares `"end" | "tool_use" | "max_tokens" | "stop_sequence"`. Any caller differentiating `"stop_sequence"` from `"end"` (e.g. to detect partial output) will receive incorrect data from the Google adapter. Fix: add `if (reason === "STOP_SEQUENCE") return "stop_sequence"` before the fallback return.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0308`
-- **hunter_found:** `2026-03-21T00:00:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Added STOP_SEQUENCE mapping and tool_call_delta emission in Google adapter.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0309
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/models/google.ts`
-- **line:** `432`
-- **category:** `api-contract-violation`
-- **description:** Google adapter `stream()` emits `tool_call_start` directly followed by `tool_call_end` with no `tool_call_delta` events, and populates complete `args` in `tool_call_start`. The OpenAI/Anthropic adapters emit `tool_call_start` with `args: {}` followed by delta events — the Google adapter violates this staged delivery contract.
-- **context:** Any stream consumer that accumulates args from `tool_call_delta` events will receive no deltas from Google and see empty args. Consumers that read `tool_call_start.args` will get complete data from Google but empty from OpenAI/Anthropic. Fix: emit `tool_call_start` with `args: {}`, then a single `tool_call_delta` with the complete args, then `tool_call_end`.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0308`
-- **hunter_found:** `2026-03-21T00:00:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Changed Google stream() to emit tool_call_start with args:{} then tool_call_delta then tool_call_end.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
 
 ---
 
@@ -1741,26 +1681,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0399
-- **status:** `fixed`
-- **severity:** `high`
-- **file:** `src/swarm/agent-node.ts`
-- **line:** `169`
-- **category:** `security-auth`
-- **description:** Normal agent completion path spreads `result.context` into state without filtering `__`-prefixed privileged keys, allowing an agent to overwrite swarm-internal control fields like `__deadlineAbsolute`.
-- **context:** BUG-0305 fixed the handoff context merge at line 140 to filter `__`-prefixed keys, but the normal completion path at line 169 (`...((result as any).context ?? {})`) has the same vulnerability. A prompt-injected agent can return `context: { __deadlineAbsolute: Infinity }` to disable deadline enforcement for the entire swarm, or inject other `__`-prefixed internal state. The `__consumedMsgIds` field is safe (explicitly set at line 170 after the spread), but `__deadlineAbsolute` survives the spread. Fix: apply the same `__`-prefix filter from BUG-0305 to `result.context` before spreading. OWASP A01:2021 - Broken Access Control.
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0399`
-- **hunter_found:** `2026-03-23T13:55:00Z`
-- **fixer_started:** `2026-03-21T07:05:00Z`
-- **fixer_completed:** `2026-03-21T07:05:00Z`
-- **fix_summary:** `Extract rawCtx, filter __-prefixed keys into safeCtx, spread safeCtx. 6 insertions, 2 deletions. No other code touched.`
-- **validator_started:** `2026-03-21T05:29:48Z`
-- **validator_completed:** `2026-03-21T05:34:54Z`
-- **validator_notes:** `REOPENED: Core __-prefix filter correct (lines 122-132), but branch removes 4 existing guards: (1) onComplete try/catch on both paths (BUG-0305 regression), (2) onStart try/catch (BUG-0037 regression), (3) onError try/catch removed, (4) __pendingHandoff passthrough and BUG-0263 handoff.to validation dropped. Fixer must: delete old branch, create fresh from main, add ONLY the __-prefix filter to result.context at line 169.`
-
----
-
 ### BUG-0400
 - **status:** `fixed`
 - **severity:** `medium`
@@ -1897,6 +1817,26 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T07:35:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** `Transient vitest worker pool issue. Test passes in isolation (2/2 green). Same pattern as BUG-0368/BUG-0369. Self-resolving on retry.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0402
+- **status:** `blocked`
+- **severity:** `medium`
+- **file:** `src/__tests__/`
+- **line:** `1`
+- **category:** `infrastructure`
+- **description:** Mass ghost-suite failure during parallel `npm test`: 10+ test files report "Cannot find module" with 0 tests collected, but all pass when run in isolation. Significant escalation of BUG-0401 pattern.
+- **context:** CI Sentinel Cycle 19 (2026-03-20T22:51:00Z) detected 10 suites reporting "Cannot find module" during the full parallel `npm test` run: `circuit-breaker-half-open-single-probe.test.ts`, `cli-toplevel-error-handling.test.ts`, `lsp-client-message-validation.test.ts`, `request-reply-atomic-resolved.test.ts`, `harness-loop-env-sanitize.test.ts`, `harness-tools-hook-args-replace.test.ts`, `swarm/experiment-log-trim.test.ts`, `swarm/registry-tomanifest-injection.test.ts`, `swarm/scaling-error-latency-regression.test.ts`, `swarm/spawn-agent-concurrent-snapshot.test.ts`, `swarm/swarmgraph-dispose.test.ts`, `swarm/tracer-event-trim.test.ts`. All files exist on disk and pass (12, 16, 8, 13 tests in isolated batch runs). This is a significant surge from Cycle 18 (1 ghost suite — BUG-0401) to 10+ ghost suites in Cycle 19, with total test count dropping from 1373 to 1328. Root cause is vitest parallel worker pool exhaustion or module resolution cache collision under high concurrency. Human intervention required to investigate vitest pool size, worker isolation settings, or import cache configuration — not self-resolving when this many suites are simultaneously affected.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-20T22:51:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
