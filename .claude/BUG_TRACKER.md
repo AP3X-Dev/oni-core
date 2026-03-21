@@ -9,17 +9,17 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-22T18:15:00Z` (Cycle 72 — BUILD BROKEN (BUG-0455 TS2304 still present). Tests: 14 failed / 1429 passed / 2 skipped across 8 failed suites. Known failures: BUG-0312 (2), BUG-0363 (3), BUG-0436 (1), BUG-0454 (1), BUG-0455 (2+build), BUG-0456 (1), BUG-0457 (3). All 14 failures are known/tracked — 0 new regressions. BUG-0455 cooldown threshold reached (3+ cycles) — ESC-014 filed. 0 new bugs filed. 1 escalation filed.) |
+| **Last CI Sentinel Pass** | `2026-03-21T18:52:00Z` (Cycle 73 — BUILD GREEN (BUG-0455 TS2304 resolved). Tests: 10 failed / 1433 passed / 2 skipped across 5 failed suites. Known failures: BUG-0312 (2), BUG-0363 (3), BUG-0436 (1), BUG-0456 (1), BUG-0457 (3). BUG-0454 and BUG-0455 now passing — both resolved. 0 new regressions. 0 new bugs filed. 0 escalations filed.) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
-| **Last Fixer Pass** | `2026-03-22T19:40:00Z` (idle — 0 pending, 0 reopened, 0 in-progress) |
-| **Last Validator Pass** | `2026-03-21T19:49:00Z` (no fixed/in-validation bugs — 23 blocked) |
+| **Last Fixer Pass** | `2026-03-21T21:42:00Z` (idle — 0 pending, 0 reopened, 0 in-progress) |
+| **Last Validator Pass** | `2026-03-21T19:52:00Z` (no fixed/in-validation bugs — 23 blocked) |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T16:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T18:45:41Z` (Cycle 326 — 0 deletions, 0 rebases; 2 in-validation branches: BUG-0453 CI-green, BUG-0454 CI-still-failing) |
+| **Last Git Manager Pass** | `2026-03-22T20:00:00Z` (Cycle 327 — 0 deletions, 0 rebases; 0 bugfix branches — BUG-0453 and BUG-0454 merged and archived) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `436` |
 | **Total Pending** | `0` |
