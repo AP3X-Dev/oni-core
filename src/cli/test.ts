@@ -10,7 +10,7 @@ export async function testCommand(args: ParsedArgs): Promise<void> {
   const pattern = args.positional[0];
   const watch = args.flags.watch === "true" || args.flags.w === "true";
 
-  const vitestArgs = [watch ? "" : "run"].filter(Boolean);
+  const vitestArgs = [watch ? "--watch" : "run"].filter(Boolean);
 
   if (pattern) {
     vitestArgs.push(pattern);
