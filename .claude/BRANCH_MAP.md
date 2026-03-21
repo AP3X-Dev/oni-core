@@ -1,33 +1,33 @@
-# Branch Map — Cycle 324
+# Branch Map — Cycle 325
 
-**Generated:** 2026-03-21T18:42:00Z
-**Main HEAD:** 2f02dae
-**Total Branches:** 2 bugfix (2 active, 0 deleted this cycle)
+**Generated:** 2026-03-21T18:52:00Z
+**Main HEAD:** 46988cb
+**Total Branches:** 2 bugfix (2 in-validation, 0 deleted this cycle)
 
 | Branch | Status | Classification | Notes |
 |---|---|---|---|
-| bugfix/BUG-0453 | pending (tracker) | Active — fix committed, CI passing, awaiting Fixer to update tracker to `fixed` | 1 commit ahead of main (d8466bf). Fix: use crypto.randomUUID() in src/testing/index.ts. No merge conflicts. Not stale. CI Sentinel confirms tests NOW PASSING. |
-| bugfix/BUG-0454 | pending (tracker) | Active — fix committed, CI still failing | 1 commit ahead of main (b0306ca). Fix: swap namespace prefix order in src/graph.ts + src/pregel/streaming.ts. No merge conflicts. CI Sentinel Cycle 71 still shows test failing. Blocked until test passes. |
+| bugfix/BUG-0453 | in-validation | Active — fix committed, awaiting Validator | 1 commit ahead of main (d8466bf). Fix: use crypto.randomUUID() in src/testing/index.ts. 3 commits behind main. No merge conflicts. CI confirms tests passing. |
+| bugfix/BUG-0454 | in-validation | Active — fix committed, CI still failing | 1 commit ahead of main (b0306ca). Fix: swap namespace prefix order in src/graph.ts + src/pregel/streaming.ts. 2 commits behind main. No merge conflicts. CI Sentinel Cycle 71 still shows test failing. |
 
 ## Active Worktrees
 
-- bugfix/BUG-0453 — 1 commit ahead, src/testing/index.ts modified. Merge-ready (CI green, no conflicts). Blocked: tracker status not updated to `fixed`.
-- bugfix/BUG-0454 — 1 commit ahead, src/graph.ts + src/pregel/streaming.ts modified. NOT merge-ready (CI still failing).
+- bugfix/BUG-0453 — 1 commit ahead, src/testing/index.ts modified. 3 commits behind main. Merge clean (no src conflicts). Status: in-validation.
+- bugfix/BUG-0454 — 1 commit ahead, src/graph.ts + src/pregel/streaming.ts modified. 2 commits behind main. Merge clean (no src conflicts). Status: in-validation. CI test still failing.
 
 ## Non-Bugfix Branches (out of scope)
 
 None.
 
-## Status Changes Since C323
+## Status Changes Since C324
 
-- bugfix/BUG-0453: UNCHANGED — still 1 commit ahead. Tracker still shows `pending`. Fixer has not updated tracker.
-- bugfix/BUG-0454: RE-APPEARED — was deleted as empty in C323 (0 commits). Now has 1 fix commit (b0306ca). Fixer created branch and committed fix between C323 and C324. CI test still fails — do not merge.
+- bugfix/BUG-0453: Tracker status updated to `in-validation`. Otherwise unchanged.
+- bugfix/BUG-0454: Tracker status updated to `in-validation`. Otherwise unchanged.
 
 ## GC Note
 
-`git gc --auto` executed this cycle (Cycle 324 — scheduled every 6 cycles since C318). Next GC: Cycle 330.
+Next GC scheduled at Cycle 330 (not this cycle).
 
-## File Overlap Summary (Cycle 324)
+## File Overlap Summary (Cycle 325)
 
 - bugfix/BUG-0453: src/testing/index.ts
 - bugfix/BUG-0454: src/graph.ts, src/pregel/streaming.ts
