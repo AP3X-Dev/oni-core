@@ -153,7 +153,7 @@ export async function* agentLoop(
 
       // ── 3c. Build system prompt ────────────────────────────────────
       let systemPrompt = effectiveSystemPrompt;
-      const remaining = maxTurns - turn - 1;
+      const remaining = maxTurns - turn;
       systemPrompt += `\n\nYou have ${remaining} turns remaining. Each turn lets you call multiple tools. Do NOT stop early — use your tools and complete the task autonomously.`;
       if (config.env) {
         // Sanitize env values to prevent prompt injection via crafted
