@@ -196,7 +196,19 @@ export function createAgentNode<S extends BaseSwarmState>(
               if (remaining <= 0) break; // deadline expired, stop retrying
               delay = Math.min(delay, remaining);
             }
-            await new Promise((r) => setTimeout(r, delay));
+            await new Promise<void>((resolve, reject) => {
+              const timer = setTimeout(resolve, delay);
+              const signal = config?.signal;
+              if (signal?.aborted) {
+                clearTimeout(timer);
+                reject(signal.reason ?? new Error("aborted"));
+                return;
+              }
+              signal?.addEventListener("abort", () => {
+                clearTimeout(timer);
+                reject(signal.reason ?? new Error("aborted"));
+              }, { once: true });
+            });
           }
           continue; // retry
         }
