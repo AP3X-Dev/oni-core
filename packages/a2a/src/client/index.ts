@@ -89,10 +89,23 @@ export class A2AClient {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
+    const readTimeoutMs = this.config.timeout ?? 30_000;
+
+    const readWithTimeout = async (
+      r: ReturnType<ReadableStream<Uint8Array>["getReader"]>,
+      timeoutMs: number,
+    ) => {
+      const timer = setTimeout(() => r.cancel(), timeoutMs);
+      try {
+        return await r.read();
+      } finally {
+        clearTimeout(timer);
+      }
+    };
 
     try {
       while (true) {
-        const { done, value } = await reader.read();
+        const { done, value } = await readWithTimeout(reader, readTimeoutMs);
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
