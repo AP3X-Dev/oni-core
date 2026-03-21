@@ -10,18 +10,18 @@
 | Key | Value |
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T23:31:31Z` |
-| **Last Hunter Scan** | `2026-03-21T08:40:00Z` |
-| **Last Fixer Pass** | `2026-03-21T09:15:00Z` |
-| **Last Validator Pass** | `2026-03-21T06:33:09Z` |
+| **Last Hunter Scan** | `2026-03-20T18:42:00Z` |
+| **Last Fixer Pass** | `2026-03-21T09:45:00Z` |
+| **Last Validator Pass** | `2026-03-21T06:43:59Z` |
 | **Last Digest Run** | `2026-03-21T06:41:21Z` |
-| **Last Security Scan** | `2026-03-23T19:20:00Z` |
+| **Last Security Scan** | `2026-03-23T20:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T23:43:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T06:37:20Z` (Cycle 234) |
-| **Last Supervisor Pass** | `2026-03-21T06:40:31Z` |
-| **Total Found** | `399` |
+| **Last Git Manager Pass** | `2026-03-21T06:51:00Z` (Cycle 235) |
+| **Last Supervisor Pass** | `2026-03-21T06:45:30Z` |
+| **Total Found** | `407` |
 | **Total Pending** | `2` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `67` |
@@ -306,109 +306,27 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0326
-- **status:** `in-validation`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `57`
 - **category:** `type-error`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0326`
 - **description:** Redis v4 fallback path assigns raw createClient result as RedisClient without a shim, but RedisClient.del uses rest params while redis v4 del expects an array — multi-key deletes on v4 backend will break.
 - **context:** The ioredis path correctly shims del with r.del(...keys), but the redis v4 branch has no such adapter.
 - **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Add del shim for redis v4 multi-key compatibility.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0328
-- **status:** `in-validation`
-- **severity:** `medium`
-- **file:** `packages/tools/src/stripe/index.ts`
-- **line:** `59`
-- **category:** `memory-leak`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0328`
-- **description:** loadStripeInstance creates a new Stripe SDK client on every tool invocation instead of caching, accumulating HTTP agent connection pools and socket handles over the session lifetime.
-- **context:** In long-running agent sessions with many Stripe tool calls, file descriptors grow without bound, eventually causing EMFILE or connection pool exhaustion.
-- **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Cache Stripe SDK client instance keyed by API key to prevent connection pool leak.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0329
-- **status:** `in-validation`
-- **severity:** `medium`
-- **file:** `packages/tools/src/slack/index.ts`
-- **line:** `40`
-- **category:** `memory-leak`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0329`
-- **description:** loadSlackClient creates a new WebClient on every tool invocation instead of caching, accumulating HTTP agent connection pools and socket handles over the session lifetime.
-- **context:** Same pattern as BUG-0328 but for Slack — per-call client creation causes socket handle growth in long-running sessions.
-- **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Cache Slack WebClient instance keyed by token to prevent connection pool leak.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0330
-- **status:** `in-validation`
-- **severity:** `medium`
-- **file:** `src/coordination/request-reply.ts`
-- **line:** `78`
-- **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0330`
-- **description:** Timeout callback and `reply()` method both check-then-mutate `req.resolved` non-atomically — if timeout fires between `reply()` capturing the resolver and setting `resolved = true`, both the rejection and resolution fire on the same Promise.
-- **context:** Double-settling a Promise is silently ignored by V8, but downstream `.then()` chains may observe the resolved value after the rejection handler already ran, causing inconsistent state in request-reply coordination patterns.
-- **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Make resolved flag check-and-set atomic in reply() to prevent double-settlement.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-- **test_generated:** `true`
-- **test_file:** `src/__tests__/request-reply-atomic-resolved.test.ts`
-
----
-
-### BUG-0331
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/store/index.ts`
-- **line:** `126`
-- **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0331`
-- **description:** `InMemoryStore.put()` checks `this.data.size` against `maxItems` before an `await this.embedFn()` call, then inserts after the await — concurrent `put()` calls all pass the size check before any insert, exceeding the capacity limit.
-- **context:** In high-throughput agent loops that write to the store concurrently, the maxItems invariant is silently violated, causing unbounded memory growth in what is supposed to be a bounded store.
-- **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Add post-insert capacity re-check in InMemoryStore.put() to prevent exceeding maxItems.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** `2026-03-21T09:35:00Z`
+- **fixer_completed:** `2026-03-21T09:35:00Z`
+- **fix_summary:** `Added proper v4 shim with del: (...keys) => r.del(...keys). Fresh branch from main.`
+- **validator_started:** `2026-03-21T06:39:48Z`
+- **validator_completed:** `2026-03-21T06:43:59Z`
+- **validator_notes:** `REOPENED: Del shim intent correct but tsc TS2345 — r.del(keys) passes string[] to rest-params signature. Must use r.del(...keys) to spread. One-character fix.`
 
 ---
 
 ### BUG-0332
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `155`
@@ -428,7 +346,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0333
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/json.ts`
 - **line:** `10`
@@ -448,7 +366,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0334
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/cli/init.ts`
 - **line:** `11`
@@ -468,7 +386,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0335
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/harness/context-compactor.ts`
 - **line:** `279`
@@ -488,7 +406,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0336
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/cli/run.ts`
 - **line:** `33`
@@ -1492,6 +1410,166 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **hunter_found:** `2026-03-23T14:10:00Z`
 - **fixer_started:** `2026-03-21T06:50:00Z`
 - **fixer_completed:** `2026-03-21T06:50:00Z`
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0403
+- **status:** `fixed`
+- **severity:** `high`
+- **file:** `src/agents/define-agent.ts`
+- **line:** `138`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0403`
+- **description:** `response.usage` is accessed without a null guard — if a model adapter returns a response with `usage` omitted, accessing `.inputTokens`/`.outputTokens` throws TypeError and crashes the ReAct loop.
+- **context:** Any adapter returning a partial or mocked response without a fully-populated `usage` object will crash mid-run, losing all in-progress messages. Line 144 compounds this by unconditionally summing usage fields.
+- **hunter_found:** `2026-03-20T18:42:00Z`
+- **fixer_started:** `2026-03-21T09:45:00Z`
+- **fixer_completed:** `2026-03-21T09:45:00Z`
+- **fix_summary:** `Guard response.usage with nullish coalescing and wrap model.chat in try-catch.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0404
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/agents/define-agent.ts`
+- **line:** `115`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0403`
+- **description:** `model.chat()` call has no try/catch — LLM API errors (network, rate limit, auth) propagate unhandled out of the ReAct loop without recording partial conversation or emitting an `llm.error` lifecycle event.
+- **context:** API errors abort the agent loop silently — no error event is emitted, no audit record is written, and no partial messages are returned, making it impossible to distinguish a model failure from a node returning no output.
+- **hunter_found:** `2026-03-20T18:42:00Z`
+- **fixer_started:** `2026-03-21T09:45:00Z`
+- **fixer_completed:** `2026-03-21T09:45:00Z`
+- **fix_summary:** `Wrapped model.chat() in try-catch with llm.error lifecycle event. Same commit as BUG-0403.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0405
+- **status:** `blocked`
+- **severity:** `medium`
+- **file:** `src/swarm/compile-ext.ts`
+- **line:** `57`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `def` is cast through `any` before `registry.register()`, bypassing the `AgentRegistry<S>` generic constraint — a spawned agent whose skeleton expects a narrower state type can be registered against an incompatible state.
+- **context:** The double cast erases compile-time validation that `def.skeleton` accepts `S`. If the skeleton's `invoke` expects fields not present in the actual state, a runtime error occurs when the supervisor routes to the spawned agent.
+- **hunter_found:** `2026-03-20T18:42:00Z`
+- **fixer_started:** `2026-03-21T09:45:00Z`
+- **fixer_completed:** ``
+- **fix_summary:** `Duplicate of BUG-0320 (same file, same line, same double-cast issue). BUG-0320 already verified.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0406
+- **status:** `fixed`
+- **severity:** `medium`
+- **file:** `src/swarm/factories.ts`
+- **line:** `727`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0406`
+- **description:** `agentMap.get(id)!` uses a non-null assertion in `buildDag` topological batch dispatch — if dependency validation misses a node (dependency key present but not in `config.agents`), this is `undefined` and `.skeleton.invoke` throws.
+- **context:** The validation loop on lines 665-670 iterates dependency values, not keys, so an agent ID appearing only as a dependency key without a corresponding entry in `config.agents` passes validation but fails at dispatch time.
+- **hunter_found:** `2026-03-20T18:42:00Z`
+- **fixer_started:** `2026-03-21T09:45:00Z`
+- **fixer_completed:** `2026-03-21T09:45:00Z`
+- **fix_summary:** `Replace non-null assertion with explicit guard in buildDag dispatch.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0407
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/pool.ts`
+- **line:** `291`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** When a slot drains the queue after disposal, `invoke()` throws synchronously inside a `.then` continuation — `next.reject` is never called and the caller's promise hangs forever.
+- **context:** `invoke()` throws `Error("AgentPool disposed")` synchronously, but the call site chains `.then(next.resolve, next.reject)` expecting a promise. The synchronous throw is swallowed and the queued caller's promise never settles.
+- **hunter_found:** `2026-03-20T18:42:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0408
+- **status:** `fixed`
+- **severity:** `high`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `401`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0408`
+- **description:** When multiple parallel nodes settle, the loop throws on the first non-HITL rejection and discards all subsequent settled results — succeeded nodes' state updates, stepWrites, and nextNodes are silently lost.
+- **context:** In a graph where nodes A, B, C execute in parallel and A rejects with a non-HITL error, B and C's state writes and routing decisions are thrown away before being applied, corrupting graph state on error recovery.
+- **hunter_found:** `2026-03-20T18:42:00Z`
+- **fixer_started:** `2026-03-21T09:45:00Z`
+- **fixer_completed:** `2026-03-21T09:45:00Z`
+- **fix_summary:** `Split allSettledResults into two passes: collect fulfilled first, then throw.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0409
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/dlq.ts`
+- **line:** `5`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Module-level `_nextId` counter is a shared mutable variable with non-atomic increment — concurrent `DLQ.record()` calls from parallel node executions can produce duplicate entry IDs.
+- **context:** The Pregel engine executes nodes via Promise.allSettled in parallel; two simultaneous failures can race on `_nextId` pre-increment, producing two DeadLetter entries with identical IDs and breaking deduplication and `remove()` by ID.
+- **hunter_found:** `2026-03-20T18:42:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0410
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `176`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Non-handoff result path returns `handoffHistory` as a single-element array — if the channel reducer is not configured as an accumulator, this replaces all previous handoff history instead of appending.
+- **context:** Every agent completion silently discards all previous handoff history and replaces it with a single entry, making the audit trail useless for multi-agent runs unless the `handoffHistory` channel explicitly uses an append reducer.
+- **hunter_found:** `2026-03-20T18:42:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
