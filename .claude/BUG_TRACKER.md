@@ -10,17 +10,17 @@
 | Key | Value |
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T09:32:48Z` (Cycle 36 — 5 failures all known cooldowns; no new regressions; test count stable at 1390) |
-| **Last Hunter Scan** | `2026-03-21T23:58:00Z` |
+| **Last Hunter Scan** | `2026-03-22T00:02:00Z` |
 | **Last Fixer Pass** | `2026-03-21T13:35:00Z` |
 | **Last Validator Pass** | `2026-03-21T08:32:14Z` |
 | **Last Digest Run** | `2026-03-21T23:59:00Z` |
-| **Last Security Scan** | `2026-03-21T12:30:00Z` |
+| **Last Security Scan** | `2026-03-21T06:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T16:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T23:59:00Z` (Cycle 247) |
-| **Last Supervisor Pass** | `2026-03-21T09:40:25Z` |
+| **Last TestGen Run** | `2026-03-21T17:00:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T08:30:00Z` (Cycle 248) |
+| **Last Supervisor Pass** | `2026-03-21T09:45:25Z` |
 | **Total Found** | `425` |
 | **Total Pending** | `14` |
 | **Total In Progress** | `0` |
@@ -1873,6 +1873,146 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T13:35:00Z`
 - **fixer_completed:** `2026-03-21T13:35:00Z`
 - **fix_summary:** `Set includeMarkdown based on requested formats array.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0429
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/harness/loop/index.ts`
+- **line:** `297`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `fireSessionEnd()` is called in the finally block without a try/catch, so a throwing session-end hook propagates out of the generator and masks the actual session outcome.
+- **context:** The finally block is the guaranteed cleanup path for every agent loop execution; a hook error here suppresses the real result and leaves callers' for-await-of loop in an unrecoverable error state with no actionable message.
+- **hunter_found:** `2026-03-22T00:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0430
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/harness/loop/index.ts`
+- **line:** `299`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `finalizeMemory()` is called without error handling in the finally block; the path-traversal guard inside `persistInternal` unconditionally throws on malformed sessionId, crashing out of the finally block.
+- **context:** Although the memory module's comment says "Must NOT throw", the path-traversal guard at line 261 of memory/index.ts does throw unconditionally. A malformed sessionId crashes the finally block and loses the session outcome event.
+- **hunter_found:** `2026-03-22T00:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0431
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/self-improvement/skill-evolver.ts`
+- **line:** `170`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The user-supplied `testFn` callback in `testSkillRevision()` is awaited without a try/catch, so any exception propagates uncaught and aborts the entire self-improvement cycle.
+- **context:** `testSkillRevision()` is a public API method expected to return an `ExperimentResult`; callers do not wrap it, so a throwing test function produces an unhandled promise rejection and halts the improvement loop.
+- **hunter_found:** `2026-03-22T00:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0432
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/models/openai.ts`
+- **line:** `452`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `embed()` function calls `res.json()` without a try/catch, so a malformed JSON body from the API throws an unhandled exception with no error context.
+- **context:** Unlike the chat() and stream() paths which have JSON parsing guards, embed() has no fallback; callers relying on embeddings for memory retrieval receive an unhandled rejection with no indication of which model or endpoint failed.
+- **hunter_found:** `2026-03-22T00:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0433
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/graph.ts`
+- **line:** `180`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The HITL `resume()` method validates a session then awaits `runner.invoke()` before calling `markResumed()`, creating a TOCTOU race where two concurrent resume() calls for the same resumeId both pass validation.
+- **context:** A duplicate resume() call during the first's async gap will both proceed past the guard, causing the node to execute twice with the human-provided value, potentially producing duplicate side-effects or corrupted state.
+- **hunter_found:** `2026-03-22T00:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0434
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/swarm/pool.ts`
+- **line:** `88`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `pickSlot()` reads `slot.activeTasks` to enforce maxConcurrency, but `activeTasks` is only incremented inside `runOnSlot()` after an async gap; concurrent `invoke()` calls can all receive the same slot before any increments the counter.
+- **context:** With maxConcurrency=1, N concurrent invoke() calls can all be dispatched to the same slot simultaneously, violating the per-slot concurrency limit and overwhelming the underlying agent.
+- **hunter_found:** `2026-03-22T00:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0435
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/swarm/scaling.ts`
+- **line:** `132`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `setCurrentAgentCount()` mutates `this.currentAgentCount` without coordination with `evaluate()`, which reads it mid-evaluation after already snapshotting the tracer timeline.
+- **context:** If `setCurrentAgentCount()` is called while `evaluate()` is in progress (e.g., from a tracer event callback during reactive mode), the scaling decision is computed with a mismatched agent count and timeline, potentially producing incorrect scale decisions.
+- **hunter_found:** `2026-03-22T00:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
