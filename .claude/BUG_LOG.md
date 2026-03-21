@@ -3005,3 +3005,339 @@
 - **archived:** `2026-03-22T00:25:00Z`
 
 ---
+
+### BUG-0383
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/swarm/snapshot.ts`
+- **line:** `98`
+- **category:** `logic-bug`
+- **description:** Cap check > allows transient MAX_SNAPSHOTS+1 entries.
+- **fix_summary:** `Change > to >= in snapshot cap check.`
+- **validator_notes:** `Confirmed on main: line 98 uses >=. Verified.`
+- **archived:** `2026-03-22T04:30:00Z`
+
+---
+
+### BUG-0388
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/stream-events.ts`
+- **line:** `36`
+- **category:** `logic-bug`
+- **description:** finalData undefined when no state_update emitted.
+- **fix_summary:** `Fall back to node_end data then {} when no state_update.`
+- **validator_notes:** `Confirmed on main: finalData ?? lastNodeData ?? {} at line 67. Verified.`
+- **archived:** `2026-03-22T04:30:00Z`
+
+---
+
+### BUG-0418
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/cli/build.ts`
+- **line:** `56`
+- **category:** `logic-bug`
+- **description:** null exit code treated as falsy success.
+- **fix_summary:** `Changed to exitCode !== 0 with ?? 1 fallback.`
+- **validator_notes:** `Confirmed on main: exitCode !== 0 at line 56, ?? 1 at line 58. Verified.`
+- **archived:** `2026-03-22T04:30:00Z`
+
+---
+
+### BUG-0421
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/store/index.ts`
+- **line:** `109`
+- **category:** `logic-bug`
+- **description:** isExpired returns false for ttl:0.
+- **fix_summary:** `Changed !item.ttl to item.ttl == null for nullish check.`
+- **validator_notes:** `Confirmed on main: item.ttl == null at line 110. ttl:0 now expires immediately. Verified.`
+- **archived:** `2026-03-22T04:30:00Z`
+
+---
+
+### BUG-0435
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/swarm/scaling.ts`
+- **line:** `132`
+- **category:** `race-condition`
+- **description:** setCurrentAgentCount() mutates mid-evaluation.
+- **fix_summary:** `Snapshot currentAgentCount at evaluate() start.`
+- **validator_notes:** `Confirmed on main: const agentCount = this.currentAgentCount at line 153, passed to checkScaleUp/Down. Verified.`
+- **archived:** `2026-03-22T04:30:00Z`
+
+---
+
+### BUG-0376
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/models/openai.ts`
+- **line:** `452`
+- **category:** `missing-error-handling`
+- **description:** embed() res.json() unhandled rejection.
+- **fix_summary:** `try-catch around res.json() in embed() with endpoint context.`
+- **validator_notes:** `Confirmed on main: try-catch at lines 452-457. Verified.`
+- **archived:** `2026-03-22T04:20:00Z`
+
+---
+
+### BUG-0377
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/models/ollama.ts`
+- **line:** `214`
+- **category:** `missing-error-handling`
+- **description:** chat() and embed() res.json() unhandled rejection.
+- **fix_summary:** `try-catch around res.json() in both chat() and embed().`
+- **validator_notes:** `Confirmed on main: chat() 214-221, embed() 309-316. Both wrapped. Verified.`
+- **archived:** `2026-03-22T04:20:00Z`
+
+---
+
+### BUG-0400
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/tools/src/browser/firecrawl.ts`
+- **line:** `40`
+- **category:** `security-config`
+- **description:** SSRF via unvalidated URLs to Firecrawl API.
+- **fix_summary:** `validateUrl() with scheme, IPv4 private range, IPv6 private range checks.`
+- **validator_notes:** `Confirmed on main: validateUrl() at line 88 before fetch. Scheme, localhost, IPv4 private, IPv6 ULA/link-local all blocked. Verified.`
+- **archived:** `2026-03-22T04:20:00Z`
+
+---
+
+### BUG-0415
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/store/index.ts`
+- **line:** `174`
+- **category:** `logic-bug`
+- **description:** Deleting from Map during for...of iteration.
+- **fix_summary:** `Collect expired keys in array, delete after iteration.`
+- **validator_notes:** `Confirmed on main: expired[] collects keys (177-184), second loop deletes (185-188). Verified.`
+- **archived:** `2026-03-22T04:20:00Z`
+
+---
+
+### BUG-0420
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/coordination/pubsub.ts`
+- **line:** `56`
+- **category:** `memory-leak`
+- **reopen_count:** `2`
+- **description:** Subscriber closures leak if unsubscribe never called.
+- **fix_summary:** `console.warn at >=100 subs/topic. No eviction. dispose() and empty-Set cleanup preserved.`
+- **validator_notes:** `Confirmed: set.size >= 100 check at lines 59-61. Handler still added unconditionally. dispose() at 90-93. Unsubscribe deletes handler + empty Set cleanup at 63-71. 1 source file changed (+5/-1). Merged to main. Verified.`
+- **archived:** `2026-03-22T04:20:00Z`
+
+---
+
+### BUG-0389
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/testing/index.ts`
+- **line:** `128`
+- **category:** `dead-code`
+- **reopen_count:** `0`
+- **description:** invocationCount write-only dead state in testing harness.
+- **hunter_found:** `2026-03-20T22:30:00Z`
+- **fixer_completed:** `2026-03-21T06:25:00Z`
+- **fix_summary:** `Remove write-only invocationCount dead code.`
+- **validator_started:** `2026-03-22T04:10:00Z`
+- **validator_completed:** `2026-03-22T04:12:00Z`
+- **validator_notes:** `Confirmed on main: invocationCount absent from testing/index.ts. Verified.`
+- **archived:** `2026-03-22T04:12:00Z`
+
+---
+
+### BUG-0390
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/checkpointers/namespaced.ts`
+- **line:** `17`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **description:** prefix key has inverted ordering (threadId:ns instead of ns:threadId).
+- **hunter_found:** `2026-03-20T22:30:00Z`
+- **fixer_completed:** `2026-03-21T06:25:00Z`
+- **fix_summary:** `Swap namespace to leading segment.`
+- **validator_started:** `2026-03-22T04:10:00Z`
+- **validator_completed:** `2026-03-22T04:12:00Z`
+- **validator_notes:** `Confirmed on main: ${ns}:${threadId} at line 17. Namespace first. Verified.`
+- **archived:** `2026-03-22T04:12:00Z`
+
+---
+
+### BUG-0410
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `176`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **description:** handoffHistory returned as single-element array instead of accumulating.
+- **hunter_found:** `2026-03-20T18:42:00Z`
+- **fixer_completed:** `2026-03-21T10:05:00Z`
+- **fix_summary:** `Spread state.handoffHistory before new entry.`
+- **validator_started:** `2026-03-22T04:10:00Z`
+- **validator_completed:** `2026-03-22T04:12:00Z`
+- **validator_notes:** `Confirmed on main: ...(state.handoffHistory ?? []) at line 177. Accumulates history. Verified.`
+- **archived:** `2026-03-22T04:12:00Z`
+
+---
+
+### BUG-0452
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/pregel/checkpointing.ts`
+- **line:** `51`
+- **category:** `race-condition`
+- **reopen_count:** `1`
+- **description:** updateState() non-atomic read-modify-write, concurrent calls clobber writes.
+- **hunter_found:** `2026-03-22T00:10:00Z`
+- **fixer_completed:** `2026-03-21T13:48:21Z`
+- **fix_summary:** `withThreadLock wraps updateState/getState/forkFrom. Shared lock with self-cleanup.`
+- **validator_started:** `2026-03-22T04:10:00Z`
+- **validator_completed:** `2026-03-22T04:12:00Z`
+- **validator_notes:** `Confirmed on main: withThreadLock at line 72 wraps updateState. Shared _threadLocks map, identity-check cleanup. getState (60) and forkFrom (106) use same lock. Verified.`
+- **archived:** `2026-03-22T04:12:00Z`
+
+---
+
+### BUG-0378
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/swarm/pool.ts`
+- **line:** `261`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0378`
+- **description:** Retry delay setTimeout not cancellable on dispose().
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_completed:** `2026-03-21T06:15:00Z`
+- **fix_summary:** `_retryTimers Set tracks timers, cleared on dispose().`
+- **validator_started:** `2026-03-22T04:00:00Z`
+- **validator_completed:** `2026-03-22T04:02:00Z`
+- **validator_notes:** `Confirmed on main: _retryTimers Set at line 49. Timer added+self-removed (264-267). dispose() clears all (78-79). Verified.`
+- **archived:** `2026-03-22T04:02:00Z`
+
+---
+
+### BUG-0379
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `198`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0379`
+- **description:** Retry delay setTimeout not cancellable on swarm teardown.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_completed:** `2026-03-21T06:25:00Z`
+- **fix_summary:** `AbortSignal-cancellable timer via config?.signal.`
+- **validator_started:** `2026-03-22T04:00:00Z`
+- **validator_completed:** `2026-03-22T04:02:00Z`
+- **validator_notes:** `Confirmed on main: AbortSignal timer (199-211). All critical code preserved: markError, __pendingHandoff, hooks try-catch, handoffHistory spread. Verified.`
+- **archived:** `2026-03-22T04:02:00Z`
+
+---
+
+### BUG-0457
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/checkpointers/redis.ts`
+- **line:** `155`
+- **category:** `race-condition`
+- **reopen_count:** `2`
+- **branch:** `bugfix/BUG-0457`
+- **description:** delete() non-atomic zrange + del operations.
+- **hunter_found:** `2026-03-22T00:10:00Z`
+- **fixer_completed:** `2026-03-21T13:29:20Z`
+- **fix_summary:** `Single atomic del(idxKey, ...dataKeys). Only redis.ts changed.`
+- **validator_started:** `2026-03-22T04:00:00Z`
+- **validator_completed:** `2026-03-22T04:02:00Z`
+- **validator_notes:** `Confirmed on main (commit 2c5f74d): single del() call. 1 file, +5/-5. PUT_SCRIPT untouched. Verified.`
+- **archived:** `2026-03-22T04:02:00Z`
+
+---
+
+### BUG-0295
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/errors.ts`
+- **line:** `58`
+- **category:** `information-disclosure`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0295`
+- **description:** toJSON() leaks stack traces; should only be in toInternalJSON().
+- **hunter_found:** `2026-03-20T13:00:00Z`
+- **fixer_completed:** `2026-03-21T05:22:00Z`
+- **fix_summary:** `Removed stack from toJSON(). Stack only in toInternalJSON().`
+- **validator_started:** `2026-03-22T03:50:00Z`
+- **validator_completed:** `2026-03-22T03:52:00Z`
+- **validator_notes:** `Confirmed on main: toJSON() omits stack, toInternalJSON() includes stack. Verified.`
+- **archived:** `2026-03-22T03:52:00Z`
+
+---
+
+### BUG-0355
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/stores/src/redis/index.ts`
+- **line:** `191`
+- **category:** `missing-error-handling`
+- **reopen_count:** `2`
+- **branch:** `bugfix/BUG-0355`
+- **description:** Three void this.client.zrem() calls in list() fire as floating promises with no error handling.
+- **hunter_found:** `2026-03-20T22:34:00Z`
+- **fixer_completed:** `2026-03-21T13:29:20Z`
+- **fix_summary:** `.catch(() => {}) added to all 3 zrem() calls. eval preserved. 1 file only.`
+- **validator_started:** `2026-03-22T03:50:00Z`
+- **validator_completed:** `2026-03-22T03:52:00Z`
+- **validator_notes:** `Confirmed on branch: all 3 zrem() calls have .catch(). 1 file changed (+3/-3). eval untouched. Verified.`
+- **archived:** `2026-03-22T03:52:00Z`
+
+---
+
+### BUG-0357
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `packages/stores/src/postgres/index.ts`
+- **line:** `125`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0357`
+- **description:** Floating DELETE promise in PostgresStore.get() has no error handling.
+- **hunter_found:** `2026-03-20T22:34:00Z`
+- **fixer_completed:** `2026-03-21T05:12:00Z`
+- **fix_summary:** `.catch() on floating DELETE in get().`
+- **validator_started:** `2026-03-22T03:50:00Z`
+- **validator_completed:** `2026-03-22T03:52:00Z`
+- **validator_notes:** `Confirmed on main: .catch(err => console.error(...)) on DELETE at line 125. Verified.`
+- **archived:** `2026-03-22T03:52:00Z`
+
+---
+
+### BUG-0450
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/loaders/src/loaders/json.ts`
+- **line:** `10`
+- **category:** `missing-error-handling`
+- **reopen_count:** `2`
+- **branch:** `bugfix/BUG-0450`
+- **description:** readFile call has no try/catch.
+- **hunter_found:** `2026-03-21T17:45:00Z`
+- **fixer_completed:** `2026-03-21T13:40:35Z`
+- **fix_summary:** `readFile try-catch added. JSON.parse and JSONL guards preserved.`
+- **validator_started:** `2026-03-22T03:50:00Z`
+- **validator_completed:** `2026-03-22T03:52:00Z`
+- **validator_notes:** `Confirmed on main: readFile try-catch (11-16), JSONL per-line try-catch (22-30), JSON.parse try-catch (36-40). All 3 coexist. Verified.`
+- **archived:** `2026-03-22T03:52:00Z`
+
+---
