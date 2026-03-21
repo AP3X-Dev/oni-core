@@ -38,7 +38,14 @@ export function adaptActivePiece(
     schema: propsToJsonSchema(action.props),
     parallelSafe: isReadOnly(action.name),
     execute: async (input: Record<string, unknown>, ctx: unknown) => {
-      const auth = await authResolver.resolve(action.auth, ctx);
+      let auth: unknown;
+      try {
+        auth = await authResolver.resolve(action.auth, ctx);
+      } catch (err) {
+        throw new Error(
+          `Failed to resolve credentials for tool "${action.name}": ${(err as Error).message}`,
+        );
+      }
       return action.run({
         auth,
         propsValue: input,
