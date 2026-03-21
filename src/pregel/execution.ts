@@ -10,7 +10,7 @@ import { CircuitBreaker } from "../circuit-breaker.js";
 import { withRetry } from "../retry.js";
 import { _runWithContext, type RunContext, type StreamWriter } from "../context.js";
 import {
-  NodeInterruptSignal, _installInterruptContext, _clearInterruptContext,
+  NodeInterruptSignal, _installInterruptContext,
 } from "../hitl/index.js";
 import { runFilters } from "../guardrails/filters.js";
 import type { AuditEntry } from "../guardrails/types.js";
@@ -85,12 +85,10 @@ export async function executeNode<S extends Record<string, unknown>>(
   };
 
   return _runWithContext(runCtx, async () => {
-    _installInterruptContext({
+    return _installInterruptContext({
       nodeName:     nodeDef.name,
       resumeValues: hasResume ? [resumeValue] : [],
-    });
-
-    try {
+    }, async () => {
       // Content filter — input direction
       if (ctx.contentFilters.length > 0) {
         const inputStr = JSON.stringify(state);
@@ -196,8 +194,6 @@ export async function executeNode<S extends Record<string, unknown>>(
       }
 
       return result;
-    } finally {
-      _clearInterruptContext();
-    }
+    });
   });
 }
