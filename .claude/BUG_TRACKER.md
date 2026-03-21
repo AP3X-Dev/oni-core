@@ -14,12 +14,12 @@
 | **Last Fixer Pass** | `2026-03-21T11:15:00Z` |
 | **Last Validator Pass** | `2026-03-21T06:43:59Z` |
 | **Last Digest Run** | `2026-03-21T06:41:21Z` |
-| **Last Security Scan** | `2026-03-21T07:35:00Z` |
+| **Last Security Scan** | `2026-03-21T09:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T23:45:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T01:30:00Z` (Cycle 238) |
+| **Last Git Manager Pass** | `2026-03-21T08:01:01Z` (Cycle 240) |
 | **Last Supervisor Pass** | `2026-03-21T08:00:36Z` |
 | **Total Found** | `419` |
 | **Total Pending** | `8` |
@@ -508,22 +508,24 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0343
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `low`
 - **file:** `src/harness/safety-gate.ts`
 - **line:** `86`
 - **category:** `memory-leak`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0343-0344`
 - **description:** When `responsePromise` rejects before the timeout fires, the catch block returns `FALLBACK_RESULT` without calling `clearTimeout(timeoutHandle)`, leaving a dangling timer.
 - **context:** Same uncleaned timeout pattern as BUG-0031 (inference.ts) and BUG-0018 (experimental-executor.ts).
 - **hunter_found:** `2026-03-20T22:24:00Z`
 - **fixer_started:** `2026-03-21T05:12:00Z`
 - **fixer_completed:** `2026-03-21T05:12:00Z`
-- **fix_summary:** `Safety gate fix.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fix_summary:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **validator_started:** `2026-03-21T07:50:00Z`
+- **validator_completed:** `2026-03-21T08:03:29Z`
+- **validator_notes:** `REOPENED: Branch bugfix/BUG-0343-0344 does not exist. Bug confirmed on main — clearTimeout at line 92 is inside try after await, skipped when responsePromise rejects. Catch block returns FALLBACK_RESULT without clearTimeout. Fixer must: add clearTimeout in catch (or use finally).`
 
 ---
 
@@ -588,7 +590,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0347
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `packages/stores/src/postgres/index.ts`
 - **line:** `77`
