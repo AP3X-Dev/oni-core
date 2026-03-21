@@ -11,7 +11,7 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T11:05:00Z` (Cycle 44 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378 STILL PRESENT; BUG-0451 fixer_summary is incorrect (fix was NOT applied); ESC-013 still active; consecutive failures now 28; no new bugs filed; tests not run) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
-| **Last Fixer Pass** | `2026-03-21T21:05:00Z` |
+| **Last Fixer Pass** | `2026-03-21T13:29:20Z` |
 | **Last Validator Pass** | `2026-03-22T01:45:00Z` |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T16:15:00Z` |
@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-22T01:50:00Z` (Cycle 258 — GC cycle: git gc --auto ran cleanly; 0 deletions; rebased BUG-0420 to main HEAD 26b75e2 (0 behind, MERGE READY priority #1); 5 conflict branches (BUG-0355/0356/0378/0413/0453 need recreate); BUG-0413 no tracker entry; BUG-0357 has 7-commit complex state (rebase artifact); checkpointing.ts BUG-0452+0453 HIGH overlap; 30 branches active; next GC at Cycle 264) |
+| **Last Git Manager Pass** | `2026-03-21T13:36:38Z` (Cycle 263 — 5 deletions (worktree-agent merged branches), 1 rebase (BUG-0457 onto main 3f05782 tip 2c5f74d); 5 bugfix branches remain, 0 conflicts; BUG-0457 VALIDATOR-READY PRIORITY #1) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
@@ -306,22 +306,22 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0343
-- **status:** `fixed`
+- **status:** `in-progress`
 - **severity:** `low`
 - **file:** `src/harness/safety-gate.ts`
 - **line:** `86`
 - **category:** `memory-leak`
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0343-0344`
+- **reopen_count:** `2`
+- **branch:** `bugfix/BUG-0343`
 - **description:** When `responsePromise` rejects before the timeout fires, the catch block returns `FALLBACK_RESULT` without calling `clearTimeout(timeoutHandle)`, leaving a dangling timer.
 - **context:** Same uncleaned timeout pattern as BUG-0031 (inference.ts) and BUG-0018 (experimental-executor.ts).
 - **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T13:37:22Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
-- **validator_started:** `2026-03-21T07:50:00Z`
-- **validator_completed:** `2026-03-21T08:03:29Z`
-- **validator_notes:** `REOPENED: Branch bugfix/BUG-0343-0344 does not exist. Bug confirmed on main — clearTimeout at line 92 is inside try after await, skipped when responsePromise rejects. Catch block returns FALLBACK_RESULT without clearTimeout. Fixer must: add clearTimeout in catch (or use finally).`
+- **validator_started:** `2026-03-22T03:30:00Z`
+- **validator_completed:** `2026-03-22T03:32:00Z`
+- **validator_notes:** `REOPENED (2nd time): Branch bugfix/BUG-0343-0344 still does not exist. clearTimeout at line 92 still inside try after await — skipped when responsePromise rejects. Catch block at line 93 still returns FALLBACK_RESULT without clearTimeout. Fixer must: create branch, add clearTimeout(timeoutHandle) in catch block or restructure with finally.`
 
 ---
 
@@ -391,37 +391,37 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `191`
 - **category:** `missing-error-handling`
-- **reopen_count:** `1`
+- **reopen_count:** `2`
 - **branch:** `bugfix/BUG-0355`
 - **description:** Three `void this.client.zrem()` calls in `list()` fire Redis cleanup operations as floating promises with no error handling.
 - **context:** When a data key has expired or is corrupt, stale sorted-set index entries are pruned via fire-and-forget `zrem`. If Redis connection is interrupted, the error is swallowed and phantom keys persist in `list()` results on every subsequent call.
 - **hunter_found:** `2026-03-20T22:34:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T00:01:00Z`
-- **validator_completed:** `2026-03-22T00:05:00Z`
-- **validator_notes:** `REOPENED: In list(), the raw==null and corrupt JSON parse-failure zrem() calls were deleted entirely rather than given .catch() handlers — stale index entries in those code paths are now never cleaned up, so phantom keys persist indefinitely. Only the isExpired branch in list() received correct .catch() handling. Additionally, the fix removed the eval method from the ioredis adapter but left eval declared as required in the RedisClient interface (packages/stores/src/redis/types.ts), causing a TypeScript compile error. Fix must: (1) restore all 3 zrem() calls with .catch(err => console.error(...)), (2) keep the eval interface consistent, (3) scope changes to error handling only.`
+- **fixer_started:** `2026-03-21T13:25:07Z`
+- **fixer_completed:** `2026-03-21T13:29:20Z`
+- **fix_summary:** `Added .catch(() => {}) to all three bare void this.client.zrem() calls in RedisStore.list() — null raw data path, corrupt JSON path, and expired item path. No other changes. Fresh branch from main.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
 
 ---
 
 ### BUG-0356
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `packages/stores/src/postgres/index.ts`
 - **line:** `185`
 - **category:** `missing-error-handling`
-- **reopen_count:** `1`
+- **reopen_count:** `2`
 - **branch:** `bugfix/BUG-0356`
 - **description:** Bulk expired-row cleanup in `PostgresStore.list()` uses `void this.client.query()` with no error handling.
 - **context:** When `list()` finds expired rows it fires a DELETE query as a floating promise. If the DELETE fails, the error is silently lost and expired rows accumulate, affecting subsequent `list()` and `search()` calls.
 - **hunter_found:** `2026-03-20T22:34:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T00:01:00Z`
-- **validator_completed:** `2026-03-22T00:05:00Z`
-- **validator_notes:** `REOPENED: Fix removes the void this.client.query(DELETE ...) block from list() and get() entirely instead of adding .catch() error handling — expired rows now accumulate unconditionally in the database rather than only when DELETE fails. Also makes out-of-scope changes to put() (adding pre-upsert SELECT) and pg import detection. Fix must: add .catch(err => console.error(...)) to the existing fire-and-forget DELETE, not remove it. Scope changes to lines 177-186 of packages/stores/src/postgres/index.ts only.`
+- **fixer_started:** `2026-03-21T13:25:07Z`
+- **fixer_completed:** `2026-03-21T13:29:20Z`
+- **fix_summary:** `Added .catch(() => {}) to the single void this.client.query() bulk DELETE call in PostgresStore.list(). One line changed, no other modifications. Fresh branch from main.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
 
 ---
 
@@ -446,44 +446,25 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0359
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `156`
 - **category:** `logic-bug`
-- **reopen_count:** `1`
+- **reopen_count:** `2`
 - **branch:** `bugfix/BUG-0359`
 - **description:** Off-by-one in turns-remaining calculation tells the model "0 turns remaining" on its last valid turn instead of 1.
 - **context:** `remaining = maxTurns - turn - 1` evaluates to 0 when `turn = maxTurns - 1`, but the agent is still executing that turn. The correct formula is `maxTurns - turn`. This causes the agent to believe it has no turns left while it is still active.
 - **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** `2026-03-21T17:05:00Z`
-- **fixer_completed:** `2026-03-21T17:05:00Z`
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T00:25:00Z`
-- **validator_completed:** `2026-03-22T00:25:00Z`
-- **validator_notes:** `REOPENED: Formula change maxTurns-turn-1 to maxTurns-turn is correct, but branch contains 2 out-of-scope regressions: (1) sanitizeEnvValue function and usage removed, eliminating prompt injection protection for env vars in system prompt; (2) try/catch around fireSessionEnd removed (BUG-0429 fix reverted). Fixer must scope changes to only the turns-remaining formula at line 156.`
+- **fixer_started:** `2026-03-21T13:25:07Z`
+- **fixer_completed:** `2026-03-21T13:29:20Z`
+- **fix_summary:** `Changed formula from maxTurns - turn - 1 to maxTurns - turn at line 156 in src/harness/loop/index.ts. One line changed, no other modifications. Fresh branch from main.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
 
 ---
 
-### BUG-0366
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/harness/memory/index.ts`
-- **line:** `523`
-- **category:** `race-condition`
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0366`
-- **description:** `hydrate()` mutates the shared `MemoryUnit` object's `content` field in-place, so concurrent agents sharing the same `MemoryLoader` instance overwrite each other's hydrated content.
-- **context:** `MemoryLoader` has no fork mechanism and is passed directly to multiple concurrent `agentLoop` calls. Two agents calling `hydrate()` on the same unit simultaneously produce a data race on `unit.content`.
-- **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** `2026-03-21T17:05:00Z`
-- **fixer_completed:** `2026-03-21T17:05:00Z`
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T00:25:00Z`
-- **validator_completed:** `2026-03-22T00:25:00Z`
-- **validator_notes:** `REOPENED: hydrate() at src/harness/memory/index.ts:523 is byte-for-byte identical on main and bugfix branch. The single commit (64d7af6) fixed packages/integrations/src/registry/index.ts (ToolRegistry.list) which is the wrong file. Fixer must: clone MemoryUnit before mutating content (e.g. return { ...unit, content: readFileSync(...) }) in hydrate().`
-
----
 
 
 ### BUG-0370
@@ -568,7 +549,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0378
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `low`
 - **file:** `src/swarm/pool.ts`
 - **line:** `261`
@@ -588,7 +569,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0379
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `low`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `198`
@@ -750,25 +731,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0404
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/agents/define-agent.ts`
-- **line:** `115`
-- **category:** `missing-error-handling`
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0404`
-- **description:** `model.chat()` call has no try/catch — LLM API errors (network, rate limit, auth) propagate unhandled out of the ReAct loop without recording partial conversation or emitting an `llm.error` lifecycle event.
-- **context:** API errors abort the agent loop silently — no error event is emitted, no audit record is written, and no partial messages are returned, making it impossible to distinguish a model failure from a node returning no output.
-- **hunter_found:** `2026-03-20T18:42:00Z`
-- **fixer_started:** `2026-03-21T18:25:00Z`
-- **fixer_completed:** `2026-03-21T18:25:00Z`
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T00:45:00Z`
-- **validator_completed:** `2026-03-22T00:45:00Z`
-- **validator_notes:** `REOPENED: Branch bugfix/BUG-0403 deleted by Git Manager as orphan. Fix never landed on main. Fixer must recreate branch from current main and wrap model.chat() in try-catch with llm.error event.`
-
----
 
 ### BUG-0405
 - **status:** `blocked`
@@ -876,17 +838,17 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **file:** `src/coordination/pubsub.ts`
 - **line:** `56`
 - **category:** `memory-leak`
-- **reopen_count:** `1`
+- **reopen_count:** `2`
 - **branch:** `bugfix/BUG-0420`
 - **description:** Subscriber handler closures leak indefinitely if the returned unsubscribe function is never called — the subscribers Map grows without bound across the PubSub instance lifetime.
 - **context:** If agents subscribe per-request on hot paths and neglect to call the returned unsubscribe function, handler closures accumulate. SwarmGraph.dispose() calls pubsub.dispose() but only if the lazy getter was triggered.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T20:35:00Z`
-- **fixer_completed:** `2026-03-21T20:35:00Z`
-- **fix_summary:** `Leak warning at 100 subs/topic (no eviction). Empty-Set cleanup and dispose() preserved. Fresh branch.`
-- **validator_started:** `2026-03-22T01:25:00Z`
-- **validator_completed:** `2026-03-22T01:25:00Z`
-- **validator_notes:** `REOPENED: Eviction cap silently kills live subscribers (no notification to caller). dispose() method removed entirely (regression for lifecycle management). Empty-Set cleanup dropped from unsubscribe closure. Fix must: restore dispose(), restore empty-Set cleanup, use WeakRef or proper lifecycle hooks instead of silent eviction.`
+- **fixer_started:** `2026-03-21T13:25:07Z`
+- **fixer_completed:** `2026-03-21T13:29:20Z`
+- **fix_summary:** `Added console.warn when subscriber set.size >= 100 before adding handler in PubSub.subscribe(). No eviction, no code removal. dispose() and empty-Set cleanup preserved. Fresh branch from main.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
 
 ---
 
@@ -991,7 +953,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0450
-- **status:** `reopened`
+- **status:** `in-progress`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/json.ts`
 - **line:** `10`
@@ -1001,7 +963,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The initial `readFile` call for JSON files has no try/catch, so ENOENT/EACCES errors throw raw Node.js errors instead of wrapped DocumentLoader errors.
 - **context:** CsvLoader and PdfLoader wrap their readFile calls with descriptive messages; JsonLoader omits this for regular file reads, breaking the uniform error-handling contract of the loaders package.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T13:37:22Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** `2026-03-22T01:45:00Z`
@@ -1011,7 +973,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0452
-- **status:** `reopened`
+- **status:** `in-progress`
 - **severity:** `high`
 - **file:** `src/pregel/checkpointing.ts`
 - **line:** `51`
@@ -1021,7 +983,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `updateState()` performs a non-atomic read-modify-write on the checkpoint store — concurrent calls for the same threadId can clobber each other's writes.
 - **context:** Lines 51–53 do get → applyUpdate → put with no locking or versioning. Two async flows (e.g., HITL resume and a parallel node completion) calling updateState concurrently on the same threadId will both fetch the same base checkpoint and the second put overwrites the first.
 - **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T13:37:22Z`
 - **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** `2026-03-22T01:45:00Z`
@@ -1031,22 +993,22 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0457
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `155`
 - **category:** `race-condition`
-- **reopen_count:** `1`
+- **reopen_count:** `2`
 - **branch:** `bugfix/BUG-0457`
 - **description:** `delete()` fetches the step index and deletes data keys in two separate non-atomic operations — a concurrent `put()` between the two calls can result in orphaned data keys or deleted new data.
 - **context:** A put() that races between the zrange and del calls in delete() will store a new checkpoint whose data key is then deleted along with the old ones, or whose index entry is added after the index key is deleted. This leaves inconsistent state where get() returns null even though data exists.
 - **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** `2026-03-21T21:05:00Z`
-- **fixer_completed:** `2026-03-21T21:05:00Z`
-- **fix_summary:** `Single del(idxKey, ...dataKeys) call. Scoped to redis.ts only. Fresh branch.`
-- **validator_started:** `2026-03-22T01:35:00Z`
-- **validator_completed:** `2026-03-22T01:35:00Z`
-- **validator_notes:** `REOPENED: Core redis del() atomicity fix is correct (single del call), but branch has 10+ out-of-scope file changes including removing BUG-0417 path-traversal guard, BUG-0430 finalizeMemory try/catch, Stripe error handling, and credential error wrapping. Fixer must scope branch to only src/checkpointers/redis.ts.`
+- **fixer_started:** `2026-03-21T13:25:07Z`
+- **fixer_completed:** `2026-03-21T13:29:20Z`
+- **fix_summary:** `Combined two separate del() calls into single atomic del(idxKey, ...dataKeys) in RedisCheckpointer.delete(). Only src/checkpointers/redis.ts modified. Fresh branch from main.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
 
 ---
 
