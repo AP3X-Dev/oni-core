@@ -28,22 +28,27 @@ export class SqliteCheckpointer<S> implements ONICheckpointer<S> {
       throw new Error("SqliteCheckpointer requires: npm install better-sqlite3");
     }
     const db = new DB(dbPath);
-    db.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;");
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS oni_checkpoints (
-        thread_id     TEXT    NOT NULL,
-        step          INTEGER NOT NULL,
-        agent_id      TEXT,
-        state         TEXT    NOT NULL,
-        next_nodes    TEXT    NOT NULL,
-        pending_sends  TEXT    NOT NULL DEFAULT '[]',
-        metadata       TEXT    DEFAULT NULL,
-        pending_writes TEXT    DEFAULT NULL,
-        timestamp      INTEGER NOT NULL,
-        PRIMARY KEY (thread_id, step)
-      );
-      CREATE INDEX IF NOT EXISTS idx_thread ON oni_checkpoints (thread_id);
-    `);
+    try {
+      db.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;");
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS oni_checkpoints (
+          thread_id     TEXT    NOT NULL,
+          step          INTEGER NOT NULL,
+          agent_id      TEXT,
+          state         TEXT    NOT NULL,
+          next_nodes    TEXT    NOT NULL,
+          pending_sends  TEXT    NOT NULL DEFAULT '[]',
+          metadata       TEXT    DEFAULT NULL,
+          pending_writes TEXT    DEFAULT NULL,
+          timestamp      INTEGER NOT NULL,
+          PRIMARY KEY (thread_id, step)
+        );
+        CREATE INDEX IF NOT EXISTS idx_thread ON oni_checkpoints (thread_id);
+      `);
+    } catch (err) {
+      db.close();
+      throw err;
+    }
     return new SqliteCheckpointer<S>(db);
   }
 
