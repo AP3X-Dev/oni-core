@@ -14,13 +14,13 @@
 | **Last Fixer Pass** | `2026-03-21T15:05:00Z` |
 | **Last Validator Pass** | `2026-03-22T00:06:00Z` |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
-| **Last Security Scan** | `2026-03-21T13:30:00Z` |
+| **Last Security Scan** | `2026-03-21T13:45:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-22T00:10:00Z` |
+| **Last TestGen Run** | `2026-03-21T03:01:38Z` |
 | **Last Git Manager Pass** | `2026-03-21T09:54:09Z` (Cycle 249 — deleted BUG-0429/BUG-0342, rebased BUG-0295 to main HEAD) |
-| **Last Supervisor Pass** | `2026-03-21T09:55:25Z` |
+| **Last Supervisor Pass** | `2026-03-21T10:00:25Z` |
 | **Total Found** | `425` |
 | **Total Pending** | `2` |
 | **Total In Progress** | `0` |
@@ -1898,7 +1898,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0433
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/graph.ts`
 - **line:** `180`
@@ -1918,7 +1918,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0434
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/swarm/pool.ts`
 - **line:** `88`

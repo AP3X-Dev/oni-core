@@ -2180,6 +2180,9 @@
 - **fix_summary:** `Extract rawCtx, filter __-prefixed keys into safeCtx, spread safeCtx. +6/-2.`
 - **validator_notes:** `Verified. +6/-2 diff. All existing guards intact (onStart/onComplete/onError try/catch, handoff validation). tsc clean.`
 - **archived:** `2026-03-21T05:53:04Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/agent-node-context-privilege-leak.test.ts`
+- **test_notes:** `3 cases: __-prefixed keys filtered, normal keys preserved, __consumedMsgIds runtime-derived. 1/3 fail on main (fix unmerged). Tests will pass once bugfix/BUG-0399 is merged.`
 
 ---
 
@@ -2490,5 +2493,68 @@
 - **archived:** `2026-03-21T08:32:14Z`
 - **test_generated:** `true`
 - **test_file:** `src/__tests__/swarm/skill-evolver-splice-race.test.ts`
+
+---
+
+### BUG-0342
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/harness/memory/scanner.ts`
+- **line:** `164`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0342`
+- **description:** `scanDirectory` skips all files named `"INDEX.md"` at every level, but `inferTierFromPath` explicitly handles `semantic/topics/INDEX.md` as tier 2 — the scanner and tier inferrer are inconsistent, so INDEX.md memory units are never registered.
+- **context:** Tier-2 semantic topic indexes are silently missing from the memory loader's unit map, making semantic memory queries incomplete.
+- **hunter_found:** `2026-03-20T22:24:00Z`
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Scanner fix.`
+- **validator_started:** `2026-03-21T14:04:00Z`
+- **validator_completed:** `2026-03-22T00:05:00Z`
+- **validator_notes:** `Confirmed fix narrows INDEX.md skip guard from unconditional to root-only (entry.name === "INDEX.md" && relDir === ""), matching inferTierFromPath tier-2 handling. Change is minimal (3 lines), tsc --noEmit passes, no callers affected. Verified.`
+- **archived:** `2026-03-22T00:06:00Z`
+
+---
+
+### BUG-0425
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/mcp/transport.ts`
+- **line:** `124`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0425`
+- **description:** If the MCP server process exits cleanly (non-zero code, no `error` event) before `_doStart` resolves, `connected = true` is set on a dead process because the `exit` handler does not reject the spawn Promise.
+- **context:** Subsequent `send()` calls fail with stdin write errors rather than a clear connection error. The spawn timeout (up to 10s) is the only thing that eventually surfaces the failure, delaying error detection significantly.
+- **hunter_found:** `2026-03-21T23:58:00Z`
+- **fixer_started:** `2026-03-21T13:35:00Z`
+- **fixer_completed:** `2026-03-21T13:35:00Z`
+- **fix_summary:** `Reject spawn Promise on early exit + consume stderr to prevent pipe block.`
+- **validator_started:** `2026-03-21T14:04:00Z`
+- **validator_completed:** `2026-03-22T00:05:00Z`
+- **validator_notes:** `Confirmed settle() one-shot guard in _doStart prevents double-resolve/reject races. Exit handler now calls settle(() => reject(exitMsg)) so spawn Promise rejects on early process death. All resolution paths (timer, error, exit, success) go through settle. Fix commit ee575a9 changes only transport.ts (33+/10-). Branch needs rebasing (718 commits behind main) but fix is structurally sound. Verified.`
+- **archived:** `2026-03-22T00:06:00Z`
+
+---
+
+### BUG-0426
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/mcp/transport.ts`
+- **line:** `95`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0425`
+- **description:** Child process stderr is piped but never consumed — no `data` handler is attached to `this.process.stderr`.
+- **context:** If the MCP server writes enough to stderr (startup errors, crash traces), the pipe buffer fills and the child process blocks indefinitely, causing the spawn timeout to fire instead of a meaningful error.
+- **hunter_found:** `2026-03-21T23:58:00Z`
+- **fixer_started:** `2026-03-21T13:35:00Z`
+- **fixer_completed:** `2026-03-21T13:35:00Z`
+- **fix_summary:** `Added stderr data handler. Same commit as BUG-0425.`
+- **validator_started:** `2026-03-22T00:05:00Z`
+- **validator_completed:** `2026-03-22T00:05:00Z`
+- **validator_notes:** `Confirmed stderr data handler added at line 141-145 on bugfix branch. No-op handler drains pipe buffer preventing backpressure stall. Same commit as BUG-0425 (ee575a9). No regressions. Verified.`
+- **archived:** `2026-03-22T00:06:00Z`
 
 ---
