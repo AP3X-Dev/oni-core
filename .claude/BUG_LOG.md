@@ -1955,3 +1955,118 @@
 - **test_file:** `src/__tests__/compactor-fallback-oversized-first-msg.test.ts`
 
 ---
+
+### BUG-0327
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/graph.ts`
+- **line:** `53`
+- **category:** `memory-leak`
+- **reopen_count:** `1`
+- **branch:** `bugfix/BUG-0327`
+- **description:** SwarmGraph lazily creates a RequestReplyBroker (with active setTimeout handles) and PubSub but exposes no dispose method, so discarding the graph leaks timer handles and subscriber maps indefinitely.
+- **context:** In long-running processes that create and discard swarm graphs, timer handles accumulate and prevent GC of the entire graph closure.
+- **hunter_found:** `2026-03-20T22:12:00Z`
+- **fixer_started:** `2026-03-21T04:42:00Z`
+- **fixer_completed:** `2026-03-21T04:42:00Z`
+- **fix_summary:** `Added dispose() to SwarmGraph calling broker.dispose() and pubsub.dispose(). Added dispose() to PubSub clearing subscribers and buffer. Nulled references for GC.`
+- **validator_started:** `2026-03-21T04:35:31Z`
+- **validator_completed:** `2026-03-21T04:39:25Z`
+- **validator_notes:** `Verified on bugfix/BUG-0327. SwarmGraph.dispose() calls broker.dispose() and pubsub.dispose(), nulls both refs. PubSub.dispose() clears subscribers map and buffer array. RequestReplyBroker.dispose() clears all setTimeout handles. tsc --noEmit clean.`
+- **archived:** `2026-03-21T04:39:25Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/swarmgraph-dispose.test.ts`
+
+---
+
+### BUG-0338
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/mailbox.ts`
+- **line:** `44`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** `main`
+- **description:** `formatInbox()` renders `m.from` and `m.content` from swarm messages directly into LLM context string with no sanitization, enabling cross-agent prompt injection via crafted message content.
+- **context:** A compromised or malicious agent can embed LLM instruction overrides in its message content, which are injected verbatim into the receiving agent's context with no escaping or boundary markers.
+- **hunter_found:** `2026-03-20T22:18:00Z`
+- **fixer_started:** `2026-03-21T00:42:00Z`
+- **fixer_completed:** `2026-03-21T03:22:00Z`
+- **fix_summary:** `Added sanitizeContent() in src/swarm/mailbox.ts that escapes angle brackets, curly braces, and backticks in m.from and m.content before rendering into LLM context in formatInbox(). Commit 01c5ff5 on main.`
+- **validator_started:** `2026-03-21T04:35:31Z`
+- **validator_completed:** `2026-03-21T04:39:25Z`
+- **validator_notes:** `Verified on main. sanitize() strips angle brackets, collapses newlines, removes control chars. formatInbox() calls sanitize(m.from) and sanitize(m.content). Commit 01c5ff5 present. 7 regression tests. tsc clean.`
+- **archived:** `2026-03-21T04:39:25Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/mailbox-prompt-injection-sanitize.test.ts`
+
+---
+
+### BUG-0341
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/hitl/interrupt.ts`
+- **line:** `69`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0341`
+- **description:** `_installInterruptContext` uses `AsyncLocalStorage.enterWith()` which mutates the current async context globally, instead of `als.run(ctx, fn)` which creates an isolated child scope — concurrent node executions sharing a parent context will bleed interrupt state across nodes.
+- **context:** Under `Promise.all` parallel node execution in Pregel, one node's interrupt context overwrites another's, causing interrupts to target the wrong node or be silently lost.
+- **hunter_found:** `2026-03-20T22:24:00Z`
+- **fixer_started:** `2026-03-21T00:42:00Z`
+- **fixer_completed:** `2026-03-21T03:22:00Z`
+- **fix_summary:** `Changed _installInterruptContext() in src/hitl/interrupt.ts from enterWith() to als.run(ctx, fn) callback pattern. Updated executeNode() in src/pregel/execution.ts to use new callback signature. _clearInterruptContext() made no-op since als.run() auto-cleans scope. Tests updated.`
+- **validator_started:** `2026-03-21T04:35:31Z`
+- **validator_completed:** `2026-03-21T04:39:25Z`
+- **validator_notes:** `Verified on bugfix/BUG-0341. _installInterruptContext changed to generic callback: als.run(ctx, fn). executeNode() passes node execution as callback. _clearInterruptContext is now no-op. tsc clean. Test file exists.`
+- **archived:** `2026-03-21T04:39:25Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/hitl-interrupt-context-isolation.test.ts`
+
+---
+
+### BUG-0349
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/compile-ext.ts`
+- **line:** `68`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0349`
+- **description:** `spawnAgent()` and `removeAgent()` mutate the live `runner.nodes` and `runner._edgesBySource` Maps while the Pregel execution loop may be concurrently iterating those same structures.
+- **context:** `streamSupersteps` iterates `ctx.nodes` and `ctx._edgesBySource` every superstep without any lock. A concurrent `spawnAgent` or `removeAgent` call during a live graph execution can add or delete entries mid-iteration, causing `NodeNotFoundError` or silently skipping a newly added agent.
+- **hunter_found:** `2026-03-20T22:26:00Z`
+- **fixer_started:** `2026-03-21T00:42:00Z`
+- **fixer_completed:** `2026-03-21T03:22:00Z`
+- **fix_summary:** `Added nodesSnapshot = new Map(ctx.nodes) at start of each superstep in src/pregel/streaming.ts. All ctx.nodes reads in the loop now use snapshot, preventing concurrent mutations from corrupting mid-iteration reads.`
+- **validator_started:** `2026-03-21T04:35:31Z`
+- **validator_completed:** `2026-03-21T04:39:25Z`
+- **validator_notes:** `Verified on bugfix/BUG-0349. nodesSnapshot = new Map(ctx.nodes) at superstep start. All 3 ctx.nodes reads replaced. +6/-3 lines, scoped to streaming.ts. tsc clean.`
+- **archived:** `2026-03-21T04:39:25Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/spawn-agent-concurrent-snapshot.test.ts`
+
+---
+
+### BUG-0361
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `packages/a2a/src/server/handler.ts`
+- **line:** `53`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `main`
+- **description:** `handler()` call for `tasks/sendSubscribe` is not awaited — if handler returns a rejected Promise instead of a generator, the rejection is unhandled.
+- **context:** On line 53, `handler(messageText, taskId)` is called and immediately checked for `[Symbol.asyncIterator]` without awaiting. If `handler` returns a rejected Promise, the catch block on line 63 will not catch it.
+- **hunter_found:** `2026-03-21T00:25:00Z`
+- **fixer_started:** `2026-03-21T00:42:00Z`
+- **fixer_completed:** `2026-03-21T03:22:00Z`
+- **fix_summary:** `Added await to handler(messageText, taskId) call in packages/a2a/src/server/handler.ts sendSubscribe path so rejected Promises are caught by the surrounding try/catch. Commit ada9de7 on main.`
+- **validator_started:** `2026-03-21T04:35:31Z`
+- **validator_completed:** `2026-03-21T04:39:25Z`
+- **validator_notes:** `Verified on main. Line 53 now reads 'const result = await handler(messageText, taskId)'. Awaited result checked for Symbol.asyncIterator. try/catch catches rejected promises. Commit ada9de7 present. Test file exists. tsc clean.`
+- **archived:** `2026-03-21T04:39:25Z`
+- **test_generated:** `true`
+- **test_file:** `packages/a2a/src/__tests__/sendsubscribe-rejected-promise.test.ts`
+
+---

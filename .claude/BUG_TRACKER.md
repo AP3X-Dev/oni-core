@@ -10,7 +10,7 @@
 | Key | Value |
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T04:42:00Z` |
-| **Last Hunter Scan** | `2026-03-20T22:12:00Z` |
+| **Last Hunter Scan** | `2026-03-20T22:26:00Z` |
 | **Last Fixer Pass** | `2026-03-21T05:22:00Z` |
 | **Last Validator Pass** | `2026-03-21T04:42:00Z` |
 | **Last Digest Run** | `2026-03-21T04:44:19Z` |
@@ -18,11 +18,11 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T21:38:00Z` |
+| **Last TestGen Run** | `2026-03-21T22:15:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T06:35:00Z` (Cycle 220) |
-| **Last Supervisor Pass** | `2026-03-21T04:45:29Z` |
-| **Total Found** | `370` |
-| **Total Pending** | `1` |
+| **Last Supervisor Pass** | `2026-03-21T04:50:34Z` |
+| **Total Found** | `385` |
+| **Total Pending** | `16` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `51` |
 | **Total In Validation** | `0` |
@@ -1230,7 +1230,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0363
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/harness/skill-loader.ts`
 - **line:** `269`
@@ -1252,7 +1252,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0364
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `160`
@@ -1515,6 +1515,107 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
+
+
+### BUG-0380
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/functional.ts`
+- **line:** `66`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `throw last` where `last` is typed `Error | undefined` — if `maxAttempts` is 0 the loop body never runs and `last` remains `undefined`, throwing a non-Error value.
+- **context:** TypeScript allows throwing `undefined` without error, producing a non-Error rejection that callers catching `Error` will miss entirely, silently swallowing the failure.
+- **hunter_found:** `2026-03-20T22:25:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0381
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/tools/define.ts`
+- **line:** `45`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `executeTool(tool, call.args)` passes `Record<string, unknown>` to a generic `executeTool<TInput>` where `TInput` resolves to `any` via the `ToolDefinition` default, erasing compile-time input type validation.
+- **context:** The concrete `TInput` of each registered tool is lost when stored in `ToolDefinition[]` using the `any` default generic, so `call.args` is passed unchecked into `tool.execute` — schema mismatches between the LLM-supplied args and the tool's expected input are not caught at compile time.
+- **hunter_found:** `2026-03-20T22:25:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0382
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/harness/loop/tools.ts`
+- **line:** `128`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `Object.assign(toolCall.args, sanitized)` merges the hook's `modifiedInput` into existing args instead of replacing them, so original keys absent from the hook's output survive — including keys the hook intended to remove or redact.
+- **context:** A PreToolUse hook that rewrites tool arguments to sanitize or restrict them has no effect on keys it omits, allowing the full original LLM-supplied payload to reach the tool's execute function, undermining the hook's ability to block specific argument fields.
+- **hunter_found:** `2026-03-20T22:25:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0383
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/swarm/snapshot.ts`
+- **line:** `98`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The cap check `this.snapshots.size > MAX_SNAPSHOTS` (strict greater-than) allows the map to transiently hold MAX_SNAPSHOTS + 1 entries before eviction, violating the intended bound.
+- **context:** One extra snapshot is stored on each capture() call that crosses the boundary; under high-frequency captures the map can contain 101 entries momentarily, slightly exceeding the memory budget.
+- **hunter_found:** `2026-03-20T22:25:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0384
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/pregel/checkpointing.ts`
+- **line:** `85`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `forkFrom()` fallback path copies checkpoints with `step <= targetStep` to `newThreadId` but never clears pre-existing checkpoints on `newThreadId`, producing a corrupted mixed timeline if the thread already has history.
+- **context:** `checkpointer.get(newThreadId)` returns the highest-step checkpoint, which may belong to the thread's prior contents rather than the intended fork point, causing getState and getStateAt to return stale or wrong state after a fork.
+- **hunter_found:** `2026-03-20T22:25:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
 
 <!-- HUNTER: Append new bugs above this line -->
 
