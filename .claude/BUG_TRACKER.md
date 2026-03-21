@@ -18,7 +18,7 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T20:58:00Z` |
+| **Last TestGen Run** | `2026-03-21T21:05:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T04:20:00Z` (Cycle 213) |
 | **Last Supervisor Pass** | `2026-03-21T03:55:36Z` |
 | **Total Found** | `366` |
@@ -240,6 +240,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** `2026-03-20T22:25:00Z`
 - **validator_completed:** `2026-03-20T22:25:00Z`
 - **validator_notes:** `Auto-blocked after 3 failed fix attempts. All 3 original failures persist unchanged across 3 fix/validate cycles: (1) no jsonrpc === "2.0" gate, (2) dead typeof id === "undefined" check (never true inside "id" in message guard), (3) no result/error presence validation. Requires human review.`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/lsp-client-message-validation.test.ts`
 
 ---
 
@@ -526,19 +528,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0320
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/compile-ext.ts`
 - **line:** `57`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0320`
 - **description:** `def` is double-cast via `as SwarmAgentDef<Record<string, unknown>> as any` when registering a dynamically spawned agent, completely erasing the generic state type parameter `S`.
 - **context:** The registry stores the agent with the wrong state type, so `createAgentNode` receives a state typed as `Record<string, unknown>` instead of the actual swarm state type, making strongly-typed state field access invisible to the type checker.
 - **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T03:56:00Z`
+- **fixer_completed:** `2026-03-21T04:02:00Z`
+- **fix_summary:** `Removed double cast in src/swarm/compile-ext.ts. Uses plain registry.register(def).`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1326,6 +1328,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `packages/a2a/src/__tests__/sendsubscribe-rejected-promise.test.ts`
 
 ---
 
