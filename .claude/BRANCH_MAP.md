@@ -1,41 +1,37 @@
-# Branch Map — Cycle 320
+# Branch Map — Cycle 321
 
-**Generated:** 2026-03-21T18:20:00Z
-**Main HEAD:** 5f9986f
-**Total Branches:** 0 bugfix (all merged or deleted)
+**Generated:** 2026-03-21T18:26:00Z
+**Main HEAD:** 496622d
+**Total Branches:** 1 bugfix (bugfix/BUG-0452, pending)
 
-| Branch | Status | Notes |
-|---|---|---|
-| bugfix/BUG-0343 | Merged | Merged to main (ac7c4c9) — clearTimeout fix in safety-gate.ts; branch deleted |
-| bugfix/BUG-0356 | Merged | Merged to main (fb46a5e) — .catch() on floating promise in PostgresStore; branch deleted |
-| bugfix/BUG-0359 | Merged | Merged to main (2998c4b) — off-by-one turns-remaining in loop/index.ts; branch deleted |
-| fix/bug-0257-a2a-security-headers | Deleted | Orphaned — no tracker entry; 1 commit ahead of main; deleted this cycle |
-| fix/bug-0285-context-prompt-injection | Deleted | Orphaned — no tracker entry; 1 commit ahead of main; deleted this cycle |
+| Branch | Status | Classification | Notes |
+|---|---|---|---|
+| bugfix/BUG-0452 | pending | Active | memory-loader buildSystemPrompt returns empty — awaiting Fixer |
+| bugfix/BUG-0343 | blocked→merged | Merged | Merged to main (ac7c4c9) — clearTimeout fix in safety-gate.ts; branch deleted |
+| bugfix/BUG-0356 | blocked→merged | Merged | Merged to main (fb46a5e) — .catch() on floating promise in PostgresStore; branch deleted |
+| bugfix/BUG-0359 | blocked→merged | Merged | Merged to main (2998c4b) — off-by-one turns-remaining in loop/index.ts; branch deleted |
 
 ## Active Worktrees
 
-No active agent worktrees.
+bugfix/BUG-0452 — exists as local branch (pending, not yet in-progress).
 
 ## Non-Bugfix Branches (out of scope)
 
 None remaining.
 
-## Status Changes Since C319
+## Status Changes Since C320
 
-Major cleanup this cycle:
-- BUG-0343, BUG-0356, BUG-0359: all merged to main by human (branches already removed)
-- fix/bug-0257, fix/bug-0285: orphaned branches detected and confirmed deleted
-
-Main HEAD advanced from 9cbc31b to 5f9986f (multiple merges including BUG-0343, BUG-0356, BUG-0359, fix/bug-0284, temp-return-main).
+- bugfix/BUG-0452 detected as existing branch (bug status: pending).
+- No other changes. All previously merged branches remain merged.
 
 ## GC Note
 
-Next `git gc --auto` scheduled at Cycle 324 (skipped this cycle).
+Next `git gc --auto` scheduled at Cycle 324 (skipped this cycle — Cycle 321).
 
-## File Overlap Summary (Cycle 320)
+## File Overlap Summary (Cycle 321)
 
-No active bugfix branches — no overlaps to check.
+No in-progress bugs — no overlaps to check.
 
 ## Cumulative Deletions
 
-~231 total branches deleted since Git Manager began (2 deletions this cycle: fix/bug-0257, fix/bug-0285 confirmed removed).
+~231 total branches deleted since Git Manager began (0 deletions this cycle).
