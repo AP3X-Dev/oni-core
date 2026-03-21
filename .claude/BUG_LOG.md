@@ -3741,3 +3741,48 @@
 - **archived:** `2026-03-21T22:00:00Z`
 
 ---
+
+### BUG-0205
+- **status:** `verified`
+- **severity:** `critical`
+- **file:** `packages/tools/src/code-execution/node-eval.ts`
+- **line:** `57`
+- **category:** `security-injection`
+- **description:** node_eval tool executes LLM-supplied code with no capability sandbox.
+- **reopen_count:** `3`
+- **branch:** _(fixed directly on main by human)_
+- **fix_summary:** `Added --experimental-permission to child process (blocks fs-write, child_process, worker_threads). fs-read restricted to /tmp/*. globalThis.eval overridden to prevent ESM import bypass via string concatenation. Network gap documented — no --allow-net flag exists in Node.js permission model.`
+- **validator_notes:** `Human-verified. Permission model active, eval bypass closed, fs-write blocked. Residual network gap is architectural (Node.js limitation). tsc clean, tests pass.`
+- **archived:** `2026-03-21T23:00:00Z`
+
+---
+
+### BUG-0256
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/a2a/src/server/index.ts`
+- **line:** `11`
+- **category:** `security-auth`
+- **description:** A2AServer authentication is opt-in — unauthenticated by default.
+- **reopen_count:** `4`
+- **branch:** _(fixed directly on main by human)_
+- **fix_summary:** `Constructor now throws in production (NODE_ENV=production) when no apiKey is provided and allowUnauthenticated is not explicitly true. Dev mode retains console.warn for backwards compatibility. New allowUnauthenticated option for explicit opt-out.`
+- **validator_notes:** `Human-verified. Production throws, dev warns. Non-breaking for existing dev setups. tsc clean, tests pass.`
+- **archived:** `2026-03-21T23:00:00Z`
+
+---
+
+### BUG-0264
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/lsp/client.ts`
+- **line:** `526`
+- **category:** `type-error`
+- **description:** LSP JSON-RPC messages cast via `as unknown as` without structural validation.
+- **reopen_count:** `3`
+- **branch:** _(fixed directly on main by human)_
+- **fix_summary:** `Replaced blind casts with validated object construction. Response objects built from individually validated fields (id, result, error). Notification objects built from validated method and params. jsonrpc:"2.0" explicitly set on constructed objects.`
+- **validator_notes:** `Human-verified. No more unsafe casts. Fields individually validated before construction. tsc clean, tests pass.`
+- **archived:** `2026-03-21T23:00:00Z`
+
+---
