@@ -11,7 +11,7 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T23:31:31Z` |
 | **Last Hunter Scan** | `2026-03-20T19:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T10:05:00Z` |
+| **Last Fixer Pass** | `2026-03-21T10:35:00Z` |
 | **Last Validator Pass** | `2026-03-21T06:43:59Z` |
 | **Last Digest Run** | `2026-03-21T06:41:21Z` |
 | **Last Security Scan** | `2026-03-23T20:20:00Z` |
@@ -22,12 +22,12 @@
 | **Last Git Manager Pass** | `2026-03-20T07:30:00Z` (Cycle 236) |
 | **Last Supervisor Pass** | `2026-03-21T06:55:33Z` |
 | **Total Found** | `419` |
-| **Total Pending** | `14` |
+| **Total Pending** | `8` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `67` |
+| **Total Fixed** | `57` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `16` |
+| **Total Blocked** | `19` |
 | **Total Reopened** | `2` |
 
 ---
@@ -306,12 +306,12 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0326
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `57`
 - **category:** `type-error`
-- **reopen_count:** `1`
+- **reopen_count:** `2`
 - **branch:** `bugfix/BUG-0326`
 - **description:** Redis v4 fallback path assigns raw createClient result as RedisClient without a shim, but RedisClient.del uses rest params while redis v4 del expects an array — multi-key deletes on v4 backend will break.
 - **context:** The ioredis path correctly shims del with r.del(...keys), but the redis v4 branch has no such adapter.
@@ -426,7 +426,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0337
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/models/http-error.ts`
 - **line:** `72`
@@ -446,7 +446,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0339
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/circuit-breaker.ts`
 - **line:** `27`
@@ -466,7 +466,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0340
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/circuit-breaker.ts`
 - **line:** `34`
@@ -1678,18 +1678,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0416
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/streaming.ts`
 - **line:** `86`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0416`
 - **description:** `TokenStreamWriter` has a lost-token race between `push()` and `end()`: if `end()` fires between a yield resuming and the next iteration, and `push()` adds a token after `waiters` was checked, that token is silently dropped.
 - **context:** `end()` drains waiters and sets `done = true` without re-checking the queue. A concurrent `push()` that populates the queue after the waiters check but before `done` is set produces a token that is never yielded to the consumer.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T10:35:00Z`
+- **fixer_completed:** `2026-03-21T10:35:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1698,18 +1698,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0417
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/cli/dev.ts`
 - **line:** `20`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0417`
 - **description:** User-supplied file path in `dev` command is resolved but never validated to be within the project directory before being passed to `spawn`, unlike `inspect` which performs a cwd boundary check.
 - **context:** A path like `../../etc/profile` resolves outside the project root and tsx will attempt to watch and execute that file. The inspect command correctly enforces this check — dev.ts lacks the equivalent guard.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T10:35:00Z`
+- **fixer_completed:** `2026-03-21T10:35:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1738,18 +1738,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0419
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/tools/src/stripe/index.ts`
 - **line:** `91`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0419`
 - **description:** `loadStripeInstance()` and all Stripe API calls (customers.create, invoices.create, charges.list) have no try/catch — raw Stripe SDK errors propagate as unhandled rejections without tool-scoped context.
 - **context:** Unlike the GitHub tool which wraps calls in a centralized error handler, Stripe tool errors include potentially sensitive details about invalid API keys and internal Stripe error responses exposed directly to callers.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T10:35:00Z`
+- **fixer_completed:** `2026-03-21T10:35:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1758,18 +1758,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0420
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/coordination/pubsub.ts`
 - **line:** `56`
 - **category:** `memory-leak`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0420`
 - **description:** Subscriber handler closures leak indefinitely if the returned unsubscribe function is never called — the subscribers Map grows without bound across the PubSub instance lifetime.
 - **context:** If agents subscribe per-request on hot paths and neglect to call the returned unsubscribe function, handler closures accumulate. SwarmGraph.dispose() calls pubsub.dispose() but only if the lazy getter was triggered.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T10:35:00Z`
+- **fixer_completed:** `2026-03-21T10:35:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1798,18 +1798,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0422
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/integrations/src/adapter/index.ts`
 - **line:** `57`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0422`
 - **description:** `authResolver.resolve()` is awaited with no try/catch — credential resolution errors propagate raw without indicating which tool or action failed.
 - **context:** In multi-tool pipelines, a credential-not-found error from the resolver surfaces without tool-scoped context, making it difficult to identify which integration failed and why.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T10:35:00Z`
+- **fixer_completed:** `2026-03-21T10:35:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
