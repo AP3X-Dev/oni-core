@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T15:00:00Z` (Cycle 269 — 0 deletions, 0 rebases; 3 bugfix branches remain (BUG-0343/0356/0359), all blocked reopen_count=3, 0 conflicts; BUG-0343 12 behind, BUG-0356/0359 17 behind; GC due Cycle 270; human intervention required for all 3) |
+| **Last Git Manager Pass** | `2026-03-21T15:20:00Z` (Cycle 270 — 0 deletions, 0 rebases; 3 bugfix branches remain (BUG-0343/0356/0359), all blocked reopen_count=3, 0 conflicts; BUG-0343 13 behind, BUG-0356/0359 18 behind; git gc --auto executed; next GC Cycle 276; human intervention required for all 3) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
@@ -476,25 +476,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 
-### BUG-0383
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/swarm/snapshot.ts`
-- **line:** `98`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0383`
-- **description:** The cap check `this.snapshots.size > MAX_SNAPSHOTS` (strict greater-than) allows the map to transiently hold MAX_SNAPSHOTS + 1 entries before eviction, violating the intended bound.
-- **context:** One extra snapshot is stored on each capture() call that crosses the boundary; under high-frequency captures the map can contain 101 entries momentarily, slightly exceeding the memory budget.
-- **hunter_found:** `2026-03-20T22:25:00Z`
-- **fixer_started:** `2026-03-21T06:25:00Z`
-- **fixer_completed:** `2026-03-21T06:25:00Z`
-- **fix_summary:** `Change > to >= in snapshot cap check to prevent transient overflow.`
-- **validator_started:** `2026-03-22T00:35:00Z`
-- **validator_completed:** `2026-03-22T00:35:00Z`
-- **validator_notes:** `validateToolArgs added before executeTool, guarded by tool.schema. Returns isError on failure. Uses pre-existing validated utility. Scope clean. Verified.`
-
----
 
 
 ### BUG-0385
@@ -517,25 +498,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0388
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/stream-events.ts`
-- **line:** `36`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0388`
-- **description:** `finalData` is initialized to `undefined` and only set in the `state_update` branch — if no `state_update` event is emitted, the closing `on_chain_end` event silently reports `undefined` as output.
-- **context:** The `streamEvents` wrapper relies solely on `state_update` to populate `finalData`; if pregel completes without emitting that event type, the final event yields no output, making downstream consumers believe the chain produced nothing.
-- **hunter_found:** `2026-03-20T22:30:00Z`
-- **fixer_started:** `2026-03-21T06:25:00Z`
-- **fixer_completed:** `2026-03-21T06:25:00Z`
-- **fix_summary:** `Fall back to node_end data then {} when no state_update emitted.`
-- **validator_started:** `2026-03-22T00:35:00Z`
-- **validator_completed:** `2026-03-22T00:35:00Z`
-- **validator_notes:** `RedisCheckpointer added to re-export line in src/index.ts. Confirmed real export in checkpointers/index.ts. 1-line change. Verified.`
-
----
 
 
 
@@ -603,46 +565,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 
-### BUG-0418
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/cli/build.ts`
-- **line:** `56`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0418`
-- **description:** A signal-killed tsc process passes `null` as exit code, which the `if (exitCode && exitCode !== 0)` check treats as falsy success, printing "Build complete!" for a killed build.
-- **context:** When the process is killed by a signal, `exitCode` is null. `null && null !== 0` evaluates to falsy, so the error branch is never taken and the user sees a false success message.
-- **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T11:05:00Z`
-- **fixer_completed:** `2026-03-21T11:05:00Z`
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T01:25:00Z`
-- **validator_completed:** `2026-03-22T01:25:00Z`
-- **validator_notes:** `cwd boundary check added before spawn in dev command. Rejects paths outside project root via startsWith(cwd + "/"). Verified.`
-
----
 
 
-### BUG-0421
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/store/index.ts`
-- **line:** `109`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0421`
-- **description:** `isExpired` returns `false` when `item.ttl` is `0`, treating zero-millisecond TTL as "no expiry" instead of "expire immediately" because `!item.ttl` is falsy for both `undefined` and `0`.
-- **context:** A caller passing `ttl: 0` intending immediate expiration creates an immortal item instead. The two semantically distinct cases (no TTL vs zero TTL) are conflated by the falsy check.
-- **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T11:05:00Z`
-- **fixer_completed:** `2026-03-21T11:05:00Z`
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T01:25:00Z`
-- **validator_completed:** `2026-03-22T01:25:00Z`
-- **validator_notes:** ``
-
----
 
 ### BUG-0423
 - **status:** `blocked`
@@ -704,25 +628,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0435
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/swarm/scaling.ts`
-- **line:** `132`
-- **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0435`
-- **description:** `setCurrentAgentCount()` mutates `this.currentAgentCount` without coordination with `evaluate()`, which reads it mid-evaluation after already snapshotting the tracer timeline.
-- **context:** If `setCurrentAgentCount()` is called while `evaluate()` is in progress (e.g., from a tracer event callback during reactive mode), the scaling decision is computed with a mismatched agent count and timeline, potentially producing incorrect scale decisions.
-- **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** `2026-03-21T15:05:00Z`
-- **fixer_completed:** `2026-03-21T15:05:00Z`
-- **fix_summary:** `Snapshot currentAgentCount at evaluate() start for consistency.`
-- **validator_started:** `2026-03-22T00:30:00Z`
-- **validator_completed:** `2026-03-22T00:30:00Z`
-- **validator_notes:** `session.status !== "pending" guard added before markResumed(). markResumed before invoke. TOCTOU closed. Fix confirmed on main. Verified.`
-
----
 
 
 
