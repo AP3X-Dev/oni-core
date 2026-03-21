@@ -9,7 +9,7 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T19:12:12Z` (Cycle 75 — BUILD GREEN. Tests: 6 failed / 1437 passed / 2 skipped across 3 failed suites. Known failures: BUG-0312 (2), BUG-0363 (3), BUG-0456 (1). 264 test files ran. BUG-0436 and BUG-0457 (agent-loop-turns-remaining) now passing on main. 0 new regressions. 0 new bugs filed. 0 escalations filed.) |
+| **Last CI Sentinel Pass** | `2026-03-21T20:22:00Z` (Cycle 76 — BUILD GREEN. Tests: 6 failed / 1437 passed / 2 skipped across 3 failed suites. Known failures: BUG-0312 (2), BUG-0363 (3), BUG-0456 (1). 264 test files ran. 0 new regressions. 0 new bugs filed. 0 escalations filed.) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
 | **Last Fixer Pass** | `2026-03-21T21:42:00Z` (idle — 0 pending, 0 reopened, 0 in-progress) |
 | **Last Validator Pass** | `2026-03-21T19:52:00Z` (no fixed/in-validation bugs — 23 blocked) |
@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-22T20:30:00Z` (Cycle 333 — 0 deletions, 0 rebases; 0 bugfix branches — repo quiescent, 3 bugs blocked, gc skipped 333%6=3) |
+| **Last Git Manager Pass** | `2026-03-22T20:40:00Z` (Cycle 334 — 0 deletions, 0 rebases; 0 bugfix branches — repo quiescent, 3 bugs blocked, gc skipped 334%6=4) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `436` |
 | **Total Pending** | `0` |
