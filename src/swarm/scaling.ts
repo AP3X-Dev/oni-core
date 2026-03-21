@@ -147,6 +147,9 @@ export class DynamicScalingMonitor {
    */
   evaluate(): ScalingDecision {
     const now = this.clockFn();
+    // Snapshot currentAgentCount at the start so mid-evaluation mutations
+    // from setCurrentAgentCount() don't cause inconsistent decisions.
+    const agentCount = this.currentAgentCount;
 
     // Check cooldown
     if (this.lastDecisionTime > 0) {
@@ -157,7 +160,7 @@ export class DynamicScalingMonitor {
     }
 
     // No agents to evaluate
-    if (this.currentAgentCount === 0) {
+    if (agentCount === 0) {
       return { action: "idle", count: 0, reason: "no agents registered" };
     }
 
@@ -199,7 +202,7 @@ export class DynamicScalingMonitor {
     }
 
     // Check scale-up conditions first (more urgent than scale-down)
-    const scaleUp = this.checkScaleUp(starts, errors, recentMaxLatencyMs);
+    const scaleUp = this.checkScaleUp(agentCount, starts, errors, recentMaxLatencyMs);
     if (scaleUp) return scaleUp;
 
     // Don't scale down while agents are actively in-flight.
@@ -233,7 +236,7 @@ export class DynamicScalingMonitor {
 
     // Check scale-down — last event is most recent (timeline is append-only)
     const lastActivity = timeline[timeline.length - 1]!.timestamp;
-    const scaleDown = this.checkScaleDown(lastActivity, now);
+    const scaleDown = this.checkScaleDown(agentCount, lastActivity, now);
     if (scaleDown) return scaleDown;
 
     return { action: "idle", count: 0, reason: "metrics within normal range" };
@@ -241,18 +244,18 @@ export class DynamicScalingMonitor {
 
   // ── Scale-up checks ───────────────────────────────────
 
-  private checkScaleUp(starts: number, errors: number, recentMaxLatencyMs: number): ScalingDecision | null {
+  private checkScaleUp(agentCount: number, starts: number, errors: number, recentMaxLatencyMs: number): ScalingDecision | null {
     // Already at max
-    if (this.currentAgentCount >= this.config.maxAgents) return null;
+    if (agentCount >= this.config.maxAgents) return null;
 
     // Error rate check
     if (starts > 0) {
       const errorRate = errors / starts;
       if (errorRate >= this.config.scaleUpErrorRate) {
-        const headroom = this.config.maxAgents - this.currentAgentCount;
+        const headroom = this.config.maxAgents - agentCount;
         // Scale by ceil(currentCount * 0.5), capped by headroom
         const addCount = Math.min(
-          Math.max(1, Math.ceil(this.currentAgentCount * 0.5)),
+          Math.max(1, Math.ceil(agentCount * 0.5)),
           headroom,
         );
         return {
@@ -265,9 +268,9 @@ export class DynamicScalingMonitor {
 
     // Latency check — use windowed max, not all-time max from tracer.metrics()
     if (recentMaxLatencyMs > this.config.scaleUpLatencyMs) {
-      const headroom = this.config.maxAgents - this.currentAgentCount;
+      const headroom = this.config.maxAgents - agentCount;
       const addCount = Math.min(
-        Math.max(1, Math.ceil(this.currentAgentCount * 0.25)),
+        Math.max(1, Math.ceil(agentCount * 0.25)),
         headroom,
       );
       return {
@@ -282,9 +285,9 @@ export class DynamicScalingMonitor {
 
   // ── Scale-down checks ─────────────────────────────────
 
-  private checkScaleDown(lastActivity: number, now: number): ScalingDecision | null {
+  private checkScaleDown(agentCount: number, lastActivity: number, now: number): ScalingDecision | null {
     // Already at minimum
-    if (this.currentAgentCount <= this.config.minAgents) return null;
+    if (agentCount <= this.config.minAgents) return null;
 
     // Check if all agents have been idle for scaleDownIdleSeconds
     const idleThresholdMs = this.config.scaleDownIdleSeconds * 1000;
@@ -292,8 +295,8 @@ export class DynamicScalingMonitor {
     if (lastActivity > 0 && now - lastActivity > idleThresholdMs) {
       // All agents idle — reduce by half, respecting minAgents
       const removeCount = Math.min(
-        Math.max(1, Math.floor(this.currentAgentCount / 2)),
-        this.currentAgentCount - this.config.minAgents,
+        Math.max(1, Math.floor(agentCount / 2)),
+        agentCount - this.config.minAgents,
       );
       if (removeCount > 0) {
         return {
