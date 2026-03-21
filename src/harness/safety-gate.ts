@@ -93,6 +93,7 @@ export class SafetyGate {
     } catch {
       // Fail-closed for network errors and timeouts — block destructive tools
       // when the safety service is unavailable.
+      clearTimeout(timeoutHandle);
       return { ...FALLBACK_RESULT };
     }
 
