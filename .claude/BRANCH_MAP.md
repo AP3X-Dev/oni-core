@@ -1,7 +1,7 @@
-# Branch Map — Cycle 288
+# Branch Map — Cycle 289
 
-**Generated:** 2026-03-22T16:00:00Z
-**Main HEAD:** 0d88f8c
+**Generated:** 2026-03-22T16:30:00Z
+**Main HEAD:** 5218515
 **Total Branches:** 3 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
@@ -27,15 +27,15 @@ No active agent worktrees.
 
 No conflict branches this cycle. All 3 remaining bugfix branches are conflict-free via `git merge-tree`.
 
-## Status Changes Since C287
+## Status Changes Since C288
 
-No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts increased by 2 since C287 (one cycle interval with two chore commits accumulated): BUG-0343 now 33 behind (was 31), BUG-0356/0359 now 38 behind (was 36).
+No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts UNCHANGED from C288 — no new commits landed on main between C288 and C289.
 
 ## GC Note
 
 `git gc --auto` executed at Cycle 288 (scheduled). Next scheduled GC at Cycle 294.
 
-## File Overlap Summary (Cycle 288)
+## File Overlap Summary (Cycle 289)
 
 No overlaps — all 3 remaining bugfix branches touch distinct files:
 - `src/harness/safety-gate.ts` (BUG-0343)
