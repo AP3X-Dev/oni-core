@@ -14,13 +14,13 @@
 | **Last Fixer Pass** | `2026-03-21T15:35:00Z` |
 | **Last Validator Pass** | `2026-03-22T00:06:00Z` |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
-| **Last Security Scan** | `2026-03-21T13:45:00Z` |
+| **Last Security Scan** | `2026-03-21T14:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-22T00:20:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T17:00:00Z` (Cycle 250 — 0 deletions, rebased BUG-0295 to main HEAD ca6f7af; 7 conflict branches flagged; BUG-0434 in-validation has 2 conflicts) |
-| **Last Supervisor Pass** | `2026-03-21T10:00:25Z` |
+| **Last TestGen Run** | `2026-03-21T10:05:00Z` |
+| **Last Git Manager Pass** | `2026-03-22T00:30:00Z` (Cycle 251 — 0 deletions, rebased BUG-0295 to main HEAD 27db1cc; all 7 conflict branches cleared; BUG-0434 in-validation 0 conflicts; BUG-0351/0431 merged into main) |
+| **Last Supervisor Pass** | `2026-03-21T10:10:25Z` |
 | **Total Found** | `425` |
 | **Total Pending** | `2` |
 | **Total In Progress** | `0` |
@@ -668,7 +668,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0353
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/hitl/resume.ts`
 - **line:** `26`
@@ -788,7 +788,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0360
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/pregel/execution.ts`
 - **line:** `98`
@@ -1818,7 +1818,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0429
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `297`
@@ -1898,7 +1898,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0433
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/graph.ts`
 - **line:** `180`
@@ -1918,7 +1918,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0434
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/swarm/pool.ts`
 - **line:** `88`
@@ -1931,9 +1931,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T14:35:00Z`
 - **fixer_completed:** `2026-03-21T14:35:00Z`
 - **fix_summary:** `Increment activeTasks synchronously in pickSlot to prevent over-dispatch.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:10:00Z`
+- **validator_completed:** `2026-03-22T00:18:00Z`
+- **validator_notes:** `Confirmed activeTasks++ moved to pickSlot() as synchronous reservation. runOnSlot() finally block decrements. No leak paths — all pickSlot callers proceed to runOnSlot. Re-verified after archival rollback. Verified.`
 
 ---
 
