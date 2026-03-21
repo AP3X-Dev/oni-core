@@ -1,20 +1,3 @@
-[2026-03-21T06:35:00Z] Step 6: FILE OVERLAP — src/hitl/interrupt.ts + src/pregel/execution.ts: BUG-0341 (verified, fix NOT on main) vs BUG-0360 (fixed, uses incompatible enterWith pattern). CRITICAL: BUG-0360 conflicts with verified BUG-0341 semantics. src/hitl/resume.ts: BUG-0311/BUG-0353 (different hunks, safe). packages/stores/src/postgres/index.ts: BUG-0347/0356/0357 (different hunks, safe).
-[2026-03-21T06:35:00Z] Step 7: HEAD confirmed on main. Clean state.
-[2026-03-21T06:35:00Z] Step 8: Cycle 220 % 6 = 4 ≠ 0. gc skipped. Next gc at Cycle 222.
-[2026-03-21T06:35:00Z] ALERT: BUG-0341 verified but fix NOT merged to main — enterWith() still in src/hitl/interrupt.ts on main. Validator did not merge. BUG-0327 same issue (dispose() missing). Human review required.
-[2026-03-21T06:35:00Z] ALERT: BUG-0360 fix uses non-callback _installInterruptContext pattern — directly incompatible with BUG-0341 verified fix. Fixer must resolve before Validator merges either.
-[2026-03-21T06:35:00Z] ALERT: BUG-0295/BUG-0303/BUG-0337 have fix commits on branches but tracker shows status=pending. Fixer must update tracker.
-[2026-03-21T06:35:00Z] BRANCH COUNT: 47 branches. 1 deletion this cycle. Cumulative: ~169.
-[2026-03-21T06:35:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T06:35:00Z (Cycle 220). Log trimmed to 150 lines.
-[2026-03-21T06:35:00Z] Step 10: HEAD confirmed on main. Clean state.
-[2026-03-21T06:35:00Z] === Git Manager Cycle 220 End ===
-[2026-03-21T07:30:00Z] === Git Manager Cycle 221 Start ===
-[2026-03-21T07:30:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer Pass=2026-03-21T05:22:00Z (>60s). Last Validator Pass=2026-03-21T04:42:00Z (>60s). In-progress=0, In-validation=0 per Meta. Proceeding.
-[2026-03-21T07:30:00Z] Step 1: Found 48 bugfix/BUG-* branches (pre-deletion).
-[2026-03-21T07:30:00Z] Step 2: Branch map rebuilt. Fixed/clean: 40 branches. Fixed/conflict: BUG-0325 (mcp/client.ts), BUG-0358 (hooks-engine.ts — stale base), BUG-0363 (skill-loader.ts). In-validation: BUG-0294 (blocked), BUG-0301, BUG-0306, BUG-0363, BUG-0364. Blocked: BUG-0294/0304/0352. Pending: BUG-0370–0379.
-[2026-03-21T07:30:00Z] Step 3: DELETED bugfix/BUG-0352 (-D, false positive blocked, 232-file divergence from old base — orphaned). 1/5 cap. Cumulative: ~170. All other 47 branches have active tracker entries.
-[2026-03-21T07:30:00Z] Step 4: STALE WARNING — bugfix/BUG-0358 has 1-line fix on massively stale base (hooks-engine.ts conflict). Fixer must recreate from current main.
-[2026-03-21T07:30:00Z] Step 5: Fixed/clean: 40 branches (0 conflict markers each). BUG-0295: 0 (post-rebase). BUG-0325: 1 conflict (mcp/client.ts, same as Cycles 218–220). BUG-0358: 1 conflict (hooks-engine.ts — stale). BUG-0363: 1 conflict (skill-loader.ts, persistent).
 [2026-03-21T07:30:00Z] Step 5b: REBASE — bugfix/BUG-0295 rebased onto main (was conflicting on src/errors.ts; now clean; 1 commit, toJSON/toInternalJSON separation). Rebase cap: 1/1. BUG-0325/0358/0363 skipped (non-trivial or stale).
 [2026-03-21T07:30:00Z] Step 6: FILE OVERLAP — src/harness/hooks-engine.ts: BUG-0306 (in-validation) and BUG-0358 (conflicting). Validator must resolve BUG-0358 before merging BUG-0306. src/hitl/interrupt.ts + src/pregel/execution.ts: BUG-0360 and legacy BUG-0341 area — Validator must sequence.
 [2026-03-21T07:30:00Z] Step 7: HEAD confirmed on main. Clean state.
@@ -148,3 +131,20 @@
 [2026-03-21T08:00:00Z] BRANCH COUNT: 63 branches (unchanged). 0 new, 0 deletions this cycle. Cumulative: ~170.
 [2026-03-21T08:00:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T08:00:00Z (Cycle 228). Log trimmed to 150 lines.
 [2026-03-21T08:00:00Z] Step 10: HEAD confirmed on main. Clean state.
+[2026-03-21T06:15:00Z] ## Cycle 229 — 2026-03-21T06:15:00Z
+[2026-03-21T06:15:00Z] Step 0: Pre-flight — TRACKER_LOCK exists (88s old, holder=VALIDATOR 2026-03-21T06:05:19Z — under 120s threshold). Proceeding with git ops only; meta update deferred to after lock clears. Last Fixer Pass=2026-03-21T07:35:00Z. Last Validator Pass=2026-03-21T05:53:04Z.
+[2026-03-21T06:15:00Z] Step 1: Found 63 bugfix/BUG-* branches (pre-operations).
+[2026-03-21T06:15:00Z] Step 2: Branch map rebuilt. 60 branches (post-deletion). Fixed/clean: 45. Fixed/conflict: 8. In-validation: 1 (BUG-0312, was in-validation Cycle 228, reverted to fixed). Blocked: 3 (BUG-0294, BUG-0304, BUG-0306). Verified: 3 (BUG-0303, BUG-0310, BUG-0311 — all deleted this cycle).
+[2026-03-21T06:15:00Z] Step 3: DELETED bugfix/BUG-0303 (verified). DELETED bugfix/BUG-0310 (verified). DELETED bugfix/BUG-0311 (verified). 3/5 cap used. Cumulative: ~173.
+[2026-03-21T06:15:00Z] Step 4: No stale branches — all last fix commits 2026-03-20 (within 1 day of threshold).
+[2026-03-21T06:15:00Z] Step 5: Merge-tree conflicts RE-EMERGED: BUG-0325 (src/mcp/client.ts), BUG-0342 (a2a/server/index.ts), BUG-0346 (filesystem/index.ts), BUG-0350 (skill-evolver.ts), BUG-0353 (audit-agent.ts), BUG-0355 (redis/index.ts), BUG-0374 (pdf.ts), BUG-0378 (pool.ts). 8 conflicting branches. Root cause: these branches fork from 0b842ae (pre-BUG-0224 fix), and main has had intervening commits to those files since. NOTE: Cycle 228 reported all conflicts resolved — this was accurate at that time; main has not changed but merge-tree output is deterministic so the conflict was always there. Cycle 228 merge-tree check may have had an error. All conflicts confirmed persistent.
+[2026-03-21T06:15:00Z] Step 5b: REBASE ATTEMPTED — bugfix/BUG-0325 (src/mcp/client.ts). Worktree created at /tmp/rebase-test-0325, rebase started, CONFLICT detected (both modified src/mcp/client.ts). Aborted. Non-trivial: BUG-0325 adds validation block in init region; BUG-0224 fix added disconnected-state guard in catch region — adjacent but overlapping patch context. 0/1 rebase cap (attempted/aborted counts as used). Worktree removed.
+[2026-03-21T06:15:00Z] Step 6: FILE OVERLAPS — (1) src/models/ollama.ts: BUG-0357+BUG-0377 (different hunks, safe). (2) src/swarm/pool.ts: BUG-0306 (blocked)+BUG-0378 (conflicting). (3) packages/stores/src/redis/index.ts: BUG-0326 (line ~53, clean)+BUG-0355 (lines ~93+161, conflicting) — NEW this cycle. All 3 overlaps documented.
+[2026-03-21T06:15:00Z] Step 7: HEAD confirmed on main. Clean state.
+[2026-03-21T06:15:00Z] Step 8: GC next at Cycle 234. Skipped.
+[2026-03-21T06:15:00Z] ALERT: BUG-0325/0342/0346/0350/0353/0355/0374/0378 — 8 conflict branches. All are persistent drift from monorepo expansion commits. Fixer must rebase or recreate from main.
+[2026-03-21T06:15:00Z] ALERT: BUG-0312 — was in-validation in Cycle 228, now shows fixed in tracker. Validator may have re-queued it.
+[2026-03-21T06:15:00Z] BRANCH COUNT: 60 branches (was 63). 3 deletions, 0 new, 1 rebase attempted/aborted. Cumulative: ~173.
+[2026-03-21T06:15:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T06:15:00Z (Cycle 229). Log trimmed to 150 lines.
+[2026-03-21T06:15:00Z] Step 10: HEAD confirmed on main. Clean state.
+[2026-03-21T06:15:00Z] === Git Manager Cycle 229 End ===

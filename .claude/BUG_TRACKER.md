@@ -11,16 +11,16 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-20T23:02:00Z` |
 | **Last Hunter Scan** | `2026-03-20T22:31:00Z` |
-| **Last Fixer Pass** | `2026-03-21T07:35:00Z` |
-| **Last Validator Pass** | `2026-03-21T05:53:04Z` |
+| **Last Fixer Pass** | `2026-03-21T08:05:00Z` |
+| **Last Validator Pass** | `2026-03-21T06:05:19Z` |
 | **Last Digest Run** | `2026-03-21T05:52:59Z` |
-| **Last Security Scan** | `2026-03-23T17:00:00Z` |
+| **Last Security Scan** | `2026-03-23T17:20:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T23:45:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T08:00:00Z` (Cycle 228) |
-| **Last Supervisor Pass** | `2026-03-21T05:55:29Z` |
+| **Last Git Manager Pass** | `2026-03-21T06:15:00Z` (Cycle 229) |
+| **Last Supervisor Pass** | `2026-03-21T06:10:30Z` |
 | **Total Found** | `399` |
 | **Total Pending** | `2` |
 | **Total In Progress** | `0` |
@@ -265,26 +265,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0303
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/lsp/index.ts`
-- **line:** `134`
-- **category:** `security-injection`
-- **description:** `getErrorDiagnosticsText()` embeds `filePath` in an XML attribute (`<diagnostics file="${filePath}">`) without escaping, enabling XML attribute injection that can manipulate LLM context parsing.
-- **context:** The `filePath` parameter is passed directly into the XML attribute at line 134. A file path containing `"` followed by additional XML attributes or closing tags (e.g. `path" malicious="true`) would break out of the attribute context. While this output is consumed as LLM context (not browser HTML), it could affect how the LLM interprets diagnostic boundaries — a crafted file path could inject fake diagnostic blocks or override the file attribute to misattribute errors. Additionally, `formatDiagnostic()` at line 244 embeds `d.message` and `d.source` from LSP server responses without escaping. Fix: apply XML escaping to `filePath`, `d.message`, and `d.source` using the existing `escXml()` function from `skill-loader.ts`. OWASP A03:2021 - Injection.
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0303`
-- **hunter_found:** `2026-03-20T20:04:36Z`
-- **fixer_started:** `2026-03-21T07:15:00Z`
-- **fixer_completed:** `2026-03-21T07:15:00Z`
-- **fix_summary:** `Added escapeXml() with all 5 XML special chars (including apos). Applied to filePath, d.message, d.source. Fresh branch from main, no unrelated changes.`
-- **validator_started:** `2026-03-21T05:59:45Z`
-- **validator_completed:** `2026-03-21T06:05:19Z`
-- **validator_notes:** `Verified on bugfix/BUG-0303. escapeXml() now handles all 5 XML chars: &, <, >, ", ' (apos). Applied to filePath, d.source, d.message. No unrelated file changes. Previous single-quote omission and pregel tsc errors both resolved. tsc clean.`
-
----
-
 ### BUG-0304
 - **status:** `blocked`
 - **severity:** `high`
@@ -306,7 +286,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0305
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `122`
@@ -316,57 +296,17 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0305-ctx`
 - **hunter_found:** `2026-03-20T20:08:29Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T08:05:00Z`
+- **fixer_completed:** `2026-03-21T08:05:00Z`
+- **fix_summary:** `Filter __-prefixed keys from handoff context before merge. 5 lines added, 1 changed. Fresh branch from main.`
 - **validator_started:** `2026-03-21T05:59:45Z`
 - **validator_completed:** `2026-03-21T06:05:19Z`
 - **validator_notes:** `REOPENED: Branch bugfix/BUG-0305-ctx was deleted by Git Manager (cycle 219) without merging to main. Fix never applied — line 140 still has unfiltered { ...state.context, ...handoff.context } merge. Fixer must: create fresh branch from main, add Object.fromEntries/filter for __-prefixed keys at line 140, commit on branch.`
 
 ---
 
-### BUG-0310
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `src/streaming.ts`
-- **line:** `72`
-- **category:** `logic-bug`
-- **description:** `TokenStreamWriter.push()` has no guard against writes after `end()`. If `push(token)` is called after `end()` and the async iterator has already returned, the token is silently queued but never consumed — permanently dropped.
-- **context:** Triggered when a streaming LLM call emits a final token concurrently with a node timeout calling `end()`. The `push` method does not check `this.done` before enqueuing. Fix: add `if (this.done) return` at the top of `push()`.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0310`
-- **hunter_found:** `2026-03-21T00:05:00Z`
-- **fixer_started:** `2026-03-21T03:47:00Z`
-- **fixer_completed:** `2026-03-21T03:54:00Z`
-- **fix_summary:** `Added if (this.done) return guard at the top of TokenStreamWriter.push() in src/streaming.ts. Prevents silently queuing tokens after end() has been called.`
-- **validator_started:** `2026-03-21T05:59:45Z`
-- **validator_completed:** `2026-03-21T06:05:19Z`
-- **validator_notes:** `Verified on bugfix/BUG-0310. Single +1 line if (this.done) return guard at top of push(). No unrelated changes. tsc clean.`
-
----
-
-### BUG-0311
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `src/hitl/resume.ts`
-- **line:** `43`
-- **category:** `logic-bug`
-- **description:** `evict()` sets `s.status = "expired"` then immediately deletes the entry from the Map. A subsequent `get(resumeId)` returns `null`, making the expired status unreachable via the public API — callers cannot distinguish "expired" from "never existed".
-- **context:** The comment on `get()` says sessions remain visible so callers can observe final status, but that only holds for `"resumed"` sessions. Fix: keep expired sessions in the Map for a grace period before final deletion.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0311`
-- **hunter_found:** `2026-03-21T00:05:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Keep expired sessions visible for 60s grace period in resume store.`
-- **validator_started:** `2026-03-21T05:59:45Z`
-- **validator_completed:** `2026-03-21T06:05:19Z`
-- **validator_notes:** `Verified on bugfix/BUG-0311. Lazy eviction with GRACE_PERIOD_MS=60000 and finalizedAt map. Expired sessions stay in map for 60s, get() observes "expired" status during grace. Cleanup on next access after grace. Elegant lazy GC. tsc clean.`
-
----
-
 ### BUG-0312
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/coordination/pubsub.ts`
 - **line:** `34`
@@ -376,9 +316,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0312`
 - **hunter_found:** `2026-03-21T00:05:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T08:05:00Z`
+- **fixer_completed:** `2026-03-21T08:05:00Z`
+- **fix_summary:** `Snapshot subscribers Map+Sets in publish(). Test file committed on branch. Fresh branch from main.`
 - **validator_started:** `2026-03-21T05:59:45Z`
 - **validator_completed:** `2026-03-21T06:05:19Z`
 - **validator_notes:** `REOPENED: Implementation is correct — subscribers Map and handler Sets are both snapshot'd via [...spread]. However, the regression test file (src/__tests__/pubsub-snapshot-during-publish.test.ts) exists only as an untracked file on main — it was never committed to bugfix/BUG-0312. Fixer must: git add the test file and commit it on the bugfix branch.`
