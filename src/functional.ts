@@ -63,7 +63,7 @@ export function task<TInput, TOutput>(
             }
           }
         }
-        throw last;
+        throw last ?? new Error("retry: no attempts made (maxAttempts=0)");
       }
       return fn(input, config);
     },
