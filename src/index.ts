@@ -8,7 +8,7 @@ export type { CompileOptions, ONIMessage, ONIToolCall, MessageState, ONISkeleton
 
 // -- Checkpointers
 export { MemoryCheckpointer, NoopCheckpointer, PersistentCheckpointer } from "./checkpoint.js";
-export { SqliteCheckpointer, NamespacedCheckpointer, PostgresCheckpointer } from "./checkpointers/index.js";
+export { SqliteCheckpointer, NamespacedCheckpointer, PostgresCheckpointer, RedisCheckpointer } from "./checkpointers/index.js";
 
 // -- Sentinel values
 export { START, END } from "./types.js";
