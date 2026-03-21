@@ -6,6 +6,7 @@ import type { ONIModel, ChatParams, ChatResponse, ChatChunk } from "../models/in
 import type { StateGraph, StateGraphInternals } from "../graph.js";
 import type { ONIStreamEvent, CustomStreamEvent, MessageStreamEvent, StreamMode } from "../types.js";
 import { MemoryCheckpointer } from "../checkpoint.js";
+import { randomUUID } from "node:crypto";
 import { InMemoryStore } from "../store/index.js";
 
 // ----------------------------------------------------------------
@@ -132,12 +133,12 @@ export function createTestHarness<S extends Record<string, unknown>>(
 
   return {
     async invoke(input, config) {
-      return app.invoke(input, { threadId: `test-${Date.now()}`, ...config });
+      return app.invoke(input, { threadId: `test-${randomUUID()}`, ...config });
     },
     async collectStream(input, streamMode = "updates") {
       const events: (ONIStreamEvent<S> | CustomStreamEvent | MessageStreamEvent)[] = [];
       for await (const evt of app.stream(input, {
-        threadId: `test-stream-${Date.now()}`,
+        threadId: `test-stream-${randomUUID()}`,
         streamMode,
       })) {
         events.push(evt);
