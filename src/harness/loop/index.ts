@@ -294,7 +294,11 @@ export async function* agentLoop(
     });
   } finally {
     if (config.hooksEngine) {
-      await fireSessionEnd(config.hooksEngine, sessionId, sessionOutcome, turn);
+      try {
+        await fireSessionEnd(config.hooksEngine, sessionId, sessionOutcome, turn);
+      } catch (e) {
+        console.warn("[oni] fireSessionEnd hook failed:", e);
+      }
     }
     finalizeMemory(memoryLoader, sessionId, prompt, turn, sessionOutcome, config);
   }
