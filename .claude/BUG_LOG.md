@@ -2395,3 +2395,59 @@
 - **test_file:** `src/__tests__/swarm/fanout-hook-error-isolation.test.ts`
 
 ---
+
+### BUG-0328
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/tools/src/stripe/index.ts`
+- **line:** `59`
+- **category:** `memory-leak`
+- **branch:** `bugfix/BUG-0328`
+- **fix_summary:** `Cache Stripe SDK client keyed by API key.`
+- **validator_notes:** `Verified. Module-level Map cache. tsc clean.`
+- **archived:** `2026-03-21T06:43:59Z`
+
+---
+
+### BUG-0329
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/tools/src/slack/index.ts`
+- **line:** `40`
+- **category:** `memory-leak`
+- **branch:** `bugfix/BUG-0329`
+- **fix_summary:** `Cache Slack WebClient keyed by token.`
+- **validator_notes:** `Verified. Module-level Map cache. tsc clean.`
+- **archived:** `2026-03-21T06:43:59Z`
+
+---
+
+### BUG-0330
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/coordination/request-reply.ts`
+- **line:** `78`
+- **category:** `race-condition`
+- **branch:** `bugfix/BUG-0330`
+- **fix_summary:** `Atomic check-and-set of resolved in reply().`
+- **validator_notes:** `Verified. Guard at top of reply() closes race in both directions. Tests pass.`
+- **archived:** `2026-03-21T06:43:59Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/regression/request-reply-race.test.ts`
+
+---
+
+### BUG-0331
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/store/index.ts`
+- **line:** `126`
+- **category:** `race-condition`
+- **branch:** `bugfix/BUG-0331`
+- **fix_summary:** `Post-insert capacity re-check with rollback.`
+- **validator_notes:** `Verified. Re-check after data.set, rollback on violation, before async gap. tsc clean.`
+- **archived:** `2026-03-21T06:43:59Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/regression/store-capacity-race.test.ts`
+
+---

@@ -10,19 +10,19 @@
 | Key | Value |
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T23:31:31Z` |
-| **Last Hunter Scan** | `2026-03-20T18:42:00Z` |
+| **Last Hunter Scan** | `2026-03-20T19:02:00Z` |
 | **Last Fixer Pass** | `2026-03-21T09:45:00Z` |
 | **Last Validator Pass** | `2026-03-21T06:43:59Z` |
 | **Last Digest Run** | `2026-03-21T06:41:21Z` |
-| **Last Security Scan** | `2026-03-23T20:00:00Z` |
+| **Last Security Scan** | `2026-03-23T20:20:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T23:43:00Z` |
+| **Last TestGen Run** | `2026-03-20T15:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T06:51:00Z` (Cycle 235) |
 | **Last Supervisor Pass** | `2026-03-21T06:45:30Z` |
-| **Total Found** | `407` |
-| **Total Pending** | `2` |
+| **Total Found** | `419` |
+| **Total Pending** | `14` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `67` |
 | **Total In Validation** | `0` |
@@ -326,7 +326,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0332
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `155`
@@ -1568,6 +1568,246 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Non-handoff result path returns `handoffHistory` as a single-element array — if the channel reducer is not configured as an accumulator, this replaces all previous handoff history instead of appending.
 - **context:** Every agent completion silently discards all previous handoff history and replaces it with a single entry, making the audit trail useless for multi-agent runs unless the `handoffHistory` channel explicitly uses an append reducer.
 - **hunter_found:** `2026-03-20T18:42:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0411
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/coordination/request-reply.ts`
+- **line:** `71`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `resolved` flag is checked and set non-atomically across the timeout closure and the `reply()` method, creating a TOCTOU window where both can observe `resolved === false` and proceed concurrently.
+- **context:** Under high load, both the timeout callback and reply() can pass the `!req.resolved` guard before either sets the flag, leading to a promise settled twice (first settlement wins, second silently swallowed) and potentially stale entries left in the `pending` map.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0412
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/graph.ts`
+- **line:** `53`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Sub-SwarmGraph instances created by `hierarchicalMesh()` and `compose()` are never tracked or disposed, leaking broker/pubsub instances with pending timeout handles.
+- **context:** Each sub-graph may own a `RequestReplyBroker` with active per-request timeouts. Without a lifecycle hook tying sub-graphs to the parent's `dispose()`, their timers are never cleared in long-running processes.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0413
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/internal/validate-command.ts`
+- **line:** `19`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `PATH_TRAVERSAL` regex `/\.\.\//` only matches `../` and misses `..\\` on Windows and bare `..` at end of path (e.g. `/bin/..`).
+- **context:** A command like `/usr/local/../../bin/evil` passes the traversal check because there is no trailing slash after the final `..`, yet resolves to `/bin/evil` after path normalization — incomplete protection against path traversal attacks.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0414
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `packages/tools/src/code-execution/e2b.ts`
+- **line:** `53`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** If `SandboxClass.create()` throws, the `finally` block calls `sandbox.close()` on an undefined variable, masking the original error with a secondary TypeError.
+- **context:** The sandbox variable is declared outside the try block. A failed create() (bad API key, network error) triggers finally where `sandbox` is still undefined, causing a ReferenceError/TypeError that hides the root cause.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0415
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/store/index.ts`
+- **line:** `174`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `list()` deletes expired keys from `this.data` Map while iterating over it with `for...of`, which is undefined behavior per the ECMAScript spec for Map iteration during deletion.
+- **context:** While V8 currently handles this correctly, the spec does not guarantee it. A future engine update could cause entries to be skipped, returning incomplete results from `list()` and leaving stale entries in `this.vectors`.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0416
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/streaming.ts`
+- **line:** `86`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `TokenStreamWriter` has a lost-token race between `push()` and `end()`: if `end()` fires between a yield resuming and the next iteration, and `push()` adds a token after `waiters` was checked, that token is silently dropped.
+- **context:** `end()` drains waiters and sets `done = true` without re-checking the queue. A concurrent `push()` that populates the queue after the waiters check but before `done` is set produces a token that is never yielded to the consumer.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0417
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/cli/dev.ts`
+- **line:** `20`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** User-supplied file path in `dev` command is resolved but never validated to be within the project directory before being passed to `spawn`, unlike `inspect` which performs a cwd boundary check.
+- **context:** A path like `../../etc/profile` resolves outside the project root and tsx will attempt to watch and execute that file. The inspect command correctly enforces this check — dev.ts lacks the equivalent guard.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0418
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/cli/build.ts`
+- **line:** `56`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** A signal-killed tsc process passes `null` as exit code, which the `if (exitCode && exitCode !== 0)` check treats as falsy success, printing "Build complete!" for a killed build.
+- **context:** When the process is killed by a signal, `exitCode` is null. `null && null !== 0` evaluates to falsy, so the error branch is never taken and the user sees a false success message.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0419
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/tools/src/stripe/index.ts`
+- **line:** `91`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `loadStripeInstance()` and all Stripe API calls (customers.create, invoices.create, charges.list) have no try/catch — raw Stripe SDK errors propagate as unhandled rejections without tool-scoped context.
+- **context:** Unlike the GitHub tool which wraps calls in a centralized error handler, Stripe tool errors include potentially sensitive details about invalid API keys and internal Stripe error responses exposed directly to callers.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0420
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/coordination/pubsub.ts`
+- **line:** `56`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Subscriber handler closures leak indefinitely if the returned unsubscribe function is never called — the subscribers Map grows without bound across the PubSub instance lifetime.
+- **context:** If agents subscribe per-request on hot paths and neglect to call the returned unsubscribe function, handler closures accumulate. SwarmGraph.dispose() calls pubsub.dispose() but only if the lazy getter was triggered.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0421
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/store/index.ts`
+- **line:** `109`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `isExpired` returns `false` when `item.ttl` is `0`, treating zero-millisecond TTL as "no expiry" instead of "expire immediately" because `!item.ttl` is falsy for both `undefined` and `0`.
+- **context:** A caller passing `ttl: 0` intending immediate expiration creates an immortal item instead. The two semantically distinct cases (no TTL vs zero TTL) are conflated by the falsy check.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0422
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/integrations/src/adapter/index.ts`
+- **line:** `57`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `authResolver.resolve()` is awaited with no try/catch — credential resolution errors propagate raw without indicating which tool or action failed.
+- **context:** In multi-tool pipelines, a credential-not-found error from the resolver surfaces without tool-scoped context, making it difficult to identify which integration failed and why.
+- **hunter_found:** `2026-03-20T19:02:00Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
