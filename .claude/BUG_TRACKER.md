@@ -11,24 +11,24 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T10:02:49Z` (Cycle 39 — 5 failures all known cooldowns BUG-0312 + BUG-0363; no new regressions; test count stable at 1390) |
 | **Last Hunter Scan** | `2026-03-22T00:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T16:55:00Z` |
-| **Last Validator Pass** | `2026-03-22T00:25:00Z` |
-| **Last Digest Run** | `2026-03-22T00:06:00Z` |
-| **Last Security Scan** | `2026-03-21T14:15:00Z` |
+| **Last Fixer Pass** | `2026-03-21T17:05:00Z` |
+| **Last Validator Pass** | `2026-03-22T00:35:00Z` |
+| **Last Digest Run** | `2026-03-21T10:23:40Z` |
+| **Last Security Scan** | `2026-03-21T15:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-22T01:05:00Z` |
-| **Last Git Manager Pass** | `2026-03-22T00:46:00Z` (Cycle 252 — gc cycle; 0 deletions; rebased BUG-0430 to main HEAD a99fcfd resolving loop/index.ts conflict; 6 conflict branches remain; pool.ts 3-way overlap BUG-0378/0407/0434) |
-| **Last Supervisor Pass** | `2026-03-21T10:10:25Z` |
+| **Last TestGen Run** | `2026-03-21T08:47:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T10:23:00Z` (Cycle 253 — 5 deletions (BUG-0436/0437/0438/0439/0440 orphans); rebased BUG-0430 to main HEAD 3318840; 6 conflict branches remain; BUG-0359/0366/0430 validator-ready; pool.ts 3-way overlap BUG-0378/0407/0434) |
+| **Last Supervisor Pass** | `2026-03-21T10:25:26Z` |
 | **Total Found** | `425` |
-| **Total Pending** | `0` |
+| **Total Pending** | `8` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `45` |
+| **Total Fixed** | `41` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `23` |
-| **Total Reopened** | `2` |
+| **Total Reopened** | `0` |
 
 ---
 
@@ -365,26 +365,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0353
-- **status:** `in-validation`
-- **severity:** `medium`
-- **file:** `src/hitl/resume.ts`
-- **line:** `26`
-- **category:** `memory-leak`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0353`
-- **description:** `HITLSessionStore` uses lazy eviction with no background timer, allowing resumed sessions past their TTL to accumulate in the `sessions` Map indefinitely if no new operations trigger `evict()`.
-- **context:** The `evict()` method is only called from `record()`, `get()`, `getByThread()`, and `pendingCount()` — not from `all()` or `markResumed()`. In a long-lived process where sessions are created and marked resumed but no further HITL operations arrive, the map grows without bound.
-- **hunter_found:** `2026-03-20T22:26:00Z`
-- **fixer_started:** `2026-03-21T13:25:00Z`
-- **fixer_completed:** `2026-03-21T13:25:00Z`
-- **fix_summary:** `Added evict() calls to all() and markResumed() methods. Fresh branch from main.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0354
 - **status:** `blocked`
 - **severity:** `low`
@@ -399,9 +379,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T05:12:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** `False positive. The dead code guard does not exist in current codebase. pickSlot() has no unreachable if (!total) check.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:30:00Z`
+- **validator_completed:** `2026-03-22T00:30:00Z`
+- **validator_notes:** `evict() added to all() and markResumed(). All 6 public methods now trigger eviction. Fix confirmed on main. Verified.`
 
 ---
 
@@ -466,7 +446,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0359
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `156`
@@ -476,8 +456,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Off-by-one in turns-remaining calculation tells the model "0 turns remaining" on its last valid turn instead of 1.
 - **context:** `remaining = maxTurns - turn - 1` evaluates to 0 when `turn = maxTurns - 1`, but the agent is still executing that turn. The correct formula is `maxTurns - turn`. This causes the agent to believe it has no turns left while it is still active.
 - **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T17:05:00Z`
+- **fixer_completed:** `2026-03-21T17:05:00Z`
 - **fix_summary:** ``
 - **validator_started:** `2026-03-22T00:25:00Z`
 - **validator_completed:** `2026-03-22T00:25:00Z`
@@ -485,28 +465,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0360
-- **status:** `in-validation`
-- **severity:** `medium`
-- **file:** `src/pregel/execution.ts`
-- **line:** `98`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0360`
-- **description:** PII redaction silently bypasses audit log and `filter.blocked` event emission because `runFilters` returns `passed: true` for redacted content.
-- **context:** The `if (!inputCheck.passed)` guard controls both event bus emission and audit logging. When a PII filter redacts content instead of blocking it, `passed: true` is returned, so no audit record is written and no `filter.blocked` event fires, even though content was silently modified.
-- **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** `2026-03-21T05:02:00Z`
-- **fixer_completed:** `2026-03-21T05:02:00Z`
-- **fix_summary:** `Added filter.redacted event and audit entry when PII filter redacts content without blocking.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0366
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/memory/index.ts`
 - **line:** `523`
@@ -516,8 +476,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `hydrate()` mutates the shared `MemoryUnit` object's `content` field in-place, so concurrent agents sharing the same `MemoryLoader` instance overwrite each other's hydrated content.
 - **context:** `MemoryLoader` has no fork mechanism and is passed directly to multiple concurrent `agentLoop` calls. Two agents calling `hydrate()` on the same unit simultaneously produce a data race on `unit.content`.
 - **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T17:05:00Z`
+- **fixer_completed:** `2026-03-21T17:05:00Z`
 - **fix_summary:** ``
 - **validator_started:** `2026-03-22T00:25:00Z`
 - **validator_completed:** `2026-03-22T00:25:00Z`
@@ -567,46 +527,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0374
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `packages/loaders/src/loaders/pdf.ts`
-- **line:** `33`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0374`
-- **description:** pdf.js document loading and per-page getTextContent calls have no try/catch, so parse errors on corrupt PDFs surface as unhandled rejections with raw pdfjs internal errors.
-- **context:** Lines 33-39 are outside the try/catch that wraps only the file read, so callers receive raw pdfjs errors instead of contextualised PdfLoader-scoped messages.
-- **hunter_found:** `2026-03-20T22:10:00Z`
-- **fixer_started:** `2026-03-21T05:42:00Z`
-- **fixer_completed:** `2026-03-21T05:42:00Z`
-- **fix_summary:** `Wrapped pdf.js getDocument and per-page getTextContent in try-catch with descriptive PdfLoader error.`
-- **validator_started:** `2026-03-22T00:25:00Z`
-- **validator_completed:** `2026-03-22T00:25:00Z`
-- **validator_notes:** `cancel() callback added to ReadableStream calling generator.return() on disconnect. Verified.`
-
----
-
-### BUG-0375
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/checkpointers/sqlite.ts`
-- **line:** `31`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0375`
-- **description:** db.exec calls for PRAGMA and CREATE TABLE in SqliteCheckpointer.create are not wrapped in try/catch, so initialisation errors leave the database handle open.
-- **context:** Unlike PostgresCheckpointer.create which handles this, SqliteCheckpointer.create leaks the handle if schema creation fails.
-- **hunter_found:** `2026-03-20T22:10:00Z`
-- **fixer_started:** `2026-03-21T05:55:00Z`
-- **fixer_completed:** `2026-03-21T05:55:00Z`
-- **fix_summary:** `Wrap db.exec PRAGMA and CREATE TABLE in try-catch, call db.close() on error.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0376
 - **status:** `fixed`
 - **severity:** `low`
@@ -621,9 +541,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T06:15:00Z`
 - **fixer_completed:** `2026-03-21T06:15:00Z`
 - **fix_summary:** `Wrap res.json() in try-catch in OpenAI embed().`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:35:00Z`
+- **validator_completed:** `2026-03-22T00:35:00Z`
+- **validator_notes:** `getDocument and per-page getTextContent wrapped in try/catch with PdfLoader-scoped error. Scope clean (1 file, 13+/7-). Verified.`
 
 ---
 
@@ -641,9 +561,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T06:15:00Z`
 - **fixer_completed:** `2026-03-21T06:15:00Z`
 - **fix_summary:** `Wrap res.json() in try-catch in Ollama chat() and embed().`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:35:00Z`
+- **validator_completed:** `2026-03-22T00:35:00Z`
+- **validator_notes:** `PRAGMA and CREATE TABLE wrapped in try block. Catch calls db.close() before re-throw. Scope clean (1 file). Verified.`
 
 ---
 
@@ -689,46 +609,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 
-### BUG-0380
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/functional.ts`
-- **line:** `66`
-- **category:** `type-error`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0380`
-- **description:** `throw last` where `last` is typed `Error | undefined` — if `maxAttempts` is 0 the loop body never runs and `last` remains `undefined`, throwing a non-Error value.
-- **context:** TypeScript allows throwing `undefined` without error, producing a non-Error rejection that callers catching `Error` will miss entirely, silently swallowing the failure.
-- **hunter_found:** `2026-03-20T22:25:00Z`
-- **fixer_started:** `2026-03-21T05:55:00Z`
-- **fixer_completed:** `2026-03-21T05:55:00Z`
-- **fix_summary:** `Guard throw last with nullish coalescing to throw proper Error when maxAttempts is 0.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0381
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/tools/define.ts`
-- **line:** `45`
-- **category:** `type-error`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0381`
-- **description:** `executeTool(tool, call.args)` passes `Record<string, unknown>` to a generic `executeTool<TInput>` where `TInput` resolves to `any` via the `ToolDefinition` default, erasing compile-time input type validation.
-- **context:** The concrete `TInput` of each registered tool is lost when stored in `ToolDefinition[]` using the `any` default generic, so `call.args` is passed unchecked into `tool.execute` — schema mismatches between the LLM-supplied args and the tool's expected input are not caught at compile time.
-- **hunter_found:** `2026-03-20T22:25:00Z`
-- **fixer_started:** `2026-03-21T06:05:00Z`
-- **fixer_completed:** `2026-03-21T06:05:00Z`
-- **fix_summary:** `Added runtime args validation via validateToolArgs before executeTool call in define.ts.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0383
 - **status:** `fixed`
 - **severity:** `low`
@@ -743,29 +623,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T06:25:00Z`
 - **fixer_completed:** `2026-03-21T06:25:00Z`
 - **fix_summary:** `Change > to >= in snapshot cap check to prevent transient overflow.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0384
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/pregel/checkpointing.ts`
-- **line:** `85`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0384`
-- **description:** `forkFrom()` fallback path copies checkpoints with `step <= targetStep` to `newThreadId` but never clears pre-existing checkpoints on `newThreadId`, producing a corrupted mixed timeline if the thread already has history.
-- **context:** `checkpointer.get(newThreadId)` returns the highest-step checkpoint, which may belong to the thread's prior contents rather than the intended fork point, causing getState and getStateAt to return stale or wrong state after a fork.
-- **hunter_found:** `2026-03-20T22:25:00Z`
-- **fixer_started:** `2026-03-21T06:05:00Z`
-- **fixer_completed:** `2026-03-21T06:05:00Z`
-- **fix_summary:** `Added delete(newThreadId) before copy loop in forkFrom() and PersistentCheckpointer.fork().`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:35:00Z`
+- **validator_completed:** `2026-03-22T00:35:00Z`
+- **validator_notes:** `validateToolArgs added before executeTool, guarded by tool.schema. Returns isError on failure. Uses pre-existing validated utility. Scope clean. Verified.`
 
 ---
 
@@ -784,29 +644,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T05:55:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** `False positive. No options.scope parameter or scope warning exists in auth-resolver.ts. Code described in bug is absent.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0387
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/index.ts`
-- **line:** `11`
-- **category:** `other`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0387`
-- **description:** `RedisCheckpointer` is exported from `src/checkpointers/index.ts` but omitted from the public re-export in `src/index.ts`, making it inaccessible from the package's public API.
-- **context:** Consumers importing from `@oni.bot/core` cannot access `RedisCheckpointer` despite it being a first-class production checkpointer — they must reach into the internal path instead.
-- **hunter_found:** `2026-03-20T22:30:00Z`
-- **fixer_started:** `2026-03-21T06:05:00Z`
-- **fixer_completed:** `2026-03-21T06:05:00Z`
-- **fix_summary:** `Added RedisCheckpointer to public API re-exports in src/index.ts.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:35:00Z`
+- **validator_completed:** `2026-03-22T00:35:00Z`
+- **validator_notes:** `delete(newThreadId) added before copy loop in forkFrom() and PersistentCheckpointer.fork(). Safe no-op when no prior history. Verified.`
 
 ---
 
@@ -824,9 +664,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T06:25:00Z`
 - **fixer_completed:** `2026-03-21T06:25:00Z`
 - **fix_summary:** `Fall back to node_end data then {} when no state_update emitted.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:35:00Z`
+- **validator_completed:** `2026-03-22T00:35:00Z`
+- **validator_notes:** `RedisCheckpointer added to re-export line in src/index.ts. Confirmed real export in checkpointers/index.ts. 1-line change. Verified.`
 
 ---
 
@@ -1433,26 +1273,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0429
-- **status:** `in-validation`
-- **severity:** `high`
-- **file:** `src/harness/loop/index.ts`
-- **line:** `297`
-- **category:** `missing-error-handling`
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0429`
-- **description:** `fireSessionEnd()` is called in the finally block without a try/catch, so a throwing session-end hook propagates out of the generator and masks the actual session outcome.
-- **context:** The finally block is the guaranteed cleanup path for every agent loop execution; a hook error here suppresses the real result and leaves callers' for-await-of loop in an unrecoverable error state with no actionable message.
-- **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** `2026-03-21T15:35:00Z`
-- **fixer_completed:** `2026-03-21T15:35:00Z`
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T00:10:00Z`
-- **validator_completed:** `2026-03-22T00:14:00Z`
-- **validator_notes:** `REOPENED: Branch bugfix/BUG-0429 was deleted by Git Manager Cycle 249 without being merged to main. Code at src/harness/loop/index.ts lines 295-300 still shows fireSessionEnd() called bare in finally block with no try/catch. Fix never landed. Fixer must: recreate branch from main, wrap fireSessionEnd() in try/catch in the finally block.`
-
----
-
 ### BUG-0430
 - **status:** `fixed`
 - **severity:** `medium`
@@ -1467,9 +1287,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T15:05:00Z`
 - **fixer_completed:** `2026-03-21T15:05:00Z`
 - **fix_summary:** `Wrap finalizeMemory in try-catch in finally block.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:30:00Z`
+- **validator_completed:** `2026-03-22T00:30:00Z`
+- **validator_notes:** `fireSessionEnd() wrapped in try/catch in finally block. console.warn on error, no re-throw. Fix confirmed on main. Verified.`
 
 ---
 
@@ -1493,26 +1313,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0433
-- **status:** `in-validation`
-- **severity:** `high`
-- **file:** `src/graph.ts`
-- **line:** `180`
-- **category:** `race-condition`
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0433`
-- **description:** The HITL `resume()` method validates a session then awaits `runner.invoke()` before calling `markResumed()`, creating a TOCTOU race where two concurrent resume() calls for the same resumeId both pass validation.
-- **context:** A duplicate resume() call during the first's async gap will both proceed past the guard, causing the node to execute twice with the human-provided value, potentially producing duplicate side-effects or corrupted state.
-- **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** `2026-03-21T15:35:00Z`
-- **fixer_completed:** `2026-03-21T15:35:00Z`
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T00:10:00Z`
-- **validator_completed:** `2026-03-22T00:14:00Z`
-- **validator_notes:** `REOPENED: Moving markResumed() before invoke() is necessary but insufficient. The guard only checks !session || session.threadId !== cfg.threadId — never inspects session.status. store.get() returns sessions regardless of status. Second concurrent call passes the guard and invokes again. Fix must add: if (session.status !== "pending") check before markResumed().`
-
----
-
 ### BUG-0435
 - **status:** `fixed`
 - **severity:** `low`
@@ -1527,6 +1327,166 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T15:05:00Z`
 - **fixer_completed:** `2026-03-21T15:05:00Z`
 - **fix_summary:** `Snapshot currentAgentCount at evaluate() start for consistency.`
+- **validator_started:** `2026-03-22T00:30:00Z`
+- **validator_completed:** `2026-03-22T00:30:00Z`
+- **validator_notes:** `session.status !== "pending" guard added before markResumed(). markResumed before invoke. TOCTOU closed. Fix confirmed on main. Verified.`
+
+---
+
+### BUG-0443
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/agents/define-agent.ts`
+- **line:** `201`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Return value `{ messages: newMessages }` is double-cast through `as unknown as Partial<S>`, silently bypassing TypeScript when state type `S` has no `messages` field.
+- **context:** If the caller's state type does not contain a `messages` key, the cast corrupts the state graph at runtime when Pregel merges the partial update — data loss or silent wrong behavior.
+- **hunter_found:** `2026-03-21T17:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0444
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/functional.ts`
+- **line:** `157`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `branch()` router node returns full state as its node update instead of `{}`, causing every channel reducer to fire with `(current, current)` on each branch invocation.
+- **context:** For append-type reducers (e.g. `appendList`), this doubles all existing values in the channel every time the router executes — silent data corruption that compounds with each branch call.
+- **hunter_found:** `2026-03-21T17:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0445
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/models/anthropic.ts`
+- **line:** `195`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `drainSSELines` emits events on every line when `flush=true` due to OR condition with blank-line check, causing the final SSE event to be yielded twice.
+- **context:** Double-emission of the trailing `message_delta` event causes usage tokens to be double-counted in the caller's accounting, inflating reported token consumption.
+- **hunter_found:** `2026-03-21T17:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0446
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/pregel/execution.ts`
+- **line:** `196`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `nodeCache` FIFO eviction is not atomic — concurrent node executions can both read the same oldest key, both delete it, and both insert, allowing the map to exceed the 256-entry cap.
+- **context:** While bounded (at most N-1 extra entries for N concurrent nodes), the non-atomic eviction wastes slots and lets the cache grow past its intended memory cap in high-parallelism graphs.
+- **hunter_found:** `2026-03-21T17:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0447
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/inspect.ts`
+- **line:** `114`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `detectCycles` adds edges from source to every node in the graph when a conditional edge has no `pathMap`, making `topoOrder` always return `null` for graphs with unmapped conditional edges.
+- **context:** `GraphDescriptor.topoOrder` is unusable for the majority of real graphs (which use conditional edges without exhaustive pathMaps), silently returning `null` and forcing consumers to fall back to unordered logic.
+- **hunter_found:** `2026-03-21T17:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0448
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/cli/init.ts`
+- **line:** `10`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `initProject` performs multiple async `writeFile` calls with no try/catch, so filesystem errors propagate as raw unhandled rejections with no user-friendly message.
+- **context:** Every other CLI command handler wraps its risky I/O in try/catch; `initCommand` is the only one that lets raw Node.js errors surface directly to users, breaking the consistent error UX.
+- **hunter_found:** `2026-03-21T17:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0449
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/cli/run.ts`
+- **line:** `47`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** When a child process is killed by a signal, `close` fires with `code=null`; the log displays "exit code: 0" via `code ?? 0` and `process.exitCode` is never set to non-zero.
+- **context:** A SIGKILL'd subprocess is indistinguishable from a clean exit — CI pipelines using `oni run` will see exit code 0 even when the agent was forcibly terminated.
+- **hunter_found:** `2026-03-21T17:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0450
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/loaders/src/loaders/json.ts`
+- **line:** `10`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The initial `readFile` call for JSON files has no try/catch, so ENOENT/EACCES errors throw raw Node.js errors instead of wrapped DocumentLoader errors.
+- **context:** CsvLoader and PdfLoader wrap their readFile calls with descriptive messages; JsonLoader omits this for regular file reads, breaking the uniform error-handling contract of the loaders package.
+- **hunter_found:** `2026-03-21T17:45:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
