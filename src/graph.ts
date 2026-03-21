@@ -180,7 +180,18 @@ export class StateGraph<S extends Record<string, unknown>> {
             `resumeId "${cfg.resumeId}" not found or does not belong to thread "${cfg.threadId}"`
           );
         }
+        // Guard against TOCTOU race: reject sessions that are not pending.
+        // store.get() returns sessions regardless of status, so a concurrent
+        // resume() call could slip past the existence check above.
+        if (session.status !== "pending") {
+          throw new Error(
+            `Session "${cfg.resumeId}" already resumed or expired`
+          );
+        }
         const nodeKey = session.node;
+        // Mark as resumed BEFORE invoke to close the TOCTOU window —
+        // a concurrent caller will see the status change and bail out above.
+        store.markResumed(cfg.resumeId);
         const result = await runner.invoke(
           {},
           {
@@ -188,9 +199,6 @@ export class StateGraph<S extends Record<string, unknown>> {
             __resumeValues: { [nodeKey]: value },
           } as ONIConfig & { __resumeValues: Record<string, unknown> }
         );
-        // Mark as resumed only after a successful invoke — if invoke throws,
-        // the session remains in "pending" so the caller can retry.
-        store.markResumed(cfg.resumeId);
         return result;
       },
 
