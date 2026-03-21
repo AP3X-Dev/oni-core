@@ -125,7 +125,7 @@ export async function executeTools(
           return clean;
         };
         const sanitized = stripProtoKeys(preResult.modifiedInput) as Record<string, unknown>;
-        Object.assign(toolCall.args, sanitized);
+        toolCall.args = sanitized;
       }
     }
 
