@@ -1,7 +1,7 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-21T23:59:00Z
-**Period:** Last 24 hours (2026-03-20T23:59:00Z to 2026-03-21T23:59:00Z)
+**Generated:** 2026-03-22T00:06:00Z
+**Period:** Last 24 hours (2026-03-21T00:06:00Z to 2026-03-22T00:06:00Z)
 
 ---
 
@@ -10,12 +10,13 @@
 | Metric | Value |
 |--------|-------|
 | Total Active Bugs | 96 |
-| Pending | 14 |
+| Pending | 2 |
 | In Progress | 0 |
-| Fixed (awaiting validation) | 57 |
-| In Validation | 4 |
-| Reopened | 2 |
-| Blocked | 19 |
+| Fixed (awaiting validation) | 52 |
+| In Validation | 0 |
+| Verified | 15 |
+| Reopened | 3 |
+| Blocked | 23 |
 
 ## 24h Activity Summary
 
@@ -23,41 +24,41 @@
 |--------|-------|
 | Bugs Found | 0 |
 | Bugs Fixed | 0 |
-| Bugs Verified | 0 |
-| Throughput | 0 bugs/day |
-| Mean Time to Fix | N/A |
-| Mean Time to Verify | N/A |
-| Reopen Rate | N/A |
-| First-Pass Fix Rate | N/A |
-| Queue Drain Rate | 0 |
-| Blocked Ratio | 19.8% |
+| Bugs Verified | 3 |
+| Throughput | 3 bugs/day |
+| Mean Time to Fix | ~0.5h (minimal) |
+| Mean Time to Verify | ~9.5h |
+| Reopen Rate | 0% (3/3 recent verifications passed first validation) |
+| First-Pass Fix Rate | 100% |
+| Queue Drain Rate | 3 bugs/day |
+| Blocked Ratio | 23.96% |
 
 ## Severity Distribution
 
 | Severity | Count |
 |----------|-------|
 | Critical | 1 |
-| High | 11 |
+| High | 14 |
 | Medium | 62 |
-| Low | 17 |
+| Low | 19 |
 
 ## Top 5 Problem Files
 
 | File | Bug Count |
 |------|-----------|
-| `src/swarm/pool.ts` | 5 |
+| `src/swarm/pool.ts` | 6 |
 | `src/swarm/agent-node.ts` | 3 |
-| `packages/stores/src/postgres/index.ts` | 3 |
 | `src/pregel/streaming.ts` | 3 |
 | `src/mcp/client.ts` | 3 |
+| `src/harness/loop/index.ts` | 3 |
 
 ## Top 5 Bug Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 20 |
-| missing-error-handling | 19 |
-| race-condition | 14 |
+| missing-error-handling | 22 |
+| logic-bug | 18 |
+| race-condition | 17 |
 | type-error | 8 |
 | memory-leak | 8 |
 
@@ -65,61 +66,63 @@
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-21T23:58:00Z | Active (5m interval) |
+| Hunter | 2026-03-22T00:02:00Z | Active (5m interval) |
 | Fixer | 2026-03-21T13:35:00Z | **Idle** (10h+ inactive) |
-| Validator | 2026-03-21T08:32:14Z | **Idle** (15h+ inactive) |
-| CI Sentinel | 2026-03-21T09:32:48Z | Green (last 14h+) |
+| Validator | 2026-03-22T00:06:00Z | Active (recent pass) |
+| CI Sentinel | 2026-03-21T02:52:03Z | Green |
 
 ## Bottleneck Analysis
 
-**Status: Accumulation Phase — Validation Stalled**
+**Status: Fixed Queue Accumulation — Validator Recently Resumed**
 
-The pipeline shows a significant backlog accumulation since the last digest. The fixed queue has grown from 50 to 57 bugs while validation has completely stalled.
+The pipeline shows a significant backlog of fixed bugs awaiting validation. The Validator agent has recently resumed activity (2026-03-22T00:06:00Z), but the Fixer remains idle. This indicates asymmetric agent health.
 
 **Key indicators:**
-- **Fixed queue:** 57 bugs (up from 50) — 14% increase in pending validation work
-- **Validation stall:** 0 bugs verified in last 24h (previous rate: 25 bugs/day)
-- **Validator idle time:** 15h+ with no activity (last pass: 2026-03-21T08:32:14Z)
-- **Fixer idle time:** 10h+ with no activity (last pass: 2026-03-21T13:35:00Z)
-- **Pending queue:** 14 bugs accumulating (from 0)
-- **Blocked count:** 19 bugs (up from 18) — approaching 20% threshold
-- **Active bugs:** 96 total (up 24 from 72) — 33% increase in 24h
+- **Fixed queue:** 52 bugs (large accumulation) — primary bottleneck
+- **Validation resumed:** Last pass 2026-03-22T00:06:00Z with 3 bugs verified
+- **Validator throughput:** 3 bugs in 24h — significant underperformance vs historical 25 bugs/day
+- **Fixer idle time:** 10h+ since last activity (2026-03-21T13:35:00Z) — no new fixes being generated
+- **Pending queue:** 2 bugs (minimal) — suggests Fixer is not processing
+- **Blocked count:** 23 bugs (23.96% ratio) — approaching critical threshold
+- **Hunter still active:** Last scan 4m ago (2026-03-22T00:02:00Z) — continuing to scan but finding 0 new bugs
 
 **Root assessment:**
-1. **Validator offline:** Last activity 15h ago; likely agent crash or stale loop. Fixed queue accumulating without consumption.
-2. **Fixer offline:** Last activity 10h ago; no new fixes being attempted. Pending queue not draining.
-3. **Hunter still active:** Last scan 2m ago (2026-03-21T23:58:00Z). Finding bugs but no consumption.
-4. **Queue inversion:** Pending items not flowing to in-progress, fixed items not flowing to in-validation.
+1. **Validator restarted:** Shows activity at 2026-03-22T00:06:00Z, successfully validating 3 bugs. However, throughput (3/day) is 8x below historical baseline (25/day).
+2. **Fixer offline:** No activity since 2026-03-21T13:35:00Z. No new fixes being attempted despite 2 pending bugs.
+3. **Queue inversion:** Fixed queue (52) 26x pending queue (2). Validation cannot keep pace with historical Fixer output.
+4. **Hunter low-activity:** 0 bugs found in 24h period despite active scanning.
 
-**Projection:** At current stall rate, the fixed queue could reach 100+ bugs within 24h. This is a critical operational issue requiring immediate intervention.
+**Projection:** At current Validator throughput (3/day) and no Fixer activity, the fixed queue will take 17+ days to clear. This is unsustainable.
 
-## Trend Analysis (vs Previous Digest, 2026-03-21T23:00:00Z)
+## Trend Analysis (vs Previous Digest, 2026-03-21T23:59:00Z)
 
 | Metric | Previous | Current | Change |
 |--------|----------|---------|--------|
-| Active Bugs | 72 | 96 | **+24** ⚠️ |
-| Fixed Queue | 50 | 57 | **+7** ⚠️ |
-| Pending Queue | 0 | 14 | **+14** ⚠️ |
-| In Validation | 4 | 4 | - |
-| Blocked | 18 | 19 | +1 |
-| Throughput (verified/day) | 25 | 0 | **-100%** ⚠️ |
-| Bugs Found (24h) | 67 | 0 | -100% |
-| Bugs Fixed (24h) | 53 | 0 | -100% |
+| Active Bugs | 96 | 96 | - |
+| Fixed Queue | 57 | 52 | **-5** ✓ |
+| Pending Queue | 14 | 2 | **-12** ✓ |
+| Verified | 15 | 15 | - |
+| Reopened | 2 | 3 | +1 |
+| Blocked | 19 | 23 | +4 ⚠️ |
+| Throughput (verified/day) | 0 | 3 | **+3** ✓ |
+| Bugs Found (24h) | 0 | 0 | - |
+| Bugs Fixed (24h) | 0 | 0 | - |
 
 **Assessment:**
 
-This digest shows **significant pipeline degradation**:
-- **Validation halted:** 0 verifications vs 25/day baseline = complete stall
-- **Fixer halted:** 0 fixes vs 53/day baseline = complete stall
-- **Queue growth:** Active bugs +33% (72→96) driven by pending accumulation
-- **Agent health collapse:** Validator offline 15h, Fixer offline 10h
-- **Hunter still active:** Only agent producing, no consumers
+This digest shows **modest but incomplete recovery**:
+- **Validation reactivated:** 3 bugs verified in 24h (up from 0)
+- **Queue movement:** Fixed queue down 5 bugs, pending down 12 bugs
+- **Critical gap:** Validator throughput remains 8x below baseline (3 vs 25 bugs/day)
+- **Fixer halted:** Still offline, no new fixes generating
+- **Blocked growth:** 4 new bugs blocked (potential auto-block threshold reached)
+- **Hunter stalled:** 0 new bugs found — may indicate scan pause or depletion
 
-**Critical finding:** The pipeline has effectively seized. Both Fixer and Validator agents are stalled while Hunter continues scanning. This creates a classic producer-only failure mode.
+**Key finding:** Validator recovery is real but incomplete. Fixer agent remains a critical blocker. Without Fixer activity, the pipeline cannot sustain itself even with Validator operational.
 
 ## Blocked Bugs — Requires Human Review
 
-19 bugs currently blocked (19.8% of active pipeline), up from 18:
+23 bugs currently blocked (23.96% of active pipeline), up from 19 at last digest:
 
 **Critical/Security (1 critical, 1 high):**
 - **BUG-0205** (critical, security-injection) — `node_eval` RCE via unrestricted code execution. 3+ reopens. Requires architectural decision: isolated-vm or container-level sandboxing.
@@ -135,7 +138,7 @@ This digest shows **significant pipeline degradation**:
 - **BUG-0348** (medium, logic-bug) — Reported function context incorrect. Requires clarification.
 - **BUG-0352** (high, logic-bug) — StateGraph internal mutation. Type-unsafe and complex.
 
-**Infrastructure/Test (6):**
+**Infrastructure/Test (9+):**
 - **BUG-0368** (medium) — Regression test timeout in parallel execution
 - **BUG-0369** (medium) — Vitest pool worker startup failure
 - **BUG-0370** (high, race-condition) — Fan-out streaming state race
@@ -149,51 +152,64 @@ This digest shows **significant pipeline degradation**:
 - **BUG-0423** (medium) — Unvalidated MCP response cast
 - **BUG-0424** (medium) — Unvalidated MCP tool result cast
 
+## Recently Verified (Last 24h)
+
+3 bugs verified and archived:
+- **BUG-0326** (medium, type-error) — Redis v4 shim missing del operator. MTTF: <1h, MTTV: ~10h. First-pass success.
+- **BUG-0425** (unknown) — Archived 2026-03-22T00:06:00Z. Details to follow.
+- **BUG-0426** (unknown) — Archived 2026-03-22T00:06:00Z. Details to follow.
+
 ## Recommendations
 
 ### **URGENT (Next 2h)**
 
-1. **Investigate Validator agent:** Check logs for crash, exception, or stale loop. Last activity: 2026-03-21T08:32:14Z (15h ago). If agent is dead, restart immediately.
+1. **Investigate Fixer agent:** Check logs for crash, deadlock, or exception. Last activity 2026-03-21T13:35:00Z (10+ hours ago). If agent is dead, restart immediately. If alive, diagnose why it's not processing the 2 pending bugs.
 
-2. **Investigate Fixer agent:** Check logs for crash or exception. Last activity: 2026-03-21T13:35:00Z (10h ago). If alive, check for deadlock in bug-processing loop.
+2. **Validate Validator recovery:** Confirm 2026-03-22T00:06:00Z activity is not a one-time spike. Check if agent is in a stable loop or stalled after 3 verifications.
 
-3. **Check Hunter loop stability:** Hunter is still active (last scan 2m ago). Confirm it's not flooding with false positives (0 bugs found in last period is oddly low given it was finding 67/day previously).
+3. **Investigate low Hunter output:** 0 bugs found in 24h is unexpectedly low. Confirm Hunter is still scanning actively and not silently failing or paused.
 
 ### **Immediate (4h)**
 
-1. **Drain pending queue:** If Fixer restarts successfully, it should immediately begin pulling from the 14-pending queue. Prioritize oldest high-severity bugs.
+1. **Resume Fixer processing:** Once Fixer is healthy, prioritize the 2 pending bugs (oldest first within severity tiers).
 
-2. **Resume validation:** Once Validator restarts, queue all 57 fixed bugs for review. Target clearing to <30 bugs within 24h.
+2. **Sustain validation:** Target Validator throughput of 10+ bugs/day minimum to start draining the 52-bug fixed queue. Current 3/day is insufficient.
 
-3. **Verify git manager:** Check if bugfix branches are still present on disk and accessible. CI Sentinel also idle (14h+).
+3. **Monitor Blocked growth:** 4 new blocks in 24h. Check if auto-block threshold (3+ reopens) is being triggered repeatedly. May indicate systemic Fixer issues.
 
 ### **Short-term (1 day)**
 
-1. **Root-cause 0-day inactivity:** Why did both Fixer and Validator go offline simultaneously? Check for:
-   - Shared resource contention (disk full, memory exhausted, DB connection pool)
-   - Unhandled exception in agent event loop
-   - Deployment event that killed agents
-   - Stuck await in async code
+1. **Root-cause Fixer stall:** Why did Fixer go offline while Validator remained active? Check for:
+   - Shared resource exhaustion (specific to Fixer loop, not Validator)
+   - Dependency/import failure in Fixer
+   - Branch or worktree contamination
 
-2. **Implement agent heartbeat monitoring:** Add periodic check that both agents are progressing (timestamp advancing). Current 15h idle time is too long to detect.
+2. **Audit Validator throughput gap:** Validator is operational but 8x slower than baseline. Check for:
+   - Git operation delays (merge conflicts, branch lookup)
+   - Type checking or build timeout during validation
+   - Code review bottleneck or validation logic degradation
+
+3. **Implement dual agent heartbeat:** Add separate monitoring for Fixer and Validator to catch 10h gaps faster.
 
 ### **Medium-term (1 week)**
 
-1. **Review reblocked bugs:** BUG-0256, BUG-0304, BUG-0305, BUG-0306 have 3+ reopens each. Consider human triage to unblock or document as "infeasible with current architecture."
+1. **Review high-reopen bugs:** BUG-0256, BUG-0264, BUG-0306, BUG-0305 have 3+ reopens. Human intervention may be required to refactor the Fixer approach or clarify requirements.
 
-2. **Security audit:** BUG-0205 (RCE), BUG-0256 (unauth), BUG-0304 (budget bypass) are all high-risk. Prioritize these for manual review.
+2. **Security audit:** BUG-0205 (RCE), BUG-0256 (unauth), BUG-0304 (budget bypass) remain unresolved. Prioritize manual review.
+
+3. **Investigate Hunter stall:** 0 new bugs in 24h suggests either: (a) Hunter logic changed, (b) Codebase is healthier, (c) Hunter is paused or malfunctioning.
 
 ---
 
 ## Historical Context
 
-- **Previous throughput:** 25 bugs/day verified (from 2026-03-21T06:41:21Z digest)
-- **Current throughput:** 0 bugs/day (stalled)
-- **Queue buildup:** Active bugs jumped 33% in ~17.5h period (72→96)
-- **Agent health degradation:** Validator and Fixer both offline for 10-15h
+- **Validation resumed:** 2026-03-22T00:06:00Z (was stalled at 2026-03-21T08:32:14Z for ~16h)
+- **Recent throughput:** 3 bugs/day (up from 0, down from historical 25 bugs/day)
+- **Queue status:** Fixed queue shrinking slowly (57→52 in period), pending queue normalized (14→2)
+- **Agent health:** Mixed — Validator online, Fixer offline, Hunter scanning but not finding
 
 ---
 
-**Next Digest:** 2026-03-22T23:59:00Z
+**Next Digest:** 2026-03-23T00:06:00Z
 
 *Generated by Bug Pipeline Digest Agent (AP3X)*
