@@ -29,11 +29,18 @@ export function bridgeSwarmTracer(
   bus: EventBus,
   swarmId: string,
 ): () => void {
+  const MAX_START_TIMES = 1000;
   const startTimes = new Map<string, number>();
 
   const unsubscribe = tracer.subscribe((event) => {
     switch (event.type) {
       case "agent_start":
+        // Evict the oldest entry when at capacity to prevent unbounded
+        // growth from agents that start but never complete or error.
+        if (startTimes.size >= MAX_START_TIMES) {
+          const oldest = startTimes.keys().next().value!;
+          startTimes.delete(oldest);
+        }
         startTimes.set(event.agentId, event.timestamp);
         bus.emit({
           type: "swarm.agent.started",
