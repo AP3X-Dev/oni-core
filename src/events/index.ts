@@ -12,6 +12,7 @@ export type {
   ToolResultEvent,
   HandoffEvent,
   FilterBlockedEvent,
+  FilterRedactedEvent,
   BudgetWarningEvent,
   ErrorEvent,
   PermissionAskedEvent,

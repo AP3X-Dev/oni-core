@@ -29,6 +29,6 @@ export interface GuardrailsConfig {
 export interface AuditEntry {
   timestamp: number;
   agent: string;
-  action: "llm.request" | "llm.response" | "tool.call" | "tool.result" | "filter.blocked" | "budget.warning" | "budget.exceeded" | "budget.unknown_pricing";
+  action: "llm.request" | "llm.response" | "tool.call" | "tool.result" | "filter.blocked" | "filter.redacted" | "budget.warning" | "budget.exceeded" | "budget.unknown_pricing";
   data: Record<string, unknown>;
 }

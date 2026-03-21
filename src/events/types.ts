@@ -72,6 +72,14 @@ export interface FilterBlockedEvent {
   timestamp: number;
 }
 
+export interface FilterRedactedEvent {
+  type: "filter.redacted";
+  filter: string;
+  agent: string;
+  direction: "input" | "output";
+  timestamp: number;
+}
+
 export interface BudgetWarningEvent {
   type: "budget.warning";
   agent: string;
@@ -247,6 +255,7 @@ export type LifecycleEvent =
   | ToolResultEvent
   | HandoffEvent
   | FilterBlockedEvent
+  | FilterRedactedEvent
   | BudgetWarningEvent
   | ErrorEvent
   | PermissionAskedEvent
