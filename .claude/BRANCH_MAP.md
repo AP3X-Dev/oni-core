@@ -1,37 +1,33 @@
-# Branch Map — Cycle 321
+# Branch Map — Cycle 322
 
-**Generated:** 2026-03-21T18:26:00Z
-**Main HEAD:** 496622d
-**Total Branches:** 1 bugfix (bugfix/BUG-0452, pending)
+**Generated:** 2026-03-21T18:28:22Z
+**Main HEAD:** be28288
+**Total Branches:** 0 bugfix (cleaned up this cycle)
 
 | Branch | Status | Classification | Notes |
 |---|---|---|---|
-| bugfix/BUG-0452 | pending | Active | memory-loader buildSystemPrompt returns empty — awaiting Fixer |
-| bugfix/BUG-0343 | blocked→merged | Merged | Merged to main (ac7c4c9) — clearTimeout fix in safety-gate.ts; branch deleted |
-| bugfix/BUG-0356 | blocked→merged | Merged | Merged to main (fb46a5e) — .catch() on floating promise in PostgresStore; branch deleted |
-| bugfix/BUG-0359 | blocked→merged | Merged | Merged to main (2998c4b) — off-by-one turns-remaining in loop/index.ts; branch deleted |
+| bugfix/BUG-0452 | pending (tracker) | Orphaned/Redundant → DELETED | Fix content identical to main (f3add0b). File diff empty. Force-deleted this cycle. |
 
 ## Active Worktrees
 
-bugfix/BUG-0452 — exists as local branch (pending, not yet in-progress).
+None — 0 bugfix branches remaining after Cycle 322 cleanup.
 
 ## Non-Bugfix Branches (out of scope)
 
-None remaining.
+None.
 
-## Status Changes Since C320
+## Status Changes Since C321
 
-- bugfix/BUG-0452 detected as existing branch (bug status: pending).
-- No other changes. All previously merged branches remain merged.
+- bugfix/BUG-0452: reclassified from Active → Orphaned/Redundant and deleted. Fix content (src/harness/memory/index.ts) already present on main as commit f3add0b. Git diff between branch tip (9f09604) and main: empty (identical file). Force-deleted with git branch -D.
 
 ## GC Note
 
-Next `git gc --auto` scheduled at Cycle 324 (skipped this cycle — Cycle 321).
+Next `git gc --auto` scheduled at Cycle 324 (skipped this cycle — Cycle 322).
 
-## File Overlap Summary (Cycle 321)
+## File Overlap Summary (Cycle 322)
 
-No in-progress bugs — no overlaps to check.
+No active in-progress branches — no overlaps to check.
 
 ## Cumulative Deletions
 
-~231 total branches deleted since Git Manager began (0 deletions this cycle).
+~232 total branches deleted since Git Manager began (1 deletion this cycle: bugfix/BUG-0452).
