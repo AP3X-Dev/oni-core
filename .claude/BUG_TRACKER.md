@@ -10,8 +10,8 @@
 | Key | Value |
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T04:42:00Z` |
-| **Last Hunter Scan** | `2026-03-20T22:26:00Z` |
-| **Last Fixer Pass** | `2026-03-21T05:22:00Z` |
+| **Last Hunter Scan** | `2026-03-20T22:31:00Z` |
+| **Last Fixer Pass** | `2026-03-21T05:42:00Z` |
 | **Last Validator Pass** | `2026-03-21T04:42:00Z` |
 | **Last Digest Run** | `2026-03-21T04:44:19Z` |
 | **Last Security Scan** | `2026-03-23T11:35:00Z` |
@@ -19,15 +19,15 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T22:15:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T06:35:00Z` (Cycle 220) |
+| **Last Git Manager Pass** | `2026-03-21T07:30:00Z` (Cycle 221) |
 | **Last Supervisor Pass** | `2026-03-21T04:50:34Z` |
-| **Total Found** | `385` |
-| **Total Pending** | `16` |
+| **Total Found** | `391` |
+| **Total Pending** | `17` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `51` |
+| **Total Fixed** | `49` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `10` |
+| **Total Blocked** | `12` |
 | **Total Reopened** | `0` |
 
 ---
@@ -1230,7 +1230,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0363
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/harness/skill-loader.ts`
 - **line:** `269`
@@ -1243,16 +1243,16 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T03:35:00Z`
 - **fixer_completed:** `2026-03-21T03:43:00Z`
 - **fix_summary:** `Added private escapeXml() method to SkillLoader in src/harness/skill-loader.ts. All three user-controlled strings (skill.content, name, args) are now XML-escaped before interpolation into the <skill-instructions> wrapper, preventing XML fence breakout.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T04:47:41Z`
+- **validator_completed:** `2026-03-21T04:55:30Z`
+- **validator_notes:** `Verified on bugfix/BUG-0363. escapeXml() handles &, <, >, ", ' (& first). All 3 user-controlled strings escaped. 4 regression tests. tsc clean.`
 - **test_generated:** `true`
 - **test_file:** `src/__tests__/skill-loader-content-xml-escape.test.ts`
 
 ---
 
 ### BUG-0364
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `160`
@@ -1315,7 +1315,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0370
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `high`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `117`
@@ -1325,9 +1325,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Fan-out sends execute in parallel via Promise.allSettled sharing the same pre-superstep state snapshot; concurrent sends writing the same last-write-wins channel key lose all but the last writer's update.
 - **context:** In a fan-out with N sends targeting the same channel keys using last-write-wins reducers, sends 1..N-1's writes are silently dropped because each applyUpdate starts from the same baseline state rather than accumulating.
 - **hunter_found:** `2026-03-20T22:10:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T05:42:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `By design. Fan-out send results ARE accumulated sequentially (lines 148-162). LWW channels intentionally keep last write. Use appendList for accumulation. Not a bug.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1336,7 +1336,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0371
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `high`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `204`
@@ -1346,9 +1346,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Parallel node execution closes over a single shared state snapshot; two nodes writing the same last-write-wins channel key will have all but the final node's write silently dropped after sequential applyUpdate.
 - **context:** When multiple nodes execute in the same superstep and both update a shared state key with a last-write-wins reducer, the sequential applyUpdate pass applies each node's diff against the same pre-superstep snapshot — the last node in iteration order wins.
 - **hunter_found:** `2026-03-20T22:10:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T05:42:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `By design. Parallel node results ARE applied sequentially (lines 427-459) with progressive state accumulation. LWW semantics are intentional. Not a bug.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1356,19 +1356,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0372
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/a2a/src/server/sse.ts`
 - **line:** `6`
 - **category:** `memory-leak`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0372`
 - **description:** ReadableStream in createSSEResponse has no cancel() callback, so client disconnection does not signal the upstream AsyncGenerator to stop.
 - **context:** When an SSE client drops the connection, without a cancel() handler calling generator.return(), the generator keeps running and allocating until it naturally terminates.
 - **hunter_found:** `2026-03-20T22:10:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:42:00Z`
+- **fixer_completed:** `2026-03-21T05:42:00Z`
+- **fix_summary:** `Added cancel() callback to SSE ReadableStream that calls generator.return() on client disconnect.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1376,19 +1376,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0373
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/cli/index.ts`
 - **line:** `24`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0373`
 - **description:** Top-level await on runCLI is unguarded — any unhandled rejection propagates as an uncaught exception with no user-facing error message.
 - **context:** If a command handler throws unexpectedly, Node.js prints a raw stack trace and exits bypassing graceful shutdown or formatted error output.
 - **hunter_found:** `2026-03-20T22:10:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:42:00Z`
+- **fixer_completed:** `2026-03-21T05:42:00Z`
+- **fix_summary:** `Added .catch() handler to top-level runCLI() call for clean error output.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1396,19 +1396,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0374
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/pdf.ts`
 - **line:** `33`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0374`
 - **description:** pdf.js document loading and per-page getTextContent calls have no try/catch, so parse errors on corrupt PDFs surface as unhandled rejections with raw pdfjs internal errors.
 - **context:** Lines 33-39 are outside the try/catch that wraps only the file read, so callers receive raw pdfjs errors instead of contextualised PdfLoader-scoped messages.
 - **hunter_found:** `2026-03-20T22:10:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:42:00Z`
+- **fixer_completed:** `2026-03-21T05:42:00Z`
+- **fix_summary:** `Wrapped pdf.js getDocument and per-page getTextContent in try-catch with descriptive PdfLoader error.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1608,6 +1608,127 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `forkFrom()` fallback path copies checkpoints with `step <= targetStep` to `newThreadId` but never clears pre-existing checkpoints on `newThreadId`, producing a corrupted mixed timeline if the thread already has history.
 - **context:** `checkpointer.get(newThreadId)` returns the highest-step checkpoint, which may belong to the thread's prior contents rather than the intended fork point, causing getState and getStateAt to return stale or wrong state after a fork.
 - **hunter_found:** `2026-03-20T22:25:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+
+### BUG-0385
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/integrations/src/adapter/auth-resolver.ts`
+- **line:** `47`
+- **category:** `dead-code`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `options.scope` parameter in `storeAuthResolver` is accepted and triggers a warning when absent, but its value is never used in any access-control logic — the credential lookup behaves identically with or without a scope.
+- **context:** The "restricted access" promise implied by the warning is dead — no scoping is applied, making the parameter a no-op that misleads callers into thinking credential access is restricted.
+- **hunter_found:** `2026-03-20T22:30:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0386
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `packages/integrations/src/adapter/auth-resolver.ts`
+- **line:** `55`
+- **category:** `other`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `storeAuthResolver` returns a `resolve` function with zero parameters that violates the `AuthResolver` interface which declares `resolve(authDef: unknown, ctx: unknown): Promise<unknown>`.
+- **context:** The `ctx` parameter — intended to carry per-request scoping information such as user ID or tenant — is silently discarded; callers passing `ctx` for credential scoping will get back the wrong (shared) credential without any error.
+- **hunter_found:** `2026-03-20T22:30:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0387
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/index.ts`
+- **line:** `11`
+- **category:** `other`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `RedisCheckpointer` is exported from `src/checkpointers/index.ts` but omitted from the public re-export in `src/index.ts`, making it inaccessible from the package's public API.
+- **context:** Consumers importing from `@oni.bot/core` cannot access `RedisCheckpointer` despite it being a first-class production checkpointer — they must reach into the internal path instead.
+- **hunter_found:** `2026-03-20T22:30:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0388
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/stream-events.ts`
+- **line:** `36`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `finalData` is initialized to `undefined` and only set in the `state_update` branch — if no `state_update` event is emitted, the closing `on_chain_end` event silently reports `undefined` as output.
+- **context:** The `streamEvents` wrapper relies solely on `state_update` to populate `finalData`; if pregel completes without emitting that event type, the final event yields no output, making downstream consumers believe the chain produced nothing.
+- **hunter_found:** `2026-03-20T22:30:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0389
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/testing/index.ts`
+- **line:** `128`
+- **category:** `dead-code`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `invocationCount` closure variable is incremented on every call but never read for any assertion, return value, or observable behavior — it is write-only dead state.
+- **context:** The variable was likely intended to expose call-count telemetry to test authors, but the `TestHarness` interface has no `invocationCount` property and the value is never returned or accessible.
+- **hunter_found:** `2026-03-20T22:30:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0390
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/checkpointers/namespaced.ts`
+- **line:** `17`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `prefix` helper computes the namespaced key as `${threadId}:${ns}` (namespace is a suffix), but callers expecting the namespace as the leading segment for key-space isolation get inverted key ordering.
+- **context:** If Redis or other prefix-scan-based stores use this key format to enumerate all checkpoints under a namespace, the inverted order breaks that enumeration pattern — scans for `ns:*` will miss all keys.
+- **hunter_found:** `2026-03-20T22:30:00Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``

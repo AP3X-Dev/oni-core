@@ -1,20 +1,3 @@
-[2026-03-21T00:35:00Z] === Git Manager Cycle 205 End ===
-[2026-03-21T04:10:00Z] === Git Manager Cycle 212 Start ===
-[2026-03-21T04:10:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer Pass=2026-03-20T22:04:00Z (>60s ago). Last Validator Pass=2026-03-21T02:51:00Z (>60s ago). Last Git Manager Pass=2026-03-21T03:28:03Z (Cycle 209). In-progress=0, In-validation=0 per Meta. Proceeding.
-[2026-03-21T04:10:00Z] Step 1: Found 40 bugfix/BUG-* branches (pre-deletion).
-[2026-03-21T04:10:00Z] Step 2: Branch map rebuilt. Fixed/awaiting-Validator: BUG-0349 (0 conflicts). In-validation: BUG-0294 (15 conflicts — non-trivial). Blocked: BUG-0304. Reopened: BUG-0305. Pending-with-fix-commit: BUG-0299/0301/0363/0364. Pending-with-branches: BUG-0307/0311/0312/0319-0321/0341-0391 range.
-[2026-03-21T04:10:00Z] Step 3: DELETED bugfix/BUG-0338 (-d, merged into main). DELETED bugfix/BUG-0361 (-d, merged into main). DELETED bugfix/BUG-0370 (-D, orphaned — not in tracker). DELETED bugfix/BUG-0376 (-D, orphaned — not in tracker). DELETED bugfix/BUG-0377 (-D, orphaned — not in tracker). 5/5 cap reached. Cumulative deletions: ~152.
-[2026-03-21T04:10:00Z] Step 4: STALE WARNING — BUG-0305 reopened, last commit 2026-03-20T20:17:48-0700. No stale in-progress fixer_started.
-[2026-03-21T04:10:00Z] Step 5: BUG-0294: 15 conflicts (non-trivial). BUG-0349: 0 conflicts. BUG-0363: 1 conflict. BUG-0364: 0 conflicts but very broad diff (~170+ files).
-[2026-03-21T04:10:00Z] Step 5b: No trivial rebase eligible. Rebase cap: 0/1 used.
-[2026-03-21T04:10:00Z] Step 6: OVERLAP — BUG-0363/0364 both have ~170+ .ts file diffs. Validator must merge BUG-0349 first, then resolve BUG-0294, last handle BUG-0363/0364.
-[2026-03-21T04:10:00Z] Step 7: HEAD confirmed on main. Clean.
-[2026-03-21T04:10:00Z] Step 8: Cycle 212 % 6 = 2 ≠ 0. gc skipped. Next gc at Cycle 216.
-[2026-03-21T04:10:00Z] ORPHAN QUEUE: BUG-0378/0379-0380/0381/0382/0383-0384/0385/0386/0387/0388/0389/0390/0391 — not in tracker. Queue for Cycles 213+ (5/cycle cap).
-[2026-03-21T04:10:00Z] BRANCH COUNT: 35 named. 5 deletions this cycle. Cumulative: ~152.
-[2026-03-21T04:10:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T04:10:00Z (Cycle 212).
-[2026-03-21T04:10:00Z] Step 10: HEAD confirmed on main. Clean state.
-[2026-03-21T04:10:00Z] === Git Manager Cycle 212 End ===
 [2026-03-21T04:20:00Z] === Git Manager Cycle 213 Start ===
 [2026-03-21T04:20:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer Pass=2026-03-21T03:43:00Z (>60s ago). Last Validator Pass=2026-03-21T02:51:00Z (>60s ago). In-progress=0, In-validation=0 per Meta. Proceeding.
 [2026-03-21T04:20:00Z] Step 1: Found 37 bugfix/BUG-* branches (pre-deletion).
@@ -148,3 +131,20 @@
 [2026-03-21T06:35:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T06:35:00Z (Cycle 220). Log trimmed to 150 lines.
 [2026-03-21T06:35:00Z] Step 10: HEAD confirmed on main. Clean state.
 [2026-03-21T06:35:00Z] === Git Manager Cycle 220 End ===
+[2026-03-21T07:30:00Z] === Git Manager Cycle 221 Start ===
+[2026-03-21T07:30:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer Pass=2026-03-21T05:22:00Z (>60s). Last Validator Pass=2026-03-21T04:42:00Z (>60s). In-progress=0, In-validation=0 per Meta. Proceeding.
+[2026-03-21T07:30:00Z] Step 1: Found 48 bugfix/BUG-* branches (pre-deletion).
+[2026-03-21T07:30:00Z] Step 2: Branch map rebuilt. Fixed/clean: 40 branches. Fixed/conflict: BUG-0325 (mcp/client.ts), BUG-0358 (hooks-engine.ts — stale base), BUG-0363 (skill-loader.ts). In-validation: BUG-0294 (blocked), BUG-0301, BUG-0306, BUG-0363, BUG-0364. Blocked: BUG-0294/0304/0352. Pending: BUG-0370–0379.
+[2026-03-21T07:30:00Z] Step 3: DELETED bugfix/BUG-0352 (-D, false positive blocked, 232-file divergence from old base — orphaned). 1/5 cap. Cumulative: ~170. All other 47 branches have active tracker entries.
+[2026-03-21T07:30:00Z] Step 4: STALE WARNING — bugfix/BUG-0358 has 1-line fix on massively stale base (hooks-engine.ts conflict). Fixer must recreate from current main.
+[2026-03-21T07:30:00Z] Step 5: Fixed/clean: 40 branches (0 conflict markers each). BUG-0295: 0 (post-rebase). BUG-0325: 1 conflict (mcp/client.ts, same as Cycles 218–220). BUG-0358: 1 conflict (hooks-engine.ts — stale). BUG-0363: 1 conflict (skill-loader.ts, persistent).
+[2026-03-21T07:30:00Z] Step 5b: REBASE — bugfix/BUG-0295 rebased onto main (was conflicting on src/errors.ts; now clean; 1 commit, toJSON/toInternalJSON separation). Rebase cap: 1/1. BUG-0325/0358/0363 skipped (non-trivial or stale).
+[2026-03-21T07:30:00Z] Step 6: FILE OVERLAP — src/harness/hooks-engine.ts: BUG-0306 (in-validation) and BUG-0358 (conflicting). Validator must resolve BUG-0358 before merging BUG-0306. src/hitl/interrupt.ts + src/pregel/execution.ts: BUG-0360 and legacy BUG-0341 area — Validator must sequence.
+[2026-03-21T07:30:00Z] Step 7: HEAD confirmed on main. Clean state.
+[2026-03-21T07:30:00Z] Step 8: Cycle 221 is not a GC cycle (next GC at Cycle 222). Skipped.
+[2026-03-21T07:30:00Z] ALERT: BUG-0325/0358/0363 — all 3 need Fixer rebase before Validator can merge. BUG-0358 is especially critical (stale base).
+[2026-03-21T07:30:00Z] ALERT: BUG-0304 — fix on branch (bugfix/BUG-0304) but NEVER merged to main. Requires human review per Cycle 220 note.
+[2026-03-21T07:30:00Z] BRANCH COUNT: 47 branches (was 48). 1 deletion this cycle. Cumulative: ~170.
+[2026-03-21T07:30:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T07:30:00Z (Cycle 221). Log trimmed to 150 lines.
+[2026-03-21T07:30:00Z] Step 10: HEAD confirmed on main. Clean state.
+[2026-03-21T07:30:00Z] === Git Manager Cycle 221 End ===
