@@ -88,13 +88,18 @@ export function stripeTools(config: { apiKey: string }): ToolDefinition[] {
     parallelSafe: false,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as CreateCustomerInput;
-      const stripe = await loadStripeInstance(config.apiKey);
-      return stripe.customers.create({
-        email: i.email,
-        name: i.name,
-        description: i.description,
-        metadata: i.metadata,
-      });
+      try {
+        const stripe = await loadStripeInstance(config.apiKey);
+        return stripe.customers.create({
+          email: i.email,
+          name: i.name,
+          description: i.description,
+          metadata: i.metadata,
+        });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { isError: true, content: [{ type: "text" as const, text: `Stripe error (stripe_create_customer): ${msg}` }] };
+      }
     },
   };
 
@@ -122,13 +127,18 @@ export function stripeTools(config: { apiKey: string }): ToolDefinition[] {
     parallelSafe: false,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as CreateInvoiceInput;
-      const stripe = await loadStripeInstance(config.apiKey);
-      return stripe.invoices.create({
-        customer: i.customer,
-        description: i.description,
-        auto_advance: i.autoAdvance ?? false,
-        metadata: i.metadata,
-      });
+      try {
+        const stripe = await loadStripeInstance(config.apiKey);
+        return stripe.invoices.create({
+          customer: i.customer,
+          description: i.description,
+          auto_advance: i.autoAdvance ?? false,
+          metadata: i.metadata,
+        });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { isError: true, content: [{ type: "text" as const, text: `Stripe error (stripe_create_invoice): ${msg}` }] };
+      }
     },
   };
 
@@ -150,12 +160,17 @@ export function stripeTools(config: { apiKey: string }): ToolDefinition[] {
     parallelSafe: true,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as ListTransactionsInput;
-      const stripe = await loadStripeInstance(config.apiKey);
-      return stripe.charges.list({
-        limit: i.limit ?? 10,
-        customer: i.customer,
-        starting_after: i.startingAfter,
-      });
+      try {
+        const stripe = await loadStripeInstance(config.apiKey);
+        return stripe.charges.list({
+          limit: i.limit ?? 10,
+          customer: i.customer,
+          starting_after: i.startingAfter,
+        });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { isError: true, content: [{ type: "text" as const, text: `Stripe error (stripe_list_transactions): ${msg}` }] };
+      }
     },
   };
 
