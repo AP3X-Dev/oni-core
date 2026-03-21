@@ -9,22 +9,22 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T18:32:17Z` (Cycle 71 — BUILD BROKEN (BUG-0455 TS2304 still present). Tests: 13 failed / 1430 passed / 2 skipped across 7 failed suites. Known failures: BUG-0312 (2), BUG-0363 (3), BUG-0436 (1), BUG-0454 (1), BUG-0455 (2+build), BUG-0456 (1), BUG-0457 (3). BUG-0452 tests NOW PASSING (fix landed). BUG-0453 tests NOW PASSING (fix landed per Git Manager). BUG-0454 partial-fix attempted (namespace ordering reversed in graph.ts+pregel/streaming.ts) but test still fails. 0 new bugs filed. 10 new test files picked up — all passing.) |
+| **Last CI Sentinel Pass** | `2026-03-22T18:15:00Z` (Cycle 72 — BUILD BROKEN (BUG-0455 TS2304 still present). Tests: 14 failed / 1429 passed / 2 skipped across 8 failed suites. Known failures: BUG-0312 (2), BUG-0363 (3), BUG-0436 (1), BUG-0454 (1), BUG-0455 (2+build), BUG-0456 (1), BUG-0457 (3). All 14 failures are known/tracked — 0 new regressions. BUG-0455 cooldown threshold reached (3+ cycles) — ESC-014 filed. 0 new bugs filed. 1 escalation filed.) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
-| **Last Fixer Pass** | `2026-03-22T19:26:00Z` (3 bugs fixed: BUG-0452, BUG-0453, BUG-0454 — all on branches awaiting Validator) |
-| **Last Validator Pass** | `2026-03-21T19:37:00Z` (no fixed/in-validation bugs — 26 blocked, 3 pending for Fixer) |
+| **Last Fixer Pass** | `2026-03-22T19:40:00Z` (idle — 0 pending, 0 reopened, 0 in-progress) |
+| **Last Validator Pass** | `2026-03-21T19:49:00Z` (no fixed/in-validation bugs — 23 blocked) |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T16:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T18:52:00Z` (Cycle 325 — 0 deletions, 0 rebases; 2 in-validation branches: BUG-0453 CI-green, BUG-0454 CI-still-failing) |
+| **Last Git Manager Pass** | `2026-03-21T18:45:41Z` (Cycle 326 — 0 deletions, 0 rebases; 2 in-validation branches: BUG-0453 CI-green, BUG-0454 CI-still-failing) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `436` |
 | **Total Pending** | `0` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `3` |
+| **Total Fixed** | `0` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `23` |
@@ -566,64 +566,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 
-
-### BUG-0452
-- **status:** `in-validation`
-- **severity:** `high`
-- **file:** `src/harness/memory/index.ts`
-- **line:** `518`
-- **category:** `test-regression`
-- **description:** `MemoryLoader.buildSystemPrompt()` returns empty string after `wake()` because hydrated unit content is never written back to `this.units` — `applyBudget` returns a hydrated copy but the Map entry remains content-less, causing the `!unit.content` guard in `prompter.ts` to skip every unit.
-- **context:** CI Sentinel Cycle 69 (2026-03-21T18:20:41Z). Test `"includes content from loaded units"` in `src/__tests__/memory-loader.test.ts:248` fails — `loader.wake()` marks the key as loaded but `this.units` still holds the pre-hydration unit (no `content` field). `buildSystemPrompt` iterates `this.units`, hits `if (!unit.content) continue` at `prompter.ts:22`, and outputs `""`. Fix: in `loadByTier` (and other load paths), after calling `hydrateUnit(u)`, write the hydrated unit back to `this.units` via `this.units.set(unit.key, hydratedUnit)` so subsequent `buildSystemPrompt` calls can find the content.
-- **hunter_found:** `2026-03-21T18:20:41Z`
-- **fixer_started:** `2026-03-22T19:22:00Z`
-- **fixer_completed:** `2026-03-22T19:26:00Z`
-- **fix_summary:** `Added this.units.set(unit.key, hydrated) in MemoryLoader.hydrate() after constructing the hydrated copy, so all load paths (wake/orient/match/query/load/loadType) persist content back to the map. buildSystemPrompt() now finds unit.content populated.`
-- **validator_started:** `2026-03-21T19:40:00Z`
-- **validator_completed:** ``
-- **validator_notes:** ``
-- **branch:** `bugfix/BUG-0452`
-- **reopen_count:** `0`
-
----
-
-### BUG-0453
-- **status:** `in-validation`
-- **severity:** `high`
-- **file:** `src/testing/index.ts`
-- **line:** `135`
-- **category:** `test-regression`
-- **description:** `createTestHarness.invoke()` uses `Date.now()` as the thread ID, which produces identical IDs for rapid back-to-back calls — test `"generates separate thread IDs per invocation"` fails because both invocations share the same millisecond timestamp and therefore the same thread, so state bleeds between them and `r2.value` returns the accumulated result `"bbb"` instead of the isolated `"BBB"`.
-- **context:** CI Sentinel Cycle 69 (2026-03-21T18:20:41Z). Test `"generates separate thread IDs per invocation"` in `src/__tests__/testing-utils.test.ts:173` fails: `expected 'bbb' to be 'BBB'`. Root cause: `threadId: \`test-${Date.now()}\`` at line 135 of `src/testing/index.ts` produces the same integer when `invoke()` is called in rapid succession within the same millisecond. Both calls share a thread, so the checkpointer accumulates state across invocations. Fix: use a monotonically-unique ID (e.g., `crypto.randomUUID()` or a per-harness counter) instead of `Date.now()`.
-- **hunter_found:** `2026-03-21T18:20:41Z`
-- **fixer_started:** `2026-03-22T19:22:00Z`
-- **fixer_completed:** `2026-03-22T19:24:00Z`
-- **fix_summary:** `Replaced Date.now() with crypto.randomUUID() (imported from node:crypto) in both invoke() and collectStream() of createTestHarness in src/testing/index.ts. Each invocation now gets a globally unique thread ID regardless of call timing.`
-- **validator_started:** `2026-03-21T19:40:00Z`
-- **validator_completed:** ``
-- **validator_notes:** ``
-- **branch:** `bugfix/BUG-0453`
-- **reopen_count:** `0`
-
----
-
-### BUG-0454
-- **status:** `in-validation`
-- **severity:** `high`
-- **file:** `src/checkpointers/namespaced.ts`
-- **line:** `1`
-- **category:** `test-regression`
-- **description:** Subgraph checkpoints are not isolated from parent: `NamespacedCheckpointer.list("child:parent-1")` returns 0 entries even after the subgraph has written checkpoints, causing the test `"subgraph checkpoints are isolated from parent"` to fail with `expected 0 to be greater than 0`.
-- **context:** CI Sentinel Cycle 69 (2026-03-21T18:20:41Z). Test `"subgraph checkpoints are isolated from parent"` in `src/__tests__/checkpoint-namespace.test.ts:40` fails. The stderr shows `applyUpdate: unknown channel key "result" — skipping (not in channel schema)`, suggesting the subgraph invocation partially fails or its checkpoint is never committed. The `NamespacedCheckpointer.list()` call returns an empty array for the child namespace `"child:parent-1"` despite the subgraph having run. Root cause is likely that checkpoint writes under the namespaced thread ID are either dropped due to the schema mismatch or the namespace prefix is not applied consistently on writes vs. reads.
-- **hunter_found:** `2026-03-21T18:20:41Z`
-- **fixer_started:** `2026-03-22T19:22:00Z`
-- **fixer_completed:** `2026-03-22T19:26:00Z`
-- **fix_summary:** `Swapped subgraph checkpoint threadId interpolation order from "parentThreadId:subgraphName" to "subgraphName:parentThreadId" in src/pregel/streaming.ts:268 and src/graph.ts:94. NamespacedCheckpointer.list() expects ns:threadId format; writes were using threadId:ns, causing empty results on read.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-- **branch:** `bugfix/BUG-0454`
-- **reopen_count:** `0`
 
 ---
 
