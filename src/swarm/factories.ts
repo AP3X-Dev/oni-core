@@ -84,10 +84,18 @@ export function buildFanOut<S extends BaseSwarmState>(
           timeoutMs,
           () => new Error(`Agent "${id}" timed out after ${timeoutMs}ms`),
         );
-        await agent.hooks?.onComplete?.(id, result);
+        try {
+          await agent.hooks?.onComplete?.(id, result);
+        } catch (hookErr) {
+          console.warn(`[oni] onComplete hook for agent "${id}" threw:`, hookErr);
+        }
         return { id, result, error: null };
       } catch (err) {
-        await agent.hooks?.onError?.(id, err);
+        try {
+          await agent.hooks?.onError?.(id, err);
+        } catch (hookErr) {
+          console.warn(`[oni] onError hook for agent "${id}" threw:`, hookErr);
+        }
         return { id, result: null, error: err };
       }
     }
