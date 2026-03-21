@@ -107,7 +107,7 @@ export class InMemoryStore extends BaseStore {
   }
 
   private isExpired(item: StoreItem): boolean {
-    if (!item.ttl) return false;
+    if (item.ttl == null) return false;
     return Date.now() > item.updatedAt + item.ttl;
   }
 
