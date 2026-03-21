@@ -12,14 +12,14 @@
 | **Last CI Sentinel Pass** | `2026-03-21T18:00:56Z` (Cycle 67 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378 STILL PRESENT; ESC-013 still active; 51 consecutive build failures; no new bugs filed; tests not run. 10 untracked Hunter test files present — cannot evaluate until build clean.) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
 | **Last Fixer Pass** | `2026-03-21T14:44:00Z` |
-| **Last Validator Pass** | `2026-03-21T18:06:17Z` (no fixed/in-validation bugs — 26 blocked) |
+| **Last Validator Pass** | `2026-03-21T18:09:30Z` (no fixed/in-validation bugs — 26 blocked) |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T16:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T18:05:17Z` (Cycle 317 — 0 deletions, 0 rebases, gc next cycle (Cycle 318); 3 bugfix branches: BUG-0451 merged+branch deleted (8dd12dc); BUG-0343/0356/0359 still blocked reopen_count=3; BUG-0343 66 behind (+3), BUG-0356/0359 71 behind (+3); human intervention required for blocked 3) |
+| **Last Git Manager Pass** | `2026-03-21T18:10:00Z` (Cycle 318 — 0 deletions, 0 rebases, git gc --auto executed; 3 blocked branches pending human: BUG-0343 68 behind (+2), BUG-0356/0359 73 behind (+2); reopen_count=3 each; no code conflicts) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
