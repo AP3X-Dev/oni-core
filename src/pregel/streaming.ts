@@ -256,7 +256,13 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                 // Stream the subgraph — always clean up per-invocation state, even on throw/interrupt
                 let subFinalState: Partial<S> | undefined;
                 try {
-                  const childStreamMode: StreamMode[] = ["debug", "values"];
+                  const childStreamMode: StreamMode[] = [];
+                  if (modeDebug) childStreamMode.push("debug");
+                  if (modeValues) childStreamMode.push("values");
+                  if (modeUpdates) childStreamMode.push("updates");
+                  if (modeCustom) childStreamMode.push("custom");
+                  if (modeMessages) childStreamMode.push("messages");
+                  if (childStreamMode.length === 0) childStreamMode.push("debug", "values");
                   for await (const subEvt of nodeDef.subgraph.stream(state, {
                     ...config,
                     // Pass the parent's effective threadId explicitly so the child's
