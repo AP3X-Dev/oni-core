@@ -66,13 +66,13 @@ interface InterruptContext {
 // AsyncLocalStorage slot — isolates concurrent executions
 const interruptALS = new AsyncLocalStorage<InterruptContext>();
 
-export function _installInterruptContext(ctx: InterruptContext): void {
-  interruptALS.enterWith(ctx);
+export function _installInterruptContext<T>(ctx: InterruptContext, fn: () => T): T {
+  return interruptALS.run(ctx, fn);
 }
 
 export function _clearInterruptContext(): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  interruptALS.enterWith(undefined as any); // SAFE: external boundary — AsyncLocalStorage.enterWith requires a value; undefined clears context
+  // No-op — als.run() scoping means context is automatically cleared when
+  // the callback exits.  Retained for backward compatibility in tests.
 }
 
 export function _getInterruptContext(): InterruptContext | null {
