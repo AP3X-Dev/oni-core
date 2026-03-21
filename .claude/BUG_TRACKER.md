@@ -18,9 +18,9 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T21:20:00Z` |
+| **Last TestGen Run** | `2026-03-21T21:25:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T04:44:00Z` (Cycle 215) |
-| **Last Supervisor Pass** | `2026-03-21T04:05:33Z` |
+| **Last Supervisor Pass** | `2026-03-21T04:15:34Z` |
 | **Total Found** | `367` |
 | **Total Pending** | `46` |
 | **Total In Progress** | `0` |
@@ -1108,6 +1108,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/spawn-agent-concurrent-snapshot.test.ts`
 
 ---
 
