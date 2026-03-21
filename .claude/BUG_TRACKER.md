@@ -10,25 +10,25 @@
 | Key | Value |
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T10:30:00Z` (Cycle 42 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378; merge artifact from BUG-0327+BUG-0412; filed BUG-0451; escalated ESC-013; tests not run) |
-| **Last Hunter Scan** | `2026-03-22T00:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T18:25:00Z` |
-| **Last Validator Pass** | `2026-03-22T00:45:00Z` |
+| **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
+| **Last Fixer Pass** | `2026-03-21T19:05:00Z` |
+| **Last Validator Pass** | `2026-03-22T01:05:00Z` |
 | **Last Digest Run** | `2026-03-21T10:23:40Z` |
-| **Last Security Scan** | `2026-03-21T15:15:00Z` |
+| **Last Security Scan** | `2026-03-21T15:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T09:10:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T10:32:49Z` (Cycle 254 — 3 deletions (BUG-0343/0374/0434 archived orphans); rebased BUG-0357 to main HEAD 3a3f31f; 0 conflict branches; define-agent.ts overlap BUG-0404+0443 HIGH risk; 41 branches active) |
-| **Last Supervisor Pass** | `2026-03-21T10:30:26Z` |
-| **Total Found** | `426` |
-| **Total Pending** | `1` |
+| **Last Git Manager Pass** | `2026-03-22T01:00:00Z` (Cycle 255 — 0 deletions; rebased BUG-0357 to main HEAD d9839fc (0 behind); 4 conflict branches (BUG-0355/0356/0378/0413 need recreate); BUG-0404 CRITICAL 780-behind full-codebase divergence must be deleted; define-agent.ts BUG-0404+0443 HIGH overlap; 37 branches active) |
+| **Last Supervisor Pass** | `2026-03-21T10:35:27Z` |
+| **Total Found** | `433` |
+| **Total Pending** | `7` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `40` |
+| **Total Fixed** | `33` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `23` |
-| **Total Reopened** | `2` |
+| **Total Blocked** | `24` |
+| **Total Reopened** | `1` |
 
 ---
 
@@ -1092,46 +1092,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0427
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/mcp/client.ts`
-- **line:** `62`
-- **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0427`
-- **description:** `connect()` returns early when `state === "ready"` without checking `_connectLock`, so a concurrent connect/disconnect/connect sequence can spawn two `StdioTransport` instances, leaking one child process.
-- **context:** The window is narrow (single event loop turn), but concurrent lifecycle calls result in two `_runConnect` calls running simultaneously — each spawning their own transport, with the first one becoming unreachable and leaked.
-- **hunter_found:** `2026-03-21T23:58:00Z`
-- **fixer_started:** `2026-03-21T13:35:00Z`
-- **fixer_completed:** `2026-03-21T13:35:00Z`
-- **fix_summary:** `Check connect lock before early return to prevent duplicate transports.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0428
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `packages/tools/src/browser/firecrawl.ts`
-- **line:** `42`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0428`
-- **description:** The `formats` array is only partially mapped to the Firecrawl v0 API — `includeMarkdown` is never set to `false`, so requesting `formats: ["html"]` exclusively still returns markdown.
-- **context:** A caller that passes `formats: ["html"]` to avoid markdown output will silently receive markdown content anyway, since the v0 API defaults `includeMarkdown` to true and the code never disables it, breaking the caller's stated format contract.
-- **hunter_found:** `2026-03-21T23:58:00Z`
-- **fixer_started:** `2026-03-21T13:35:00Z`
-- **fixer_completed:** `2026-03-21T13:35:00Z`
-- **fix_summary:** `Set includeMarkdown based on requested formats array.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0430
 - **status:** `fixed`
 - **severity:** `medium`
@@ -1166,9 +1126,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T14:35:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** `Duplicate of verified BUG-0376 (same OpenAI embed JSON parsing issue).`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T01:05:00Z`
+- **validator_completed:** `2026-03-22T01:05:00Z`
+- **validator_notes:** `includeMarkdown set via formats.includes("markdown"). Single-line fix. Backward-compatible default preserved. Verified.`
 
 ---
 
@@ -1198,154 +1158,174 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **file:** `src/agents/define-agent.ts`
 - **line:** `201`
 - **category:** `type-error`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0443`
 - **description:** Return value `{ messages: newMessages }` is double-cast through `as unknown as Partial<S>`, silently bypassing TypeScript when state type `S` has no `messages` field.
 - **context:** If the caller's state type does not contain a `messages` key, the cast corrupts the state graph at runtime when Pregel merges the partial update — data loss or silent wrong behavior.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** `2026-03-21T17:25:00Z`
-- **fixer_completed:** `2026-03-21T17:25:00Z`
-- **fix_summary:** `Remove double cast, add AgentMessageState constraint for type-safe messages return.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0444
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/functional.ts`
-- **line:** `157`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0444`
-- **description:** `branch()` router node returns full state as its node update instead of `{}`, causing every channel reducer to fire with `(current, current)` on each branch invocation.
-- **context:** For append-type reducers (e.g. `appendList`), this doubles all existing values in the channel every time the router executes — silent data corruption that compounds with each branch call.
-- **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** `2026-03-21T17:25:00Z`
-- **fixer_completed:** `2026-03-21T17:25:00Z`
-- **fix_summary:** `Return empty update from branch router to prevent channel doubling.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0445
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/models/anthropic.ts`
-- **line:** `195`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0445`
-- **description:** `drainSSELines` emits events on every line when `flush=true` due to OR condition with blank-line check, causing the final SSE event to be yielded twice.
-- **context:** Double-emission of the trailing `message_delta` event causes usage tokens to be double-counted in the caller's accounting, inflating reported token consumption.
-- **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** `2026-03-21T17:25:00Z`
-- **fixer_completed:** `2026-03-21T17:25:00Z`
-- **fix_summary:** `Remove flush OR from SSE line check to prevent double emission.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0446
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/pregel/execution.ts`
-- **line:** `196`
-- **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0446`
-- **description:** `nodeCache` FIFO eviction is not atomic — concurrent node executions can both read the same oldest key, both delete it, and both insert, allowing the map to exceed the 256-entry cap.
-- **context:** While bounded (at most N-1 extra entries for N concurrent nodes), the non-atomic eviction wastes slots and lets the cache grow past its intended memory cap in high-parallelism graphs.
-- **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** `2026-03-21T17:25:00Z`
-- **fixer_completed:** `2026-03-21T17:25:00Z`
-- **fix_summary:** `Post-insert while loop for atomic cache eviction.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0447
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/inspect.ts`
-- **line:** `114`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0447`
-- **description:** `detectCycles` adds edges from source to every node in the graph when a conditional edge has no `pathMap`, making `topoOrder` always return `null` for graphs with unmapped conditional edges.
-- **context:** `GraphDescriptor.topoOrder` is unusable for the majority of real graphs (which use conditional edges without exhaustive pathMaps), silently returning `null` and forcing consumers to fall back to unordered logic.
-- **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** `2026-03-21T17:25:00Z`
-- **fixer_completed:** `2026-03-21T17:25:00Z`
-- **fix_summary:** `Skip unmapped conditional edges in cycle detection.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0448
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/cli/init.ts`
-- **line:** `10`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0448`
-- **description:** `initProject` performs multiple async `writeFile` calls with no try/catch, so filesystem errors propagate as raw unhandled rejections with no user-friendly message.
-- **context:** Every other CLI command handler wraps its risky I/O in try/catch; `initCommand` is the only one that lets raw Node.js errors surface directly to users, breaking the consistent error UX.
-- **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** `2026-03-21T17:35:00Z`
-- **fixer_completed:** `2026-03-21T17:35:00Z`
-- **fix_summary:** `Wrap initProject I/O in try-catch with user-friendly error.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0449
-- **status:** `fixed`
-- **severity:** `low`
-- **file:** `src/cli/run.ts`
-- **line:** `47`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0449`
-- **description:** When a child process is killed by a signal, `close` fires with `code=null`; the log displays "exit code: 0" via `code ?? 0` and `process.exitCode` is never set to non-zero.
-- **context:** A SIGKILL'd subprocess is indistinguishable from a clean exit — CI pipelines using `oni run` will see exit code 0 even when the agent was forcibly terminated.
-- **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** `2026-03-21T17:35:00Z`
-- **fixer_completed:** `2026-03-21T17:35:00Z`
-- **fix_summary:** `Treat null exit code as 1 for signal-killed child.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** `2026-03-21T19:05:00Z`
+- **fixer_completed:** `2026-03-21T19:05:00Z`
+- **fix_summary:** `Remove as unknown, add messages constraint to generic. Scoped to define-agent.ts only.`
+- **validator_started:** `2026-03-22T00:55:00Z`
+- **validator_completed:** `2026-03-22T00:55:00Z`
+- **validator_notes:** `REOPENED: Core double-cast fix is correct, but commit also removes 4 unrelated public exports (RedisCheckpointer, BatchError, SkillEvolverConfig, SkillTestFn) from src/index.ts. Fixer must scope the commit to only define-agent.ts changes, not silently remove public API surface.`
 
 ---
 
 ### BUG-0450
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/json.ts`
 - **line:** `10`
 - **category:** `missing-error-handling`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0450`
 - **description:** The initial `readFile` call for JSON files has no try/catch, so ENOENT/EACCES errors throw raw Node.js errors instead of wrapped DocumentLoader errors.
 - **context:** CsvLoader and PdfLoader wrap their readFile calls with descriptive messages; JsonLoader omits this for regular file reads, breaking the uniform error-handling contract of the loaders package.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** `2026-03-21T17:35:00Z`
-- **fixer_completed:** `2026-03-21T17:35:00Z`
-- **fix_summary:** `Wrap readFile in try-catch in JSON loader.`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-22T01:05:00Z`
+- **validator_completed:** `2026-03-22T01:05:00Z`
+- **validator_notes:** `REOPENED: readFile try/catch is correct, but fix removed existing JSON.parse guards from main. Plain .json path JSON.parse is now unguarded (was wrapped on main). JSONL per-line error handling (console.warn + skip) also removed. Fixer must re-add try/catch for both JSON.parse call sites.`
+
+---
+
+### BUG-0452
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/checkpointing.ts`
+- **line:** `51`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `updateState()` performs a non-atomic read-modify-write on the checkpoint store — concurrent calls for the same threadId can clobber each other's writes.
+- **context:** Lines 51–53 do get → applyUpdate → put with no locking or versioning. Two async flows (e.g., HITL resume and a parallel node completion) calling updateState concurrently on the same threadId will both fetch the same base checkpoint and the second put overwrites the first.
+- **hunter_found:** `2026-03-22T00:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0453
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/checkpointing.ts`
+- **line:** `86`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `forkFrom()` does a non-atomic delete-then-sequential-put, leaving the target thread with a partially-written checkpoint if a concurrent reader accesses newThreadId between operations.
+- **context:** Lines 87–90 delete existing checkpoints for newThreadId then re-insert them one by one in an awaited for loop. Any concurrent getState or getPending call between iterations observes an incomplete or empty timeline. No transaction, lock, or in-progress marker exists.
+- **hunter_found:** `2026-03-22T00:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0454
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/cli/init.ts`
+- **line:** `23`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `initCommand` calls `initProject` without a try/catch — filesystem errors propagate as unhandled rejections with raw stack traces instead of user-friendly messages.
+- **context:** Every other CLI command (run, inspect, test) wraps async work in try/catch or error handlers. initCommand is the only one that leaves the promise chain bare, so permission denied or disk full errors crash the process with a raw Node.js stack trace.
+- **hunter_found:** `2026-03-22T00:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0455
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/cli/run.ts`
+- **line:** `33`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `runCommand` resolves user-supplied file paths without verifying the resolved path stays within the project directory, allowing execution of arbitrary TypeScript files anywhere on the filesystem.
+- **context:** `inspectCommand` explicitly checks `file.startsWith(cwd + "/")` before importing a user-supplied file. `runCommand` performs no equivalent containment check, so a caller can execute arbitrary files via `../../etc/malicious.ts`. Same pattern as the known cli/dev.ts:20 bug but in a different command.
+- **hunter_found:** `2026-03-22T00:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0456
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/swarm/self-improvement/experiment-log.ts`
+- **line:** `58`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `summarize()` inverts the delta sign for minimize-direction experiments — negating a negative delta (good outcome) makes it appear as a loss.
+- **context:** `d = metricAfter - metricBefore` is negative when the metric decreases (good for minimize). The code then does `if (direction === "minimize") d = -d`, turning the negative into a positive. Compare with `pattern-learner.ts:52` which correctly computes `metricBefore - metricAfter` for minimize. The summarize method uses the opposite convention, so displayed delta signs are wrong for minimize-direction experiments.
+- **hunter_found:** `2026-03-22T00:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0457
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/checkpointers/redis.ts`
+- **line:** `155`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `delete()` fetches the step index and deletes data keys in two separate non-atomic operations — a concurrent `put()` between the two calls can result in orphaned data keys or deleted new data.
+- **context:** A put() that races between the zrange and del calls in delete() will store a new checkpoint whose data key is then deleted along with the old ones, or whose index entry is added after the index key is deleted. This leaves inconsistent state where get() returns null even though data exists.
+- **hunter_found:** `2026-03-22T00:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0458
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/events/bridge.ts`
+- **line:** `37`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `startTimes` map in `bridgeSwarmTracer()` is never bounded — if an `agent_start` event fires without a corresponding `agent_complete` or `agent_error`, the entry leaks indefinitely.
+- **context:** startTimes is populated on every agent_start (line 37) and cleaned up only on agent_complete (line 49) or agent_error (line 61). A crashed or killed agent that never emits a terminal event will leak its entry for the lifetime of the bridge. No TTL eviction, max size, or cleanup hook exists.
+- **hunter_found:** `2026-03-22T00:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1386,8 +1366,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T05:22:00Z`
 - **fixer_completed:** `2026-03-21T05:22:00Z`
 - **fix_summary:** `Removed stack field from ONIError.toJSON(). Stack now only in toInternalJSON() for internal use.`
-- **validator_started:** ``
-- **validator_completed:** ``
+- **validator_started:** `2026-03-22T01:05:00Z`
+- **validator_completed:** `2026-03-22T01:05:00Z`
 - **validator_notes:** ``
 
 ---
@@ -1408,8 +1388,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T05:02:00Z`
 - **fixer_completed:** `2026-03-21T05:02:00Z`
 - **fix_summary:** `Narrowed chmod regex to only match setuid/setgid modes (4xxx, 6xxx). Allows safe 755.`
-- **validator_started:** ``
-- **validator_completed:** ``
+- **validator_started:** `2026-03-22T01:05:00Z`
+- **validator_completed:** `2026-03-22T01:05:00Z`
 - **validator_notes:** ``
 
 ---
@@ -1495,7 +1475,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0451
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `critical`
 - **file:** `src/swarm/graph.ts`
 - **line:** `245` (and `378`)
@@ -1505,9 +1485,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-21T10:30:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T18:45:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `Not reproducible. No duplicate dispose() exists on current main. tsc --noEmit passes clean. Already resolved.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
