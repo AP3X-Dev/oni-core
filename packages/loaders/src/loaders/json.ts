@@ -7,7 +7,13 @@ export class JsonLoader extends DocumentLoader {
   }
 
   async load(source: string): Promise<Document[]> {
-    const raw = await readFile(source, "utf-8");
+    let raw: string;
+    try {
+      raw = await readFile(source, "utf-8");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`JSON loader: failed to read file '${source}': ${msg}`);
+    }
 
     if (source.endsWith(".jsonl") || source.endsWith(".ndjson")) {
       const lines = raw.split("\n").filter((l) => l.trim());
