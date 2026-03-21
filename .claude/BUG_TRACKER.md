@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T13:36:38Z` (Cycle 263 — 5 deletions (worktree-agent merged branches), 1 rebase (BUG-0457 onto main 3f05782 tip 2c5f74d); 5 bugfix branches remain, 0 conflicts; BUG-0457 VALIDATOR-READY PRIORITY #1) |
+| **Last Git Manager Pass** | `2026-03-21T14:00:00Z` (Cycle 265 — 0 deletions, 1 rebase (BUG-0420 onto main 1d38d33 new tip 010b799); 5 bugfix branches remain, 0 conflicts; BUG-0420 VALIDATOR-READY; BUG-0355 1 behind rebase next cycle) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
@@ -306,7 +306,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0343
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/harness/safety-gate.ts`
 - **line:** `86`
@@ -317,8 +317,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **context:** Same uncleaned timeout pattern as BUG-0031 (inference.ts) and BUG-0018 (experimental-executor.ts).
 - **hunter_found:** `2026-03-20T22:24:00Z`
 - **fixer_started:** `2026-03-21T13:37:22Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-21T13:48:21Z`
+- **fix_summary:** `Added clearTimeout(timeoutHandle) in the catch block of check() in src/harness/safety-gate.ts, before returning FALLBACK_RESULT. One line added, no other changes. Fresh branch bugfix/BUG-0343 from main.`
 - **validator_started:** `2026-03-22T03:30:00Z`
 - **validator_completed:** `2026-03-22T03:32:00Z`
 - **validator_notes:** `REOPENED (2nd time): Branch bugfix/BUG-0343-0344 still does not exist. clearTimeout at line 92 still inside try after await — skipped when responsePromise rejects. Catch block at line 93 still returns FALLBACK_RESULT without clearTimeout. Fixer must: create branch, add clearTimeout(timeoutHandle) in catch block or restructure with finally.`
@@ -385,25 +385,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0355
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `packages/stores/src/redis/index.ts`
-- **line:** `191`
-- **category:** `missing-error-handling`
-- **reopen_count:** `2`
-- **branch:** `bugfix/BUG-0355`
-- **description:** Three `void this.client.zrem()` calls in `list()` fire Redis cleanup operations as floating promises with no error handling.
-- **context:** When a data key has expired or is corrupt, stale sorted-set index entries are pruned via fire-and-forget `zrem`. If Redis connection is interrupted, the error is swallowed and phantom keys persist in `list()` results on every subsequent call.
-- **hunter_found:** `2026-03-20T22:34:00Z`
-- **fixer_started:** `2026-03-21T13:25:07Z`
-- **fixer_completed:** `2026-03-21T13:29:20Z`
-- **fix_summary:** `Added .catch(() => {}) to all three bare void this.client.zrem() calls in RedisStore.list() — null raw data path, corrupt JSON path, and expired item path. No other changes. Fresh branch from main.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
 
 ### BUG-0356
 - **status:** `in-validation`
@@ -425,25 +406,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0357
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `packages/stores/src/postgres/index.ts`
-- **line:** `125`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0357`
-- **description:** Single expired-row cleanup in `PostgresStore.get()` uses `void this.client.query()` with no error handling.
-- **context:** When `get()` detects an expired row it fires a DELETE as a floating promise. The caller still gets `null` so behavior is correct, but the expired row is never deleted and re-triggers the same silent failure on every subsequent `get()`.
-- **hunter_found:** `2026-03-20T22:34:00Z`
-- **fixer_started:** `2026-03-21T05:12:00Z`
-- **fixer_completed:** `2026-03-21T05:12:00Z`
-- **fix_summary:** `Postgres TTL fix.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
 
 ### BUG-0359
 - **status:** `in-validation`
@@ -952,25 +914,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0450
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `packages/loaders/src/loaders/json.ts`
-- **line:** `10`
-- **category:** `missing-error-handling`
-- **reopen_count:** `2`
-- **branch:** `bugfix/BUG-0450`
-- **description:** The initial `readFile` call for JSON files has no try/catch, so ENOENT/EACCES errors throw raw Node.js errors instead of wrapped DocumentLoader errors.
-- **context:** CsvLoader and PdfLoader wrap their readFile calls with descriptive messages; JsonLoader omits this for regular file reads, breaking the uniform error-handling contract of the loaders package.
-- **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** `2026-03-21T13:37:22Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T01:45:00Z`
-- **validator_completed:** `2026-03-22T01:45:00Z`
-- **validator_notes:** `REOPENED (2nd time): Same regression — JSON.parse guards removed again despite claiming preservation. Fixer must ADD readFile try-catch WITHOUT removing existing JSON.parse or JSONL error handling.`
-
----
 
 ### BUG-0452
 - **status:** `in-progress`
@@ -1034,24 +977,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0295
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/errors.ts`
-- **line:** `58`
-- **category:** `information-disclosure`
-- **description:** `ONIError.toJSON()` and `toInternalJSON()` are identical — both expose `stack` in their output. The method names imply different audiences (external vs internal), but the external-facing `toJSON()` leaks call stack traces, revealing internal file paths and library versions to callers. Any code that serializes an `ONIError` to a client or log sink via `JSON.stringify()` or similar will inadvertently expose stack information. Fix: remove the `stack` field from `toJSON()` so only `toInternalJSON()` includes it. OWASP A05:2021 - Security Misconfiguration.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0295`
-- **hunter_found:** `2026-03-20T13:00:00Z`
-- **fixer_started:** `2026-03-21T05:22:00Z`
-- **fixer_completed:** `2026-03-21T05:22:00Z`
-- **fix_summary:** `Removed stack field from ONIError.toJSON(). Stack now only in toInternalJSON() for internal use.`
-- **validator_started:** `2026-03-22T01:05:00Z`
-- **validator_completed:** `2026-03-22T01:05:00Z`
-- **validator_notes:** ``
-
----
 
 ### BUG-0368
 - **status:** `blocked`

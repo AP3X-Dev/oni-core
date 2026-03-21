@@ -1,16 +1,16 @@
-# Branch Map — Cycle 264
+# Branch Map — Cycle 265
 
-**Generated:** 2026-03-21T13:41:47Z
-**Main HEAD:** d31587e
-**Total Branches:** 5 bugfix (BUG-0457 merged to main post-C263 as d31587e, branch auto-deleted)
+**Generated:** 2026-03-21T14:00:00Z
+**Main HEAD:** 1d38d33
+**Total Branches:** 5 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
 |---|---|---|---|---|---|
-| bugfix/BUG-0343 | in-progress | 2 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout in catch block fix; 2 behind main |
-| bugfix/BUG-0355 | fixed | 0 | 0 | 2026-03-21 | `packages/stores/src/redis/index.ts` — REBASED C264 onto main d31587e; tip 3881ae1; VALIDATOR-READY |
-| bugfix/BUG-0356 | blocked | 7 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — add .catch() to void client.query(); blocked |
-| bugfix/BUG-0359 | blocked | 7 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked |
-| bugfix/BUG-0420 | fixed | 7 | 0 | 2026-03-21 | `src/coordination/pubsub.ts` — leak-warning + empty-Set cleanup; rebase recommended next cycle |
+| bugfix/BUG-0343 | in-progress | 3 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout in catch block fix; 3 behind main; tracker entry inconsistency (in-progress vs meta=0) |
+| bugfix/BUG-0355 | fixed | 1 | 0 | 2026-03-21 | `packages/stores/src/redis/index.ts` — tip 3881ae1; VALIDATOR-READY; rebase recommended next cycle if not yet validated |
+| bugfix/BUG-0356 | blocked | 8 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — add .catch() to void client.query(); blocked; human intervention required |
+| bugfix/BUG-0359 | blocked | 8 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked; human intervention required |
+| bugfix/BUG-0420 | fixed | 0 | 0 | 2026-03-21 | `src/coordination/pubsub.ts` — REBASED C265 onto main 1d38d33; new tip 010b799; VALIDATOR-READY |
 
 ## Active Worktrees
 
@@ -29,18 +29,14 @@ No active agent worktrees.
 
 No conflict branches this cycle. All 5 bugfix branches are conflict-free via `git merge-tree`.
 
-## Status Change Since C263/C264
+## Status Change Since C264/C265
 
-| Branch | Prev Status | C264 Status | Reason |
+| Branch | Prev Status | C265 Status | Reason |
 |---|---|---|---|
-| bugfix/BUG-0457 | fixed (rebased C263) | MERGED | Merged to main (commit d31587e) post-C263; branch auto-deleted |
-| bugfix/BUG-0355 | fixed (7 behind) | fixed (rebased C264) | Rebased onto main HEAD d31587e; tip 3881ae1; 0 behind |
-| worktree-agent-a8cdef80 | merged (sched delete C264) | DELETED | Force-deleted (merged to HEAD, no active worktree) |
-| worktree-agent-aed25a0e | merged (sched delete C264) | DELETED | Force-deleted (merged to HEAD, no active worktree) |
-| worktree-agent-af149a67 | merged (sched delete C264) | DELETED | Force-deleted (merged to HEAD, no active worktree) |
-| worktree-agent-a4919386 | 1 unmerged commit | DELETED | BUG-0355 duplicate fix absorbed by bugfix/BUG-0355; no active worktree |
+| bugfix/BUG-0420 | fixed (8 behind, rebase recommended) | fixed (REBASED C265) | Rebased onto main HEAD 1d38d33; tip 010b799; 0 behind; VALIDATOR-READY |
+| bugfix/BUG-0378 | in-validation (C264 phantom) | ABSENT | Branch not found locally; was stale remote ref only; no action needed |
 
-## File Overlap Summary (Cycle 264)
+## File Overlap Summary (Cycle 265)
 
 No overlaps — all 5 bugfix branches touch distinct files:
 - `src/harness/safety-gate.ts` (BUG-0343)
@@ -51,4 +47,4 @@ No overlaps — all 5 bugfix branches touch distinct files:
 
 ## Cumulative Deletions
 
-~229 total branches deleted since Git Manager began (4 deletions this cycle: worktree-agent-a8cdef80/aed25a0e/af149a67/a4919386).
+~229 total branches deleted since Git Manager began (0 deletions this cycle).
