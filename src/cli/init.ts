@@ -8,16 +8,21 @@ import { templates } from "./templates.js";
 import type { ParsedArgs } from "./router.js";
 
 export async function initProject(name: string, targetDir: string): Promise<void> {
-  await mkdir(targetDir, { recursive: true });
-  await mkdir(join(targetDir, "src"), { recursive: true });
+  try {
+    await mkdir(targetDir, { recursive: true });
+    await mkdir(join(targetDir, "src"), { recursive: true });
 
-  // Write files
-  await writeFile(join(targetDir, "package.json"), templates.packageJson(name));
-  await writeFile(join(targetDir, "tsconfig.json"), templates.tsconfig());
-  await writeFile(join(targetDir, "src", "index.ts"), templates.entrypoint());
-  await writeFile(join(targetDir, "src", "agent.test.ts"), templates.test());
-  await writeFile(join(targetDir, "src", "harness-agent.ts"), templates.harnessAgent());
-  await writeFile(join(targetDir, ".gitignore"), templates.gitignore());
+    // Write files
+    await writeFile(join(targetDir, "package.json"), templates.packageJson(name));
+    await writeFile(join(targetDir, "tsconfig.json"), templates.tsconfig());
+    await writeFile(join(targetDir, "src", "index.ts"), templates.entrypoint());
+    await writeFile(join(targetDir, "src", "agent.test.ts"), templates.test());
+    await writeFile(join(targetDir, "src", "harness-agent.ts"), templates.harnessAgent());
+    await writeFile(join(targetDir, ".gitignore"), templates.gitignore());
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to initialize project in ${targetDir}: ${message}`);
+  }
 }
 
 export async function initCommand(args: ParsedArgs): Promise<void> {
