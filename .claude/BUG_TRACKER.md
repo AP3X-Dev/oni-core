@@ -11,16 +11,16 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T23:31:31Z` |
 | **Last Hunter Scan** | `2026-03-20T19:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T11:15:00Z` |
+| **Last Fixer Pass** | `2026-03-21T12:25:00Z` |
 | **Last Validator Pass** | `2026-03-21T06:43:59Z` |
-| **Last Digest Run** | `2026-03-21T06:41:21Z` |
-| **Last Security Scan** | `2026-03-21T09:00:00Z` |
+| **Last Digest Run** | `2026-03-21T23:00:00Z` |
+| **Last Security Scan** | `2026-03-21T10:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T23:45:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T08:01:01Z` (Cycle 240) |
-| **Last Supervisor Pass** | `2026-03-21T08:00:36Z` |
+| **Last Git Manager Pass** | `2026-03-21T08:32:20Z` (Cycle 242) |
+| **Last Supervisor Pass** | `2026-03-21T08:31:06Z` |
 | **Total Found** | `419` |
 | **Total Pending** | `8` |
 | **Total In Progress** | `0` |
@@ -508,7 +508,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0343
-- **status:** `reopened`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/harness/safety-gate.ts`
 - **line:** `86`
@@ -570,7 +570,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0346
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/html.ts`
 - **line:** `17`
@@ -630,7 +630,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0350
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/swarm/self-improvement/skill-evolver.ts`
 - **line:** `86`
@@ -650,22 +650,22 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0351
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `296`
 - **category:** `logic-bug`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0351`
 - **description:** Subgraph streaming hard-codes `childStreamMode: ["debug", "values"]`, ignoring the parent's actual requested stream modes and never collecting `"custom"` or `"messages"` events.
 - **context:** If the parent only requested `"updates"`, the child still runs in `["debug", "values"]` mode, generating irrelevant events. More critically, `"custom"` and `"messages"` events emitted inside a subgraph are never surfaced because `modeCustom` and `modeMessages` checks on `allSubgraphEvents` always yield nothing.
 - **hunter_found:** `2026-03-20T22:26:00Z`
-- **fixer_started:** `2026-03-21T05:02:00Z`
-- **fixer_completed:** `2026-03-21T05:02:00Z`
-- **fix_summary:** `Subgraph stream fix.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-21T08:12:00Z`
+- **validator_completed:** `2026-03-21T08:32:14Z`
+- **validator_notes:** `REOPENED: Branch commit fixes dlq.ts (deep-clone in DeadLetterQueue.record), not streaming.ts. childStreamMode still hard-coded ["debug","values"]. Fixer must: modify streaming.ts to derive childStreamMode from parent config.`
 
 ---
 
@@ -690,7 +690,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0353
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `src/hitl/resume.ts`
 - **line:** `26`

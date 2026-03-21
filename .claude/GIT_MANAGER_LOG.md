@@ -1,22 +1,3 @@
-[2026-03-21T08:15:00Z] ALERT: BUG-0325 — persistent conflict (mcp/client.ts) 9+ cycles. Fixer must delete branch and recreate from current main.
-[2026-03-21T08:15:00Z] ALERT: BUG-0320 — tracker shows in-validation but no branch exists. Validator/Fixer must reconcile.
-[2026-03-21T08:15:00Z] BRANCH COUNT: 59 branches (was 61). 2 deletions (BUG-0312, BUG-0319 verified), 1 new (BUG-0305-ctx). Cumulative: ~175.
-[2026-03-21T08:15:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T08:15:00Z (Cycle 231). Log trimmed to 150 lines.
-[2026-03-21T08:15:00Z] Step 10: HEAD confirmed on main. Clean state.
-[2026-03-21T08:15:00Z] === Git Manager Cycle 231 End ===
-[2026-03-21T08:30:00Z] ## Cycle 232 — 2026-03-21T08:30:00Z
-[2026-03-21T08:30:00Z] Step 0: Pre-flight — TRACKER_LOCK exists (128s old, holder file stale). Last Fixer Pass=2026-03-21T08:25:00Z (>60s ago). Last Validator Pass=2026-03-21T06:17:36Z (>60s ago). In-progress=0, In-validation=0 per Meta. Proceeding.
-[2026-03-21T08:30:00Z] Step 1: Found 60 bugfix/BUG-* branches. No new branches since Cycle 231.
-[2026-03-21T08:30:00Z] Step 2: Branch map rebuilt. 59 branches post-deletion. Fixed/clean: 50. Fixed/conflict: 9. Blocked: 3 (BUG-0294, BUG-0304, BUG-0306). Verified: BUG-0321 (deleted this cycle).
-[2026-03-21T08:30:00Z] Step 3: DELETED bugfix/BUG-0321 (verified). 1/5 cap used. Cumulative: ~176.
-[2026-03-21T08:30:00Z] Step 4: No stale branches — all last fix commits 2026-03-20 (within 1-day threshold).
-[2026-03-21T08:30:00Z] Step 5: Merge-tree: 9 conflicting branches unchanged — BUG-0305-ctx (agent-node.ts), BUG-0325 (mcp/client.ts, 10+ cycles), BUG-0342 (a2a/server/index.ts, 8+ cycles), BUG-0346 (filesystem/index.ts, 8+ cycles), BUG-0350 (skill-evolver.ts, 8+ cycles), BUG-0353 (audit-agent.ts, 8+ cycles), BUG-0355 (redis/index.ts, 4+ cycles), BUG-0374 (pdf.ts, 9+ cycles), BUG-0378 (pool.ts, 5+ cycles). No new conflicts. No resolved conflicts.
-[2026-03-21T08:30:00Z] Step 5b: No rebase attempted — all 9 conflict branches are 693 commits behind main (non-trivial). 0/1 rebase cap used.
-[2026-03-21T08:30:00Z] Step 6: FILE OVERLAPS — (1) src/models/ollama.ts: BUG-0357+BUG-0377 (different hunks, safe). (2) src/swarm/pool.ts: BUG-0378 (conflicting)+BUG-0306 (blocked). (3) packages/stores/src/redis/index.ts: BUG-0326 (clean)+BUG-0355 (conflicting). (4) src/swarm/agent-node.ts: BUG-0305-ctx (conflicting)+BUG-0379 (clean). 4 overlaps (+1 from Cycle 231).
-[2026-03-21T08:30:00Z] Step 7: HEAD confirmed on main. Clean state.
-[2026-03-21T08:30:00Z] Step 8: GC next at Cycle 234. Skipped.
-[2026-03-21T08:30:00Z] ALERT: BUG-0325 — persistent conflict (mcp/client.ts) 10+ cycles. Fixer must delete branch and recreate from current main.
-[2026-03-21T08:30:00Z] ALERT: BUG-0305-ctx — conflict in src/swarm/agent-node.ts persists (Cycle 2). Fixer must incorporate try/catch AND __-prefix key filter in single commit.
 [2026-03-21T08:30:00Z] BRANCH COUNT: 59 branches (was 60). 1 deletion (BUG-0321 verified), 0 new. Cumulative: ~176.
 [2026-03-21T08:30:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T08:30:00Z (Cycle 232). Log trimmed to 150 lines.
 [2026-03-21T08:30:00Z] Step 10: HEAD confirmed on main. Clean state.
@@ -148,3 +129,22 @@
 [2026-03-21T08:01:01Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T08:01:01Z (Cycle 240). Log trimmed to 150 lines.
 [2026-03-21T08:01:01Z] Step 10: HEAD confirmed on main. Clean state.
 [2026-03-21T08:01:01Z] === Cycle 240 End ===
+[2026-03-21T08:32:20Z] ## Cycle 242 — 2026-03-21T08:32:20Z
+[2026-03-21T08:32:20Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T11:55:00Z (>60s). Last Validator=2026-03-21T08:03:29Z (>60s). In-progress=0, In-validation=0. Proceeding.
+[2026-03-21T08:32:20Z] Step 1: Found 62 bugfix/BUG-* branches. New since C240: BUG-0343 (branch restored). Total 62.
+[2026-03-21T08:32:20Z] Step 2: Branch map rebuilt. 62 branches. Fixed/clean: 55. Blocked: 4 (BUG-0294, BUG-0304, BUG-0305-ctx, BUG-0306). Verified w/ branches: 3 (BUG-0344, BUG-0345, BUG-0347). Behind cohorts: 34 branches at 706 behind, 8 moderate (38-156).
+[2026-03-21T08:32:20Z] Step 3: 0 deletions. No merged branches. Verified branches (BUG-0344/0345/0347) retain commits not in main — cannot delete safely. 0/5 cap used.
+[2026-03-21T08:32:20Z] Step 4: No stale branches by time (all last commits 2026-03-20/21, <24h). Behind-count warnings logged for 34 critical-stale (706 behind) branches per Step 2.
+[2026-03-21T08:32:20Z] Step 5: Merge-tree for top 10 priority branches — BUG-0295/0326/0342/0414/0415/0418/0407/0410/0406/0408 — ALL CLEAN (0 conflict markers). 34 critical-stale branches not analyzed (706 behind, mass divergence known from C240).
+[2026-03-21T08:32:20Z] Step 5b: REBASE SUCCESS — bugfix/BUG-0295 rebased onto main. Was 2 behind, now 0 behind, 1 commit ahead. 1/1 cap used.
+[2026-03-21T08:32:20Z] Step 6: FILE OVERLAPS unchanged — (1) redis/index.ts: BUG-0326+BUG-0355. (2) ollama.ts: BUG-0357+BUG-0377 (safe). (3) pool.ts: BUG-0306+BUG-0378. (4) agent-node.ts: BUG-0305-ctx+BUG-0379. No new overlaps.
+[2026-03-21T08:32:20Z] Step 7: HEAD confirmed on main. Stash pop restored working tree.
+[2026-03-21T08:32:20Z] Step 8: GC skipped. Next at Cycle 246.
+[2026-03-21T08:32:20Z] ALERT: BUG-0295 — rebased to main HEAD. Validator-ready. PRIORITY #1.
+[2026-03-21T08:32:20Z] ALERT: BUG-0326+BUG-0342 — 4 behind, fixed, clean. Next rebase candidates for Cycle 244.
+[2026-03-21T08:32:20Z] ALERT: 34 branches 706 commits behind main (critical). Fixer must recreate from main before validation.
+[2026-03-21T08:32:20Z] ALERT: BUG-0294 — 79 behind, 2 commits ahead, blocked+severely diverged. Human intervention required.
+[2026-03-21T08:32:20Z] BRANCH COUNT: 62 branches (was 61 at C240 end). 0 deletions, 1 rebase (BUG-0295). Cumulative: ~191.
+[2026-03-21T08:32:20Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T08:32:20Z (Cycle 242). Log trimmed to 150 lines.
+[2026-03-21T08:32:20Z] Step 10: HEAD confirmed on main. Clean state.
+[2026-03-21T08:32:20Z] === Cycle 242 End ===
