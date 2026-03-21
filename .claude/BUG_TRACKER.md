@@ -11,14 +11,14 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T10:02:49Z` (Cycle 39 — 5 failures all known cooldowns BUG-0312 + BUG-0363; no new regressions; test count stable at 1390) |
 | **Last Hunter Scan** | `2026-03-22T00:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T15:05:00Z` |
+| **Last Fixer Pass** | `2026-03-21T15:35:00Z` |
 | **Last Validator Pass** | `2026-03-22T00:06:00Z` |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T13:45:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T03:01:38Z` |
+| **Last TestGen Run** | `2026-03-22T00:20:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T17:00:00Z` (Cycle 250 — 0 deletions, rebased BUG-0295 to main HEAD ca6f7af; 7 conflict branches flagged; BUG-0434 in-validation has 2 conflicts) |
 | **Last Supervisor Pass** | `2026-03-21T10:00:25Z` |
 | **Total Found** | `425` |
@@ -1818,7 +1818,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0429
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `297`
@@ -1828,8 +1828,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `fireSessionEnd()` is called in the finally block without a try/catch, so a throwing session-end hook propagates out of the generator and masks the actual session outcome.
 - **context:** The finally block is the guaranteed cleanup path for every agent loop execution; a hook error here suppresses the real result and leaves callers' for-await-of loop in an unrecoverable error state with no actionable message.
 - **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T15:35:00Z`
+- **fixer_completed:** `2026-03-21T15:35:00Z`
 - **fix_summary:** ``
 - **validator_started:** `2026-03-22T00:10:00Z`
 - **validator_completed:** `2026-03-22T00:14:00Z`
@@ -1898,7 +1898,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0433
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/graph.ts`
 - **line:** `180`
@@ -1908,8 +1908,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The HITL `resume()` method validates a session then awaits `runner.invoke()` before calling `markResumed()`, creating a TOCTOU race where two concurrent resume() calls for the same resumeId both pass validation.
 - **context:** A duplicate resume() call during the first's async gap will both proceed past the guard, causing the node to execute twice with the human-provided value, potentially producing duplicate side-effects or corrupted state.
 - **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T15:35:00Z`
+- **fixer_completed:** `2026-03-21T15:35:00Z`
 - **fix_summary:** ``
 - **validator_started:** `2026-03-22T00:10:00Z`
 - **validator_completed:** `2026-03-22T00:14:00Z`
