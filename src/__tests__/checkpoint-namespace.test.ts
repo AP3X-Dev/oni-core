@@ -35,13 +35,13 @@ describe("Checkpoint namespace isolation", () => {
     const parentHistory = await cp.list("parent-1");
     expect(parentHistory.length).toBeGreaterThan(0);
 
-    // Child checkpoints should be namespaced under "parent-1:child"
-    const childHistory = await cp.list("parent-1:child");
+    // Child checkpoints should be namespaced under "child:parent-1"
+    const childHistory = await cp.list("child:parent-1");
     expect(childHistory.length).toBeGreaterThan(0);
 
     // The child checkpoints are stored with the namespaced threadId
     const childFinal = childHistory[childHistory.length - 1];
-    expect(childFinal.threadId).toBe("parent-1:child");
+    expect(childFinal.threadId).toBe("child:parent-1");
 
     // Parent's final state includes "result" from "finish" node
     const parentFinal = parentHistory[parentHistory.length - 1];
