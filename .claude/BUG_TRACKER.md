@@ -9,18 +9,18 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-20T15:00:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-21T03:25:00Z` |
 | **Last Hunter Scan** | `2026-03-21T00:25:00Z` |
 | **Last Fixer Pass** | `2026-03-20T22:04:00Z` |
-| **Last Validator Pass** | `2026-03-21T00:05:00Z` |
+| **Last Validator Pass** | `2026-03-21T02:51:00Z` |
 | **Last Digest Run** | `2026-03-21T00:40:00Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T00:02:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T00:45:00Z` (Cycle 206) |
-| **Last Supervisor Pass** | `2026-03-20T22:05:30Z` |
+| **Last TestGen Run** | `2026-03-20T10:30:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T03:28:03Z` (Cycle 209) |
+| **Last Supervisor Pass** | `2026-03-21T03:22:53Z` |
 | **Total Found** | `366` |
 | **Total Pending** | `49` |
 | **Total In Progress** | `0` |
@@ -242,19 +242,21 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0305
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `119`
 - **category:** `missing-error-handling`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/agent-oncomplete-markidle-on-throw.test.ts`
 - **description:** `onComplete` hook awaited without try/catch on both the handoff path (line 119) and normal return path (line 139). If `onComplete` throws, `registry.markIdle()` is never called, leaving the agent permanently in "busy" state.
 - **context:** The `onStart` hook (lines 40-45) and `onError` hook (lines 185-189) in the same file are properly guarded with try/catch, but `onComplete` is not. A throwing `onComplete` hook permanently bricks the agent slot by skipping `markIdle()`. Fix: wrap both `onComplete` calls in try/catch, ensuring `markIdle()` always runs.
 - **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0305`
+- **branch:** `main`
 - **hunter_found:** `2026-03-20T23:45:00Z`
 - **fixer_started:** `2026-03-21T00:42:00Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-21T03:22:00Z`
+- **fix_summary:** `Wrapped both onComplete hook calls in try/catch/finally in src/swarm/agent-node.ts. markIdle() moved to finally block so it always runs. Existing onStart and onError guards preserved. Commit c8e3070 on main.`
 - **validator_started:** `2026-03-20T21:15:00Z`
 - **validator_completed:** `2026-03-20T21:15:00Z`
 - **validator_notes:** `REOPENED: onComplete wrapping is correct BUT branch removes onStart try/catch guard (BUG-0037 regression — throwing onStart leaves agent permanently busy) and removes onError try/catch guard (uncontrolled propagation). Also introduces tsc error: TS2304 Cannot find name setTimeout in agent-node.ts line 159. Fix must preserve existing onStart and onError guards while adding onComplete guards.`
@@ -262,7 +264,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0306
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
 - **line:** `269`
@@ -275,7 +277,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T22:00:00Z`
 - **fixer_completed:** `2026-03-20T22:04:00Z`
 - **fix_summary:** `Wrapped onError hook call in try/catch (swallow). Original lastError preserved and re-thrown. +5/-1 lines.`
-- **validator_started:** ``
+- **validator_started:** `2026-03-21T02:51:00Z`
 - **validator_completed:** ``
 - **validator_notes:** ``
 
@@ -642,7 +644,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0327
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/swarm/graph.ts`
 - **line:** `53`
@@ -655,7 +657,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T22:00:00Z`
 - **fixer_completed:** `2026-03-20T22:04:00Z`
 - **fix_summary:** `Added dispose() method to SwarmGraph that clears broker setTimeout handles, PubSub subscribers, and nulls references for GC. +22 lines.`
-- **validator_started:** ``
+- **validator_started:** `2026-03-21T02:51:00Z`
 - **validator_completed:** ``
 - **validator_notes:** ``
 
@@ -862,19 +864,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0338
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/mailbox.ts`
 - **line:** `44`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `main`
 - **description:** `formatInbox()` renders `m.from` and `m.content` from swarm messages directly into LLM context string with no sanitization, enabling cross-agent prompt injection via crafted message content.
 - **context:** A compromised or malicious agent can embed LLM instruction overrides in its message content, which are injected verbatim into the receiving agent's context with no escaping or boundary markers.
 - **hunter_found:** `2026-03-20T22:18:00Z`
 - **fixer_started:** `2026-03-21T00:42:00Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-21T03:22:00Z`
+- **fix_summary:** `Added sanitizeContent() in src/swarm/mailbox.ts that escapes angle brackets, curly braces, and backticks in m.from and m.content before rendering into LLM context in formatInbox(). Commit 01c5ff5 on main.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -922,19 +924,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0341
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/hitl/interrupt.ts`
 - **line:** `69`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0341`
 - **description:** `_installInterruptContext` uses `AsyncLocalStorage.enterWith()` which mutates the current async context globally, instead of `als.run(ctx, fn)` which creates an isolated child scope — concurrent node executions sharing a parent context will bleed interrupt state across nodes.
 - **context:** Under `Promise.all` parallel node execution in Pregel, one node's interrupt context overwrites another's, causing interrupts to target the wrong node or be silently lost.
 - **hunter_found:** `2026-03-20T22:24:00Z`
 - **fixer_started:** `2026-03-21T00:42:00Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-21T03:22:00Z`
+- **fix_summary:** `Changed _installInterruptContext() in src/hitl/interrupt.ts from enterWith() to als.run(ctx, fn) callback pattern. Updated executeNode() in src/pregel/execution.ts to use new callback signature. _clearInterruptContext() made no-op since als.run() auto-cleans scope. Tests updated.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1082,19 +1084,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0349
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/compile-ext.ts`
 - **line:** `68`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0349`
 - **description:** `spawnAgent()` and `removeAgent()` mutate the live `runner.nodes` and `runner._edgesBySource` Maps while the Pregel execution loop may be concurrently iterating those same structures.
 - **context:** `streamSupersteps` iterates `ctx.nodes` and `ctx._edgesBySource` every superstep without any lock. A concurrent `spawnAgent` or `removeAgent` call during a live graph execution can add or delete entries mid-iteration, causing `NodeNotFoundError` or silently skipping a newly added agent.
 - **hunter_found:** `2026-03-20T22:26:00Z`
 - **fixer_started:** `2026-03-21T00:42:00Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-21T03:22:00Z`
+- **fix_summary:** `Added nodesSnapshot = new Map(ctx.nodes) at start of each superstep in src/pregel/streaming.ts. All ctx.nodes reads in the loop (send-groups, debug node_start, parallel executeNode) now use snapshot, preventing concurrent spawnAgent/removeAgent from corrupting mid-iteration reads.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1302,19 +1304,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0361
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `packages/a2a/src/server/handler.ts`
 - **line:** `53`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `main`
 - **description:** `handler()` call for `tasks/sendSubscribe` is not awaited — if handler returns a rejected Promise instead of a generator, the rejection is unhandled.
 - **context:** On line 53, `handler(messageText, taskId)` is called and immediately checked for `[Symbol.asyncIterator]` without awaiting. If `handler` returns a rejected Promise, the `catch` block on line 63 will not catch it — the error surfaces only when the stream is consumed by the SSE layer.
 - **hunter_found:** `2026-03-21T00:25:00Z`
 - **fixer_started:** `2026-03-21T00:42:00Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-21T03:22:00Z`
+- **fix_summary:** `Added await to handler(messageText, taskId) call in packages/a2a/src/server/handler.ts sendSubscribe path so rejected Promises are caught by the surrounding try/catch. Commit ada9de7 on main.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1424,7 +1426,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 <!-- HUNTER: Append new bugs above this line -->
 
 ### BUG-0294
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/graph.ts`
 - **line:** `216`
@@ -1437,7 +1439,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-20T22:00:00Z`
 - **fixer_completed:** `2026-03-20T22:04:00Z`
 - **fix_summary:** `Added sanitize() helper to both toMermaid() in graph.ts and toMermaidDetailed() in inspect.ts. Strips Mermaid-special chars from node names before embedding.`
-- **validator_started:** `2026-03-20T22:05:00Z`
+- **validator_started:** `2026-03-21T02:51:00Z`
 - **validator_completed:** `2026-03-20T22:05:00Z`
 - **validator_notes:** `REOPENED (2nd time): Both toMermaid() in graph.ts and toMermaidDetailed() in inspect.ts still embed raw node names without sanitization. lbl() helper has no sanitize() call. Test file mermaid-node-injection.test.ts still missing. Fix must add sanitization to BOTH functions and create regression tests.`
 
