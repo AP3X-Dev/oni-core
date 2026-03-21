@@ -236,19 +236,6 @@ export class SwarmGraph<S extends BaseSwarmState> {
     return buildCompose(config, parent);
   }
 
-  // ---- Disposal ----
-
-  /**
-   * Dispose of the broker and pubsub instances to release timer handles
-   * and subscriber maps. Call when the SwarmGraph is no longer needed.
-   */
-  dispose(): void {
-    this._broker?.dispose();
-    this._pubsub?.dispose();
-    this._broker = undefined;
-    this._pubsub = undefined;
-  }
-
   // ---- Agent registration ----
 
   addAgent(def: SwarmAgentDef<S>): this {
@@ -381,6 +368,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
     }
     this.subGraphs.length = 0;
     this._broker?.dispose();
+    this._pubsub?.dispose();
     this._broker = undefined;
     this._pubsub = undefined;
   }
