@@ -11,7 +11,7 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T21:00:00Z` |
 | **Last Hunter Scan** | `2026-03-21T00:25:00Z` |
-| **Last Fixer Pass** | `2026-03-21T04:02:00Z` |
+| **Last Fixer Pass** | `2026-03-21T04:20:00Z` |
 | **Last Validator Pass** | `2026-03-21T02:51:00Z` |
 | **Last Digest Run** | `2026-03-21T00:40:00Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
@@ -19,12 +19,12 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T21:25:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T04:44:00Z` (Cycle 215) |
+| **Last Git Manager Pass** | `2026-03-21T05:10:00Z` (Cycle 216) |
 | **Last Supervisor Pass** | `2026-03-21T04:15:34Z` |
 | **Total Found** | `367` |
-| **Total Pending** | `46` |
+| **Total Pending** | `31` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `13` |
+| **Total Fixed** | `27` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `3` |
@@ -348,7 +348,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0307
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/mcp/transport.ts`
 - **line:** `162`
@@ -356,11 +356,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `StdioTransport.stop()` calls `this.process.kill("SIGTERM")` without removing `"error"` and `"exit"` listeners first. The listeners close over `this` and `this.pending`, preventing GC of the transport instance until Node cleans up the process handle. In MCP server crash-restart loops this causes steady listener accumulation.
 - **context:** Compare with `LSPClient.stop()` in `lsp/client.ts:208` which explicitly calls `removeAllListeners()` before killing. `StdioTransport` is missing this pattern. Fix: call `this.process.removeAllListeners()` before `this.process.kill()`.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0307`
 - **hunter_found:** `2026-03-21T00:00:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Added removeAllListeners() before kill() in StdioTransport.stop().`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -368,7 +368,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0308
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/models/google.ts`
 - **line:** `163`
@@ -376,11 +376,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `mapFinishReason` never returns `"stop_sequence"`. The Gemini API returns `finishReason: "STOP_SEQUENCE"` when the model stops at a user-supplied stop sequence, but this function maps it to `"end"`. The Anthropic adapter correctly handles this case.
 - **context:** `ChatResponse.stopReason` declares `"end" | "tool_use" | "max_tokens" | "stop_sequence"`. Any caller differentiating `"stop_sequence"` from `"end"` (e.g. to detect partial output) will receive incorrect data from the Google adapter. Fix: add `if (reason === "STOP_SEQUENCE") return "stop_sequence"` before the fallback return.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0308`
 - **hunter_found:** `2026-03-21T00:00:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Added STOP_SEQUENCE mapping and tool_call_delta emission in Google adapter.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -388,7 +388,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0309
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/models/google.ts`
 - **line:** `432`
@@ -396,11 +396,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Google adapter `stream()` emits `tool_call_start` directly followed by `tool_call_end` with no `tool_call_delta` events, and populates complete `args` in `tool_call_start`. The OpenAI/Anthropic adapters emit `tool_call_start` with `args: {}` followed by delta events — the Google adapter violates this staged delivery contract.
 - **context:** Any stream consumer that accumulates args from `tool_call_delta` events will receive no deltas from Google and see empty args. Consumers that read `tool_call_start.args` will get complete data from Google but empty from OpenAI/Anthropic. Fix: emit `tool_call_start` with `args: {}`, then a single `tool_call_delta` with the complete args, then `tool_call_end`.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0308`
 - **hunter_found:** `2026-03-21T00:00:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Changed Google stream() to emit tool_call_start with args:{} then tool_call_delta then tool_call_end.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -468,7 +468,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0311
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/hitl/resume.ts`
 - **line:** `43`
@@ -476,11 +476,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `evict()` sets `s.status = "expired"` then immediately deletes the entry from the Map. A subsequent `get(resumeId)` returns `null`, making the expired status unreachable via the public API — callers cannot distinguish "expired" from "never existed".
 - **context:** The comment on `get()` says sessions remain visible so callers can observe final status, but that only holds for `"resumed"` sessions. Fix: keep expired sessions in the Map for a grace period before final deletion.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0311`
 - **hunter_found:** `2026-03-21T00:05:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Keep expired sessions visible for 60s grace period in resume store.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -488,7 +488,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0312
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/coordination/pubsub.ts`
 - **line:** `34`
@@ -496,11 +496,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `publish()` iterates `this.subscribers` Map with `for...of` while subscriber handlers can call `subscribe()` or unsubscribe during delivery. New subscriptions added mid-iteration may or may not be visited in the same `publish()` call, causing non-deterministic event delivery.
 - **context:** Per ECMAScript spec, entries added to a Map during `for...of` iteration will be visited if not yet passed. Handlers that add new subscriptions during delivery can receive the event that triggered them. Fix: snapshot subscribers before iterating (`[...this.subscribers.entries()]`).
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0312`
 - **hunter_found:** `2026-03-21T00:05:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Snapshot subscribers Map and handler Sets before iterating in publish().`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -508,19 +508,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0319
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/loop/experimental-executor.ts`
 - **line:** `45`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0319`
 - **description:** `timeBudget` is used as the timeout for each individual phase (baseline, applyChanges, post-measurement) rather than a total budget, so total wall time can reach 3x the specified budget.
 - **context:** A caller passing `timeBudget: 5000` expecting the experiment to complete within 5 seconds will instead see up to 15 seconds of execution, violating time expectations and potentially causing cascading timeouts.
 - **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Track elapsed time; pass remaining budget to each phase instead of full timeBudget.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -568,19 +568,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0322
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/agents/define-agent.ts`
 - **line:** `159`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0322`
 - **description:** maxTokens budget check strips toolCalls from the assistant message before breaking, producing a malformed conversation history where tool-call content has no matching toolCalls field.
 - **context:** When the token budget is exceeded mid-turn, the assistant message is pushed with toolCalls removed but tool-referencing content intact. LLM APIs that validate message sequencing will reject the subsequent request.
 - **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Push full assistantMsg with toolCalls intact when breaking on budget.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -588,19 +588,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0323
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/messages/index.ts`
 - **line:** `168`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0323`
 - **description:** trimMessages hoists all system messages to the front of the array regardless of their original positions, destroying positional semantics when multiple system messages are interleaved with conversation turns.
 - **context:** Conversations that inject system messages mid-conversation will have their message ordering silently corrupted. The maxMessages limit also applies only to non-system messages.
 - **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Only hoist first system message; preserve positions of interleaved system messages.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -608,19 +608,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0325
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/mcp/client.ts`
 - **line:** `240`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0325`
 - **description:** callTool casts response.result (typed unknown) directly to MCPCallToolResult with no structural validation, so a malformed MCP server response causes a runtime crash when callers destructure the result.
 - **context:** Any MCP server returning a non-conforming result object will cause downstream crashes. The same unsafe cast pattern exists at line 121 for MCPInitializeResult.
 - **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Validate MCP server response structure before casting at callTool and initialize.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -628,19 +628,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0326
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `57`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0326`
 - **description:** Redis v4 fallback path assigns raw createClient result as RedisClient without a shim, but RedisClient.del uses rest params while redis v4 del expects an array — multi-key deletes on v4 backend will break.
 - **context:** The ioredis path correctly shims del with r.del(...keys), but the redis v4 branch has no such adapter.
 - **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Add del shim for redis v4 multi-key compatibility.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -668,19 +668,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0328
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/tools/src/stripe/index.ts`
 - **line:** `59`
 - **category:** `memory-leak`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0328`
 - **description:** loadStripeInstance creates a new Stripe SDK client on every tool invocation instead of caching, accumulating HTTP agent connection pools and socket handles over the session lifetime.
 - **context:** In long-running agent sessions with many Stripe tool calls, file descriptors grow without bound, eventually causing EMFILE or connection pool exhaustion.
 - **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Cache Stripe SDK client instance keyed by API key to prevent connection pool leak.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -688,19 +688,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0329
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/tools/src/slack/index.ts`
 - **line:** `40`
 - **category:** `memory-leak`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0329`
 - **description:** loadSlackClient creates a new WebClient on every tool invocation instead of caching, accumulating HTTP agent connection pools and socket handles over the session lifetime.
 - **context:** Same pattern as BUG-0328 but for Slack — per-call client creation causes socket handle growth in long-running sessions.
 - **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Cache Slack WebClient instance keyed by token to prevent connection pool leak.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -708,19 +708,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0330
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/coordination/request-reply.ts`
 - **line:** `78`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0330`
 - **description:** Timeout callback and `reply()` method both check-then-mutate `req.resolved` non-atomically — if timeout fires between `reply()` capturing the resolver and setting `resolved = true`, both the rejection and resolution fire on the same Promise.
 - **context:** Double-settling a Promise is silently ignored by V8, but downstream `.then()` chains may observe the resolved value after the rejection handler already ran, causing inconsistent state in request-reply coordination patterns.
 - **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Make resolved flag check-and-set atomic in reply() to prevent double-settlement.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -728,19 +728,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0331
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/store/index.ts`
 - **line:** `126`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0331`
 - **description:** `InMemoryStore.put()` checks `this.data.size` against `maxItems` before an `await this.embedFn()` call, then inserts after the await — concurrent `put()` calls all pass the size check before any insert, exceeding the capacity limit.
 - **context:** In high-throughput agent loops that write to the store concurrently, the maxItems invariant is silently violated, causing unbounded memory growth in what is supposed to be a bounded store.
 - **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:20:00Z`
+- **fixer_completed:** `2026-03-21T04:20:00Z`
+- **fix_summary:** `Add post-insert capacity re-check in InMemoryStore.put() to prevent exceeding maxItems.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
