@@ -2558,3 +2558,450 @@
 - **archived:** `2026-03-22T00:06:00Z`
 
 ---
+
+### BUG-0326
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/stores/src/redis/index.ts`
+- **line:** `57`
+- **category:** `type-error`
+- **reopen_count:** `2`
+- **branch:** `bugfix/BUG-0326`
+- **description:** Redis v4 fallback path assigns raw createClient result as RedisClient without a shim, but RedisClient.del uses rest params while redis v4 del expects an array — multi-key deletes on v4 backend will break.
+- **context:** The ioredis path correctly shims del with r.del(...keys), but the redis v4 branch has no such adapter.
+- **hunter_found:** `2026-03-20T22:12:00Z`
+- **fixer_started:** `2026-03-21T11:15:00Z`
+- **fixer_completed:** `2026-03-21T11:15:00Z`
+- **fix_summary:** `Fresh branch with full v4 shim: del spread + optional chaining for pexpire/disconnect. tsc clean.`
+- **validator_started:** `2026-03-21T23:59:25Z`
+- **validator_completed:** `2026-03-22T00:01:30Z`
+- **validator_notes:** `Confirmed del: (...keys) => r.del(...keys) with spread operator present — fixes the TS2345 from previous attempt. Full v4 shim mirrors ioredis structure with optional chaining for pexpire/disconnect. Third attempt finally correct.`
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0332
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/checkpointers/redis.ts`
+- **line:** `155`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0332`
+- **description:** `delete()` reads steps via `zrange` then issues separate `del` calls for each data key and the index key — a concurrent `put()` between the zrange and del leaves an orphaned data key with no index entry pointing to it.
+- **context:** Orphaned keys accumulate in Redis over time, consuming memory that is never reclaimed. Related to but distinct from BUG-0304 (non-atomic `get()`).
+- **hunter_found:** `2026-03-20T22:18:00Z`
+- **fixer_started:** `2026-03-21T04:32:00Z`
+- **fixer_completed:** `2026-03-21T04:32:00Z`
+- **fix_summary:** `Delete index key and data keys in single atomic del() call to prevent orphaned entries.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0333
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/loaders/src/loaders/json.ts`
+- **line:** `10`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0333`
+- **description:** `readFile(source, "utf-8")` is called without any try/catch, so filesystem errors (ENOENT, EACCES) propagate as raw Node.js errors with no loader-level context.
+- **context:** Same pattern as BUG-0270 (pdf.ts) but in the JSON loader. The CSV loader correctly wraps readFile in try/catch with a descriptive message, but the JSON loader does not.
+- **hunter_found:** `2026-03-20T22:18:00Z`
+- **fixer_started:** `2026-03-21T04:32:00Z`
+- **fixer_completed:** `2026-03-21T04:32:00Z`
+- **fix_summary:** `Wrap readFile in try-catch with descriptive JsonLoader error message.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0334
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/cli/init.ts`
+- **line:** `11`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0334`
+- **description:** `initProject()` calls `mkdir` and five `writeFile` operations with no try/catch — filesystem errors (permission denied, disk full) propagate as unhandled rejections with raw Node.js errors instead of user-friendly CLI messages.
+- **context:** Unlike other CLI commands (build, inspect) which wrap I/O in try/catch, `init` crashes with an unformatted stack trace on any filesystem error.
+- **hunter_found:** `2026-03-20T22:18:00Z`
+- **fixer_started:** `2026-03-21T04:32:00Z`
+- **fixer_completed:** `2026-03-21T04:32:00Z`
+- **fix_summary:** `Wrap initProject I-O in try-catch with user-friendly CLI error.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0335
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/harness/context-compactor.ts`
+- **line:** `279`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0335`
+- **description:** Caller-supplied `compactInstructions` is injected verbatim into the LLM summarization prompt with no sanitization, enabling prompt injection that can manipulate context compaction output.
+- **context:** An attacker who can influence harness configuration can inject instructions to exfiltrate conversation history or corrupt the compacted context fed into subsequent agent turns.
+- **hunter_found:** `2026-03-20T22:18:00Z`
+- **fixer_started:** `2026-03-21T04:32:00Z`
+- **fixer_completed:** `2026-03-21T04:32:00Z`
+- **fix_summary:** `XML-escape and fence compactInstructions before injection into LLM prompt.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0336
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/cli/run.ts`
+- **line:** `33`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0336`
+- **description:** User-supplied file path from CLI arguments is passed directly to `spawn("npx", ["tsx", entryFile])` with no extension validation or cwd containment check, allowing execution of arbitrary files on the filesystem.
+- **context:** Unlike `cli/inspect.ts` which enforces ALLOWED_EXTENSIONS and cwd containment, `run.ts` does neither.
+- **hunter_found:** `2026-03-20T22:18:00Z`
+- **fixer_started:** `2026-03-21T04:32:00Z`
+- **fixer_completed:** `2026-03-21T04:32:00Z`
+- **fix_summary:** `Add extension validation and cwd containment check for CLI entry file.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0337
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/models/http-error.ts`
+- **line:** `72`
+- **category:** `security`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0337`
+- **description:** Full upstream API error body from model providers is reflected verbatim into thrown `ModelAPIError` with no truncation or field scrubbing, potentially leaking provider-side internal details and request IDs to callers.
+- **context:** If these errors propagate to HTTP responses, log sinks, or LLM context, internal provider error details are exposed.
+- **hunter_found:** `2026-03-20T22:18:00Z`
+- **fixer_started:** `2026-03-21T05:12:00Z`
+- **fixer_completed:** `2026-03-21T05:12:00Z`
+- **fix_summary:** `Added sanitizeErrorBody() to scrub sensitive fields and truncate to 500 chars in ModelAPIError.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0339
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/circuit-breaker.ts`
+- **line:** `27`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0339`
+- **description:** The `state` getter has a side effect — it mutates `this._state` from `"open"` to `"half_open"` when the reset timeout has elapsed, meaning any code that reads `state` twice can non-deterministically advance the circuit state.
+- **context:** Logging, test assertions, or monitoring code that reads `state` can inadvertently trigger state transitions. State mutations should happen in `execute()`, not in a property accessor.
+- **hunter_found:** `2026-03-20T22:24:00Z`
+- **fixer_started:** `2026-03-21T04:42:00Z`
+- **fixer_completed:** `2026-03-21T04:42:00Z`
+- **fix_summary:** `Moved open-to-half_open transition from state getter to execute(). Getter is now pure accessor.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0340
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/circuit-breaker.ts`
+- **line:** `34`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0339`
+- **description:** In half_open state, the `_probeInFlight` guard between reading state and setting the flag is not atomic — two concurrent `execute()` calls can both pass the guard and both run the probe function simultaneously, violating the single-probe invariant.
+- **context:** The circuit breaker is designed to allow exactly one probe request in half_open state. Concurrent probes can cause inconsistent failure counting and incorrect state transitions.
+- **hunter_found:** `2026-03-20T22:24:00Z`
+- **fixer_started:** `2026-03-21T04:42:00Z`
+- **fixer_completed:** `2026-03-21T04:42:00Z`
+- **fix_summary:** `Made probe guard atomic: check-and-set _probeInFlight synchronously before async call. Same commit as BUG-0339.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/circuit-breaker-half-open-single-probe.test.ts`
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0344
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/loaders/src/loaders/csv.ts`
+- **line:** `17`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0344`
+- **description:** TSV detection uses `source.endsWith(".tsv")` on the raw path, but `supports()` lowercases the extension — a file with `.TSV` extension passes `supports()` but gets parsed with comma separator instead of tab.
+- **context:** TSV files with uppercase extensions are silently parsed as CSV, producing garbled data with tab characters embedded in field values.
+- **hunter_found:** `2026-03-20T22:24:00Z`
+- **fixer_started:** `2026-03-21T04:42:00Z`
+- **fixer_completed:** `2026-03-21T04:42:00Z`
+- **fix_summary:** `Changed source.endsWith(.tsv) to source.toLowerCase().endsWith(.tsv) for case-insensitive TSV detection.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0345
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/loaders/src/loaders/markdown.ts`
+- **line:** `10`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0345`
+- **description:** `readFile` is called without try/catch, so filesystem errors propagate as raw Node.js errors with no loader-level context.
+- **context:** Same pattern as BUG-0270 (pdf.ts) and BUG-0333 (json.ts). The CSV loader correctly wraps readFile but markdown does not.
+- **hunter_found:** `2026-03-20T22:24:00Z`
+- **fixer_started:** `2026-03-21T04:52:00Z`
+- **fixer_completed:** `2026-03-21T04:52:00Z`
+- **fix_summary:** `Wrap readFile in try-catch with descriptive MarkdownLoader error.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0346
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/loaders/src/loaders/html.ts`
+- **line:** `17`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0346`
+- **description:** `readFile` is called without try/catch, so filesystem errors propagate as raw Node.js errors with no loader-level context.
+- **context:** Same missing-error-handling pattern as BUG-0270 (pdf), BUG-0333 (json), BUG-0345 (markdown).
+- **hunter_found:** `2026-03-20T22:24:00Z`
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `HTML loader fix.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0347
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/stores/src/postgres/index.ts`
+- **line:** `77`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0347`
+- **description:** `ensureSchema()` runs CREATE TABLE and CREATE INDEX as separate un-transacted queries — a failure between the two leaves the schema in a partial state with a table but no index.
+- **context:** On flaky network connections to Postgres, the store can end up with a table but no index, causing slow queries on `listNamespaces` and `search`.
+- **hunter_found:** `2026-03-20T22:24:00Z`
+- **fixer_started:** `2026-03-21T04:52:00Z`
+- **fixer_completed:** `2026-03-21T04:52:00Z`
+- **fix_summary:** `Wrap ensureSchema CREATE TABLE and CREATE INDEX in BEGIN-COMMIT transaction with ROLLBACK on error.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0350
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/swarm/self-improvement/skill-evolver.ts`
+- **line:** `86`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0350`
+- **description:** `recordSkillUsage` calls `splice(0, ...)` on `this.usageHistory` while `identifyWeakSkills` or `proposeSkillImprovement` may be concurrently iterating the same array.
+- **context:** If `proposeSkillImprovement` (which filters `this.usageHistory`) is awaited concurrently with `recordSkillUsage` triggering splice-based eviction, the `filter` call can observe a truncated or shifted array, producing an incorrect failure list passed to the LLM.
+- **hunter_found:** `2026-03-20T22:26:00Z`
+- **fixer_started:** `2026-03-21T04:52:00Z`
+- **fixer_completed:** `2026-03-21T04:52:00Z`
+- **fix_summary:** `Replace splice with slice reassignment in recordSkillUsage to prevent concurrent iteration race.`
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/skill-evolver-splice-race.test.ts`
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0351
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `296`
+- **category:** `logic-bug`
+- **reopen_count:** `1`
+- **branch:** `bugfix/BUG-0351`
+- **description:** Subgraph streaming hard-codes `childStreamMode: ["debug", "values"]`, ignoring the parent's actual requested stream modes and never collecting `"custom"` or `"messages"` events.
+- **context:** If the parent only requested `"updates"`, the child still runs in `["debug", "values"]` mode, generating irrelevant events. More critically, `"custom"` and `"messages"` events emitted inside a subgraph are never surfaced because `modeCustom` and `modeMessages` checks on `allSubgraphEvents` always yield nothing.
+- **hunter_found:** `2026-03-20T22:26:00Z`
+- **fixer_started:** `2026-03-21T12:55:00Z`
+- **fixer_completed:** `2026-03-21T12:55:00Z`
+- **fix_summary:** `Derive childStreamMode from parent flags instead of hard-coding. Fresh branch from main.`
+- **validator_started:** `2026-03-22T00:10:00Z`
+- **validator_completed:** `2026-03-22T00:14:00Z`
+- **validator_notes:** `Confirmed commit cc6999f modifies only streaming.ts (7+/1-), replacing hard-coded ["debug","values"] with dynamic array from parent mode flags. Downstream event-filtering at line 384 already handles modeCustom/modeMessages — previously dead code now active. Verified.`
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0414
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `packages/tools/src/code-execution/e2b.ts`
+- **line:** `53`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0414`
+- **description:** If `SandboxClass.create()` throws, the `finally` block calls `sandbox.close()` on an undefined variable, masking the original error with a secondary TypeError.
+- **context:** The sandbox variable is declared outside the try block. A failed create() (bad API key, network error) triggers finally where `sandbox` is still undefined, causing a ReferenceError/TypeError that hides the root cause.
+- **hunter_found:** `2026-03-20T19:02:00Z`
+- **fixer_started:** `2026-03-21T11:05:00Z`
+- **fixer_completed:** `2026-03-21T11:05:00Z`
+- **fix_summary:** ``
+- **validator_started:** `2026-03-21T23:59:25Z`
+- **validator_completed:** `2026-03-22T00:01:30Z`
+- **validator_notes:** `Confirmed sandbox declared as let undefined, create() moved inside try, finally uses sandbox?.close() with optional chaining. Original error propagates cleanly when create() fails. Happy path unchanged. Minimal 3-line fix.`
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0431
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/self-improvement/skill-evolver.ts`
+- **line:** `170`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0431`
+- **description:** The user-supplied `testFn` callback in `testSkillRevision()` is awaited without a try/catch, so any exception propagates uncaught and aborts the entire self-improvement cycle.
+- **context:** `testSkillRevision()` is a public API method expected to return an `ExperimentResult`; callers do not wrap it, so a throwing test function produces an unhandled promise rejection and halts the improvement loop.
+- **hunter_found:** `2026-03-22T00:02:00Z`
+- **fixer_started:** `2026-03-21T14:35:00Z`
+- **fixer_completed:** `2026-03-21T14:35:00Z`
+- **fix_summary:** `Wrap testFn in try-catch returning failed ExperimentResult on error.`
+- **validator_started:** `2026-03-22T00:10:00Z`
+- **validator_completed:** `2026-03-22T00:14:00Z`
+- **validator_notes:** `Confirmed try/catch wraps previously un-awaited testFn call. Catch returns valid ExperimentResult (all 6 fields match interface: hypothesis, success:false, metricBefore:0, metricAfter:null, rolledBack:false, reason with error). Scoped to single if(testFn) branch. Verified.`
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0434
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/pool.ts`
+- **line:** `88`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0434`
+- **description:** `pickSlot()` reads `slot.activeTasks` to enforce maxConcurrency, but `activeTasks` is only incremented inside `runOnSlot()` after an async gap; concurrent `invoke()` calls can all receive the same slot before any increments the counter.
+- **context:** With maxConcurrency=1, N concurrent invoke() calls can all be dispatched to the same slot simultaneously, violating the per-slot concurrency limit and overwhelming the underlying agent.
+- **hunter_found:** `2026-03-22T00:02:00Z`
+- **fixer_started:** `2026-03-21T14:35:00Z`
+- **fixer_completed:** `2026-03-21T14:35:00Z`
+- **fix_summary:** `Increment activeTasks synchronously in pickSlot to prevent over-dispatch.`
+- **validator_started:** `2026-03-22T00:10:00Z`
+- **validator_completed:** `2026-03-22T00:18:00Z`
+- **validator_notes:** `Confirmed activeTasks++ moved to pickSlot() as synchronous reservation. runOnSlot() finally block decrements. No leak paths — all pickSlot callers proceed to runOnSlot. Re-verified after archival rollback. Verified.`
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0362
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/events/bridge.ts`
+- **line:** `32`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0362`
+- **description:** `startTimes` Map in `bridgeSwarmTracer` can be cleared by `unsubscribe()` while subscriber callbacks are still firing, producing incorrect `durationMs: 0` values.
+- **context:** If `unsubscribe()` is called during swarm teardown while events are still being dispatched, `startTimes.clear()` at line 81 clears entries that a concurrently-firing `agent_complete` callback still needs, silently producing 0-duration metrics.
+- **hunter_found:** `2026-03-21T00:25:00Z`
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Removed startTimes.clear() from unsubscribe() to prevent race with in-flight callbacks.`
+- **validator_started:** `2026-03-22T00:25:00Z`
+- **validator_completed:** `2026-03-22T00:25:00Z`
+- **validator_notes:** `startTimes.clear() removed from unsubscribe(). No leak — Map GCd with closure. 1-line change. Verified.`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/bridge-starttimes-unsubscribe-race.test.ts`
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0365
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/a2a/src/client/index.ts`
+- **line:** `94`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0365`
+- **description:** `streamTask()` while-loop has no read timeout — a stalled server that never closes the stream causes the generator to hang forever, leaking the HTTP connection and reader lock.
+- **context:** The `AbortSignal` timeout configured at construction applies only to the initial fetch, not to subsequent reads. A remote A2A server that stops sending data but does not close the connection holds the `ReadableStreamDefaultReader` lock and TCP connection indefinitely.
+- **hunter_found:** `2026-03-21T00:25:00Z`
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Added per-read timeout to streamTask() while-loop to prevent hanging on stalled servers.`
+- **validator_started:** `2026-03-22T00:25:00Z`
+- **validator_completed:** `2026-03-22T00:25:00Z`
+- **validator_notes:** `Per-read timeout via setTimeout/r.cancel() with clearTimeout in finally. Reader lock released. Verified.`
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
+
+### BUG-0372
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/a2a/src/server/sse.ts`
+- **line:** `6`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0372`
+- **description:** ReadableStream in createSSEResponse has no cancel() callback, so client disconnection does not signal the upstream AsyncGenerator to stop.
+- **context:** When an SSE client drops the connection, without a cancel() handler calling generator.return(), the generator keeps running and allocating until it naturally terminates.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** `2026-03-21T05:42:00Z`
+- **fixer_completed:** `2026-03-21T05:42:00Z`
+- **fix_summary:** `Added cancel() callback to SSE ReadableStream that calls generator.return() on client disconnect.`
+- **validator_started:** `2026-03-22T00:25:00Z`
+- **validator_completed:** `2026-03-22T00:25:00Z`
+- **validator_notes:** `cancel() callback added to ReadableStream calling generator.return() on disconnect. Verified.`
+- **archived:** `2026-03-22T00:25:00Z`
+
+---
