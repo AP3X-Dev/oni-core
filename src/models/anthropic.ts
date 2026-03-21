@@ -186,7 +186,7 @@ function* drainSSELines(
       state.event = line.slice(7).trim();
     } else if (line.startsWith("data: ")) {
       state.data = line.slice(6);
-    } else if (line.trim() === "" || flush) {
+    } else if (line.trim() === "") {
       if (state.data) {
         yield { event: state.event, data: state.data };
       }
