@@ -154,7 +154,7 @@ export function branch<S extends Record<string, unknown>>(
   }
 
   // Router node
-  graph.addNode("__router__", async (state) => state);
+  graph.addNode("__router__", async () => ({} as Partial<S>));
   graph.addEdge(START, "__router__");
   graph.addConditionalEdges("__router__", condition);
 
