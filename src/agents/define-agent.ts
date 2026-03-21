@@ -27,7 +27,7 @@ import { checkToolPermission } from "../guardrails/permissions.js";
  * It expects the state to have an optional `messages` field (ONIModelMessage[])
  * and returns `{ messages }` with the conversation appended.
  */
-export function defineAgent<S extends Record<string, unknown> = Record<string, unknown>>(
+export function defineAgent<S extends { messages?: ONIModelMessage[] } & Record<string, unknown> = Record<string, unknown>>(
   opts: DefineAgentOptions,
 ): AgentNode<S> {
   const {
@@ -198,7 +198,7 @@ export function defineAgent<S extends Record<string, unknown> = Record<string, u
 
     // 3. Return updated messages (only the new ones appended during this run)
     const newMessages = messages.slice(existingMessages.length);
-    return { messages: newMessages } as unknown as Partial<S>;
+    return { messages: newMessages } as Partial<S>;
   };
 
   return {
