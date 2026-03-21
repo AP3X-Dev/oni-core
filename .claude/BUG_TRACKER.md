@@ -9,17 +9,17 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T11:00:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-21T09:22:23Z` (Cycle 35 — 5 failures all known cooldowns; no new regressions; test count stable at 1390) |
 | **Last Hunter Scan** | `2026-03-21T23:58:00Z` |
 | **Last Fixer Pass** | `2026-03-21T13:35:00Z` |
 | **Last Validator Pass** | `2026-03-21T08:32:14Z` |
 | **Last Digest Run** | `2026-03-21T23:00:00Z` |
-| **Last Security Scan** | `2026-03-21T11:45:00Z` |
+| **Last Security Scan** | `2026-03-21T12:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T13:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T12:30:00Z` (Cycle 243) |
+| **Last TestGen Run** | `2026-03-21T15:00:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T09:15:00Z` (Cycle 245) |
 | **Last Supervisor Pass** | `2026-03-21T09:15:24Z` |
 | **Total Found** | `425` |
 | **Total Pending** | `14` |
@@ -488,7 +488,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0342
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/harness/memory/scanner.ts`
 - **line:** `164`
@@ -501,7 +501,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T05:02:00Z`
 - **fixer_completed:** `2026-03-21T05:02:00Z`
 - **fix_summary:** `Scanner fix.`
-- **validator_started:** ``
+- **validator_started:** `2026-03-21T14:04:00Z`
 - **validator_completed:** ``
 - **validator_notes:** ``
 
@@ -730,7 +730,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0355
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `191`
@@ -750,7 +750,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0356
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `packages/stores/src/postgres/index.ts`
 - **line:** `185`
@@ -1800,7 +1800,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0425
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/mcp/transport.ts`
 - **line:** `124`
@@ -1813,7 +1813,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T13:35:00Z`
 - **fixer_completed:** `2026-03-21T13:35:00Z`
 - **fix_summary:** `Reject spawn Promise on early exit + consume stderr to prevent pipe block.`
-- **validator_started:** ``
+- **validator_started:** `2026-03-21T14:04:00Z`
 - **validator_completed:** ``
 - **validator_notes:** ``
 
