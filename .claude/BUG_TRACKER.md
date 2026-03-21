@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T14:35:00Z` (Cycle 268 — 0 deletions, 0 rebases; BUG-0420 confirmed merged to main (932f4f6) and branch deleted; 3 bugfix branches remain, 0 conflicts; BUG-0343/0356/0359 all blocked, human intervention required; next GC Cycle 270) |
+| **Last Git Manager Pass** | `2026-03-21T15:00:00Z` (Cycle 269 — 0 deletions, 0 rebases; 3 bugfix branches remain (BUG-0343/0356/0359), all blocked reopen_count=3, 0 conflicts; BUG-0343 12 behind, BUG-0356/0359 17 behind; GC due Cycle 270; human intervention required for all 3) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
@@ -471,32 +471,13 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 
-### BUG-0377
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/models/ollama.ts`
-- **line:** `214`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0377`
-- **description:** chat() calls res.json() without a catch, so a malformed Ollama response body causes an unhandled rejection; embed() at line 302 has the same pattern.
-- **context:** A 200 with non-JSON content during Ollama startup or proxy interception throws a raw SyntaxError with no model/endpoint context.
-- **hunter_found:** `2026-03-20T22:10:00Z`
-- **fixer_started:** `2026-03-21T06:15:00Z`
-- **fixer_completed:** `2026-03-21T06:15:00Z`
-- **fix_summary:** `Wrap res.json() in try-catch in Ollama chat() and embed().`
-- **validator_started:** `2026-03-22T00:35:00Z`
-- **validator_completed:** `2026-03-22T00:35:00Z`
-- **validator_notes:** `PRAGMA and CREATE TABLE wrapped in try block. Catch calls db.close() before re-throw. Scope clean (1 file). Verified.`
-
----
 
 
 
 
 
 ### BUG-0383
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/swarm/snapshot.ts`
 - **line:** `98`
@@ -537,7 +518,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0388
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/stream-events.ts`
 - **line:** `36`
@@ -578,25 +559,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0400
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `packages/tools/src/browser/firecrawl.ts`
-- **line:** `40`
-- **category:** `security-config`
-- **description:** `firecrawl_scrape` tool passes LLM-supplied URLs to the Firecrawl API without validating the URL scheme or host, enabling indirect SSRF via Firecrawl's scraping infrastructure.
-- **context:** The `i.url` parameter from LLM tool calls is sent directly to `https://api.firecrawl.dev/v0/scrape` at line 40 with no validation. A prompt-injected LLM can supply URLs targeting internal networks (`http://169.254.169.254/latest/meta-data/`, `http://localhost:8080/admin`, `http://10.0.0.1/`) which Firecrawl's servers will attempt to fetch. While the request is proxied through Firecrawl (not made from the agent's host), cloud scraping services may not block all internal IP ranges, and the scraped content is returned to the LLM context, potentially leaking sensitive metadata. Fix: validate URL scheme (https/http only) and reject private/reserved IP ranges (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, ::1) before sending to the API. OWASP A10:2021 - Server-Side Request Forgery.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0400`
-- **hunter_found:** `2026-03-23T14:10:00Z`
-- **fixer_started:** `2026-03-21T06:50:00Z`
-- **fixer_completed:** `2026-03-21T06:50:00Z`
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T00:40:00Z`
-- **validator_completed:** `2026-03-22T00:40:00Z`
-- **validator_notes:** `Empty string replaced with --watch for explicit vitest watch mode. Non-watch run path preserved. Verified.`
-
----
 
 
 ### BUG-0405
@@ -640,28 +602,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0415
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `src/store/index.ts`
-- **line:** `174`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0415`
-- **description:** `list()` deletes expired keys from `this.data` Map while iterating over it with `for...of`, which is undefined behavior per the ECMAScript spec for Map iteration during deletion.
-- **context:** While V8 currently handles this correctly, the spec does not guarantee it. A future engine update could cause entries to be skipped, returning incomplete results from `list()` and leaving stale entries in `this.vectors`.
-- **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T11:05:00Z`
-- **fixer_completed:** `2026-03-21T11:05:00Z`
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T01:25:00Z`
-- **validator_completed:** `2026-03-22T01:25:00Z`
-- **validator_notes:** `PATH_TRAVERSAL regex extended to /\.\.\.(?:[\/\]|$)/ covering forward slash, backslash, and bare .. at end. All bypass variants closed. Verified.`
-
----
 
 ### BUG-0418
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/cli/build.ts`
 - **line:** `56`
@@ -680,28 +623,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0420
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `src/coordination/pubsub.ts`
-- **line:** `56`
-- **category:** `memory-leak`
-- **reopen_count:** `2`
-- **branch:** `bugfix/BUG-0420`
-- **description:** Subscriber handler closures leak indefinitely if the returned unsubscribe function is never called — the subscribers Map grows without bound across the PubSub instance lifetime.
-- **context:** If agents subscribe per-request on hot paths and neglect to call the returned unsubscribe function, handler closures accumulate. SwarmGraph.dispose() calls pubsub.dispose() but only if the lazy getter was triggered.
-- **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T13:25:07Z`
-- **fixer_completed:** `2026-03-21T13:29:20Z`
-- **fix_summary:** `Added console.warn when subscriber set.size >= 100 before adding handler in PubSub.subscribe(). No eviction, no code removal. dispose() and empty-Set cleanup preserved. Fresh branch from main.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
 
 ### BUG-0421
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/store/index.ts`
 - **line:** `109`
@@ -781,7 +705,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0435
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/swarm/scaling.ts`
 - **line:** `132`

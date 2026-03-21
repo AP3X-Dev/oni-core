@@ -1,14 +1,14 @@
-# Branch Map — Cycle 268
+# Branch Map — Cycle 269
 
-**Generated:** 2026-03-21T14:35:00Z
-**Main HEAD:** 932f4f6
+**Generated:** 2026-03-21T15:00:00Z
+**Main HEAD:** ca572b5
 **Total Branches:** 3 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
 |---|---|---|---|---|---|
-| bugfix/BUG-0343 | blocked | 11 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout fix correct but branch has 7-file scope contamination (redis/index.ts, checkpointers/redis.ts, pool.ts, .claude/ docs); reopen_count=3; auto-blocked; human must cherry-pick safety-gate.ts line only |
-| bugfix/BUG-0356 | blocked | 16 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — auto-blocked after 3 failed attempts; branch has out-of-scope regressions; human must cherry-pick single postgres line |
-| bugfix/BUG-0359 | blocked | 16 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked (reopen_count=3); human intervention required |
+| bugfix/BUG-0343 | blocked | 12 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout fix correct but branch has 7-file scope contamination (redis/index.ts, checkpointers/redis.ts, pool.ts, .claude/ docs); reopen_count=3; auto-blocked; human must cherry-pick safety-gate.ts line only |
+| bugfix/BUG-0356 | blocked | 17 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — auto-blocked after 3 failed attempts; branch has out-of-scope regressions; human must cherry-pick single postgres line |
+| bugfix/BUG-0359 | blocked | 17 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked (reopen_count=3); human intervention required |
 
 ## Active Worktrees
 
@@ -27,14 +27,11 @@ No active agent worktrees.
 
 No conflict branches this cycle. All 3 remaining bugfix branches are conflict-free via `git merge-tree`.
 
-## Status Changes Since C267
+## Status Changes Since C268
 
-| Branch | Prev Status | C268 Status | Reason |
-|---|---|---|---|
-| bugfix/BUG-0420 | fixed (0 behind, tip 84ab4f8) | MERGED & DELETED | Merged to main as 932f4f6 between C267 and C268; branch no longer exists |
-| bugfix/BUG-0343 | in-validation | blocked | Validator confirmed scope contamination (reopen_count=3); auto-blocked per guardrail |
+No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts increased by 1 (BUG-0343: 11→12; BUG-0356: 16→17; BUG-0359: 16→17) due to Cycle 268 commit on main.
 
-## File Overlap Summary (Cycle 268)
+## File Overlap Summary (Cycle 269)
 
 No overlaps — all 3 remaining bugfix branches touch distinct files:
 - `src/harness/safety-gate.ts` (BUG-0343)
