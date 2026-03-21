@@ -4,6 +4,61 @@
 
 ---
 
+### CI Sentinel — Cycle 63 — `2026-03-21T23:30:00Z`
+- **result:** `build-failure`
+- **build:** BROKEN — `src/swarm/graph.ts(245,3): error TS2393` and `src/swarm/graph.ts(378,3): error TS2393`
+- **tests:** NOT RUN
+- **bugs_filed:** 0
+- **escalations_filed:** 0
+- **consecutive_failures:** 47
+- **notes:** Same TS2393 duplicate dispose() in src/swarm/graph.ts persists. BUG-0451 blocked, ESC-013 active. 10 untracked Hunter test files present. Human intervention required: delete lines ~239-250 of src/swarm/graph.ts (partial dispose() under `// ---- Disposal ----`), retain complete dispose() at line 378.
+
+---
+
+### CI Sentinel — Cycle 60 — `2026-03-21T22:00:00Z`
+- **result:** `build-failure`
+- **build:** BROKEN — `src/swarm/graph.ts(245,3): error TS2393` and `src/swarm/graph.ts(378,3): error TS2393`
+- **tests:** NOT RUN
+- **bugs_filed:** 0
+- **escalations_filed:** 0
+- **consecutive_failures:** 44
+- **notes:** Same TS2393 duplicate dispose() in src/swarm/graph.ts persists. BUG-0451 blocked, ESC-013 active. 10 untracked Hunter test files present. Human intervention required: delete lines ~239-250 of src/swarm/graph.ts (partial dispose() under `// ---- Disposal ----`), retain complete dispose() at line 378.
+
+---
+
+### CI Sentinel — Cycle 59 — `2026-03-21T21:30:00Z`
+- **result:** `build-failure`
+- **build:** BROKEN — `src/swarm/graph.ts(245,3): error TS2393` and `src/swarm/graph.ts(378,3): error TS2393`
+- **tests:** NOT RUN
+- **bugs_filed:** 0
+- **escalations_filed:** 0
+- **consecutive_failures:** 43
+- **notes:** Same TS2393 duplicate dispose() in src/swarm/graph.ts persists. BUG-0451 blocked, ESC-013 active. 10 untracked Hunter test files present. Human intervention required: delete lines ~239-250 of src/swarm/graph.ts (partial dispose() under `// ---- Disposal ----`), retain complete dispose() at line 378.
+
+---
+
+### CI Sentinel — Cycle 58 — `2026-03-21T21:00:00Z`
+- **result:** `build-failure`
+- **build:** BROKEN — `src/swarm/graph.ts(245,3): error TS2393` and `src/swarm/graph.ts(378,3): error TS2393`
+- **tests:** NOT RUN
+- **bugs_filed:** 0
+- **escalations_filed:** 0
+- **consecutive_failures:** 42
+- **notes:** Same TS2393 duplicate dispose() in src/swarm/graph.ts persists. BUG-0451 blocked, ESC-013 active. 10 untracked Hunter test files present. Human intervention required: delete lines ~239-250 of src/swarm/graph.ts (partial dispose() under `// ---- Disposal ----`), retain complete dispose() at line 378.
+
+---
+
+### CI Sentinel — Cycle 57 — `2026-03-21T20:30:00Z`
+- **result:** `build-failure`
+- **build:** BROKEN — `src/swarm/graph.ts(245,3): error TS2393` and `src/swarm/graph.ts(378,3): error TS2393`
+- **tests:** NOT RUN
+- **bugs_filed:** 0
+- **escalations_filed:** 0
+- **consecutive_failures:** 41
+- **notes:** Same TS2393 duplicate dispose() in src/swarm/graph.ts persists. BUG-0451 blocked, ESC-013 active. 10 untracked Hunter test files present. Human intervention required: delete lines ~239-250 of src/swarm/graph.ts (partial dispose() under `// ---- Disposal ----`), retain complete dispose() at line 378.
+
+---
+
 ### CI Sentinel — Cycle 56 — `2026-03-21T20:00:00Z`
 - **result:** `build-failure`
 - **build:** BROKEN — `src/swarm/graph.ts(245,3): error TS2393` and `src/swarm/graph.ts(378,3): error TS2393`
