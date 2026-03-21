@@ -19,7 +19,7 @@ export class DeadLetterQueue {
 
   record(threadId: string, node: string, input: Record<string, unknown>, error: Error, attempts: number): DeadLetter {
     const dl: DeadLetter = {
-      id: `dlq-${_nextId++}`,
+      id: `dlq-${++_nextId}-${Date.now().toString(36)}`,
       node, input, error, attempts,
       timestamp: Date.now(),
     };
