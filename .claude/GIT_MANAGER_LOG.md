@@ -1,22 +1,3 @@
-[2026-03-21T06:51:00Z] Step 9: Updating Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T06:51:00Z (Cycle 235). Log trimmed to 150 lines.
-[2026-03-21T06:51:00Z] Step 10: HEAD confirmed on main. Clean state.
-[2026-03-21T06:51:00Z] === Cycle 235 End ===
-[2026-03-20T07:30:00Z] ## Cycle 236 — 2026-03-20T07:30:00Z
-[2026-03-20T07:30:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T09:45:00Z (>60s). Last Validator=2026-03-21T06:43:59Z (>60s). In-progress=0, In-validation=0. Proceeding.
-[2026-03-20T07:30:00Z] Step 1: Found 60 bugfix/BUG-* branches at cycle start.
-[2026-03-20T07:30:00Z] Step 2: Branch map rebuilt. 57 branches post-deletion. Fixed/clean: 39. Fixed/conflict: 6. Blocked: 4 (BUG-0294, BUG-0304, BUG-0305-ctx, BUG-0306). In-validation: 5 (BUG-0332/0333/0334/0335/0336 — all clean). Pending/merged: BUG-0407 (worktree), BUG-0410 (worktree).
-[2026-03-20T07:30:00Z] Step 3: DELETED 3 branches — bugfix/BUG-0329 (orphaned, no tracker entry), bugfix/BUG-0330 (orphaned, no tracker entry), bugfix/BUG-0331 (orphaned, no tracker entry). Attempted BUG-0407 and BUG-0410 (merged+pending) but blocked by active worktrees. 3/5 cap used.
-[2026-03-20T07:30:00Z] Step 4: No stale branches. All last commits 2026-03-20 (within threshold).
-[2026-03-20T07:30:00Z] Step 5: Merge-tree conflicts: BUG-0342 (a2a/server/index.ts), BUG-0346 (filesystem/index.ts), BUG-0350 (skill-evolver.ts), BUG-0353 (audit-agent.ts, 3 markers), BUG-0374 (pdf.ts, 1 marker — different load approach), BUG-0378 (pool.ts). 6 conflicting branches. 39 clean. In-validation branches all clean.
-[2026-03-20T07:30:00Z] Step 5b: No rebase — BUG-0374 (1 marker) examined but conflicting approaches (buffer vs URL-based PDF load). Non-trivial semantic conflict. 0/1 rebase cap used.
-[2026-03-20T07:30:00Z] Step 6: FILE OVERLAPS — (1) packages/stores/src/redis/index.ts: BUG-0326+BUG-0355 (BUG-0355 conflicting). (2) src/models/ollama.ts: BUG-0357+BUG-0377 (both clean, different hunks, safe). 2 overlaps.
-[2026-03-20T07:30:00Z] Step 7: HEAD confirmed on main. Clean state.
-[2026-03-20T07:30:00Z] Step 8: GC skipped. Next at Cycle 240.
-[2026-03-20T07:30:00Z] ALERT: BUG-0342/0346/0350/0353 — persistent conflicts (8+ cycles). Fixer must delete and recreate from current main.
-[2026-03-20T07:30:00Z] ALERT: BUG-0407/0410 — merged into main (0 commits ahead) but status=pending and worktrees active. Worktree agents should complete or close so branches can be deleted.
-[2026-03-20T07:30:00Z] ALERT: BUG-0294 — severely diverged (blocked). Human intervention required.
-[2026-03-20T07:30:00Z] BRANCH COUNT: 57 branches (was 60). 3 deletions (BUG-0329/0330/0331), 0 new, 0 rebase. Cumulative: ~184.
-[2026-03-20T07:30:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-20T07:30:00Z (Cycle 236). Log trimmed to 150 lines.
 [2026-03-20T07:30:00Z] Step 10: HEAD confirmed on main. Clean state.
 [2026-03-20T07:30:00Z] === Cycle 236 End ===
 [2026-03-21T00:00:00Z] ## Cycle 237 — 2026-03-21T00:00:00Z
@@ -147,3 +128,23 @@
 [2026-03-21T09:15:00Z] Step 9: Updated Last Git Manager Pass to 2026-03-21T09:15:00Z (Cycle 245). Log at 148 lines — within limit.
 [2026-03-21T09:15:00Z] Step 10: HEAD confirmed on main. Clean state.
 [2026-03-21T09:15:00Z] === Cycle 245 End ===
+[2026-03-21T14:00:00Z] ## Cycle 246 — 2026-03-21T14:00:00Z
+[2026-03-21T14:00:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T13:35:00Z (>60s). Last Validator=2026-03-21T08:32:14Z (>60s). In-progress=0, In-validation=0. Proceeding.
+[2026-03-21T14:00:00Z] Step 1: Found 54 bugfix/BUG-* branches at cycle start. Active worktrees: /tmp/bug0306-wt4 (BUG-0306), /tmp/bug0355-typecheck (BUG-0355).
+[2026-03-21T14:00:00Z] Step 2: Branch map rebuilt. 52 branches post-deletion. Fixed: 43. In-validation: 4 (BUG-0342, BUG-0355, BUG-0356, BUG-0425). Blocked: 1 (BUG-0306). Orphan w/fix: BUG-0403. 41 branches critically stale (713 behind).
+[2026-03-21T14:00:00Z] Step 3: DELETED 2 branches — bugfix/BUG-0386 (orphan, no tracker entry, fix-only commit), bugfix/BUG-0408 (orphan, no tracker entry, fix-only commit). BUG-0306 FAILED: active worktree /tmp/bug0306-wt4. BUG-0403 retained: referenced by BUG-0404 branch field. 2/5 cap used. Cumulative: ~204.
+[2026-03-21T14:00:00Z] Step 4: STALE WARNINGS — 41 branches 713 commits behind main (critical). All last committed 2026-03-20/21 (<48h by timestamp). 1 branch 163 behind (BUG-0366 moderate).
+[2026-03-21T14:00:00Z] Step 5: CONFLICT BRANCHES (3): BUG-0374 (pdf.ts, content), BUG-0378 (pool.ts, content), BUG-0413 (validate-command.ts, add/add). BUG-0355 (in-validation worktree, redis/index.ts). 48 non-blocked branches clean.
+[2026-03-21T14:00:00Z] Step 5b: REBASED BUG-0295 onto main. Was 1 behind, now 0 behind, 1 ahead. 1/1 cap used.
+[2026-03-21T14:00:00Z] Step 6: FILE OVERLAPS — (1) src/swarm/pool.ts: BUG-0378 (conflict)+BUG-0306 (blocked worktree). (2) packages/loaders/src/loaders/pdf.ts: BUG-0374 (conflict). (3) src/internal/validate-command.ts: BUG-0413 (conflict). (4) packages/stores/src/redis/index.ts: BUG-0355 (worktree).
+[2026-03-21T14:00:00Z] Step 7: HEAD confirmed on main. Clean state.
+[2026-03-21T14:00:00Z] Step 8: GC CYCLE (246 % 6 = 0). Ran `git gc --auto`. Completed cleanly. Next GC at Cycle 252.
+[2026-03-21T14:00:00Z] ALERT: BUG-0295 — rebased C246. 0 behind main. Validator-ready PRIORITY #1.
+[2026-03-21T14:00:00Z] ALERT: BUG-0374/BUG-0378/BUG-0413 — merge conflicts. Fixer must delete and recreate from current main before validator can proceed.
+[2026-03-21T14:00:00Z] ALERT: BUG-0306 — blocked, worktree at /tmp/bug0306-wt4 still active. Human should close worktree.
+[2026-03-21T14:00:00Z] ALERT: BUG-0403 — orphan branch (no BUG-0403 tracker entry), referenced by BUG-0404. Validator should use this branch for BUG-0404 validation.
+[2026-03-21T14:00:00Z] ALERT: 41 branches 713 commits behind main (critical stale). Fixer must recreate from main before validation.
+[2026-03-21T14:00:00Z] BRANCH COUNT: 52 branches (was 54). 2 deletions (BUG-0386/0408 orphans), 1 rebase (BUG-0295). Cumulative: ~204.
+[2026-03-21T14:00:00Z] Step 9: Updated Last Git Manager Pass to 2026-03-21T14:00:00Z (Cycle 246). Log trimmed to 150 lines.
+[2026-03-21T14:00:00Z] Step 10: HEAD confirmed on main. Clean state.
+[2026-03-21T14:00:00Z] === Cycle 246 End ===

@@ -9,7 +9,7 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T09:22:23Z` (Cycle 35 — 5 failures all known cooldowns; no new regressions; test count stable at 1390) |
+| **Last CI Sentinel Pass** | `2026-03-21T09:32:48Z` (Cycle 36 — 5 failures all known cooldowns; no new regressions; test count stable at 1390) |
 | **Last Hunter Scan** | `2026-03-21T23:58:00Z` |
 | **Last Fixer Pass** | `2026-03-21T13:35:00Z` |
 | **Last Validator Pass** | `2026-03-21T08:32:14Z` |
@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T15:30:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T09:15:00Z` (Cycle 245) |
+| **Last Git Manager Pass** | `2026-03-21T14:00:00Z` (Cycle 246) |
 | **Last Supervisor Pass** | `2026-03-21T09:30:26Z` |
 | **Total Found** | `425` |
 | **Total Pending** | `14` |
