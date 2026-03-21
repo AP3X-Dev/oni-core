@@ -11,24 +11,24 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T21:33:00Z` |
 | **Last Hunter Scan** | `2026-03-21T00:25:00Z` |
-| **Last Fixer Pass** | `2026-03-21T04:42:00Z` |
+| **Last Fixer Pass** | `2026-03-21T04:52:00Z` |
 | **Last Validator Pass** | `2026-03-21T04:30:00Z` |
 | **Last Digest Run** | `2026-03-21T00:40:00Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T21:27:00Z` |
+| **Last TestGen Run** | `2026-03-21T21:38:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T05:35:00Z` (Cycle 218) |
 | **Last Supervisor Pass** | `2026-03-21T04:30:30Z` |
 | **Total Found** | `370` |
-| **Total Pending** | `25` |
+| **Total Pending** | `20` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `36` |
+| **Total Fixed** | `35` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `6` |
-| **Total Reopened** | `2` |
+| **Total Blocked** | `7` |
+| **Total Reopened** | `0` |
 
 ---
 
@@ -628,7 +628,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0327
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/swarm/graph.ts`
 - **line:** `53`
@@ -848,7 +848,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0338
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/swarm/mailbox.ts`
 - **line:** `44`
@@ -906,11 +906,13 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/circuit-breaker-half-open-single-probe.test.ts`
 
 ---
 
 ### BUG-0341
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/hitl/interrupt.ts`
 - **line:** `69`
@@ -992,19 +994,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0345
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/markdown.ts`
 - **line:** `10`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0345`
 - **description:** `readFile` is called without try/catch, so filesystem errors propagate as raw Node.js errors with no loader-level context.
 - **context:** Same pattern as BUG-0270 (pdf.ts) and BUG-0333 (json.ts). The CSV loader correctly wraps readFile but markdown does not.
 - **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:52:00Z`
+- **fixer_completed:** `2026-03-21T04:52:00Z`
+- **fix_summary:** `Wrap readFile in try-catch with descriptive MarkdownLoader error.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1032,19 +1034,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0347
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/stores/src/postgres/index.ts`
 - **line:** `77`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0347`
 - **description:** `ensureSchema()` runs CREATE TABLE and CREATE INDEX as separate un-transacted queries — a failure between the two leaves the schema in a partial state with a table but no index.
 - **context:** On flaky network connections to Postgres, the store can end up with a table but no index, causing slow queries on `listNamespaces` and `search`.
 - **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:52:00Z`
+- **fixer_completed:** `2026-03-21T04:52:00Z`
+- **fix_summary:** `Wrap ensureSchema CREATE TABLE and CREATE INDEX in BEGIN-COMMIT transaction with ROLLBACK on error.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1052,7 +1054,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0348
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/harness/loop/tools.ts`
 - **line:** `118`
@@ -1062,9 +1064,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** A local `stripProtoKeys` function declared inside the `modifiedInput` block shadows the module-level `stripProtoKeys` — the two implementations have subtly different behavior for array handling, and the shadowing is almost certainly unintentional.
 - **context:** Maintenance changes to one copy will not propagate to the other, creating a divergence hazard. The outer function handles arrays differently than the inner one.
 - **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T04:52:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `False positive. No stripProtoKeys function exists anywhere in src/harness/loop/tools.ts or the codebase. Code pattern described in bug does not exist. Hunter should re-evaluate.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1072,7 +1074,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0349
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/swarm/compile-ext.ts`
 - **line:** `68`
@@ -1094,19 +1096,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0350
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/self-improvement/skill-evolver.ts`
 - **line:** `86`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0350`
 - **description:** `recordSkillUsage` calls `splice(0, ...)` on `this.usageHistory` while `identifyWeakSkills` or `proposeSkillImprovement` may be concurrently iterating the same array.
 - **context:** If `proposeSkillImprovement` (which filters `this.usageHistory`) is awaited concurrently with `recordSkillUsage` triggering splice-based eviction, the `filter` call can observe a truncated or shifted array, producing an incorrect failure list passed to the LLM.
 - **hunter_found:** `2026-03-20T22:26:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:52:00Z`
+- **fixer_completed:** `2026-03-21T04:52:00Z`
+- **fix_summary:** `Replace splice with slice reassignment in recordSkillUsage to prevent concurrent iteration race.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1194,19 +1196,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0355
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `191`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0355`
 - **description:** Three `void this.client.zrem()` calls in `list()` fire Redis cleanup operations as floating promises with no error handling.
 - **context:** When a data key has expired or is corrupt, stale sorted-set index entries are pruned via fire-and-forget `zrem`. If Redis connection is interrupted, the error is swallowed and phantom keys persist in `list()` results on every subsequent call.
 - **hunter_found:** `2026-03-20T22:34:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T04:52:00Z`
+- **fixer_completed:** `2026-03-21T04:52:00Z`
+- **fix_summary:** `Add .catch() error handling to fire-and-forget Redis cleanup operations in get() and list().`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1294,7 +1296,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0361
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `packages/a2a/src/server/handler.ts`
 - **line:** `53`
