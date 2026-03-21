@@ -18,7 +18,7 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:35:00Z` |
+| **Last TestGen Run** | `2026-03-20T23:45:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T08:00:00Z` (Cycle 228) |
 | **Last Supervisor Pass** | `2026-03-21T05:55:29Z` |
 | **Total Found** | `399` |
@@ -266,7 +266,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0303
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/lsp/index.ts`
 - **line:** `134`
@@ -279,9 +279,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T07:15:00Z`
 - **fixer_completed:** `2026-03-21T07:15:00Z`
 - **fix_summary:** `Added escapeXml() with all 5 XML special chars (including apos). Applied to filePath, d.message, d.source. Fresh branch from main, no unrelated changes.`
-- **validator_started:** `2026-03-21T05:29:48Z`
-- **validator_completed:** `2026-03-21T05:37:00Z`
-- **validator_notes:** `REOPENED: escapeXml() handles &, <, >, " but missing single-quote (&apos;). Branch also introduces tsc errors in unrelated pregel files (TS2554, TS2741). Fixer must: add single-quote escape, delete old branch, create fresh from main.`
+- **validator_started:** `2026-03-21T05:59:45Z`
+- **validator_completed:** `2026-03-21T06:05:19Z`
+- **validator_notes:** `Verified on bugfix/BUG-0303. escapeXml() now handles all 5 XML chars: &, <, >, ", ' (apos). Applied to filePath, d.source, d.message. No unrelated file changes. Previous single-quote omission and pregel tsc errors both resolved. tsc clean.`
 
 ---
 
@@ -306,27 +306,27 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0305
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `122`
 - **category:** `security-auth`
 - **description:** Handoff context merge at line 122 (`{ ...state.context, ...handoff.context }`) performs an unfiltered shallow merge, allowing a handing-off agent to overwrite privileged shared state fields such as `__deadlineAbsolute` or `lastAgentError`.
 - **context:** When an agent executes a Handoff, `handoff.context` is spread directly into the shared `state.context` with no key filtering. An agent can craft a Handoff with `context: { __deadlineAbsolute: Infinity }` to disable deadline enforcement, or inject `lastAgentError: null` to clear error state and bypass supervisor error recovery. Since agent code can be influenced by prompt injection, this is an escalation vector: a prompt-injected agent can manipulate swarm-level control fields through the Handoff mechanism. Fix: filter handoff context keys against a denylist of privileged/internal fields (those starting with `__` or known supervisor control fields), or use an allowlist of user-defined context keys. OWASP A01:2021 - Broken Access Control.
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0305-ctx`
 - **hunter_found:** `2026-03-20T20:08:29Z`
-- **fixer_started:** `2026-03-21T03:47:00Z`
-- **fixer_completed:** `2026-03-21T03:54:00Z`
-- **fix_summary:** `Filtered handoff.context keys starting with __ before merging into state.context in src/swarm/agent-node.ts. Uses Object.fromEntries/filter to strip privileged internal fields, preventing prompt-injected agents from overwriting supervisor control fields like __deadlineAbsolute.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-21T05:59:45Z`
+- **validator_completed:** `2026-03-21T06:05:19Z`
+- **validator_notes:** `REOPENED: Branch bugfix/BUG-0305-ctx was deleted by Git Manager (cycle 219) without merging to main. Fix never applied — line 140 still has unfiltered { ...state.context, ...handoff.context } merge. Fixer must: create fresh branch from main, add Object.fromEntries/filter for __-prefixed keys at line 140, commit on branch.`
 
 ---
 
 ### BUG-0310
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/streaming.ts`
 - **line:** `72`
@@ -339,14 +339,14 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T03:47:00Z`
 - **fixer_completed:** `2026-03-21T03:54:00Z`
 - **fix_summary:** `Added if (this.done) return guard at the top of TokenStreamWriter.push() in src/streaming.ts. Prevents silently queuing tokens after end() has been called.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T05:59:45Z`
+- **validator_completed:** `2026-03-21T06:05:19Z`
+- **validator_notes:** `Verified on bugfix/BUG-0310. Single +1 line if (this.done) return guard at top of push(). No unrelated changes. tsc clean.`
 
 ---
 
 ### BUG-0311
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/hitl/resume.ts`
 - **line:** `43`
@@ -359,29 +359,29 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T04:20:00Z`
 - **fixer_completed:** `2026-03-21T04:20:00Z`
 - **fix_summary:** `Keep expired sessions visible for 60s grace period in resume store.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T05:59:45Z`
+- **validator_completed:** `2026-03-21T06:05:19Z`
+- **validator_notes:** `Verified on bugfix/BUG-0311. Lazy eviction with GRACE_PERIOD_MS=60000 and finalizedAt map. Expired sessions stay in map for 60s, get() observes "expired" status during grace. Cleanup on next access after grace. Elegant lazy GC. tsc clean.`
 
 ---
 
 ### BUG-0312
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `src/coordination/pubsub.ts`
 - **line:** `34`
 - **category:** `race-condition`
 - **description:** `publish()` iterates `this.subscribers` Map with `for...of` while subscriber handlers can call `subscribe()` or unsubscribe during delivery. New subscriptions added mid-iteration may or may not be visited in the same `publish()` call, causing non-deterministic event delivery.
 - **context:** Per ECMAScript spec, entries added to a Map during `for...of` iteration will be visited if not yet passed. Handlers that add new subscriptions during delivery can receive the event that triggered them. Fix: snapshot subscribers before iterating (`[...this.subscribers.entries()]`).
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0312`
 - **hunter_found:** `2026-03-21T00:05:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Snapshot subscribers Map and handler Sets before iterating in publish().`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-21T05:59:45Z`
+- **validator_completed:** `2026-03-21T06:05:19Z`
+- **validator_notes:** `REOPENED: Implementation is correct — subscribers Map and handler Sets are both snapshot'd via [...spread]. However, the regression test file (src/__tests__/pubsub-snapshot-during-publish.test.ts) exists only as an untracked file on main — it was never committed to bugfix/BUG-0312. Fixer must: git add the test file and commit it on the bugfix branch.`
 - **test_generated:** `true`
 - **test_file:** `src/__tests__/pubsub-snapshot-during-publish.test.ts`
 
