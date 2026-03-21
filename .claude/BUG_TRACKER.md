@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T21:38:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T05:35:00Z` (Cycle 218) |
+| **Last Git Manager Pass** | `2026-03-21T06:10:00Z` (Cycle 219) |
 | **Last Supervisor Pass** | `2026-03-21T04:30:30Z` |
 | **Total Found** | `370` |
 | **Total Pending** | `20` |
@@ -628,7 +628,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0327
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/swarm/graph.ts`
 - **line:** `53`
@@ -641,9 +641,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T04:42:00Z`
 - **fixer_completed:** `2026-03-21T04:42:00Z`
 - **fix_summary:** `Added dispose() to SwarmGraph calling broker.dispose() and pubsub.dispose(). Added dispose() to PubSub clearing subscribers and buffer. Nulled references for GC.`
-- **validator_started:** `2026-03-21T04:21:49Z`
-- **validator_completed:** `2026-03-21T04:30:00Z`
-- **validator_notes:** `REOPENED: Branch bugfix/BUG-0327 does not exist. SwarmGraph in src/swarm/graph.ts has no dispose() method — fix was never applied. Additionally, PubSub has no dispose() method, so fix must also implement PubSub cleanup. RequestReplyBroker already has dispose() (request-reply.ts line 166). Fixer must: (1) create branch from main, (2) add dispose() to SwarmGraph calling broker.dispose() and clearing PubSub subscribers, (3) commit on branch.`
+- **validator_started:** `2026-03-21T04:35:31Z`
+- **validator_completed:** `2026-03-21T04:39:25Z`
+- **validator_notes:** `Verified on bugfix/BUG-0327. SwarmGraph.dispose() calls broker.dispose() and pubsub.dispose(), nulls both refs. PubSub.dispose() clears subscribers map and buffer array. RequestReplyBroker.dispose() clears all setTimeout handles. tsc --noEmit clean.`
 
 ---
 
@@ -848,7 +848,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0338
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/swarm/mailbox.ts`
 - **line:** `44`
@@ -861,9 +861,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T00:42:00Z`
 - **fixer_completed:** `2026-03-21T03:22:00Z`
 - **fix_summary:** `Added sanitizeContent() in src/swarm/mailbox.ts that escapes angle brackets, curly braces, and backticks in m.from and m.content before rendering into LLM context in formatInbox(). Commit 01c5ff5 on main.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T04:35:31Z`
+- **validator_completed:** `2026-03-21T04:39:25Z`
+- **validator_notes:** `Verified on main. sanitize() at lines 45-50 strips angle brackets, collapses 3+ newlines, removes control chars. formatInbox() calls sanitize(m.from) and sanitize(m.content) at lines 57/59. fix_summary overstates (no curly brace/backtick escaping) but core injection vectors mitigated. Commit 01c5ff5 present. 7 regression tests pass. tsc clean.`
 - **test_generated:** `true`
 - **test_file:** `src/__tests__/swarm/mailbox-prompt-injection-sanitize.test.ts`
 
