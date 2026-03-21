@@ -1,34 +1,3 @@
-[2026-03-22T19:00:00Z] Step 10: HEAD confirmed on main (04479b9). Clean state. === Cycle 296 End ===
-[2026-03-22T20:00:00Z] ## Cycle 297 — 2026-03-22T20:00:00Z
-[2026-03-22T20:00:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T14:44:00Z (>60s). Last Validator=2026-03-22T01:45:00Z (>60s). In-progress=0, In-validation=0. Main HEAD=9f1916c (chore: Cycle 296 — 0 deletions, 0 rebases). Proceeding full cycle.
-[2026-03-22T20:00:00Z] Step 1: Branch inventory — 3 bugfix/BUG-* branches (unchanged from C296): BUG-0343(blocked,42 behind,tip ddec8f5), BUG-0356(blocked,47 behind,tip 28a4811), BUG-0359(blocked,47 behind,tip 27d8480). No new branches detected. Non-bugfix branches (not managed): fix/bug-0257-a2a-security-headers, fix/bug-0284-a2a-auth-expired-error, fix/bug-0285-context-prompt-injection, temp-return-main. No active worktrees.
-[2026-03-22T20:00:00Z] Step 2: Branch map rebuilt. 3 bugfix branches. blocked: 3 (BUG-0343 reopen_count=3 scope-contaminated; BUG-0356 reopen_count=3; BUG-0359 reopen_count=3). Behind-main counts each increased by 2 (C296→C297: BUG-0343 40→42; BUG-0356/0359 45→47) due to 2 commits on main since C296 (9f1916c git-manager cycle commit, 856f1fd ci-sentinel Cycle 55). No status changes.
-[2026-03-22T20:00:00Z] Step 3: 0 deletions. No orphaned or merged branches (git branch --merged HEAD: empty for all bugfix). 0/5 cap used. Cumulative: ~229.
-[2026-03-22T20:00:00Z] Step 4: STALE WARNINGS — BUG-0343(42 behind, blocked), BUG-0356(47 behind, blocked), BUG-0359(47 behind, blocked). All blocked; drift continues pending human intervention. No action taken.
-[2026-03-22T20:00:00Z] Step 5: CONFLICT CHECK — All 3 bugfix branches: 0 merge conflicts each (git merge-tree). All clean. No conflict branches this cycle.
-[2026-03-22T20:00:00Z] Step 5b: No rebase performed. All 3 remaining branches are blocked — rebasing blocked branches inappropriate until human resolves scope contamination and authorizes cherry-pick. 0/1 cap used.
-[2026-03-22T20:00:00Z] Step 6: FILE OVERLAPS — None. All 3 branches touch distinct files: safety-gate.ts(BUG-0343), postgres/index.ts(BUG-0356), loop/index.ts(BUG-0359). No overlap risk.
-[2026-03-22T20:00:00Z] Step 7: HEAD confirmed on main (9f1916c). Clean state.
-[2026-03-22T20:00:00Z] Step 8: GC skipped. Next GC at Cycle 300 (3 cycles away).
-[2026-03-22T20:00:00Z] ALERT: BUG-0343/0356/0359 — all blocked (reopen_count=3). Human must cherry-pick single-file minimal fixes. BUG-0343: safety-gate.ts clearTimeout only (skip 7-file contamination). BUG-0356: single postgres .catch() line. BUG-0359: off-by-one turns-remaining fix in loop/index.ts. Branches must NOT be rebased until human resolves.
-[2026-03-22T20:00:00Z] BRANCH COUNT: 3 bugfix branches (unchanged). 0 deletions, 0 rebases. Cumulative: ~229.
-[2026-03-22T20:00:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md to 2026-03-22T20:00:00Z (Cycle 297). Log at 374 lines — within bounds, no trim needed.
-[2026-03-22T20:00:00Z] Step 10: HEAD confirmed on main (9f1916c). Clean state. === Cycle 297 End ===
-[2026-03-21T21:00:00Z] ## Cycle 298 — 2026-03-21T21:00:00Z
-[2026-03-21T21:00:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T14:44:00Z (>60s). Last Validator=2026-03-22T01:45:00Z (>60s). In-progress=0, In-validation=0. Main HEAD=c7985b2 (chore: Cycle 297 — 0 deletions, 0 rebases). Proceeding full cycle.
-[2026-03-21T21:00:00Z] Step 1: Branch inventory — 3 bugfix/BUG-* branches (unchanged from C297): BUG-0343(blocked,42 behind,tip ddec8f5), BUG-0356(blocked,47 behind,tip 28a4811), BUG-0359(blocked,47 behind,tip 27d8480). No new branches detected. Non-bugfix branches (not managed): fix/bug-0257-a2a-security-headers, fix/bug-0284-a2a-auth-expired-error, fix/bug-0285-context-prompt-injection, temp-return-main. No active worktrees.
-[2026-03-21T21:00:00Z] Step 2: Branch map rebuilt. 3 bugfix branches. blocked: 3 (BUG-0343 reopen_count=3 scope-contaminated; BUG-0356 reopen_count=3; BUG-0359 reopen_count=3). Behind-main counts unchanged from C297 (BUG-0343: 42; BUG-0356/0359: 47) — no new commits on main since C297 (HEAD c7985b2 = C297 commit). No status changes.
-[2026-03-21T21:00:00Z] Step 3: DELETIONS — 0. No orphaned or fully-merged bugfix branches (git branch --merged HEAD: empty for all 3). 0/5 cap used. Cumulative: ~229.
-[2026-03-21T21:00:00Z] Step 4: STALE WARNINGS — BUG-0343(42 behind, blocked), BUG-0356(47 behind, blocked), BUG-0359(47 behind, blocked). All blocked (reopen_count=3); drift holds steady this cycle (no new main commits). Human cherry-pick intervention remains the only authorized path forward.
-[2026-03-21T21:00:00Z] Step 5: CONFLICT CHECK — All 3 bugfix branches: 0 merge conflicts each via git merge-tree against HEAD c7985b2. All cleanly mergeable. No conflict branches this cycle.
-[2026-03-21T21:00:00Z] Step 5b: REBASE — skipped. All 3 branches blocked (reopen_count=3). Rebasing blocked branches is not appropriate without human authorization. 0/1 cap used.
-[2026-03-21T21:00:00Z] Step 6: FILE OVERLAPS — None. BUG-0343 (src/harness/safety-gate.ts), BUG-0356 (packages/stores/src/postgres/index.ts), BUG-0359 (src/harness/loop/index.ts) — all distinct files, no cross-branch overlap risk.
-[2026-03-21T21:00:00Z] Step 7: HEAD confirmed on main (c7985b2). Clean state.
-[2026-03-21T21:00:00Z] Step 8: GC skipped. Next scheduled GC at Cycle 300 (2 cycles away).
-[2026-03-21T21:00:00Z] ALERT: BUG-0343/0356/0359 — all blocked (reopen_count=3). Human must cherry-pick single-file minimal fixes. BUG-0343: safety-gate.ts clearTimeout only (skip 7-file contamination, commit ddec8f5). BUG-0356: single postgres .catch() line (commit 28a4811). BUG-0359: off-by-one turns-remaining fix in loop/index.ts (commit 27d8480). Branches must NOT be rebased until human resolves.
-[2026-03-21T21:00:00Z] BRANCH COUNT: 3 bugfix branches (unchanged). 0 deletions, 0 rebases. Cumulative: ~229.
-[2026-03-21T21:00:00Z] Step 9: Updated BRANCH_MAP.md to Cycle 298. Updating Last Git Manager Pass in BUG_TRACKER.md to 2026-03-21T21:00:00Z (Cycle 298). Log now at 391 lines — within bounds, no trim needed.
-[2026-03-21T21:00:00Z] Step 10: HEAD confirmed on main (c7985b2). Clean state. === Cycle 298 End ===
 [2026-03-21T22:00:00Z] ## Cycle 299 — 2026-03-21T22:00:00Z
 [2026-03-21T22:00:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=>60s ago. Last Validator=>60s ago. In-progress=0, In-validation=0. Main HEAD=3fa77dd (chore: Cycle 298 commit, 1 ahead of C298 base c7985b2). Proceeding full cycle.
 [2026-03-21T22:00:00Z] Step 1: Branch inventory — 3 bugfix/BUG-* branches (unchanged from C298): BUG-0343(blocked,43 behind,+1 from C298), BUG-0356(blocked,48 behind,+1 from C298), BUG-0359(blocked,48 behind,+1 from C298). No new branches detected. Non-bugfix branches (not managed): fix/bug-0257-a2a-security-headers, fix/bug-0284-a2a-auth-expired-error, fix/bug-0285-context-prompt-injection, temp-return-main. No active worktrees.
@@ -163,3 +132,19 @@
 [2026-03-23T00:00:00Z] BRANCH COUNT: 4 bugfix branches (+1 vs C315: BUG-0451 newly tracked). 0 deletions, 0 rebases. Cumulative: ~229. Log trimmed to 150 lines this cycle.
 [2026-03-23T00:00:00Z] Step 9: Updating BRANCH_MAP.md to Cycle 316. Updating Last Git Manager Pass in BUG_TRACKER.md.
 [2026-03-23T00:00:00Z] Step 10: HEAD confirmed on main (975785b). Clean state. === Cycle 316 End ===
+[2026-03-21T18:05:17Z] ## Cycle 317 — 2026-03-21T18:05:17Z
+[2026-03-21T18:05:17Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T14:44:00Z (>60s). Last Validator=2026-03-21T18:02:35Z (>60s). In-progress=0, In-validation=0. Main HEAD=8dd12dc (Merge branch bugfix/BUG-0451). Proceeding full cycle.
+[2026-03-21T18:05:17Z] Step 1: Branch inventory — 3 bugfix/BUG-* branches: BUG-0343(blocked,66 behind,tip ddec8f5), BUG-0356(blocked,71 behind,tip 28a4811), BUG-0359(blocked,71 behind,tip 27d8480). BUG-0451 branch GONE — merged to main as commit 8dd12dc since C316. Non-bugfix branches (not managed): fix/bug-0257-a2a-security-headers, fix/bug-0284-a2a-auth-expired-error, fix/bug-0285-context-prompt-injection, temp-return-main.
+[2026-03-21T18:05:17Z] Step 2: Branch map rebuilt. 3 bugfix branches. All blocked (reopen_count=3 each). BUG-0451 successfully merged+deleted — TS2393 build failure resolved. Behind-main +3 vs C316 (3 new commits: C316 git-manager, BRANCH_MAP update, BUG-0451 merge): BUG-0343: 63→66; BUG-0356/0359: 68→71.
+[2026-03-21T18:05:17Z] Step 3: 0 deletions. No orphaned or merged bugfix branches (git branch --merged HEAD: empty for all 3). 0/5 cap used. Cumulative: ~229.
+[2026-03-21T18:05:17Z] Step 4: STALE WARNINGS — BUG-0343(66 behind, blocked), BUG-0356(71 behind, blocked), BUG-0359(71 behind, blocked). All blocked; drift continues. Human intervention required.
+[2026-03-21T18:05:17Z] Step 5: CONFLICT CHECK — BUG-0343: 0 conflicts, BUG-0356: 0 conflicts, BUG-0359: 0 conflicts (git merge-tree). All branches conflict-free.
+[2026-03-21T18:05:17Z] Step 5b: No rebase performed. All 3 branches blocked — rebasing blocked branches inappropriate until human resolves scope contamination. 0/1 cap used.
+[2026-03-21T18:05:17Z] Step 6: FILE OVERLAPS — None. All 3 branches touch distinct files: src/harness/safety-gate.ts(BUG-0343), packages/stores/src/postgres/index.ts(BUG-0356), src/harness/loop/index.ts(BUG-0359). No overlap risk.
+[2026-03-21T18:05:17Z] Step 7: HEAD confirmed on main (8dd12dc). Clean state. No stale merge/rebase states.
+[2026-03-21T18:05:17Z] Step 8: GC skipped — this is Cycle 317, next scheduled at Cycle 318 (next cycle).
+[2026-03-21T18:05:17Z] ALERT: BUG-0343/0356/0359 — all blocked (reopen_count=3). Human must cherry-pick single-file minimal fixes. BUG-0343: safety-gate.ts clearTimeout only (commit ddec8f5). BUG-0356: single postgres .catch() line (commit 28a4811). BUG-0359: off-by-one turns-remaining fix in loop/index.ts (commit 27d8480). Branches must NOT be rebased until human resolves.
+[2026-03-21T18:05:17Z] NOTE: BUG-0451 merged successfully (8dd12dc) — TS2393 duplicate dispose() in src/swarm/graph.ts resolved. Critical build failure ESC-013 should now be resolved pending CI confirmation.
+[2026-03-21T18:05:17Z] BRANCH COUNT: 3 bugfix branches (-1 vs C316: BUG-0451 merged). 0 deletions, 0 rebases. Cumulative: ~229.
+[2026-03-21T18:05:17Z] Step 9: Updating BRANCH_MAP.md to Cycle 317. Updating Last Git Manager Pass in BUG_TRACKER.md.
+[2026-03-21T18:05:17Z] Step 10: HEAD confirmed on main (8dd12dc). Clean state. === Cycle 317 End ===

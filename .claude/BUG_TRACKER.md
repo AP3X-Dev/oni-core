@@ -9,17 +9,17 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-22T18:00:00Z` (Cycle 66 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378 STILL PRESENT; ESC-013 still active; 50 consecutive build failures; no new bugs filed; tests not run. 10 untracked Hunter test files present — cannot evaluate until build clean.) |
+| **Last CI Sentinel Pass** | `2026-03-21T18:00:56Z` (Cycle 67 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378 STILL PRESENT; ESC-013 still active; 51 consecutive build failures; no new bugs filed; tests not run. 10 untracked Hunter test files present — cannot evaluate until build clean.) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
 | **Last Fixer Pass** | `2026-03-21T14:44:00Z` |
-| **Last Validator Pass** | `2026-03-22T01:45:00Z` |
+| **Last Validator Pass** | `2026-03-21T18:06:17Z` (no fixed/in-validation bugs — 26 blocked) |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T16:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-23T00:00:00Z` (Cycle 316 — 0 deletions, 0 rebases, no gc (next Cycle 318); 4 bugfix branches: BUG-0343/0356/0359 blocked reopen_count=3, BUG-0451 newly tracked (in-validation, critical TS2393 fix, 2 behind, doc-only merge conflicts); BUG-0343 63 behind (+1), BUG-0356/0359 68 behind (+1); human intervention required for blocked 3) |
+| **Last Git Manager Pass** | `2026-03-21T18:05:17Z` (Cycle 317 — 0 deletions, 0 rebases, gc next cycle (Cycle 318); 3 bugfix branches: BUG-0451 merged+branch deleted (8dd12dc); BUG-0343/0356/0359 still blocked reopen_count=3; BUG-0343 66 behind (+3), BUG-0356/0359 71 behind (+3); human intervention required for blocked 3) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
@@ -27,7 +27,7 @@
 | **Total Fixed** | `0` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `27` |
+| **Total Blocked** | `26` |
 | **Total Reopened** | `0` |
 
 ---
@@ -735,22 +735,4 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0451
-- **status:** `blocked`
-- **severity:** `critical`
-- **file:** `src/swarm/graph.ts`
-- **line:** `245` (and `378`)
-- **category:** `build-failure`
-- **description:** Duplicate `dispose()` implementation in `SwarmGraph` class causes `tsc` build failure (TS2393). One implementation at line 245 (from BUG-0327 fix) and a second at line 378 (from BUG-0412 fix). Merge of `bugfix/BUG-0412` did not remove or integrate the original `dispose()` from `bugfix/BUG-0327`, resulting in two conflicting method bodies in the same class.
-- **context:** CI Sentinel Cycle 42 (2026-03-21T10:30:00Z). `npx tsc --noEmit` exits 2 with: `src/swarm/graph.ts(245,3): error TS2393: Duplicate function implementation.` and `src/swarm/graph.ts(378,3): error TS2393: Duplicate function implementation.` Last commit to graph.ts was `3a3f31f Merge bugfix/BUG-0412 into main`. BUG-0412 extended dispose() to iterate subGraphs; BUG-0327 introduced the original dispose() for broker/pubsub. The fix must remove the partial dispose() at line 245 and retain the complete implementation at line 378 (which already handles broker/pubsub cleanup plus subgraph iteration).
-- **reopen_count:** `0`
-- **branch:** ``
-- **hunter_found:** `2026-03-21T10:30:00Z`
-- **fixer_started:** `2026-03-21T18:45:00Z`
-- **fixer_completed:** ``
-- **fix_summary:** `Not reproducible. No duplicate dispose() exists on current main. tsc --noEmit passes clean. Already resolved.` ⚠️ **INCORRECT — CI Sentinel Cycle 43 and Cycle 44 both confirm duplicate dispose() still present at lines 245 and 378 on main HEAD. TS2393 still firing. Fix was NOT applied. Fixer must re-examine main HEAD and remove lines ~239-250 (partial dispose under // ---- Disposal ----).**
-- **validator_started:** `2026-03-22T01:45:00Z`
-- **validator_completed:** `2026-03-22T01:45:00Z`
-- **validator_notes:** ``
-
----
+<!-- BUG-0451 archived to BUG_LOG.md at 2026-03-21T18:02:35Z -->
