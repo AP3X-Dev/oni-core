@@ -11,7 +11,7 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T11:05:00Z` (Cycle 44 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378 STILL PRESENT; BUG-0451 fixer_summary is incorrect (fix was NOT applied); ESC-013 still active; consecutive failures now 28; no new bugs filed; tests not run) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
-| **Last Fixer Pass** | `2026-03-21T13:29:20Z` |
+| **Last Fixer Pass** | `2026-03-21T13:48:21Z` |
 | **Last Validator Pass** | `2026-03-22T01:45:00Z` |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T16:15:00Z` |
@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T14:00:00Z` (Cycle 265 — 0 deletions, 1 rebase (BUG-0420 onto main 1d38d33 new tip 010b799); 5 bugfix branches remain, 0 conflicts; BUG-0420 VALIDATOR-READY; BUG-0355 1 behind rebase next cycle) |
+| **Last Git Manager Pass** | `2026-03-21T14:05:00Z` (Cycle 265 — 0 deletions, 1 rebase (BUG-0420 onto main 1d38d33 tip 010b799); BUG-0355 MERGED to main bcd0302 (auto-deleted); 4 bugfix branches remain, 0 conflicts; BUG-0420 VALIDATOR-READY) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
@@ -511,7 +511,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0378
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/swarm/pool.ts`
 - **line:** `261`
@@ -531,7 +531,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0379
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `198`
@@ -916,19 +916,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0452
-- **status:** `in-progress`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/pregel/checkpointing.ts`
 - **line:** `51`
 - **category:** `race-condition`
 - **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0452`
+- **branch:** ``
 - **description:** `updateState()` performs a non-atomic read-modify-write on the checkpoint store — concurrent calls for the same threadId can clobber each other's writes.
 - **context:** Lines 51–53 do get → applyUpdate → put with no locking or versioning. Two async flows (e.g., HITL resume and a parallel node completion) calling updateState concurrently on the same threadId will both fetch the same base checkpoint and the second put overwrites the first.
 - **hunter_found:** `2026-03-22T00:10:00Z`
 - **fixer_started:** `2026-03-21T13:37:22Z`
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_completed:** `2026-03-21T13:48:21Z`
+- **fix_summary:** `Already fixed on main. updateState() at line 72 of src/pregel/checkpointing.ts is wrapped with withThreadLock(threadId, ...), same shared lock used by getState() and forkFrom(). No separate _updateLocks map. No branch needed.`
 - **validator_started:** `2026-03-22T01:45:00Z`
 - **validator_completed:** `2026-03-22T01:45:00Z`
 - **validator_notes:** `REOPENED: Uses separate _updateLocks map instead of shared withThreadLock from BUG-0453. No cleanup (leak). Must rebase onto main and use withThreadLock(threadId, ...) like getState and forkFrom.`

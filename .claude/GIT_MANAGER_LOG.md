@@ -1,5 +1,3 @@
-[2026-03-21T10:23:00Z] ALERT: BUG-0444 — pending status but has fix commit (0 behind). Tracker update pending from fixer.
-[2026-03-21T10:23:00Z] ALERT: BUG-0356/0374/0378/0413 — merge conflicts persist. Fixer must delete and recreate from main.
 [2026-03-21T10:23:00Z] ALERT: pool.ts 3-way overlap BUG-0378/0407/0434 — merge order critical. BUG-0434 has 2 conflicts.
 [2026-03-21T10:23:00Z] BRANCH COUNT: 49 branches (was 51). 5 deletions (BUG-0436/0437/0438/0439/0440 orphans), 1 rebase (BUG-0430). Cumulative: ~214.
 [2026-03-21T10:23:00Z] Step 9: Updated Last Git Manager Pass to 2026-03-21T10:23:00Z (Cycle 253). Log trimmed to 150 lines.
@@ -148,3 +146,5 @@
 [2026-03-21T14:00:00Z] BRANCH COUNT: 5 bugfix branches remain. 0 deletions, 1 rebase (BUG-0420). Cumulative: ~229.
 [2026-03-21T14:00:00Z] Step 9: Updated Last Git Manager Pass to 2026-03-21T14:00:00Z (Cycle 265). Log trimmed to 150 lines.
 [2026-03-21T14:00:00Z] Step 10: HEAD confirmed on main (1d38d33). Clean state. === Cycle 265 End ===
+[2026-03-21T14:05:00Z] CORRECTION C265: bugfix/BUG-0355 was MERGED to main (bcd0302) between C264 and C265 — branch auto-deleted. Branch map corrected. 4 bugfix branches remain (not 5). BUG-0355 fix confirmed in main.
+[2026-03-21T14:05:00Z] CORRECTION C265: Updated BUG_TRACKER Last Git Manager Pass to reflect corrected 4-branch state and BUG-0355 merged status.
