@@ -9,26 +9,26 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T10:02:49Z` (Cycle 39 — 5 failures all known cooldowns BUG-0312 + BUG-0363; no new regressions; test count stable at 1390) |
+| **Last CI Sentinel Pass** | `2026-03-21T10:30:00Z` (Cycle 42 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378; merge artifact from BUG-0327+BUG-0412; filed BUG-0451; escalated ESC-013; tests not run) |
 | **Last Hunter Scan** | `2026-03-22T00:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T17:05:00Z` |
-| **Last Validator Pass** | `2026-03-22T00:35:00Z` |
+| **Last Fixer Pass** | `2026-03-21T18:25:00Z` |
+| **Last Validator Pass** | `2026-03-22T00:45:00Z` |
 | **Last Digest Run** | `2026-03-21T10:23:40Z` |
-| **Last Security Scan** | `2026-03-21T15:00:00Z` |
+| **Last Security Scan** | `2026-03-21T15:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T08:47:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T10:23:00Z` (Cycle 253 — 5 deletions (BUG-0436/0437/0438/0439/0440 orphans); rebased BUG-0430 to main HEAD 3318840; 6 conflict branches remain; BUG-0359/0366/0430 validator-ready; pool.ts 3-way overlap BUG-0378/0407/0434) |
-| **Last Supervisor Pass** | `2026-03-21T10:25:26Z` |
-| **Total Found** | `425` |
-| **Total Pending** | `8` |
+| **Last TestGen Run** | `2026-03-21T09:10:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T10:32:49Z` (Cycle 254 — 3 deletions (BUG-0343/0374/0434 archived orphans); rebased BUG-0357 to main HEAD 3a3f31f; 0 conflict branches; define-agent.ts overlap BUG-0404+0443 HIGH risk; 41 branches active) |
+| **Last Supervisor Pass** | `2026-03-21T10:30:26Z` |
+| **Total Found** | `426` |
+| **Total Pending** | `1` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `41` |
+| **Total Fixed** | `40` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `23` |
-| **Total Reopened** | `0` |
+| **Total Reopened** | `2` |
 
 ---
 
@@ -710,64 +710,23 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0392
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/swarm/mermaid.ts`
-- **line:** `45`
-- **category:** `security-xss`
-- **description:** `toSwarmMermaid()` embeds `entry.role` and capability names in Mermaid HTML labels (`<b>${entry.role}</b>`, `<i>${caps}</i>`) without escaping `<`, `>`, `&`, or newline characters, enabling Mermaid directive injection and potential XSS when the diagram is rendered in a web UI.
-- **context:** Line 60 escapes `"`, `[`, `]` but NOT angle brackets or newlines. A role containing `</b><img src=x onerror=alert(1)>` injects arbitrary HTML into the Mermaid label since Mermaid renders HTML in node labels. A role containing a newline breaks Mermaid syntax, allowing injection of arbitrary directives (e.g., `click` handlers). Compare with `inspect.ts:189` which correctly strips `<>` and newlines via its `sanitize()` helper, and BUG-0294 which covers the same class of issue in `graph.ts`. Fix: escape `<`, `>`, `&`, newlines, and `|` in role and capability strings before interpolation. OWASP A03:2021 - Injection.
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0392`
-- **hunter_found:** `2026-03-23T12:30:00Z`
-- **fixer_started:** `2026-03-21T06:15:00Z`
-- **fixer_completed:** `2026-03-21T06:15:00Z`
-- **fix_summary:** `Escape HTML, newlines, and pipe in Mermaid role and capability labels.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-### BUG-0393
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/swarm/tracer.ts`
-- **line:** `112`
-- **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0393`
-- **description:** `record()` performs a non-atomic push+splice on `this.events` — concurrent callers can both observe `length > maxEvents` and double-splice, losing more events than intended.
-- **context:** Under high-concurrency swarm runs where many agents fire `record()` near-simultaneously, the event timeline can lose entries beyond the intended cap, corrupting metrics and timeline queries.
-- **hunter_found:** `2026-03-20T22:45:00Z`
-- **fixer_started:** `2026-03-21T06:50:00Z`
-- **fixer_completed:** `2026-03-21T06:50:00Z`
-- **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-- **test_generated:** `true`
-- **test_file:** `src/__tests__/swarm/tracer-event-trim.test.ts`
-
----
-
 ### BUG-0394
 - **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/tracer.ts`
 - **line:** `221`
 - **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0393`
+- **reopen_count:** `1`
+- **branch:** `bugfix/BUG-0394`
 - **description:** `clear()` replaces `this.events` with a new array non-atomically — a concurrent `record()` call holding a reference to the old array via `this.events.push` will write to the discarded array, silently losing the event.
 - **context:** An agent completing while `clear()` runs will have its event written to the old array and discarded, making the fresh timeline miss legitimate events.
 - **hunter_found:** `2026-03-20T22:45:00Z`
-- **fixer_started:** `2026-03-21T06:50:00Z`
-- **fixer_completed:** `2026-03-21T06:50:00Z`
-- **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** `2026-03-21T18:15:00Z`
+- **fixer_completed:** `2026-03-21T18:15:00Z`
+- **fix_summary:** `Use this.events.length = 0 (in-place mutation) instead of reference swap in clear().`
+- **validator_started:** `2026-03-22T00:40:00Z`
+- **validator_completed:** `2026-03-22T00:40:00Z`
+- **validator_notes:** `REOPENED: clear() at line 218 still uses this.events = [] (new-array reference swap). No change was made to this method. The BUG-0393 fix to record() shifted the race but did not fix clear(). Fix must use this.events.length = 0 (in-place mutation) instead of reference swap.`
 - **test_generated:** `true`
 - **test_file:** `src/__tests__/swarm/tracer-event-trim.test.ts`
 
@@ -787,49 +746,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T06:35:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** `Duplicate of BUG-0306 (same file, same line, same issue). BUG-0306 already fixed and verified.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0397
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/harness/harness.ts`
-- **line:** `183`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0397`
-- **description:** `runToResult` throws when an `error` message arrives after a `result` message because it checks `errorMsg !== undefined` without gating on whether a result was already received — a valid result is discarded.
-- **context:** An agent run that emits a result followed by an error event (e.g., from a cleanup hook) will throw instead of returning the successful outcome, causing callers to incorrectly see a failure.
-- **hunter_found:** `2026-03-20T22:45:00Z`
-- **fixer_started:** `2026-03-21T06:35:00Z`
-- **fixer_completed:** `2026-03-21T06:35:00Z`
-- **fix_summary:** `Gate error throw on no result already received in runToResult. Late errors after valid result are ignored.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0398
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/cli/test.ts`
-- **line:** `13`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0398`
-- **description:** In watch mode, vitest is called with no subcommand instead of explicit `--watch`, causing it to hang in CI (non-TTY) environments waiting for input.
-- **context:** The code path for watch mode relies on vitest TTY detection rather than explicitly passing `--watch`, which fails in non-interactive terminals.
-- **hunter_found:** `2026-03-20T22:45:00Z`
-- **fixer_started:** `2026-03-21T06:50:00Z`
-- **fixer_completed:** `2026-03-21T06:50:00Z`
-- **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:40:00Z`
+- **validator_completed:** `2026-03-22T00:40:00Z`
+- **validator_notes:** `REOPENED: clear() still uses this.events = [] (reference swap, unsafe). Must use this.events.length = 0 (in-place mutation).`
 
 ---
 
@@ -847,9 +766,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T06:50:00Z`
 - **fixer_completed:** `2026-03-21T06:50:00Z`
 - **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:40:00Z`
+- **validator_completed:** `2026-03-22T00:40:00Z`
+- **validator_notes:** `Empty string replaced with --watch for explicit vitest watch mode. Non-watch run path preserved. Verified.`
 
 ---
 
@@ -859,17 +778,17 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **file:** `src/agents/define-agent.ts`
 - **line:** `115`
 - **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0403`
+- **reopen_count:** `1`
+- **branch:** `bugfix/BUG-0404`
 - **description:** `model.chat()` call has no try/catch — LLM API errors (network, rate limit, auth) propagate unhandled out of the ReAct loop without recording partial conversation or emitting an `llm.error` lifecycle event.
 - **context:** API errors abort the agent loop silently — no error event is emitted, no audit record is written, and no partial messages are returned, making it impossible to distinguish a model failure from a node returning no output.
 - **hunter_found:** `2026-03-20T18:42:00Z`
-- **fixer_started:** `2026-03-21T09:45:00Z`
-- **fixer_completed:** `2026-03-21T09:45:00Z`
-- **fix_summary:** `Wrapped model.chat() in try-catch with llm.error lifecycle event. Same commit as BUG-0403.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** `2026-03-21T18:25:00Z`
+- **fixer_completed:** `2026-03-21T18:25:00Z`
+- **fix_summary:** ``
+- **validator_started:** `2026-03-22T00:45:00Z`
+- **validator_completed:** `2026-03-22T00:45:00Z`
+- **validator_notes:** `REOPENED: Branch bugfix/BUG-0403 deleted by Git Manager as orphan. Fix never landed on main. Fixer must recreate branch from current main and wrap model.chat() in try-catch with llm.error event.`
 
 ---
 
@@ -887,48 +806,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T09:45:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** `Duplicate of BUG-0320 (same file, same line, same double-cast issue). BUG-0320 already verified.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0406
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/swarm/factories.ts`
-- **line:** `727`
-- **category:** `type-error`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0406`
-- **description:** `agentMap.get(id)!` uses a non-null assertion in `buildDag` topological batch dispatch — if dependency validation misses a node (dependency key present but not in `config.agents`), this is `undefined` and `.skeleton.invoke` throws.
-- **context:** The validation loop on lines 665-670 iterates dependency values, not keys, so an agent ID appearing only as a dependency key without a corresponding entry in `config.agents` passes validation but fails at dispatch time.
-- **hunter_found:** `2026-03-20T18:42:00Z`
-- **fixer_started:** `2026-03-21T09:45:00Z`
-- **fixer_completed:** `2026-03-21T09:45:00Z`
-- **fix_summary:** `Replace non-null assertion with explicit guard in buildDag dispatch.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0407
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/swarm/pool.ts`
-- **line:** `291`
-- **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0407`
-- **description:** When a slot drains the queue after disposal, `invoke()` throws synchronously inside a `.then` continuation — `next.reject` is never called and the caller's promise hangs forever.
-- **context:** `invoke()` throws `Error("AgentPool disposed")` synchronously, but the call site chains `.then(next.resolve, next.reject)` expecting a promise. The synchronous throw is swallowed and the queued caller's promise never settles.
-- **hunter_found:** `2026-03-20T18:42:00Z`
-- **fixer_started:** `2026-03-21T10:05:00Z`
-- **fixer_completed:** `2026-03-21T10:05:00Z`
-- **fix_summary:** `Replaced .then(resolve,reject) with .then(resolve).catch(reject) at 3 sites to catch sync throws.`
-- **validator_started:** ``
-- **validator_completed:** ``
+- **validator_started:** `2026-03-22T00:45:00Z`
+- **validator_completed:** `2026-03-22T00:45:00Z`
 - **validator_notes:** ``
 
 ---
@@ -939,17 +818,17 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **file:** `src/dlq.ts`
 - **line:** `5`
 - **category:** `race-condition`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0409`
 - **description:** Module-level `_nextId` counter is a shared mutable variable with non-atomic increment — concurrent `DLQ.record()` calls from parallel node executions can produce duplicate entry IDs.
 - **context:** The Pregel engine executes nodes via Promise.allSettled in parallel; two simultaneous failures can race on `_nextId` pre-increment, producing two DeadLetter entries with identical IDs and breaking deduplication and `remove()` by ID.
 - **hunter_found:** `2026-03-20T18:42:00Z`
-- **fixer_started:** `2026-03-21T10:05:00Z`
-- **fixer_completed:** `2026-03-21T10:05:00Z`
-- **fix_summary:** `Added timestamp suffix to DLQ entry IDs for collision resistance.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** `2026-03-21T18:25:00Z`
+- **fixer_completed:** `2026-03-21T18:25:00Z`
+- **fix_summary:** ``
+- **validator_started:** `2026-03-22T00:45:00Z`
+- **validator_completed:** `2026-03-22T00:45:00Z`
+- **validator_notes:** `REOPENED: Fix changes DLQ ID format but dlq.test.ts line 18 regex was not updated and will fail. Fixer must update test regex to match new format dlq-N-base36timestamp.`
 
 ---
 
@@ -967,8 +846,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T10:05:00Z`
 - **fixer_completed:** `2026-03-21T10:05:00Z`
 - **fix_summary:** `Manually accumulate handoffHistory by spreading state.handoffHistory before new entry.`
-- **validator_started:** ``
-- **validator_completed:** ``
+- **validator_started:** `2026-03-22T00:45:00Z`
+- **validator_completed:** `2026-03-22T00:45:00Z`
 - **validator_notes:** ``
 
 ---
@@ -993,26 +872,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0412
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/swarm/graph.ts`
-- **line:** `53`
-- **category:** `memory-leak`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0412`
-- **description:** Sub-SwarmGraph instances created by `hierarchicalMesh()` and `compose()` are never tracked or disposed, leaking broker/pubsub instances with pending timeout handles.
-- **context:** Each sub-graph may own a `RequestReplyBroker` with active per-request timeouts. Without a lifecycle hook tying sub-graphs to the parent's `dispose()`, their timers are never cleared in long-running processes.
-- **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T11:05:00Z`
-- **fixer_completed:** `2026-03-21T11:05:00Z`
-- **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0413
 - **status:** `fixed`
 - **severity:** `medium`
@@ -1027,9 +886,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T11:05:00Z`
 - **fixer_completed:** `2026-03-21T11:05:00Z`
 - **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T00:45:00Z`
+- **validator_completed:** `2026-03-22T00:45:00Z`
+- **validator_notes:** `subGraphs tracking array added. hierarchicalMesh and compose push sub-graphs. dispose() recursively disposes all. Scope clean. Verified.`
 
 ---
 
@@ -1334,19 +1193,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0443
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/agents/define-agent.ts`
 - **line:** `201`
 - **category:** `type-error`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0443`
 - **description:** Return value `{ messages: newMessages }` is double-cast through `as unknown as Partial<S>`, silently bypassing TypeScript when state type `S` has no `messages` field.
 - **context:** If the caller's state type does not contain a `messages` key, the cast corrupts the state graph at runtime when Pregel merges the partial update — data loss or silent wrong behavior.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T17:25:00Z`
+- **fixer_completed:** `2026-03-21T17:25:00Z`
+- **fix_summary:** `Remove double cast, add AgentMessageState constraint for type-safe messages return.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1354,19 +1213,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0444
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/functional.ts`
 - **line:** `157`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0444`
 - **description:** `branch()` router node returns full state as its node update instead of `{}`, causing every channel reducer to fire with `(current, current)` on each branch invocation.
 - **context:** For append-type reducers (e.g. `appendList`), this doubles all existing values in the channel every time the router executes — silent data corruption that compounds with each branch call.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T17:25:00Z`
+- **fixer_completed:** `2026-03-21T17:25:00Z`
+- **fix_summary:** `Return empty update from branch router to prevent channel doubling.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1374,19 +1233,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0445
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/models/anthropic.ts`
 - **line:** `195`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0445`
 - **description:** `drainSSELines` emits events on every line when `flush=true` due to OR condition with blank-line check, causing the final SSE event to be yielded twice.
 - **context:** Double-emission of the trailing `message_delta` event causes usage tokens to be double-counted in the caller's accounting, inflating reported token consumption.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T17:25:00Z`
+- **fixer_completed:** `2026-03-21T17:25:00Z`
+- **fix_summary:** `Remove flush OR from SSE line check to prevent double emission.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1394,19 +1253,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0446
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/pregel/execution.ts`
 - **line:** `196`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0446`
 - **description:** `nodeCache` FIFO eviction is not atomic — concurrent node executions can both read the same oldest key, both delete it, and both insert, allowing the map to exceed the 256-entry cap.
 - **context:** While bounded (at most N-1 extra entries for N concurrent nodes), the non-atomic eviction wastes slots and lets the cache grow past its intended memory cap in high-parallelism graphs.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T17:25:00Z`
+- **fixer_completed:** `2026-03-21T17:25:00Z`
+- **fix_summary:** `Post-insert while loop for atomic cache eviction.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1414,19 +1273,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0447
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/inspect.ts`
 - **line:** `114`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0447`
 - **description:** `detectCycles` adds edges from source to every node in the graph when a conditional edge has no `pathMap`, making `topoOrder` always return `null` for graphs with unmapped conditional edges.
 - **context:** `GraphDescriptor.topoOrder` is unusable for the majority of real graphs (which use conditional edges without exhaustive pathMaps), silently returning `null` and forcing consumers to fall back to unordered logic.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T17:25:00Z`
+- **fixer_completed:** `2026-03-21T17:25:00Z`
+- **fix_summary:** `Skip unmapped conditional edges in cycle detection.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1434,19 +1293,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0448
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/cli/init.ts`
 - **line:** `10`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0448`
 - **description:** `initProject` performs multiple async `writeFile` calls with no try/catch, so filesystem errors propagate as raw unhandled rejections with no user-friendly message.
 - **context:** Every other CLI command handler wraps its risky I/O in try/catch; `initCommand` is the only one that lets raw Node.js errors surface directly to users, breaking the consistent error UX.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T17:35:00Z`
+- **fixer_completed:** `2026-03-21T17:35:00Z`
+- **fix_summary:** `Wrap initProject I/O in try-catch with user-friendly error.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1454,19 +1313,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0449
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/cli/run.ts`
 - **line:** `47`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0449`
 - **description:** When a child process is killed by a signal, `close` fires with `code=null`; the log displays "exit code: 0" via `code ?? 0` and `process.exitCode` is never set to non-zero.
 - **context:** A SIGKILL'd subprocess is indistinguishable from a clean exit — CI pipelines using `oni run` will see exit code 0 even when the agent was forcibly terminated.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T17:35:00Z`
+- **fixer_completed:** `2026-03-21T17:35:00Z`
+- **fix_summary:** `Treat null exit code as 1 for signal-killed child.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1474,19 +1333,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0450
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/json.ts`
 - **line:** `10`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0450`
 - **description:** The initial `readFile` call for JSON files has no try/catch, so ENOENT/EACCES errors throw raw Node.js errors instead of wrapped DocumentLoader errors.
 - **context:** CsvLoader and PdfLoader wrap their readFile calls with descriptive messages; JsonLoader omits this for regular file reads, breaking the uniform error-handling contract of the loaders package.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T17:35:00Z`
+- **fixer_completed:** `2026-03-21T17:35:00Z`
+- **fix_summary:** `Wrap readFile in try-catch in JSON loader.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1626,6 +1485,26 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-20T22:51:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0451
+- **status:** `pending`
+- **severity:** `critical`
+- **file:** `src/swarm/graph.ts`
+- **line:** `245` (and `378`)
+- **category:** `build-failure`
+- **description:** Duplicate `dispose()` implementation in `SwarmGraph` class causes `tsc` build failure (TS2393). One implementation at line 245 (from BUG-0327 fix) and a second at line 378 (from BUG-0412 fix). Merge of `bugfix/BUG-0412` did not remove or integrate the original `dispose()` from `bugfix/BUG-0327`, resulting in two conflicting method bodies in the same class.
+- **context:** CI Sentinel Cycle 42 (2026-03-21T10:30:00Z). `npx tsc --noEmit` exits 2 with: `src/swarm/graph.ts(245,3): error TS2393: Duplicate function implementation.` and `src/swarm/graph.ts(378,3): error TS2393: Duplicate function implementation.` Last commit to graph.ts was `3a3f31f Merge bugfix/BUG-0412 into main`. BUG-0412 extended dispose() to iterate subGraphs; BUG-0327 introduced the original dispose() for broker/pubsub. The fix must remove the partial dispose() at line 245 and retain the complete implementation at line 378 (which already handles broker/pubsub cleanup plus subgraph iteration).
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-21T10:30:00Z`
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``

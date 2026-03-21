@@ -1,132 +1,91 @@
-# Branch Map — Cycle 253
+# Branch Map — Cycle 254
 
-**Generated:** 2026-03-21T10:23:00Z
-**Main HEAD:** 3318840
-**Total Branches:** 49 (was 51; 5 deleted, 3 net new)
+**Generated:** 2026-03-21T10:32:49Z
+**Main HEAD:** 3a3f31f
+**Total Branches:** 41 (was 45; 3 deleted, 0 net new this cycle)
 
----
+## Deleted This Cycle
+| Branch | Reason |
+|--------|--------|
+| bugfix/BUG-0343 | Archived in BUG_LOG — orphaned |
+| bugfix/BUG-0374 | Archived in BUG_LOG — orphaned |
+| bugfix/BUG-0434 | Archived in BUG_LOG — orphaned |
 
-## Summary
+## Rebased This Cycle
+| Branch | From | To |
+|--------|------|-----|
+| bugfix/BUG-0357 | (765 behind) | main HEAD 3a3f31f |
 
-| Category | Count |
-|---|---|
-| Fixed (clean) | 39 |
-| Fixed (conflict) | 5 |
-| Verified (conflict) | 1 |
-| Pending (new, no commits) | 4 |
-| Pending (fix committed) | 1 |
-| Reopened (worktree active) | 1 |
+## Active Branches
 
----
+| Branch | SHA | Status | Ahead/Behind | Date | Files |
+|--------|-----|--------|--------------|------|-------|
+| bugfix/BUG-0295 | aa21b99 | fixed | +1/-41 | 2026-03-21 | src/models/anthropic.ts |
+| bugfix/BUG-0355 | f276ea4 | fixed | +1/-771 | 2026-03-20 | src/memory/index.ts |
+| bugfix/BUG-0356 | 5df52cb | fixed | +2/-771 | 2026-03-21 | src/memory/index.ts |
+| bugfix/BUG-0357 | 91670b1 | fixed | +1/-0 | 2026-03-21 (rebased) | src/models/ollama.ts |
+| bugfix/BUG-0358 | dcdd793 | fixed | +1/-771 | 2026-03-20 | src/harness/loop/index.ts |
+| bugfix/BUG-0359 | f0fc90a | fixed | +1/-25 | 2026-03-21 | src/harness/loop/index.ts |
+| bugfix/BUG-0366 | 8738254 | fixed | +1/-25 | 2026-03-21 | src/harness/loop/index.ts |
+| bugfix/BUG-0376 | 15254ac | fixed | +1/-104 | 2026-03-20 | src/models/openai.ts |
+| bugfix/BUG-0377 | 59e056a | fixed | +1/-771 | 2026-03-20 | src/models/ollama.ts |
+| bugfix/BUG-0378 | 4c38363 | fixed | +1/-771 | 2026-03-20 | src/swarm/pool.ts |
+| bugfix/BUG-0379 | 6ef5fcb | fixed | +1/-771 | 2026-03-20 | src/swarm/agent-node.ts |
+| bugfix/BUG-0383 | f95cc3f | fixed | +1/-103 | 2026-03-20 | src/swarm/pool.ts |
+| bugfix/BUG-0388 | 199527d | fixed | +1/-104 | 2026-03-20 | src/models/openai.ts |
+| bugfix/BUG-0389 | 566ad1c | fixed | +1/-771 | 2026-03-20 | src/store/index.ts |
+| bugfix/BUG-0390 | 2ca2040 | fixed | +1/-771 | 2026-03-20 | src/pregel/loop.ts |
+| bugfix/BUG-0394 | c27ea98 | fixed | +1/-771 | 2026-03-21 | src/swarm/tracer.ts |
+| bugfix/BUG-0400 | 579ed45 | fixed | +1/-771 | 2026-03-20 | packages/tools/src/browser/firecrawl.ts |
+| bugfix/BUG-0404 | feb78e8 | reopened | +1/-771 | 2026-03-21 | src/agents/define-agent.ts |
+| bugfix/BUG-0409 | e776a9a | reopened | +1/-771 | 2026-03-21 | src/mailbox/dlq.ts |
+| bugfix/BUG-0410 | c0c222a | fixed | +1/-72 | 2026-03-20 | src/swarm/agent-node.ts |
+| bugfix/BUG-0413 | 005b2c1 | fixed | +1/-771 | 2026-03-21 | src/agents/supervisor.ts |
+| bugfix/BUG-0415 | b8470a5 | fixed | +1/-70 | 2026-03-20 | src/store/index.ts |
+| bugfix/BUG-0416 | 839d9ec | fixed | +1/-771 | 2026-03-21 | src/streaming.ts |
+| bugfix/BUG-0417 | f027e20 | fixed | +1/-771 | 2026-03-21 | src/pregel/loop.ts |
+| bugfix/BUG-0418 | c85bf7f | fixed | +1/-70 | 2026-03-21 | src/store/index.ts |
+| bugfix/BUG-0419 | 9503085 | fixed | +1/-771 | 2026-03-21 | src/harness/loop/index.ts |
+| bugfix/BUG-0420 | 5ffcee4 | fixed | +1/-771 | 2026-03-21 | src/swarm/pool.ts |
+| bugfix/BUG-0421 | dbc7033 | fixed | +1/-771 | 2026-03-21 | src/store/index.ts |
+| bugfix/BUG-0422 | 7f01f87 | fixed | +1/-771 | 2026-03-21 | src/pregel/loop.ts |
+| bugfix/BUG-0427 | 1d10519 | fixed | +1/-771 | 2026-03-21 | src/hitl/interrupt.ts |
+| bugfix/BUG-0428 | 0c4aec9 | fixed | +1/-771 | 2026-03-21 | packages/tools/src/browser/firecrawl.ts |
+| bugfix/BUG-0430 | 9f738a8 | fixed | +1/-23 | 2026-03-21 | src/harness/loop/index.ts |
+| bugfix/BUG-0435 | 3deee09 | fixed | +1/-771 | 2026-03-21 | src/swarm/scaling.ts |
+| bugfix/BUG-0443 | 6586ac5 | fixed | +1/-771 | 2026-03-21 | src/agents/define-agent.ts |
+| bugfix/BUG-0444 | d77ef9f | fixed | +1/-23 | 2026-03-21 | src/functional.ts |
+| bugfix/BUG-0445 | 9747a95 | fixed | +1/-771 | 2026-03-21 | src/models/anthropic.ts |
+| bugfix/BUG-0446 | 5ad1074 | fixed | +1/-23 | 2026-03-21 | src/pregel/execution.ts |
+| bugfix/BUG-0447 | c14bee8 | fixed | +1/-771 | 2026-03-21 | src/inspect.ts |
+| bugfix/BUG-0448 | 435c0b6 | fixed | +1/-6 | 2026-03-21 | src/cli/init.ts |
+| bugfix/BUG-0449 | ba4961a | fixed | +1/-771 | 2026-03-21 | src/cli/run.ts |
+| bugfix/BUG-0450 | 968b8ec | fixed | +1/-771 | 2026-03-21 | packages/loaders/src/loaders/json.ts |
 
-## Near-Current (≤30 behind)
+## File Overlap Warnings
 
-| Branch | Ahead | Behind | Conflicts | Status | Files |
-|---|---|---|---|---|---|
-| bugfix/BUG-0359 | 1 | 0 | clean | fixed | src/harness/loop/index.ts |
-| bugfix/BUG-0366 | 1 | 0 | clean | fixed | src/harness/memory/index.ts |
-| bugfix/BUG-0444 | 1 | 0 | clean | pending (fix committed) | src/functional.ts |
-| bugfix/BUG-0430 | 1 | 0 | clean | fixed (**REBASED C253**) | src/harness/loop/index.ts |
-| bugfix/BUG-0295 | 1 | 18 | clean | fixed | src/errors.ts |
-| bugfix/BUG-0343 | 1 | 29 | clean | fixed | src/harness/safety-gate.ts |
+| File | Branches |
+|------|---------|
+| `packages/tools/src/browser/firecrawl.ts` | BUG-0400, BUG-0428 |
+| `src/agents/define-agent.ts` | BUG-0404 (reopened), BUG-0443 (fixed) |
+| `src/harness/loop/index.ts` | BUG-0359, BUG-0430 |
+| `src/models/ollama.ts` | BUG-0357 (rebased), BUG-0377 |
+| `src/store/index.ts` | BUG-0415, BUG-0421 |
+| `src/swarm/agent-node.ts` | BUG-0379, BUG-0410 |
 
----
-
-## Moderate Drift (30–100 behind)
-
-| Branch | Ahead | Behind | Conflicts | Status | Files |
-|---|---|---|---|---|---|
-| bugfix/BUG-0406 | 1 | 48 | clean | fixed | src/swarm/factories.ts |
-| bugfix/BUG-0407 | 1 | 47 | clean | fixed | src/swarm/pool.ts |
-| bugfix/BUG-0410 | 1 | 47 | clean | fixed | src/swarm/agent-node.ts |
-| bugfix/BUG-0415 | 1 | 45 | clean | fixed | src/store/index.ts |
-| bugfix/BUG-0418 | 1 | 45 | clean | fixed | src/cli/build.ts |
-| bugfix/BUG-0376 | 1 | 79 | clean | fixed | src/models/openai.ts |
-| bugfix/BUG-0383 | 1 | 78 | clean | fixed | src/swarm/snapshot.ts |
-| bugfix/BUG-0388 | 1 | 79 | clean | fixed | src/stream-events.ts |
-| bugfix/BUG-0397 | 1 | 78 | clean | fixed | src/harness/harness.ts |
-| bugfix/BUG-0387 | 1 | 85 | clean | fixed | src/index.ts |
-| bugfix/BUG-0427 | 1 | 27 | clean | fixed | src/mcp/client.ts |
-| bugfix/BUG-0428 | 1 | 27 | clean | fixed | packages/tools/src/browser/firecrawl.ts |
-| bugfix/BUG-0435 | 1 | 27 | clean | fixed | src/swarm/scaling.ts |
-| bugfix/BUG-0380 | 0 | 85 | clean | empty (0 ahead of main) | — |
-
----
-
-## Critical Drift (>100 behind)
-
-| Branch | Ahead | Behind | Conflicts | Status | Files |
-|---|---|---|---|---|---|
-| bugfix/BUG-0355 | 1 | 746 | **1** | reopened (worktree /tmp/bug0355-typecheck) | packages/stores/src/redis/index.ts |
-| bugfix/BUG-0356 | 2 | 746 | **2** | fixed | src/store/postgres/index.ts |
-| bugfix/BUG-0357 | 1 | 746 | clean | fixed | src/models/ollama.ts |
-| bugfix/BUG-0358 | 1 | 746 | clean | fixed | src/harness/hooks-engine.ts |
-| bugfix/BUG-0374 | 1 | 746 | **1** | fixed | packages/loaders/src/loaders/pdf.ts |
-| bugfix/BUG-0375 | 1 | 746 | clean | fixed | src/checkpointers/sqlite.ts |
-| bugfix/BUG-0377 | 1 | 746 | clean | fixed | src/models/ollama.ts |
-| bugfix/BUG-0378 | 1 | 746 | **1** | fixed | src/swarm/pool.ts |
-| bugfix/BUG-0379 | 1 | 746 | clean | fixed | src/swarm/agent-node.ts |
-| bugfix/BUG-0381 | 1 | 746 | clean | fixed | src/tools/define.ts |
-| bugfix/BUG-0384 | 1 | 746 | clean | fixed | src/checkpoint.ts, src/pregel/checkpointing.ts |
-| bugfix/BUG-0389 | 1 | 746 | clean | fixed | src/testing/index.ts |
-| bugfix/BUG-0390 | 1 | 746 | clean | fixed | src/checkpointers/namespaced.ts |
-| bugfix/BUG-0392 | 1 | 746 | clean | fixed | src/swarm/mermaid.ts |
-| bugfix/BUG-0393 | 1 | 746 | clean | fixed | src/swarm/tracer.ts |
-| bugfix/BUG-0398 | 1 | 746 | clean | fixed | src/cli/test.ts |
-| bugfix/BUG-0400 | 1 | 746 | clean | fixed | packages/tools/src/browser/firecrawl.ts |
-| bugfix/BUG-0409 | 1 | 746 | clean | fixed | src/dlq.ts |
-| bugfix/BUG-0412 | 1 | 746 | clean | fixed | src/swarm/graph.ts |
-| bugfix/BUG-0413 | 1 | 746 | **1** | fixed | src/internal/validate-command.ts |
-| bugfix/BUG-0416 | 1 | 746 | clean | fixed | src/streaming.ts |
-| bugfix/BUG-0417 | 1 | 746 | clean | fixed | src/cli/dev.ts |
-| bugfix/BUG-0419 | 1 | 746 | clean | fixed | packages/tools/src/stripe/index.ts |
-| bugfix/BUG-0420 | 1 | 746 | clean | fixed | src/coordination/pubsub.ts |
-| bugfix/BUG-0421 | 1 | 746 | clean | fixed | src/store/index.ts |
-| bugfix/BUG-0422 | 1 | 746 | clean | fixed | packages/integrations/src/adapter/index.ts |
-| bugfix/BUG-0434 | 1 | 746 | **2** | verified | src/swarm/pool.ts |
-
----
-
-## New Branches (added this cycle)
-
-| Branch | Ahead | Behind | Status | File |
-|---|---|---|---|---|
-| bugfix/BUG-0443 | 0 | 748 | pending (no commits yet) | src/agents/define-agent.ts |
-| bugfix/BUG-0444 | 1 | 0 | pending (fix committed, tracker not updated yet) | src/functional.ts |
-| bugfix/BUG-0445 | 0 | 748 | pending (no commits yet) | — |
-| bugfix/BUG-0446 | 0 | 0 | pending (no commits yet) | src/pregel/execution.ts |
-| bugfix/BUG-0447 | 0 | 748 | pending (no commits yet) | — |
-
----
-
-## Conflict Branches (require fixer recreation)
-
-| Branch | Conflicts | File |
-|---|---|---|
-| bugfix/BUG-0355 | 1 | packages/stores/src/redis/index.ts (worktree active) |
-| bugfix/BUG-0356 | 2 | src/store/postgres/index.ts |
-| bugfix/BUG-0374 | 1 | packages/loaders/src/loaders/pdf.ts |
-| bugfix/BUG-0378 | 1 | src/swarm/pool.ts |
-| bugfix/BUG-0413 | 1 | src/internal/validate-command.ts |
-| bugfix/BUG-0434 | 2 | src/swarm/pool.ts (verified, 3-way overlap w/ 0378+0407) |
-
----
-
-## File Overlap Pairs
-
-| File | Branches | Risk |
-|---|---|---|
-| src/swarm/pool.ts | BUG-0378 + BUG-0407 + BUG-0434 | HIGH (3-way; 0378+0434 conflicted) |
-| src/swarm/agent-node.ts | BUG-0379 + BUG-0410 | safe |
-| src/store/index.ts | BUG-0415 + BUG-0421 | safe |
-| packages/tools/src/browser/firecrawl.ts | BUG-0400 + BUG-0428 | safe |
-| src/models/ollama.ts | BUG-0357 + BUG-0377 | safe |
-| src/harness/loop/index.ts | BUG-0359 + BUG-0430 | safe (diff hunks non-overlapping) |
-
----
-
-## Cycle 253 Actions
-
-- **Deleted (5/5):** BUG-0436, BUG-0437, BUG-0438, BUG-0439, BUG-0440 — orphan branches (no tracker entries, no active worktrees; fix commits present but unentered in tracker)
-- **Rebased (1/1):** BUG-0430 — was 9 behind, now ON MAIN HEAD (3318840). 0 conflicts. loop/index.ts finalizeMemory try/catch.
-- **GC:** Skipped. Next at Cycle 258.
+## Stale Warnings (>24h, unvalidated)
+| Branch | Age | Status |
+|--------|-----|--------|
+| bugfix/BUG-0355 | ~25h | fixed, no validator |
+| bugfix/BUG-0358 | ~25h | fixed, no validator |
+| bugfix/BUG-0376 | ~24h | fixed, no validator |
+| bugfix/BUG-0377 | ~24h | fixed, no validator |
+| bugfix/BUG-0378 | ~24h | fixed, no validator |
+| bugfix/BUG-0379 | ~24h | fixed, no validator |
+| bugfix/BUG-0383 | ~24h | fixed, no validator |
+| bugfix/BUG-0388 | ~24h | fixed, no validator |
+| bugfix/BUG-0389 | ~24h | fixed, no validator |
+| bugfix/BUG-0390 | ~24h | fixed, no validator |
+| bugfix/BUG-0400 | ~24h | fixed, no validator |
+| bugfix/BUG-0410 | ~23h | fixed, no validator |
+| bugfix/BUG-0415 | ~23h | fixed, no validator |
