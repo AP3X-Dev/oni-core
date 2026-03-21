@@ -185,7 +185,7 @@ export class PostgresStore extends BaseStore {
       void this.client.query(
         `DELETE FROM oni_store WHERE prefix = $1 AND namespace = $2 AND key = ANY($3)`,
         [this.prefix, this.nsStr(namespace), expiredKeys]
-      );
+      ).catch(() => {});
     }
 
     return liveRows.map(row => this.rowToItem(row));
