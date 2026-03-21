@@ -518,12 +518,20 @@ Returns: matching memory units or empty if nothing found.`,
   private hydrate(unit: MemoryUnit): MemoryUnit {
     if (unit.content) return unit;
     const fs = getFs();
-    if (!fs) { return { ...unit, content: `<!-- Failed to read: ${unit.path} -->` }; }
-    try {
-      return { ...unit, content: fs.readFileSync(unit.path, "utf-8") };
-    } catch {
-      return { ...unit, content: `<!-- Failed to read: ${unit.path} -->` };
+    let content: string;
+    if (!fs) {
+      content = `<!-- Failed to read: ${unit.path} -->`;
+    } else {
+      try {
+        content = fs.readFileSync(unit.path, "utf-8");
+      } catch {
+        content = `<!-- Failed to read: ${unit.path} -->`;
+      }
     }
+    const hydrated = { ...unit, content };
+    // Write hydrated unit back to the map so buildSystemPrompt can find the content
+    this.units.set(unit.key, hydrated);
+    return hydrated;
   }
 
   private injectFrontmatter(content: string, type: MemoryType, relPath: string): string {
