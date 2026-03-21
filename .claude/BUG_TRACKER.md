@@ -386,7 +386,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0355
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `191`
@@ -426,7 +426,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0357
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `packages/stores/src/postgres/index.ts`
 - **line:** `125`
@@ -953,7 +953,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0450
-- **status:** `in-progress`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/json.ts`
 - **line:** `10`
@@ -1035,7 +1035,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0295
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/errors.ts`
 - **line:** `58`
