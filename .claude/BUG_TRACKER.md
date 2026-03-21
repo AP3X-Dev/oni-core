@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T23:45:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T06:15:00Z` (Cycle 229) |
+| **Last Git Manager Pass** | `2026-03-21T06:14:27Z` (Cycle 230) |
 | **Last Supervisor Pass** | `2026-03-21T06:10:30Z` |
 | **Total Found** | `399` |
 | **Total Pending** | `2` |
@@ -286,7 +286,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0305
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `122`
@@ -306,7 +306,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0312
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/coordination/pubsub.ts`
 - **line:** `34`
@@ -328,7 +328,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0319
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/harness/loop/experimental-executor.ts`
 - **line:** `45`
@@ -348,7 +348,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0320
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/swarm/compile-ext.ts`
 - **line:** `57`
