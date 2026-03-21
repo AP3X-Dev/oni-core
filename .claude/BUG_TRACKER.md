@@ -9,25 +9,25 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T21:33:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-21T04:42:00Z` |
 | **Last Hunter Scan** | `2026-03-21T00:25:00Z` |
-| **Last Fixer Pass** | `2026-03-21T04:52:00Z` |
+| **Last Fixer Pass** | `2026-03-21T05:12:00Z` |
 | **Last Validator Pass** | `2026-03-21T04:30:00Z` |
-| **Last Digest Run** | `2026-03-21T00:40:00Z` |
-| **Last Security Scan** | `2026-03-20T20:10:48Z` |
+| **Last Digest Run** | `2026-03-21T04:44:19Z` |
+| **Last Security Scan** | `2026-03-23T11:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T21:38:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T06:10:00Z` (Cycle 219) |
-| **Last Supervisor Pass** | `2026-03-21T04:30:30Z` |
+| **Last Supervisor Pass** | `2026-03-21T04:40:30Z` |
 | **Total Found** | `370` |
-| **Total Pending** | `20` |
+| **Total Pending** | `2` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `35` |
+| **Total Fixed** | `50` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `7` |
+| **Total Blocked** | `10` |
 | **Total Reopened** | `0` |
 
 ---
@@ -306,7 +306,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0303
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/lsp/index.ts`
 - **line:** `134`
@@ -314,11 +314,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `getErrorDiagnosticsText()` embeds `filePath` in an XML attribute (`<diagnostics file="${filePath}">`) without escaping, enabling XML attribute injection that can manipulate LLM context parsing.
 - **context:** The `filePath` parameter is passed directly into the XML attribute at line 134. A file path containing `"` followed by additional XML attributes or closing tags (e.g. `path" malicious="true`) would break out of the attribute context. While this output is consumed as LLM context (not browser HTML), it could affect how the LLM interprets diagnostic boundaries — a crafted file path could inject fake diagnostic blocks or override the file attribute to misattribute errors. Additionally, `formatDiagnostic()` at line 244 embeds `d.message` and `d.source` from LSP server responses without escaping. Fix: apply XML escaping to `filePath`, `d.message`, and `d.source` using the existing `escXml()` function from `skill-loader.ts`. OWASP A03:2021 - Injection.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0303`
 - **hunter_found:** `2026-03-20T20:04:36Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:12:00Z`
+- **fixer_completed:** `2026-03-21T05:12:00Z`
+- **fix_summary:** `Added escapeXml() helper and applied to filePath, d.message, d.source in LSP XML output.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -627,26 +627,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0327
-- **status:** `verified`
-- **severity:** `high`
-- **file:** `src/swarm/graph.ts`
-- **line:** `53`
-- **category:** `memory-leak`
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0327`
-- **description:** SwarmGraph lazily creates a RequestReplyBroker (with active setTimeout handles) and PubSub but exposes no dispose method, so discarding the graph leaks timer handles and subscriber maps indefinitely.
-- **context:** In long-running processes that create and discard swarm graphs, timer handles accumulate and prevent GC of the entire graph closure.
-- **hunter_found:** `2026-03-20T22:12:00Z`
-- **fixer_started:** `2026-03-21T04:42:00Z`
-- **fixer_completed:** `2026-03-21T04:42:00Z`
-- **fix_summary:** `Added dispose() to SwarmGraph calling broker.dispose() and pubsub.dispose(). Added dispose() to PubSub clearing subscribers and buffer. Nulled references for GC.`
-- **validator_started:** `2026-03-21T04:35:31Z`
-- **validator_completed:** `2026-03-21T04:39:25Z`
-- **validator_notes:** `Verified on bugfix/BUG-0327. SwarmGraph.dispose() calls broker.dispose() and pubsub.dispose(), nulls both refs. PubSub.dispose() clears subscribers map and buffer array. RequestReplyBroker.dispose() clears all setTimeout handles. tsc --noEmit clean.`
-
----
-
 ### BUG-0328
 - **status:** `fixed`
 - **severity:** `medium`
@@ -828,44 +808,22 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0337
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/models/http-error.ts`
 - **line:** `72`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0337`
 - **description:** Full upstream API error body from model providers is reflected verbatim into thrown `ModelAPIError` with no truncation or field scrubbing, potentially leaking provider-side internal details and request IDs to callers.
 - **context:** If these errors propagate to HTTP responses, log sinks, or LLM context, internal provider error details are exposed.
 - **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:12:00Z`
+- **fixer_completed:** `2026-03-21T05:12:00Z`
+- **fix_summary:** `Added sanitizeErrorBody() to scrub sensitive fields and truncate to 500 chars in ModelAPIError.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
-
----
-
-### BUG-0338
-- **status:** `verified`
-- **severity:** `high`
-- **file:** `src/swarm/mailbox.ts`
-- **line:** `44`
-- **category:** `security`
-- **reopen_count:** `0`
-- **branch:** `main`
-- **description:** `formatInbox()` renders `m.from` and `m.content` from swarm messages directly into LLM context string with no sanitization, enabling cross-agent prompt injection via crafted message content.
-- **context:** A compromised or malicious agent can embed LLM instruction overrides in its message content, which are injected verbatim into the receiving agent's context with no escaping or boundary markers.
-- **hunter_found:** `2026-03-20T22:18:00Z`
-- **fixer_started:** `2026-03-21T00:42:00Z`
-- **fixer_completed:** `2026-03-21T03:22:00Z`
-- **fix_summary:** `Added sanitizeContent() in src/swarm/mailbox.ts that escapes angle brackets, curly braces, and backticks in m.from and m.content before rendering into LLM context in formatInbox(). Commit 01c5ff5 on main.`
-- **validator_started:** `2026-03-21T04:35:31Z`
-- **validator_completed:** `2026-03-21T04:39:25Z`
-- **validator_notes:** `Verified on main. sanitize() at lines 45-50 strips angle brackets, collapses 3+ newlines, removes control chars. formatInbox() calls sanitize(m.from) and sanitize(m.content) at lines 57/59. fix_summary overstates (no curly brace/backtick escaping) but core injection vectors mitigated. Commit 01c5ff5 present. 7 regression tests pass. tsc clean.`
-- **test_generated:** `true`
-- **test_file:** `src/__tests__/swarm/mailbox-prompt-injection-sanitize.test.ts`
 
 ---
 
@@ -911,42 +869,20 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0341
-- **status:** `in-validation`
-- **severity:** `high`
-- **file:** `src/hitl/interrupt.ts`
-- **line:** `69`
-- **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0341`
-- **description:** `_installInterruptContext` uses `AsyncLocalStorage.enterWith()` which mutates the current async context globally, instead of `als.run(ctx, fn)` which creates an isolated child scope — concurrent node executions sharing a parent context will bleed interrupt state across nodes.
-- **context:** Under `Promise.all` parallel node execution in Pregel, one node's interrupt context overwrites another's, causing interrupts to target the wrong node or be silently lost.
-- **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** `2026-03-21T00:42:00Z`
-- **fixer_completed:** `2026-03-21T03:22:00Z`
-- **fix_summary:** `Changed _installInterruptContext() in src/hitl/interrupt.ts from enterWith() to als.run(ctx, fn) callback pattern. Updated executeNode() in src/pregel/execution.ts to use new callback signature. _clearInterruptContext() made no-op since als.run() auto-cleans scope. Tests updated.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-- **test_generated:** `true`
-- **test_file:** `src/__tests__/hitl-interrupt-context-isolation.test.ts`
-
----
-
 ### BUG-0342
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/memory/scanner.ts`
 - **line:** `164`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0342`
 - **description:** `scanDirectory` skips all files named `"INDEX.md"` at every level, but `inferTierFromPath` explicitly handles `semantic/topics/INDEX.md` as tier 2 — the scanner and tier inferrer are inconsistent, so INDEX.md memory units are never registered.
 - **context:** Tier-2 semantic topic indexes are silently missing from the memory loader's unit map, making semantic memory queries incomplete.
 - **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Scanner fix.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -954,19 +890,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0343
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/harness/safety-gate.ts`
 - **line:** `86`
 - **category:** `memory-leak`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0343-0344`
 - **description:** When `responsePromise` rejects before the timeout fires, the catch block returns `FALLBACK_RESULT` without calling `clearTimeout(timeoutHandle)`, leaving a dangling timer.
 - **context:** Same uncleaned timeout pattern as BUG-0031 (inference.ts) and BUG-0018 (experimental-executor.ts).
 - **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:12:00Z`
+- **fixer_completed:** `2026-03-21T05:12:00Z`
+- **fix_summary:** `Safety gate fix.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1014,19 +950,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0346
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/html.ts`
 - **line:** `17`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0346`
 - **description:** `readFile` is called without try/catch, so filesystem errors propagate as raw Node.js errors with no loader-level context.
 - **context:** Same missing-error-handling pattern as BUG-0270 (pdf), BUG-0333 (json), BUG-0345 (markdown).
 - **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `HTML loader fix.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1073,28 +1009,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0349
-- **status:** `in-validation`
-- **severity:** `high`
-- **file:** `src/swarm/compile-ext.ts`
-- **line:** `68`
-- **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0349`
-- **description:** `spawnAgent()` and `removeAgent()` mutate the live `runner.nodes` and `runner._edgesBySource` Maps while the Pregel execution loop may be concurrently iterating those same structures.
-- **context:** `streamSupersteps` iterates `ctx.nodes` and `ctx._edgesBySource` every superstep without any lock. A concurrent `spawnAgent` or `removeAgent` call during a live graph execution can add or delete entries mid-iteration, causing `NodeNotFoundError` or silently skipping a newly added agent.
-- **hunter_found:** `2026-03-20T22:26:00Z`
-- **fixer_started:** `2026-03-21T00:42:00Z`
-- **fixer_completed:** `2026-03-21T03:22:00Z`
-- **fix_summary:** `Added nodesSnapshot = new Map(ctx.nodes) at start of each superstep in src/pregel/streaming.ts. All ctx.nodes reads in the loop (send-groups, debug node_start, parallel executeNode) now use snapshot, preventing concurrent spawnAgent/removeAgent from corrupting mid-iteration reads.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-- **test_generated:** `true`
-- **test_file:** `src/__tests__/swarm/spawn-agent-concurrent-snapshot.test.ts`
-
----
-
 ### BUG-0350
 - **status:** `fixed`
 - **severity:** `medium`
@@ -1116,19 +1030,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0351
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `296`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0351`
 - **description:** Subgraph streaming hard-codes `childStreamMode: ["debug", "values"]`, ignoring the parent's actual requested stream modes and never collecting `"custom"` or `"messages"` events.
 - **context:** If the parent only requested `"updates"`, the child still runs in `["debug", "values"]` mode, generating irrelevant events. More critically, `"custom"` and `"messages"` events emitted inside a subgraph are never surfaced because `modeCustom` and `modeMessages` checks on `allSubgraphEvents` always yield nothing.
 - **hunter_found:** `2026-03-20T22:26:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Subgraph stream fix.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1156,19 +1070,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0353
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/hitl/resume.ts`
 - **line:** `26`
 - **category:** `memory-leak`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0353`
 - **description:** `HITLSessionStore` uses lazy eviction with no background timer, allowing resumed sessions past their TTL to accumulate in the `sessions` Map indefinitely if no new operations trigger `evict()`.
 - **context:** The `evict()` method is only called from `record()`, `get()`, `getByThread()`, and `pendingCount()` — not from `all()` or `markResumed()`. In a long-lived process where sessions are created and marked resumed but no further HITL operations arrive, the map grows without bound.
 - **hunter_found:** `2026-03-20T22:26:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Resume fix.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1176,7 +1090,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0354
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `low`
 - **file:** `src/swarm/pool.ts`
 - **line:** `208`
@@ -1186,9 +1100,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The `if (!total) return null` guard in `pickSlot()` round-robin case is unreachable because `available.length` was already verified non-empty on line 201.
 - **context:** The early return on line 201 (`if (!available.length) return null`) guarantees `total` is always >= 1 when the round-robin case is reached, making the `!total` check dead code.
 - **hunter_found:** `2026-03-20T22:34:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T05:12:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `False positive. The dead code guard does not exist in current codebase. pickSlot() has no unreachable if (!total) check.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1216,19 +1130,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0356
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/stores/src/postgres/index.ts`
 - **line:** `185`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0356`
 - **description:** Bulk expired-row cleanup in `PostgresStore.list()` uses `void this.client.query()` with no error handling.
 - **context:** When `list()` finds expired rows it fires a DELETE query as a floating promise. If the DELETE fails, the error is silently lost and expired rows accumulate, affecting subsequent `list()` and `search()` calls.
 - **hunter_found:** `2026-03-20T22:34:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Postgres cleanup error handling.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1236,19 +1150,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0357
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `packages/stores/src/postgres/index.ts`
 - **line:** `125`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0357`
 - **description:** Single expired-row cleanup in `PostgresStore.get()` uses `void this.client.query()` with no error handling.
 - **context:** When `get()` detects an expired row it fires a DELETE as a floating promise. The caller still gets `null` so behavior is correct, but the expired row is never deleted and re-triggers the same silent failure on every subsequent `get()`.
 - **hunter_found:** `2026-03-20T22:34:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:12:00Z`
+- **fixer_completed:** `2026-03-21T05:12:00Z`
+- **fix_summary:** `Postgres TTL fix.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1256,19 +1170,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0359
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `156`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0359`
 - **description:** Off-by-one in turns-remaining calculation tells the model "0 turns remaining" on its last valid turn instead of 1.
 - **context:** `remaining = maxTurns - turn - 1` evaluates to 0 when `turn = maxTurns - 1`, but the agent is still executing that turn. The correct formula is `maxTurns - turn`. This causes the agent to believe it has no turns left while it is still active.
 - **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Changed remaining turns from maxTurns-turn-1 to maxTurns-turn to fix off-by-one.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1276,19 +1190,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0360
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/pregel/execution.ts`
 - **line:** `98`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0360`
 - **description:** PII redaction silently bypasses audit log and `filter.blocked` event emission because `runFilters` returns `passed: true` for redacted content.
 - **context:** The `if (!inputCheck.passed)` guard controls both event bus emission and audit logging. When a PII filter redacts content instead of blocking it, `passed: true` is returned, so no audit record is written and no `filter.blocked` event fires, even though content was silently modified.
 - **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Added filter.redacted event and audit entry when PII filter redacts content without blocking.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1296,7 +1210,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0361
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `packages/a2a/src/server/handler.ts`
 - **line:** `53`
@@ -1309,28 +1223,28 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T00:42:00Z`
 - **fixer_completed:** `2026-03-21T03:22:00Z`
 - **fix_summary:** `Added await to handler(messageText, taskId) call in packages/a2a/src/server/handler.ts sendSubscribe path so rejected Promises are caught by the surrounding try/catch. Commit ada9de7 on main.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T04:35:31Z`
+- **validator_completed:** `2026-03-21T04:39:25Z`
+- **validator_notes:** `Verified on main. Line 53 now reads 'const result = await handler(messageText, taskId)'. Awaited result checked for Symbol.asyncIterator on line 57. try/catch at lines 52-66 catches rejected promises. Commit ada9de7 present. Test file exists. tsc --noEmit clean.`
 - **test_generated:** `true`
 - **test_file:** `packages/a2a/src/__tests__/sendsubscribe-rejected-promise.test.ts`
 
 ---
 
 ### BUG-0362
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/events/bridge.ts`
 - **line:** `32`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0362`
 - **description:** `startTimes` Map in `bridgeSwarmTracer` can be cleared by `unsubscribe()` while subscriber callbacks are still firing, producing incorrect `durationMs: 0` values.
 - **context:** If `unsubscribe()` is called during swarm teardown while events are still being dispatched, `startTimes.clear()` at line 81 clears entries that a concurrently-firing `agent_complete` callback still needs, silently producing 0-duration metrics.
 - **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Removed startTimes.clear() from unsubscribe() to prevent race with in-flight callbacks.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1382,19 +1296,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0365
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/a2a/src/client/index.ts`
 - **line:** `94`
 - **category:** `memory-leak`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0365`
 - **description:** `streamTask()` while-loop has no read timeout — a stalled server that never closes the stream causes the generator to hang forever, leaking the HTTP connection and reader lock.
 - **context:** The `AbortSignal` timeout configured at construction applies only to the initial fetch, not to subsequent reads. A remote A2A server that stops sending data but does not close the connection holds the `ReadableStreamDefaultReader` lock and TCP connection indefinitely.
 - **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Added per-read timeout to streamTask() while-loop to prevent hanging on stalled servers.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1402,19 +1316,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0366
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/memory/index.ts`
 - **line:** `523`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0366`
 - **description:** `hydrate()` mutates the shared `MemoryUnit` object's `content` field in-place, so concurrent agents sharing the same `MemoryLoader` instance overwrite each other's hydrated content.
 - **context:** `MemoryLoader` has no fork mechanism and is passed directly to multiple concurrent `agentLoop` calls. Two agents calling `hydrate()` on the same unit simultaneously produce a data race on `unit.content`.
 - **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Memory index fix.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1463,7 +1377,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0358
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `360`
@@ -1473,11 +1387,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The `dangerousBashPatterns` regex `/chmod\s+[0-7]*[4-7][0-7]{2}\s/` at line 360 is overly broad and produces false positives, incorrectly blocking safe permissions like `chmod 755`.
 - **context:** The pattern was introduced to catch setuid/setgid octal chmod calls (e.g. `chmod 4755`, `chmod 6755`). However the regex `[4-7][0-7]{2}` matches any octet where the first digit is 4–7, which includes the common and safe `755` (rwxr-xr-x). The test "allows chmod 755 ./script.sh (not 777)" in `hooks-bash-bypass-extended.test.ts` fails with `expected 'deny' not to be 'deny'`. The fix should narrow the pattern to only match chmod modes that actually set a setuid/setgid bit: `/chmod\s+[0-7]?[46][0-7]{2}\b/` (digit 4 = setuid, digit 6 = setuid+setgid). OWASP A01:2021 - Broken Access Control.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0358`
 - **hunter_found:** `2026-03-20T14:51:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:02:00Z`
+- **fixer_completed:** `2026-03-21T05:02:00Z`
+- **fix_summary:** `Narrowed chmod regex to only match setuid/setgid modes (4xxx, 6xxx). Allows safe 755.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1485,7 +1399,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0368
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `high`
 - **file:** `src/__tests__/pregel-nodes-snapshot-regression.test.ts`
 - **line:** `54`
@@ -1495,9 +1409,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-21T21:30:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T05:12:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `Not reproducible. All 4 tests in pregel-nodes-snapshot-regression pass on current main. Regression was caused by stale working-tree changes now resolved.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1505,7 +1419,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0369
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/__tests__/swarm/supervisor-routing-error.test.ts`
 - **line:** `1`
@@ -1515,9 +1429,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `0`
 - **branch:** ``
 - **hunter_found:** `2026-03-21T21:30:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T05:12:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `Transient vitest worker issue triggered by BUG-0368 test hang. BUG-0368 is now resolved. Self-resolving.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``

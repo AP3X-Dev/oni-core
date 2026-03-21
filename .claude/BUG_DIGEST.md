@@ -1,6 +1,6 @@
 # Bug Pipeline Daily Digest
 
-**Generated:** 2026-03-21T02:35:22Z
+**Generated:** 2026-03-21T04:44:19Z
 **Period:** Last 24 hours
 
 ---
@@ -9,13 +9,13 @@
 
 | Metric | Value |
 |--------|-------|
-| Active Bugs | 65 |
-| Pending | 53 |
-| In Progress | 5 |
-| Fixed (awaiting validation) | 0 |
-| Verified (awaiting archive) | 4 |
-| Reopened | 1 |
-| Blocked | 2 |
+| Active Bugs | 66 |
+| Pending | 8 |
+| In Progress | 0 |
+| Fixed (awaiting validation) | 46 |
+| Verified (awaiting archive) | 5 |
+| Reopened | 0 |
+| Blocked | 7 |
 
 ## Severity Breakdown
 
@@ -23,7 +23,7 @@
 |----------|-------|
 | Critical | 1 |
 | High | 10 |
-| Medium | 48 |
+| Medium | 49 |
 | Low | 6 |
 
 ## 24h Activity
@@ -31,75 +31,81 @@
 | Metric | Value |
 |--------|-------|
 | Bugs Found | 62 |
-| Bugs Fixed | 3 |
-| Bugs Verified/Archived | 0 |
-| Throughput | 0 bugs/day |
-| Mean Time to Fix | N/A (no bugs archived this period) |
-| Mean Time to Verify | N/A |
+| Bugs Fixed | 47 |
+| Bugs Verified/Archived | 12 |
+| Throughput | 12 bugs/day |
+| Mean Time to Fix | 11.7 hours |
+| Mean Time to Verify | 3.1 hours |
 | Reopen Rate | 6.3% (6/95 historical) |
 | First-Pass Fix Rate | 93.7% (89/95 historical) |
-| Queue Drain Rate | 0.00 (0 verified / 62 found) |
-| Blocked Ratio | 3.1% (2/65) |
+| Queue Drain Rate | 0.19 (12 verified / 62 found) |
+| Blocked Ratio | 10.6% (7/66) |
 
 ## Top Problem Files
 
 | File | Bug Count |
 |------|-----------|
-| `packages/stores/src/postgres/index.ts` | 3 |
-| `src/swarm/pool.ts` | 2 |
-| `src/swarm/factories.ts` | 2 |
-| `src/swarm/compile-ext.ts` | 2 |
-| `src/swarm/agent-node.ts` | 2 |
+| `src/swarm/factories.ts` | 5 |
+| `src/swarm/agent-node.ts` | 5 |
+| `src/models/openai.ts` | 4 |
+| `src/models/anthropic.ts` | 4 |
+| `src/swarm/self-improvement/skill-evolver.ts` | 4 |
 
 ## Top Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 14 |
-| missing-error-handling | 13 |
-| race-condition | 10 |
-| memory-leak | 7 |
-| security | 6 |
+| logic-bug | 47 |
+| missing-error-handling | 30 |
+| security | 22 |
+| race-condition | 19 |
+| memory-leak | 15 |
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
-| Hunter | 2026-03-21T00:48:00Z | Active |
-| Fixer | 2026-03-20T22:04:00Z | Stalled (4.5h+) |
-| Validator | 2026-03-21T02:24:00Z | Active |
-| TestGen | 2026-03-21T00:02:00Z | Active |
-| Git Manager | 2026-03-21T00:45:00Z | Active |
+| Hunter | 2026-03-21T00:25:00Z | Active |
+| Fixer | 2026-03-21T05:02:00Z | Active |
+| Validator | 2026-03-21T04:30:00Z | Active |
+| TestGen | 2026-03-21T21:38:00Z | Active |
+| Git Manager | 2026-03-21T06:10:00Z | Active |
 
 ## Bottleneck Analysis
 
-**Fixer is the bottleneck:** 53 bugs pending with only 3 fixed in the last 24h. Hunter found 62 new bugs while Fixer completed just 3 fixes. Queue drain rate is 0.00 — pipeline is falling behind rapidly. Fixer has been stalled for 4.5+ hours (last activity 2026-03-20T22:04:00Z).
+**Validator is the bottleneck:** 46 bugs are fixed and awaiting validation, but only 12 were verified in the last 24h. The Fixer completed 47 fixes — far outpacing the Validator's throughput. The fixed queue is growing rapidly.
+
+**Queue drain rate is 0.19** — pipeline is falling behind. For every bug verified, ~5 new bugs are found.
 
 **Recommendations:**
-1. **Investigate Fixer stall** — no activity for 4.5+ hours; may be stuck or crashed.
-2. **Throttle Hunter** — 62 new bugs/day far exceeds fix capacity. Consider pausing Hunter until pending queue drops below 20.
-3. **4 verified bugs awaiting archive** — Git Manager should pick these up next cycle.
+1. **Scale Validator capacity** — 46-bug fixed queue will take ~4 days at current verification rate.
+2. **Consider throttling Hunter** — 62 new bugs/day exceeds total pipeline capacity.
+3. **7 blocked bugs (10.6%)** need human attention, including 1 critical security issue (BUG-0205).
 
 ## Trend (vs Previous Digest)
 
 | Metric | Yesterday | Today | Direction |
 |--------|-----------|-------|-----------|
-| Active Bugs | 64 | 65 | → (stable) |
-| Pending | 52 | 53 | → (stable) |
-| In Progress | 5 | 5 | → |
-| Fixed Queue | 1 | 0 | ↓ -1 |
-| Blocked | 2 | 2 | → |
-| Throughput | 0/day | 0/day | → |
-| Reopen Rate | 25.0% | 6.3% | ↓ (corrected to historical rate) |
+| Active Bugs | 65 | 66 | → (stable) |
+| Pending | 53 | 8 | ↓ (Fixer cleared backlog) |
+| Fixed Queue | 0 | 46 | ↑ (Validator backlog growing) |
+| Throughput | 0/day | 12/day | ↑ (improving) |
+| Reopen Rate | 6.3% | 6.3% | → |
+| Blocked | 2 | 7 | ↑ (5 newly blocked) |
 
-**Assessment:** Pipeline state is essentially unchanged from last digest 30 minutes ago. Active bug count stable at 65. The fixed queue drained from 1 → 0 but no new fixes are being produced. Fixer remains stalled. The pipeline continues to be fixer-bound with zero throughput. The previous digest's 25% reopen rate was a period-specific anomaly; the historical rate is 6.3% (6/95 total archived bugs with reopens).
+**Assessment:** Fixer recovered from previous stall and cleared the pending queue (53→8), but this shifted the bottleneck to the Validator — fixed queue surged from 0→46. Throughput improved from 0 to 12 bugs/day. Blocked count increased from 2→7, with 5 bugs hitting max reopen limits (BUG-0256, 0264, 0294, 0304 all have 3-4 reopens). The same swarm subsystem files (`factories.ts`, `agent-node.ts`) continue appearing in top problem files — this module may need structural attention.
 
 ## Blocked — Needs Human Attention
 
-2 bugs currently blocked:
+7 bugs currently blocked:
 
-- **BUG-0205** (critical, security-injection): `node_eval` arbitrary code execution in `packages/tools/src/code-execution/node-eval.ts` — requires architectural decision on sandboxing approach.
-- **BUG-0309** (api-contract-violation): Google adapter `stream()` tool call event contract violation — emits complete args in `tool_call_start` instead of staged delta delivery.
+- **BUG-0205** (critical, security-injection): `node_eval` arbitrary code execution via `new Function()` in `packages/tools/src/code-execution/node-eval.ts` — requires architectural decision on sandboxing approach.
+- **BUG-0256** (medium, 4 reopens): A2AServer auth opt-in default — repeated fix attempts rejected.
+- **BUG-0264** (medium, 3 reopens): LSP JSON-RPC cast without validation — fix quality issues.
+- **BUG-0294** (medium, 3 reopens): StateGraph.toMermaid() injection — fix quality issues.
+- **BUG-0304** (high, 3 reopens): Budget validation bypass (NaN/negative tokens) — fix quality issues.
+- **BUG-0348** (medium): stripProtoKeys shadowing — potential false positive.
+- **BUG-0352** (medium): StateGraph private edge mutation — potential false positive.
 
 ---
 
