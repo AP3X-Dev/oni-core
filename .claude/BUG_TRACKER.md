@@ -11,23 +11,23 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T05:35:00Z` |
 | **Last Hunter Scan** | `2026-03-20T22:31:00Z` |
-| **Last Fixer Pass** | `2026-03-21T06:35:00Z` |
+| **Last Fixer Pass** | `2026-03-21T06:50:00Z` |
 | **Last Validator Pass** | `2026-03-21T05:23:12Z` |
 | **Last Digest Run** | `2026-03-21T05:29:59Z` |
-| **Last Security Scan** | `2026-03-23T14:35:00Z` |
+| **Last Security Scan** | `2026-03-23T14:20:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T13:45:00Z` |
+| **Last TestGen Run** | `2026-03-20T14:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T05:22:30Z` (Cycle 224) |
 | **Last Supervisor Pass** | `2026-03-21T05:20:32Z` |
 | **Total Found** | `397` |
-| **Total Pending** | `8` |
+| **Total Pending** | `1` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `67` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
-| **Total Blocked** | `14` |
+| **Total Blocked** | `15` |
 | **Total Reopened** | `2` |
 
 ---
@@ -246,7 +246,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0306
-- **status:** `reopened`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
 - **line:** `269`
@@ -1539,7 +1539,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0386
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `packages/integrations/src/adapter/auth-resolver.ts`
 - **line:** `55`
@@ -1678,18 +1678,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 ### BUG-0393
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/tracer.ts`
 - **line:** `112`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0393`
 - **description:** `record()` performs a non-atomic push+splice on `this.events` — concurrent callers can both observe `length > maxEvents` and double-splice, losing more events than intended.
 - **context:** Under high-concurrency swarm runs where many agents fire `record()` near-simultaneously, the event timeline can lose entries beyond the intended cap, corrupting metrics and timeline queries.
 - **hunter_found:** `2026-03-20T22:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T06:50:00Z`
+- **fixer_completed:** `2026-03-21T06:50:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1700,18 +1700,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0394
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/tracer.ts`
 - **line:** `221`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0393`
 - **description:** `clear()` replaces `this.events` with a new array non-atomically — a concurrent `record()` call holding a reference to the old array via `this.events.push` will write to the discarded array, silently losing the event.
 - **context:** An agent completing while `clear()` runs will have its event written to the old array and discarded, making the fresh timeline miss legitimate events.
 - **hunter_found:** `2026-03-20T22:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T06:50:00Z`
+- **fixer_completed:** `2026-03-21T06:50:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1784,18 +1784,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0398
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/cli/test.ts`
 - **line:** `13`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0398`
 - **description:** In watch mode, vitest is called with no subcommand instead of explicit `--watch`, causing it to hang in CI (non-TTY) environments waiting for input.
 - **context:** The code path for watch mode relies on vitest TTY detection rather than explicitly passing `--watch`, which fails in non-interactive terminals.
 - **hunter_found:** `2026-03-20T22:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T06:50:00Z`
+- **fixer_completed:** `2026-03-21T06:50:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
@@ -1824,7 +1824,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0400
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/tools/src/browser/firecrawl.ts`
 - **line:** `40`
@@ -1832,10 +1832,10 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `firecrawl_scrape` tool passes LLM-supplied URLs to the Firecrawl API without validating the URL scheme or host, enabling indirect SSRF via Firecrawl's scraping infrastructure.
 - **context:** The `i.url` parameter from LLM tool calls is sent directly to `https://api.firecrawl.dev/v0/scrape` at line 40 with no validation. A prompt-injected LLM can supply URLs targeting internal networks (`http://169.254.169.254/latest/meta-data/`, `http://localhost:8080/admin`, `http://10.0.0.1/`) which Firecrawl's servers will attempt to fetch. While the request is proxied through Firecrawl (not made from the agent's host), cloud scraping services may not block all internal IP ranges, and the scraped content is returned to the LLM context, potentially leaking sensitive metadata. Fix: validate URL scheme (https/http only) and reject private/reserved IP ranges (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, ::1) before sending to the API. OWASP A10:2021 - Server-Side Request Forgery.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0400`
 - **hunter_found:** `2026-03-23T14:10:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
+- **fixer_started:** `2026-03-21T06:50:00Z`
+- **fixer_completed:** `2026-03-21T06:50:00Z`
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``

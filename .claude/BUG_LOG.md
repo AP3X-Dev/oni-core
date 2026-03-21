@@ -2070,3 +2070,47 @@
 - **test_file:** `packages/a2a/src/__tests__/sendsubscribe-rejected-promise.test.ts`
 
 ---
+
+### BUG-0373
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/cli/index.ts`
+- **line:** `24`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0373`
+- **description:** Top-level await on runCLI is unguarded — any unhandled rejection propagates as an uncaught exception with no user-facing error message.
+- **context:** If a command handler throws unexpectedly, Node.js prints a raw stack trace and exits bypassing graceful shutdown or formatted error output.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** `2026-03-21T05:42:00Z`
+- **fixer_completed:** `2026-03-21T05:42:00Z`
+- **fix_summary:** `Added .catch() handler to top-level runCLI() call for clean error output.`
+- **validator_started:** `2026-03-21T05:08:34Z`
+- **validator_completed:** `2026-03-21T05:23:12Z`
+- **validator_notes:** `Verified on bugfix/BUG-0373. Top-level await replaced with .catch() printing console.error with clean message and process.exit(1). tsc clean.`
+- **archived:** `2026-03-21T05:23:12Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/cli-toplevel-error-handling.test.ts`
+
+---
+
+### BUG-0299
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/swarm/scaling.ts`
+- **line:** `192`
+- **category:** `logic-bug`
+- **reopen_count:** `1`
+- **branch:** `bugfix/BUG-0299`
+- **description:** `recentMaxLatencyMs` computation only processes `agent_complete` events, not `agent_error`. Erroring agents never trigger latency-based scale-up.
+- **context:** The `agent_error` branch was missing from the latency loop at lines 187-200.
+- **hunter_found:** `2026-03-20T23:45:00Z`
+- **fixer_started:** `2026-03-21T06:05:00Z`
+- **fixer_completed:** `2026-03-21T06:05:00Z`
+- **fix_summary:** `Extended else-if at line 192 to include agent_error alongside agent_complete in latency computation.`
+- **validator_started:** `2026-03-21T05:08:34Z`
+- **validator_completed:** `2026-03-21T05:23:12Z`
+- **validator_notes:** `Verified on bugfix/BUG-0299. Line 192 now includes agent_error || agent_complete. Single-line change, in-flight loop unmodified. tsc clean.`
+- **archived:** `2026-03-21T05:23:12Z`
+
+---
