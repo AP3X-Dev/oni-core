@@ -113,19 +113,9 @@ export async function executeTools(
         continue;
       }
 
-      // Apply modifiedInput if hook returned one
+      // Apply modifiedInput if hook returned one (uses module-level stripProtoKeys)
       if (preResult?.modifiedInput) {
-        const stripProtoKeys = (obj: unknown): unknown => {
-          if (obj === null || typeof obj !== "object" || Array.isArray(obj)) return obj;
-          const clean: Record<string, unknown> = {};
-          for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-            if (k === "__proto__" || k === "constructor" || k === "prototype") continue;
-            clean[k] = stripProtoKeys(v);
-          }
-          return clean;
-        };
-        const sanitized = stripProtoKeys(preResult.modifiedInput) as Record<string, unknown>;
-        toolCall.args = sanitized;
+        toolCall.args = stripProtoKeys(preResult.modifiedInput as Record<string, unknown>);
       }
     }
 
