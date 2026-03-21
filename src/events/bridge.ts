@@ -78,6 +78,5 @@ export function bridgeSwarmTracer(
 
   return () => {
     unsubscribe();
-    startTimes.clear();
   };
 }
