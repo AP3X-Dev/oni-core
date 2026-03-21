@@ -9,18 +9,18 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-20T23:02:00Z` |
-| **Last Hunter Scan** | `2026-03-20T22:31:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-21T23:31:31Z` |
+| **Last Hunter Scan** | `2026-03-21T08:40:00Z` |
 | **Last Fixer Pass** | `2026-03-21T08:25:00Z` |
 | **Last Validator Pass** | `2026-03-21T06:17:36Z` |
 | **Last Digest Run** | `2026-03-21T05:52:59Z` |
-| **Last Security Scan** | `2026-03-23T18:20:00Z` |
+| **Last Security Scan** | `2026-03-23T18:55:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T23:58:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T08:30:00Z` (Cycle 232) |
-| **Last Supervisor Pass** | `2026-03-21T06:25:30Z` |
+| **Last Supervisor Pass** | `2026-03-21T06:35:30Z` |
 | **Total Found** | `399` |
 | **Total Pending** | `2` |
 | **Total In Progress** | `0` |
@@ -306,7 +306,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0320
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/swarm/compile-ext.ts`
 - **line:** `57`
@@ -319,14 +319,14 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T08:25:00Z`
 - **fixer_completed:** `2026-03-21T08:25:00Z`
 - **fix_summary:** `Removed double cast. registry.register(def) compiles clean since S matches.`
-- **validator_started:** `2026-03-21T06:13:41Z`
-- **validator_completed:** `2026-03-21T06:17:36Z`
-- **validator_notes:** `REOPENED: Branch bugfix/BUG-0320 does not exist. Double cast still present at line 57. def is already SwarmAgentDef<S> matching registry's S, so registry.register(def) should work without any cast. Fixer must: create branch, remove both casts, verify tsc --noEmit clean.`
+- **validator_started:** `2026-03-21T06:27:03Z`
+- **validator_completed:** `2026-03-21T06:33:09Z`
+- **validator_notes:** `Verified on bugfix/BUG-0320. Double cast removed, plain registry.register(def). Types align (same S generic). tsc --noEmit exits 0. Previous reopen (branch missing) resolved.`
 
 ---
 
 ### BUG-0322
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/agents/define-agent.ts`
 - **line:** `159`
@@ -339,14 +339,14 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T04:20:00Z`
 - **fixer_completed:** `2026-03-21T04:20:00Z`
 - **fix_summary:** `Push full assistantMsg with toolCalls intact when breaking on budget.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T06:27:03Z`
+- **validator_completed:** `2026-03-21T06:33:09Z`
+- **validator_notes:** `Verified on bugfix/BUG-0322. Budget break now pushes full assistantMsg with toolCalls intact instead of manually constructed partial object. tsc clean.`
 
 ---
 
 ### BUG-0323
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/messages/index.ts`
 - **line:** `168`
@@ -359,9 +359,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T04:20:00Z`
 - **fixer_completed:** `2026-03-21T04:20:00Z`
 - **fix_summary:** `Only hoist first system message; preserve positions of interleaved system messages.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T06:27:03Z`
+- **validator_completed:** `2026-03-21T06:33:09Z`
+- **validator_notes:** `Verified on bugfix/BUG-0323. Only first system message hoisted. Interleaved system messages preserve position. tsc clean.`
 
 ---
 
