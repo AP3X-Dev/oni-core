@@ -110,10 +110,9 @@ export class SwarmTracer {
 
   /** Record a custom event into the timeline. Notifies all live subscribers. */
   record(event: SwarmEvent): void {
-    this.events.push(event);
-    if (this.events.length > this.maxEvents) {
-      this.events.splice(0, this.events.length - this.maxEvents);
-    }
+    // Atomic reassignment: avoids double-splice under concurrency where
+    // a concurrent record() could push onto the old array mid-splice.
+    this.events = [...this.events, event].slice(-this.maxEvents);
     for (const listener of this.listeners) {
       try {
         listener(event);
