@@ -82,6 +82,9 @@ export async function forkFrom<S extends Record<string, unknown>>(
   if (typeof (cp as MemoryCheckpointer<S>).fork === "function") {
     await (cp as MemoryCheckpointer<S>).fork(threadId, step, newThreadId);
   } else {
+    // Clear any pre-existing checkpoints for the target thread to prevent
+    // a corrupted mixed timeline when newThreadId was previously used.
+    await checkpointer.delete(newThreadId);
     const history = await checkpointer.list(threadId);
     for (const c of history.filter((x) => x.step <= step)) {
       await checkpointer.put({ ...c, threadId: newThreadId });
