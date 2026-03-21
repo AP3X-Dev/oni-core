@@ -1,7 +1,7 @@
-# Branch Map — Cycle 301
+# Branch Map — Cycle 302
 
-**Generated:** 2026-03-21T16:45:30Z
-**Main HEAD:** b2959b0
+**Generated:** 2026-03-22T03:00:00Z
+**Main HEAD:** 00aed51
 **Total Branches:** 3 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
@@ -27,15 +27,15 @@ No active agent worktrees.
 
 No conflict branches this cycle. All 3 remaining bugfix branches are conflict-free via `git merge-tree`.
 
-## Status Changes Since C300
+## Status Changes Since C301
 
-No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts each increased by 2 (C300→C301: BUG-0343: 44→46; BUG-0356/0359: 49→51) due to C300 chore commit + one additional commit on main.
+No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts UNCHANGED from C301 (no new commits on main between C301 and C302): BUG-0343: 46, BUG-0356/0359: 51.
 
 ## GC Note
 
-**GC EXECUTED CYCLE 300.** Next GC: Cycle 306 (+5 from here).
+**GC EXECUTED CYCLE 300.** Next GC: Cycle 306.
 
-## File Overlap Summary (Cycle 301)
+## File Overlap Summary (Cycle 302)
 
 No overlaps — all 3 remaining bugfix branches touch distinct files:
 - `src/harness/safety-gate.ts` (BUG-0343)
