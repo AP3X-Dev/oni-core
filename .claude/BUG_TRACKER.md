@@ -11,9 +11,9 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T02:52:03Z` (Cycle 38 — 5 failures all known cooldowns BUG-0312 + BUG-0363; no new regressions; test count stable at 1390) |
 | **Last Hunter Scan** | `2026-03-22T00:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T14:35:00Z` |
+| **Last Fixer Pass** | `2026-03-21T15:05:00Z` |
 | **Last Validator Pass** | `2026-03-22T00:06:00Z` |
-| **Last Digest Run** | `2026-03-21T23:59:00Z` |
+| **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T13:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
@@ -488,7 +488,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0343
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/harness/safety-gate.ts`
 - **line:** `86`
@@ -628,7 +628,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0351
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `296`
@@ -708,7 +708,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0355
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `191`
@@ -728,7 +728,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0356
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/stores/src/postgres/index.ts`
 - **line:** `185`
@@ -1818,7 +1818,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0429
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `297`
@@ -1838,19 +1838,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0430
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `299`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0430`
 - **description:** `finalizeMemory()` is called without error handling in the finally block; the path-traversal guard inside `persistInternal` unconditionally throws on malformed sessionId, crashing out of the finally block.
 - **context:** Although the memory module's comment says "Must NOT throw", the path-traversal guard at line 261 of memory/index.ts does throw unconditionally. A malformed sessionId crashes the finally block and loses the session outcome event.
 - **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T15:05:00Z`
+- **fixer_completed:** `2026-03-21T15:05:00Z`
+- **fix_summary:** `Wrap finalizeMemory in try-catch in finally block.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1858,7 +1858,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0431
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/swarm/self-improvement/skill-evolver.ts`
 - **line:** `170`
@@ -1938,19 +1938,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0435
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/swarm/scaling.ts`
 - **line:** `132`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0435`
 - **description:** `setCurrentAgentCount()` mutates `this.currentAgentCount` without coordination with `evaluate()`, which reads it mid-evaluation after already snapshotting the tracer timeline.
 - **context:** If `setCurrentAgentCount()` is called while `evaluate()` is in progress (e.g., from a tracer event callback during reactive mode), the scaling decision is computed with a mismatched agent count and timeline, potentially producing incorrect scale decisions.
 - **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T15:05:00Z`
+- **fixer_completed:** `2026-03-21T15:05:00Z`
+- **fix_summary:** `Snapshot currentAgentCount at evaluate() start for consistency.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
