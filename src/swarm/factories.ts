@@ -724,7 +724,8 @@ export function buildDag<S extends BaseSwarmState>(
       // Execute ready nodes in parallel
       const batchResults = await Promise.all(
         ready.map(async (id) => {
-          const agent = agentMap.get(id)!;
+          const agent = agentMap.get(id);
+          if (!agent) throw new Error(`buildDag: agent "${id}" not found in agents list`);
           const result = await agent.skeleton.invoke(
             { ...state, agentResults: { ...(state.agentResults ?? {}), ...results } } as S,
             { ...cfg, agentId: id },
