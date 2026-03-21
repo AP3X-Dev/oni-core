@@ -112,12 +112,25 @@ export function defineAgent<S extends Record<string, unknown> = Record<string, u
         hasTools: llmTools.length > 0,
       });
       const llmStart = Date.now();
-      const response = await model.chat({
-        messages,
-        tools: llmTools.length > 0 ? llmTools : undefined,
-        systemPrompt,
-        signal: config?.signal,
-      });
+      let response: Awaited<ReturnType<typeof model.chat>>;
+      try {
+        response = await model.chat({
+          messages,
+          tools: llmTools.length > 0 ? llmTools : undefined,
+          systemPrompt,
+          signal: config?.signal,
+        });
+      } catch (err) {
+        runCtx?._emitEvent?.({
+          type: "llm.error",
+          agent: name,
+          model: model.modelId,
+          timestamp: Date.now(),
+          duration: Date.now() - llmStart,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
+      }
       const llmDuration = Date.now() - llmStart;
 
       // b. Emit llm.response + audit + budget
