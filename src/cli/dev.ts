@@ -18,6 +18,15 @@ export function formatRestart(count: number): string {
 export async function devCommand(args: ParsedArgs): Promise<void> {
   const file = resolveDevFile(args.positional[0]);
   const entryFile = resolve(process.cwd(), file);
+
+  // BUG-0417: Ensure entry file is within the project directory
+  const cwd = process.cwd();
+  if (!entryFile.startsWith(cwd + "/") && entryFile !== cwd) {
+    console.error("  Error: entry file must be within the project directory");
+    process.exitCode = 1;
+    return;
+  }
+
   const port = args.flags.port ?? "4100";
 
   console.log(`\n  ONI Dev Server`);
