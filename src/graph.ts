@@ -91,7 +91,7 @@ export class StateGraph<S extends Record<string, unknown>> {
     if (this.nodes.has(name)) throw new InvalidSkeletonError(`Node "${name}" already registered.`);
     const fn: NodeFn<S> = async (state, config) => {
       const namespacedConfig = config?.threadId
-        ? { ...config, threadId: `${config.threadId}:${name}` }
+        ? { ...config, threadId: `${name}:${config.threadId}` }
         : config;
       return subgraph.invoke(state, namespacedConfig) as Promise<Partial<S>>;
     };
