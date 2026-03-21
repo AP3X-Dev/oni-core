@@ -9,7 +9,7 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T21:30:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-20T21:27:00Z` |
 | **Last Hunter Scan** | `2026-03-21T00:25:00Z` |
 | **Last Fixer Pass** | `2026-03-21T04:32:00Z` |
 | **Last Validator Pass** | `2026-03-21T02:51:00Z` |
@@ -18,11 +18,11 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T21:25:00Z` |
+| **Last TestGen Run** | `2026-03-20T21:27:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T05:20:00Z` (Cycle 217) |
 | **Last Supervisor Pass** | `2026-03-21T04:25:31Z` |
-| **Total Found** | `369` |
-| **Total Pending** | `28` |
+| **Total Found** | `370` |
+| **Total Pending** | `29` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `31` |
 | **Total In Validation** | `0` |
@@ -504,6 +504,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/pubsub-snapshot-during-publish.test.ts`
 
 ---
 
@@ -1394,6 +1396,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/harness-loop-env-sanitize.test.ts`
 
 ---
 
