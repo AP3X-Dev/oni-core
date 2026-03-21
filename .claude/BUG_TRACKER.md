@@ -12,14 +12,14 @@
 | **Last CI Sentinel Pass** | `2026-03-21T18:20:41Z` (Cycle 69 — BUILD CLEAN, TESTS: 10 failed / 1433 passed / 2 skipped across 7 failed suites. Known failures: BUG-0312 (2), BUG-0363 (3), BUG-0436 (1). New bugs filed: BUG-0452 (memory-loader buildSystemPrompt returns empty), BUG-0453 (createTestHarness thread ID collision), BUG-0454 (subgraph checkpoint namespace isolation). BUG-0451 build fix confirmed still holding.) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
 | **Last Fixer Pass** | `2026-03-22T19:18:00Z` (no actionable bugs — 0 pending, 0 reopened, 0 in-progress; all 26 blocked) |
-| **Last Validator Pass** | `2026-03-21T19:25:00Z` (no fixed/in-validation bugs — 26 blocked) |
+| **Last Validator Pass** | `2026-03-21T19:34:00Z` (no fixed/in-validation bugs — 26 blocked, 3 pending for Fixer) |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T16:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T18:28:22Z` (Cycle 322 — 1 deletion (bugfix/BUG-0452 orphaned/redundant — fix already in main at f3add0b), 0 rebases, gc skipped (next Cycle 324); 0 bugfix branches; repository clean) |
+| **Last Git Manager Pass** | `2026-03-21T18:35:00Z` (Cycle 323 — 1 deletion (bugfix/BUG-0454 orphaned/empty — 0 commits ahead of main), 0 rebases, gc skipped (next Cycle 324); 1 active bugfix branch (BUG-0453 pending, fix committed awaiting tracker update)) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `436` |
 | **Total Pending** | `3` |
