@@ -55,7 +55,11 @@ export class PubSub {
   ): () => void {
     if (!this.subscribers.has(pattern))
       this.subscribers.set(pattern, new Set());
-    this.subscribers.get(pattern)!.add(handler);
+    const set = this.subscribers.get(pattern)!;
+    if (set.size >= 100) {
+      console.warn(`PubSub: topic "${pattern}" has ${set.size} subscribers, possible memory leak`);
+    }
+    set.add(handler);
     return () => {
       const handlers = this.subscribers.get(pattern);
       if (handlers) {
