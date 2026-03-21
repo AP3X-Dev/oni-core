@@ -1,4 +1,5 @@
 import type { A2AClientConfig, A2ATask, AgentCard } from "../types.js";
+import { A2AAuthExpiredError } from "../errors.js";
 
 export class A2AClient {
   constructor(private readonly config: A2AClientConfig) {
@@ -15,10 +16,22 @@ export class A2AClient {
     }
   }
 
+  /** Throw A2AAuthExpiredError on 401, otherwise return the response unchanged. */
+  private assertNotUnauthorized(res: Response, url: string): void {
+    if (res.status === 401) {
+      throw new A2AAuthExpiredError(
+        `A2A request unauthorized (401): credentials may be expired — ${url}`,
+        url,
+      );
+    }
+  }
+
   async getCard(): Promise<AgentCard> {
-    const res = await fetch(`${this.config.baseUrl}/.well-known/agent.json`, {
+    const url = `${this.config.baseUrl}/.well-known/agent.json`;
+    const res = await fetch(url, {
       headers: this.config.headers,
     });
+    this.assertNotUnauthorized(res, url);
     if (!res.ok) throw new Error(`Failed to fetch agent card: ${res.status}`);
     return res.json() as Promise<AgentCard>;
   }
@@ -49,6 +62,7 @@ export class A2AClient {
         ? AbortSignal.timeout(this.config.timeout)
         : undefined,
     });
+    this.assertNotUnauthorized(res, this.config.baseUrl);
     if (!res.ok) throw new Error(`A2A tasks/send failed: ${res.status}`);
     const result = (await res.json()) as { result?: A2ATask; error?: { message: string } };
     if (result.error) throw new Error(`A2A error: ${result.error.message}`);
@@ -84,6 +98,7 @@ export class A2AClient {
         : undefined,
     });
 
+    this.assertNotUnauthorized(res, this.config.baseUrl);
     if (!res.ok || !res.body) throw new Error(`A2A stream failed: ${res.status}`);
 
     const reader = res.body.getReader();
