@@ -95,7 +95,7 @@ export class SwarmSnapshotStore {
     this.snapshots.set(id, snapshot);
 
     // Evict oldest snapshot when cap is exceeded
-    if (this.snapshots.size > MAX_SNAPSHOTS) {
+    if (this.snapshots.size >= MAX_SNAPSHOTS) {
       this.snapshots.delete(this.snapshots.keys().next().value!);
     }
 
