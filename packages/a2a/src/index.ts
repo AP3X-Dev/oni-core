@@ -1,3 +1,4 @@
+export { A2AAuthExpiredError } from "./errors.js";
 export { generateAgentCard } from "./card/generator.js";
 export { A2AClient } from "./client/index.js";
 export { A2AServer } from "./server/index.js";
