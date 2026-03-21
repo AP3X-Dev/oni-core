@@ -14,7 +14,7 @@
 | **Last Fixer Pass** | `2026-03-21T13:35:00Z` |
 | **Last Validator Pass** | `2026-03-21T08:32:14Z` |
 | **Last Digest Run** | `2026-03-21T23:00:00Z` |
-| **Last Security Scan** | `2026-03-21T11:30:00Z` |
+| **Last Security Scan** | `2026-03-21T11:45:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
@@ -306,7 +306,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0326
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `57`
@@ -320,8 +320,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_completed:** `2026-03-21T11:15:00Z`
 - **fix_summary:** `Fresh branch with full v4 shim: del spread + optional chaining for pexpire/disconnect. tsc clean.`
 - **validator_started:** `2026-03-21T23:59:25Z`
-- **validator_completed:** `2026-03-21T06:43:59Z`
-- **validator_notes:** `REOPENED: Del shim intent correct but tsc TS2345 — r.del(keys) passes string[] to rest-params signature. Must use r.del(...keys) to spread. One-character fix.`
+- **validator_completed:** `2026-03-22T00:01:30Z`
+- **validator_notes:** `Confirmed del: (...keys) => r.del(...keys) with spread operator present — fixes the TS2345 from previous attempt. Full v4 shim mirrors ioredis structure with optional chaining for pexpire/disconnect. Third attempt finally correct.`
 
 ---
 
@@ -1176,26 +1176,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0386
-- **status:** `verified`
-- **severity:** `high`
-- **file:** `packages/integrations/src/adapter/auth-resolver.ts`
-- **line:** `55`
-- **category:** `other`
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0386`
-- **description:** `storeAuthResolver` returns a `resolve` function with zero parameters that violates the `AuthResolver` interface which declares `resolve(authDef: unknown, ctx: unknown): Promise<unknown>`.
-- **context:** The `ctx` parameter — intended to carry per-request scoping information such as user ID or tenant — is silently discarded; callers passing `ctx` for credential scoping will get back the wrong (shared) credential without any error.
-- **hunter_found:** `2026-03-20T22:30:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
-- **validator_started:** `2026-03-21T23:59:25Z`
-- **validator_completed:** `2026-03-22T00:01:30Z`
-- **validator_notes:** `Confirmed resolve now takes (_authDef, ctx) and ctx is actively used — JSON.stringify(ctx) builds a cacheKey="${integrationKey}:${ctxKey}" for per-request credential scoping. Fallback to static key when ctx is null/undefined preserves backward compat. Removal of options?.scope is justified by ctx-based replacement. All previous reopen concerns addressed.`
-
----
-
 ### BUG-0387
 - **status:** `fixed`
 - **severity:** `medium`
@@ -1419,26 +1399,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0403
-- **status:** `verified`
-- **severity:** `high`
-- **file:** `src/agents/define-agent.ts`
-- **line:** `138`
-- **category:** `type-error`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0403`
-- **description:** `response.usage` is accessed without a null guard — if a model adapter returns a response with `usage` omitted, accessing `.inputTokens`/`.outputTokens` throws TypeError and crashes the ReAct loop.
-- **context:** Any adapter returning a partial or mocked response without a fully-populated `usage` object will crash mid-run, losing all in-progress messages. Line 144 compounds this by unconditionally summing usage fields.
-- **hunter_found:** `2026-03-20T18:42:00Z`
-- **fixer_started:** `2026-03-21T09:45:00Z`
-- **fixer_completed:** `2026-03-21T09:45:00Z`
-- **fix_summary:** `Guard response.usage with nullish coalescing and wrap model.chat in try-catch.`
-- **validator_started:** `2026-03-21T23:59:25Z`
-- **validator_completed:** `2026-03-22T00:01:30Z`
-- **validator_notes:** `Confirmed usage guarded with ?? { inputTokens: 0, outputTokens: 0 } applied to all 4 bare response.usage accesses. try-catch around model.chat re-throws after emitting llm.error event. No regressions — degraded counting is correct behavior for missing usage.`
-
----
-
 ### BUG-0404
 - **status:** `fixed`
 - **severity:** `medium`
@@ -1516,26 +1476,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
-
----
-
-### BUG-0408
-- **status:** `verified`
-- **severity:** `high`
-- **file:** `src/pregel/streaming.ts`
-- **line:** `401`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0408`
-- **description:** When multiple parallel nodes settle, the loop throws on the first non-HITL rejection and discards all subsequent settled results — succeeded nodes' state updates, stepWrites, and nextNodes are silently lost.
-- **context:** In a graph where nodes A, B, C execute in parallel and A rejects with a non-HITL error, B and C's state writes and routing decisions are thrown away before being applied, corrupting graph state on error recovery.
-- **hunter_found:** `2026-03-20T18:42:00Z`
-- **fixer_started:** `2026-03-21T09:45:00Z`
-- **fixer_completed:** `2026-03-21T09:45:00Z`
-- **fix_summary:** `Split allSettledResults into two passes: collect fulfilled first, then throw.`
-- **validator_started:** `2026-03-21T23:59:25Z`
-- **validator_completed:** `2026-03-22T00:01:30Z`
-- **validator_notes:** `Confirmed two-pass approach: pass 1 collects all fulfilled results into nodeResults, pass 2 throws on first non-HITL rejection. State writes from succeeded nodes are preserved before error propagation. HITL interrupt path unchanged. Minimal +6/-3 diff, no regressions.`
 
 ---
 
