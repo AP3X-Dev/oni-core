@@ -9,20 +9,20 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T23:31:31Z` |
-| **Last Hunter Scan** | `2026-03-20T19:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T12:25:00Z` |
-| **Last Validator Pass** | `2026-03-21T06:43:59Z` |
+| **Last CI Sentinel Pass** | `2026-03-21T10:15:00Z` |
+| **Last Hunter Scan** | `2026-03-21T23:58:00Z` |
+| **Last Fixer Pass** | `2026-03-21T13:25:00Z` |
+| **Last Validator Pass** | `2026-03-21T08:32:14Z` |
 | **Last Digest Run** | `2026-03-21T23:00:00Z` |
-| **Last Security Scan** | `2026-03-21T10:00:00Z` |
+| **Last Security Scan** | `2026-03-21T11:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T23:45:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T08:32:20Z` (Cycle 242) |
-| **Last Supervisor Pass** | `2026-03-21T08:31:06Z` |
-| **Total Found** | `419` |
-| **Total Pending** | `8` |
+| **Last Git Manager Pass** | `2026-03-21T12:30:00Z` (Cycle 243) |
+| **Last Supervisor Pass** | `2026-03-21T08:35:35Z` |
+| **Total Found** | `425` |
+| **Total Pending** | `14` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `57` |
 | **Total In Validation** | `0` |
@@ -650,7 +650,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0351
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `296`
@@ -660,9 +660,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Subgraph streaming hard-codes `childStreamMode: ["debug", "values"]`, ignoring the parent's actual requested stream modes and never collecting `"custom"` or `"messages"` events.
 - **context:** If the parent only requested `"updates"`, the child still runs in `["debug", "values"]` mode, generating irrelevant events. More critically, `"custom"` and `"messages"` events emitted inside a subgraph are never surfaced because `modeCustom` and `modeMessages` checks on `allSubgraphEvents` always yield nothing.
 - **hunter_found:** `2026-03-20T22:26:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T12:55:00Z`
+- **fixer_completed:** `2026-03-21T12:55:00Z`
+- **fix_summary:** `Derive childStreamMode from parent flags instead of hard-coding. Fresh branch from main.`
 - **validator_started:** `2026-03-21T08:12:00Z`
 - **validator_completed:** `2026-03-21T08:32:14Z`
 - **validator_notes:** `REOPENED: Branch commit fixes dlq.ts (deep-clone in DeadLetterQueue.record), not streaming.ts. childStreamMode still hard-coded ["debug","values"]. Fixer must: modify streaming.ts to derive childStreamMode from parent config.`
@@ -690,7 +690,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0353
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/hitl/resume.ts`
 - **line:** `26`
@@ -700,9 +700,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `HITLSessionStore` uses lazy eviction with no background timer, allowing resumed sessions past their TTL to accumulate in the `sessions` Map indefinitely if no new operations trigger `evict()`.
 - **context:** The `evict()` method is only called from `record()`, `get()`, `getByThread()`, and `pendingCount()` — not from `all()` or `markResumed()`. In a long-lived process where sessions are created and marked resumed but no further HITL operations arrive, the map grows without bound.
 - **hunter_found:** `2026-03-20T22:26:00Z`
-- **fixer_started:** `2026-03-21T05:02:00Z`
-- **fixer_completed:** `2026-03-21T05:02:00Z`
-- **fix_summary:** `Resume fix.`
+- **fixer_started:** `2026-03-21T13:25:00Z`
+- **fixer_completed:** `2026-03-21T13:25:00Z`
+- **fix_summary:** `Added evict() calls to all() and markResumed() methods. Fresh branch from main.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1812,6 +1812,126 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **hunter_found:** `2026-03-20T19:02:00Z`
 - **fixer_started:** `2026-03-21T10:35:00Z`
 - **fixer_completed:** `2026-03-21T10:35:00Z`
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0423
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/mcp/client.ts`
+- **line:** `121`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `initResponse.result` is cast to `MCPInitializeResult` without runtime validation — a malformed server response silently produces `undefined` fields.
+- **context:** `initResult.serverInfo` is immediately dereferenced on line 122; if the server returns a non-conformant initialize response, this throws a runtime TypeError instead of a descriptive connection error. The error check on line 115 only guards `response.error`, not a missing/malformed `result`.
+- **hunter_found:** `2026-03-21T23:58:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0424
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/mcp/client.ts`
+- **line:** `240`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `response.result` is cast to `MCPCallToolResult` without runtime validation, silently accepting any shape the MCP server returns.
+- **context:** If an MCP server returns a non-conformant result (e.g., missing `content` array), callers that iterate `result.content` will throw at runtime. The error path returns a well-typed fallback, but the success path trusts the cast completely.
+- **hunter_found:** `2026-03-21T23:58:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0425
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/mcp/transport.ts`
+- **line:** `124`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** If the MCP server process exits cleanly (non-zero code, no `error` event) before `_doStart` resolves, `connected = true` is set on a dead process because the `exit` handler does not reject the spawn Promise.
+- **context:** Subsequent `send()` calls fail with stdin write errors rather than a clear connection error. The spawn timeout (up to 10s) is the only thing that eventually surfaces the failure, delaying error detection significantly.
+- **hunter_found:** `2026-03-21T23:58:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0426
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/mcp/transport.ts`
+- **line:** `95`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Child process stderr is piped but never consumed — no `data` handler is attached to `this.process.stderr`.
+- **context:** If the MCP server writes enough to stderr (startup errors, crash traces), the pipe buffer fills and the child process blocks indefinitely, causing the spawn timeout to fire instead of a meaningful error.
+- **hunter_found:** `2026-03-21T23:58:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0427
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/mcp/client.ts`
+- **line:** `62`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** `connect()` returns early when `state === "ready"` without checking `_connectLock`, so a concurrent connect/disconnect/connect sequence can spawn two `StdioTransport` instances, leaking one child process.
+- **context:** The window is narrow (single event loop turn), but concurrent lifecycle calls result in two `_runConnect` calls running simultaneously — each spawning their own transport, with the first one becoming unreachable and leaked.
+- **hunter_found:** `2026-03-21T23:58:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0428
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/tools/src/browser/firecrawl.ts`
+- **line:** `42`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** The `formats` array is only partially mapped to the Firecrawl v0 API — `includeMarkdown` is never set to `false`, so requesting `formats: ["html"]` exclusively still returns markdown.
+- **context:** A caller that passes `formats: ["html"]` to avoid markdown output will silently receive markdown content anyway, since the v0 API defaults `includeMarkdown` to true and the code never disables it, breaking the caller's stated format contract.
+- **hunter_found:** `2026-03-21T23:58:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
 - **fix_summary:** ``
 - **validator_started:** ``
 - **validator_completed:** ``
