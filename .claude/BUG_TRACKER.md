@@ -14,13 +14,13 @@
 | **Last Fixer Pass** | `2026-03-21T06:50:00Z` |
 | **Last Validator Pass** | `2026-03-21T05:23:12Z` |
 | **Last Digest Run** | `2026-03-21T05:29:59Z` |
-| **Last Security Scan** | `2026-03-23T14:20:00Z` |
+| **Last Security Scan** | `2026-03-23T14:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T14:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T05:22:30Z` (Cycle 224) |
-| **Last Supervisor Pass** | `2026-03-21T05:20:32Z` |
+| **Last Git Manager Pass** | `2026-03-21T07:00:00Z` (Cycle 225) |
+| **Last Supervisor Pass** | `2026-03-21T05:35:29Z` |
 | **Total Found** | `397` |
 | **Total Pending** | `1` |
 | **Total In Progress** | `0` |
@@ -1458,7 +1458,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0382
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/harness/loop/tools.ts`
 - **line:** `128`
@@ -1471,9 +1471,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T06:35:00Z`
 - **fixer_completed:** `2026-03-21T06:35:00Z`
 - **fix_summary:** `Single-line change: Object.assign(toolCall.args, sanitized) → toolCall.args = sanitized. No other code touched.`
-- **validator_started:** `2026-03-21T05:08:34Z`
-- **validator_completed:** `2026-03-21T05:23:12Z`
-- **validator_notes:** `REOPENED: Core fix correct (Object.assign replaced with direct assignment), but branch removes 3 unrelated features: (1) stripProtoKeys security guard — LLM __proto__/constructor keys now unfiltered, (2) toolCtx.askUser support dropped, (3) all onToolMetadata lifecycle callbacks removed. Branch over-deletes 64 lines. Fixer must: delete old branch, create fresh from main, change ONLY the Object.assign line to direct assignment.`
+- **validator_started:** `2026-03-21T05:29:48Z`
+- **validator_completed:** `2026-03-21T05:34:54Z`
+- **validator_notes:** `Verified on bugfix/BUG-0382. Truly single-line change (+1/-1): Object.assign replaced with direct assignment. stripProtoKeys, askUser, onToolMetadata all confirmed present. File 285 lines same as main. tsc clean. Previous over-deletion resolved.`
 
 ---
 
@@ -1639,7 +1639,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0391
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/swarm/registry.ts`
 - **line:** `178`
@@ -1652,9 +1652,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T06:15:00Z`
 - **fixer_completed:** `2026-03-21T06:15:00Z`
 - **fix_summary:** `Sanitize agent role and capability fields in toManifest() to prevent prompt injection.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T05:29:48Z`
+- **validator_completed:** `2026-03-21T05:34:54Z`
+- **validator_notes:** `Verified on bugfix/BUG-0391. sanitize() strips newlines/CR and angle brackets. Applied to role, capability name/description in toManifest(). tsc clean.`
 
 ---
 
@@ -1722,7 +1722,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0395
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/swarm/self-improvement/experiment-log.ts`
 - **line:** `32`
@@ -1735,9 +1735,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T06:35:00Z`
 - **fixer_completed:** `2026-03-21T06:35:00Z`
 - **fix_summary:** `Replaced push+splice with atomic slice reassignment for concurrent safety.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T05:29:48Z`
+- **validator_completed:** `2026-03-21T05:34:54Z`
+- **validator_notes:** `Verified on bugfix/BUG-0395. push+splice replaced with atomic [...records, full].slice(-MAX_RECORDS). readonly correctly removed. tsc clean.`
 - **test_generated:** `true`
 - **test_file:** `src/__tests__/swarm/experiment-log-trim.test.ts`
 
