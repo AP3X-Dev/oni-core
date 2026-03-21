@@ -18,9 +18,9 @@
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T22:00:00Z` |
+| **Last TestGen Run** | `2026-03-21T23:45:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T01:30:00Z` (Cycle 238) |
-| **Last Supervisor Pass** | `2026-03-21T06:55:33Z` |
+| **Last Supervisor Pass** | `2026-03-21T08:00:36Z` |
 | **Total Found** | `419` |
 | **Total Pending** | `8` |
 | **Total In Progress** | `0` |
@@ -528,7 +528,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0344
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/csv.ts`
 - **line:** `17`
@@ -548,7 +548,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0345
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/markdown.ts`
 - **line:** `10`
