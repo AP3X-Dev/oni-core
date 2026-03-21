@@ -537,7 +537,14 @@ export class LSPClient {
       if (pending) {
         clearTimeout(pending.timer);
         this.pending.delete(id);
-        pending.resolve(message as unknown as JsonRpcResponse);
+        // BUG-0264: Construct a validated response object instead of blind cast.
+        const response: JsonRpcResponse = {
+          jsonrpc: "2.0",
+          id,
+          ...("result" in message ? { result: message.result } : {}),
+          ...("error" in message ? { error: message.error as JsonRpcResponse["error"] } : {}),
+        };
+        pending.resolve(response);
       }
       return;
     }
@@ -548,7 +555,13 @@ export class LSPClient {
         console.warn("[lsp] Malformed notification: missing method");
         return;
       }
-      this.handleNotification(message as unknown as JsonRpcNotification);
+      // BUG-0264: Construct validated notification instead of blind cast.
+      const notification: JsonRpcNotification = {
+        jsonrpc: "2.0",
+        method: message.method as string,
+        ...("params" in message ? { params: message.params } : {}),
+      };
+      this.handleNotification(notification);
     }
   }
 

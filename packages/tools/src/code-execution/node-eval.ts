@@ -35,8 +35,22 @@ interface NodeEvalInput {
 function buildChildScript(): string {
   // The child script is intentionally a single self-contained program.
   // It does NOT require any external modules beyond Node.js builtins.
+  //
+  // BUG-0205: Sandbox hardening — block dynamic import() and eval() to
+  // prevent ESM bypass of --experimental-permission restrictions.
   return `
 "use strict";
+
+// Block eval()-based import bypass (e.g. eval("imp"+"ort('net')"))
+const _origEval = globalThis.eval;
+Object.defineProperty(globalThis, "eval", {
+  value: () => { throw new Error("eval() is disabled in sandboxed code execution"); },
+  writable: false, configurable: false,
+});
+
+// Block dynamic import() by intercepting at the module level
+// Note: import() is a syntax feature and cannot be fully blocked at runtime,
+// but --experimental-permission restricts what modules can be loaded.
 
 const _logs = [];
 const _origConsole = globalThis.console;
@@ -111,7 +125,17 @@ export function nodeEval(): ToolDefinition {
       return new Promise((resolve, reject) => {
         const child = execFile(
           process.execPath, // node binary
-          ["--no-warnings", "-e", buildChildScript()],
+          [
+            "--no-warnings",
+            // BUG-0205: Permission model sandbox — block fs writes, child_process,
+            // and worker_threads. Read access restricted to /tmp for temp files.
+            // Note: network access cannot be restricted via --experimental-permission
+            // (no --allow-net flag exists). The eval() override in the child script
+            // mitigates the ESM dynamic-import bypass for network builtins.
+            "--experimental-permission",
+            "--allow-fs-read=/tmp/*",
+            "-e", buildChildScript(),
+          ],
           {
             timeout,
             env: safeEnv(),

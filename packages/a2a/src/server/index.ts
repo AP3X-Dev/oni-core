@@ -12,9 +12,15 @@ const SECURITY_HEADERS: Record<string, string> = {
 };
 
 export interface A2AServerOptions {
-  /** Optional API key. When set, every request (except CORS preflight) must
-   *  include an `Authorization: Bearer <key>` header matching this value. */
+  /** API key for Bearer token authentication. When set, every request (except
+   *  CORS preflight) must include an `Authorization: Bearer <key>` header.
+   *
+   *  BUG-0256: In production (NODE_ENV=production), apiKey is required unless
+   *  `allowUnauthenticated` is explicitly set to true. */
   apiKey?: string;
+  /** Explicitly opt out of authentication. Required in production when no
+   *  apiKey is provided. Defaults to false. */
+  allowUnauthenticated?: boolean;
 }
 
 export class A2AServer {
@@ -26,7 +32,15 @@ export class A2AServer {
     options?: A2AServerOptions,
   ) {
     this.apiKey = options?.apiKey;
-    if (!this.apiKey) console.warn("[A2AServer] WARNING: No apiKey configured — all endpoints are unauthenticated");
+    if (!this.apiKey) {
+      if (process.env.NODE_ENV === "production" && !options?.allowUnauthenticated) {
+        throw new Error(
+          "[A2AServer] apiKey is required in production. " +
+          "Set options.apiKey or pass allowUnauthenticated: true to explicitly opt out.",
+        );
+      }
+      console.warn("[A2AServer] WARNING: No apiKey configured — all endpoints are unauthenticated");
+    }
   }
 
   requestHandler(): (req: Request) => Promise<Response> {
