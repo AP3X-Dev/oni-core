@@ -33,7 +33,8 @@ export async function* streamEvents<S>(
 
   yield { ...base, event: "on_chain_start", data: { input } };
 
-  let finalData: unknown = undefined;
+  let finalData: unknown;
+  let lastNodeData: unknown;
 
   for await (const evt of app.stream(input, {
     ...config,
@@ -49,6 +50,7 @@ export async function* streamEvents<S>(
         data: {},
       };
     } else if (e.event === "node_end") {
+      lastNodeData = e.data;
       yield {
         ...base,
         event: "on_chain_end",
@@ -62,5 +64,5 @@ export async function* streamEvents<S>(
     // events — there is no "error" event type in the debug stream.
   }
 
-  yield { ...base, event: "on_chain_end", data: { output: finalData } };
+  yield { ...base, event: "on_chain_end", data: { output: finalData ?? lastNodeData ?? {} } };
 }
