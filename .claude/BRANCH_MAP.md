@@ -1,7 +1,7 @@
-# Branch Map — Cycle 318
+# Branch Map — Cycle 319
 
-**Generated:** 2026-03-21T18:10:00Z
-**Main HEAD:** c6e8fd1
+**Generated:** 2026-03-21T18:15:38Z
+**Main HEAD:** 9cbc31b
 **Total Branches:** 3 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
@@ -23,19 +23,19 @@ No active agent worktrees.
 | fix/bug-0285-context-prompt-injection | old fix branch, not managed |
 | temp-return-main | contains BUG-0357 work (already merged); non-bugfix, not deleted |
 
-## Status Changes Since C317
+## Status Changes Since C318
 
 No branch additions or deletions this cycle. All 3 bugfix branches remain blocked.
 
-Behind-main counts increased by 2 vs C317 due to: (1) C317 git-manager commit, (2) Cycle 317 BRANCH_MAP commit.
-- BUG-0343: 66→68
-- BUG-0356/0359: 71→73
+Behind-main counts unchanged vs C318 — no new commits on main between C318 and C319.
+- BUG-0343: 68 (unchanged)
+- BUG-0356/0359: 73 (unchanged)
 
 ## GC Note
 
-`git gc --auto` executed this cycle (Cycle 318). Previous GC: Cycle 312. Next GC: Cycle 324.
+Next `git gc --auto` scheduled at Cycle 324 (skipped this cycle).
 
-## File Overlap Summary (Cycle 318)
+## File Overlap Summary (Cycle 319)
 
 No code overlaps — all bugfix branches touch distinct source files:
 - `src/harness/safety-gate.ts` (BUG-0343)

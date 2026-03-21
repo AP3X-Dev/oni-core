@@ -9,17 +9,17 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T18:00:56Z` (Cycle 67 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378 STILL PRESENT; ESC-013 still active; 51 consecutive build failures; no new bugs filed; tests not run. 10 untracked Hunter test files present — cannot evaluate until build clean.) |
+| **Last CI Sentinel Pass** | `2026-03-22T19:00:00Z` (Cycle 68 — BUILD CLEAN: BUG-0451 fix merged to main (commit 8dd12dc). Duplicate dispose() in src/swarm/graph.ts resolved. npx tsc --noEmit exits 0. ESC-013 marked resolved. 51-cycle build failure streak ended. Tests not run this cycle. 10 untracked Hunter test files present.) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
 | **Last Fixer Pass** | `2026-03-21T14:44:00Z` |
-| **Last Validator Pass** | `2026-03-21T18:09:30Z` (no fixed/in-validation bugs — 26 blocked) |
+| **Last Validator Pass** | `2026-03-21T18:15:45Z` (no fixed/in-validation bugs — 26 blocked) |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T16:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T18:10:00Z` (Cycle 318 — 0 deletions, 0 rebases, git gc --auto executed; 3 blocked branches pending human: BUG-0343 68 behind (+2), BUG-0356/0359 73 behind (+2); reopen_count=3 each; no code conflicts) |
+| **Last Git Manager Pass** | `2026-03-21T18:15:38Z` (Cycle 319 — 0 deletions, 0 rebases, gc skipped (next Cycle 324); 3 blocked branches pending human: BUG-0343 68 behind, BUG-0356/0359 73 behind; reopen_count=3 each; no code conflicts) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
