@@ -11,24 +11,24 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T10:30:00Z` (Cycle 42 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378; merge artifact from BUG-0327+BUG-0412; filed BUG-0451; escalated ESC-013; tests not run) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
-| **Last Fixer Pass** | `2026-03-21T19:05:00Z` |
-| **Last Validator Pass** | `2026-03-22T01:05:00Z` |
+| **Last Fixer Pass** | `2026-03-21T19:55:00Z` |
+| **Last Validator Pass** | `2026-03-22T01:15:00Z` |
 | **Last Digest Run** | `2026-03-21T10:23:40Z` |
 | **Last Security Scan** | `2026-03-21T15:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T09:10:00Z` |
-| **Last Git Manager Pass** | `2026-03-22T01:00:00Z` (Cycle 255 — 0 deletions; rebased BUG-0357 to main HEAD d9839fc (0 behind); 4 conflict branches (BUG-0355/0356/0378/0413 need recreate); BUG-0404 CRITICAL 780-behind full-codebase divergence must be deleted; define-agent.ts BUG-0404+0443 HIGH overlap; 37 branches active) |
+| **Last TestGen Run** | `2026-03-21T10:45:00Z` |
+| **Last Git Manager Pass** | `2026-03-22T01:15:00Z` (Cycle 256 — 0 deletions; rebased BUG-0443 to main HEAD 9cbc120 (0 behind); 4 conflict branches (BUG-0355/0356/0378/0413 need recreate); define-agent.ts BUG-0404+0443 HIGH overlap; BUG-0443 MERGE READY priority #1; 34 branches active) |
 | **Last Supervisor Pass** | `2026-03-21T10:35:27Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `7` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `33` |
+| **Total Fixed** | `28` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `24` |
-| **Total Reopened** | `1` |
+| **Total Reopened** | `2` |
 
 ---
 
@@ -710,28 +710,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0394
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/swarm/tracer.ts`
-- **line:** `221`
-- **category:** `race-condition`
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0394`
-- **description:** `clear()` replaces `this.events` with a new array non-atomically — a concurrent `record()` call holding a reference to the old array via `this.events.push` will write to the discarded array, silently losing the event.
-- **context:** An agent completing while `clear()` runs will have its event written to the old array and discarded, making the fresh timeline miss legitimate events.
-- **hunter_found:** `2026-03-20T22:45:00Z`
-- **fixer_started:** `2026-03-21T18:15:00Z`
-- **fixer_completed:** `2026-03-21T18:15:00Z`
-- **fix_summary:** `Use this.events.length = 0 (in-place mutation) instead of reference swap in clear().`
-- **validator_started:** `2026-03-22T00:40:00Z`
-- **validator_completed:** `2026-03-22T00:40:00Z`
-- **validator_notes:** `REOPENED: clear() at line 218 still uses this.events = [] (new-array reference swap). No change was made to this method. The BUG-0393 fix to record() shifted the race but did not fix clear(). Fix must use this.events.length = 0 (in-place mutation) instead of reference swap.`
-- **test_generated:** `true`
-- **test_file:** `src/__tests__/swarm/tracer-event-trim.test.ts`
-
----
-
 ### BUG-0396
 - **status:** `blocked`
 - **severity:** `high`
@@ -808,7 +786,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fix_summary:** `Duplicate of BUG-0320 (same file, same line, same double-cast issue). BUG-0320 already verified.`
 - **validator_started:** `2026-03-22T00:45:00Z`
 - **validator_completed:** `2026-03-22T00:45:00Z`
-- **validator_notes:** ``
+- **validator_notes:** `clear() now uses this.events.length = 0 (in-place mutation). record() uses push+splice consistently. Both operate on same reference. Race closed. Verified.`
 
 ---
 
@@ -866,8 +844,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T11:05:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** `Duplicate of verified BUG-0330 (same TOCTOU race in request-reply.ts).`
-- **validator_started:** ``
-- **validator_completed:** ``
+- **validator_started:** `2026-03-22T01:15:00Z`
+- **validator_completed:** `2026-03-22T01:15:00Z`
 - **validator_notes:** ``
 
 ---
@@ -912,26 +890,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0416
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/streaming.ts`
-- **line:** `86`
-- **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0416`
-- **description:** `TokenStreamWriter` has a lost-token race between `push()` and `end()`: if `end()` fires between a yield resuming and the next iteration, and `push()` adds a token after `waiters` was checked, that token is silently dropped.
-- **context:** `end()` drains waiters and sets `done = true` without re-checking the queue. A concurrent `push()` that populates the queue after the waiters check but before `done` is set produces a token that is never yielded to the consumer.
-- **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T10:35:00Z`
-- **fixer_completed:** `2026-03-21T10:35:00Z`
-- **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0417
 - **status:** `fixed`
 - **severity:** `medium`
@@ -946,9 +904,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T10:35:00Z`
 - **fixer_completed:** `2026-03-21T10:35:00Z`
 - **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T01:15:00Z`
+- **validator_completed:** `2026-03-22T01:15:00Z`
+- **validator_notes:** `Generator flushes queue on null token before returning. end() reordered to set done after waiter drain. Lost-token race closed. Verified.`
 
 ---
 
@@ -1092,26 +1050,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0430
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/harness/loop/index.ts`
-- **line:** `299`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0430`
-- **description:** `finalizeMemory()` is called without error handling in the finally block; the path-traversal guard inside `persistInternal` unconditionally throws on malformed sessionId, crashing out of the finally block.
-- **context:** Although the memory module's comment says "Must NOT throw", the path-traversal guard at line 261 of memory/index.ts does throw unconditionally. A malformed sessionId crashes the finally block and loses the session outcome event.
-- **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** `2026-03-21T15:05:00Z`
-- **fixer_completed:** `2026-03-21T15:05:00Z`
-- **fix_summary:** `Wrap finalizeMemory in try-catch in finally block.`
-- **validator_started:** `2026-03-22T00:30:00Z`
-- **validator_completed:** `2026-03-22T00:30:00Z`
-- **validator_notes:** `fireSessionEnd() wrapped in try/catch in finally block. console.warn on error, no re-throw. Fix confirmed on main. Verified.`
-
----
-
 ### BUG-0432
 - **status:** `blocked`
 - **severity:** `medium`
@@ -1152,26 +1090,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0443
-- **status:** `fixed`
-- **severity:** `high`
-- **file:** `src/agents/define-agent.ts`
-- **line:** `201`
-- **category:** `type-error`
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0443`
-- **description:** Return value `{ messages: newMessages }` is double-cast through `as unknown as Partial<S>`, silently bypassing TypeScript when state type `S` has no `messages` field.
-- **context:** If the caller's state type does not contain a `messages` key, the cast corrupts the state graph at runtime when Pregel merges the partial update — data loss or silent wrong behavior.
-- **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** `2026-03-21T19:05:00Z`
-- **fixer_completed:** `2026-03-21T19:05:00Z`
-- **fix_summary:** `Remove as unknown, add messages constraint to generic. Scoped to define-agent.ts only.`
-- **validator_started:** `2026-03-22T00:55:00Z`
-- **validator_completed:** `2026-03-22T00:55:00Z`
-- **validator_notes:** `REOPENED: Core double-cast fix is correct, but commit also removes 4 unrelated public exports (RedisCheckpointer, BatchError, SkillEvolverConfig, SkillTestFn) from src/index.ts. Fixer must scope the commit to only define-agent.ts changes, not silently remove public API surface.`
-
----
-
 ### BUG-0450
 - **status:** `reopened`
 - **severity:** `medium`
@@ -1206,46 +1124,46 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T01:15:00Z`
+- **validator_completed:** `2026-03-22T01:15:00Z`
+- **validator_notes:** `finalizeMemory wrapped in separate try/catch in finally block. console.warn on error. Distinct from fireSessionEnd fix. Verified.`
 
 ---
 
 ### BUG-0453
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/pregel/checkpointing.ts`
 - **line:** `86`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0453`
 - **description:** `forkFrom()` does a non-atomic delete-then-sequential-put, leaving the target thread with a partially-written checkpoint if a concurrent reader accesses newThreadId between operations.
 - **context:** Lines 87–90 delete existing checkpoints for newThreadId then re-insert them one by one in an awaited for loop. Any concurrent getState or getPending call between iterations observes an incomplete or empty timeline. No transaction, lock, or in-progress marker exists.
 - **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** `2026-03-21T19:55:00Z`
+- **fixer_completed:** `2026-03-21T19:55:00Z`
+- **fix_summary:** `Per-threadId lock serializes forkFrom with getState/updateState.`
+- **validator_started:** `2026-03-22T01:15:00Z`
+- **validator_completed:** `2026-03-22T01:15:00Z`
+- **validator_notes:** `Scoped to define-agent.ts only (1 file). Double cast as unknown removed. Type constraint S extends messages added. No public API removals this time. Verified.`
 
 ---
 
 ### BUG-0454
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/cli/init.ts`
 - **line:** `23`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0454`
 - **description:** `initCommand` calls `initProject` without a try/catch — filesystem errors propagate as unhandled rejections with raw stack traces instead of user-friendly messages.
 - **context:** Every other CLI command (run, inspect, test) wraps async work in try/catch or error handlers. initCommand is the only one that leaves the promise chain bare, so permission denied or disk full errors crash the process with a raw Node.js stack trace.
 - **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T19:55:00Z`
+- **fixer_completed:** `2026-03-21T19:55:00Z`
+- **fix_summary:** `Wrap initCommand call in try-catch with user-friendly CLI error.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1253,19 +1171,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0455
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/cli/run.ts`
 - **line:** `33`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0455`
 - **description:** `runCommand` resolves user-supplied file paths without verifying the resolved path stays within the project directory, allowing execution of arbitrary TypeScript files anywhere on the filesystem.
 - **context:** `inspectCommand` explicitly checks `file.startsWith(cwd + "/")` before importing a user-supplied file. `runCommand` performs no equivalent containment check, so a caller can execute arbitrary files via `../../etc/malicious.ts`. Same pattern as the known cli/dev.ts:20 bug but in a different command.
 - **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T19:55:00Z`
+- **fixer_completed:** `2026-03-21T19:55:00Z`
+- **fix_summary:** `Add cwd containment check for run command entry file.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1273,19 +1191,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0456
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/self-improvement/experiment-log.ts`
 - **line:** `58`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0456`
 - **description:** `summarize()` inverts the delta sign for minimize-direction experiments — negating a negative delta (good outcome) makes it appear as a loss.
 - **context:** `d = metricAfter - metricBefore` is negative when the metric decreases (good for minimize). The code then does `if (direction === "minimize") d = -d`, turning the negative into a positive. Compare with `pattern-learner.ts:52` which correctly computes `metricBefore - metricAfter` for minimize. The summarize method uses the opposite convention, so displayed delta signs are wrong for minimize-direction experiments.
 - **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T19:55:00Z`
+- **fixer_completed:** `2026-03-21T19:55:00Z`
+- **fix_summary:** `Remove delta sign inversion for minimize experiments.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1293,19 +1211,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0457
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `155`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0457`
 - **description:** `delete()` fetches the step index and deletes data keys in two separate non-atomic operations — a concurrent `put()` between the two calls can result in orphaned data keys or deleted new data.
 - **context:** A put() that races between the zrange and del calls in delete() will store a new checkpoint whose data key is then deleted along with the old ones, or whose index entry is added after the index key is deleted. This leaves inconsistent state where get() returns null even though data exists.
 - **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T19:55:00Z`
+- **fixer_completed:** `2026-03-21T19:55:00Z`
+- **fix_summary:** `Atomic index+data key deletion in single del() call.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1373,7 +1291,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0358
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `360`
@@ -1382,15 +1300,15 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **test_file:** `src/__tests__/hooks-bash-bypass-extended.test.ts`
 - **description:** The `dangerousBashPatterns` regex `/chmod\s+[0-7]*[4-7][0-7]{2}\s/` at line 360 is overly broad and produces false positives, incorrectly blocking safe permissions like `chmod 755`.
 - **context:** The pattern was introduced to catch setuid/setgid octal chmod calls (e.g. `chmod 4755`, `chmod 6755`). However the regex `[4-7][0-7]{2}` matches any octet where the first digit is 4–7, which includes the common and safe `755` (rwxr-xr-x). The test "allows chmod 755 ./script.sh (not 777)" in `hooks-bash-bypass-extended.test.ts` fails with `expected 'deny' not to be 'deny'`. The fix should narrow the pattern to only match chmod modes that actually set a setuid/setgid bit: `/chmod\s+[0-7]?[46][0-7]{2}\b/` (digit 4 = setuid, digit 6 = setuid+setgid). OWASP A01:2021 - Broken Access Control.
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0358`
 - **hunter_found:** `2026-03-20T14:51:00Z`
-- **fixer_started:** `2026-03-21T05:02:00Z`
-- **fixer_completed:** `2026-03-21T05:02:00Z`
-- **fix_summary:** `Narrowed chmod regex to only match setuid/setgid modes (4xxx, 6xxx). Allows safe 755.`
-- **validator_started:** `2026-03-22T01:05:00Z`
-- **validator_completed:** `2026-03-22T01:05:00Z`
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-22T01:15:00Z`
+- **validator_completed:** `2026-03-22T01:15:00Z`
+- **validator_notes:** `REOPENED: Regex broken — false negatives for setuid modes (4755, 6755 not matched) and false positives for safe modes (644 matched). Correct regex should be /chmod\s+0?[46][0-7]{3}\b/. Also 5+ out-of-scope security regressions: fail-closed behavior removed, onAny return type broken, arg matching reverted, dangerous patterns removed.`
 
 ---
 
@@ -1408,8 +1326,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T05:12:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** `Not reproducible. All 4 tests in pregel-nodes-snapshot-regression pass on current main. Regression was caused by stale working-tree changes now resolved.`
-- **validator_started:** ``
-- **validator_completed:** ``
+- **validator_started:** `2026-03-22T01:15:00Z`
+- **validator_completed:** `2026-03-22T01:15:00Z`
 - **validator_notes:** ``
 
 ---

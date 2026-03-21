@@ -130,21 +130,21 @@
 [2026-03-21T10:32:49Z] BRANCH COUNT: 41 branches (was 45). 3 deletions (BUG-0343/0374/0434 orphans), 1 rebase (BUG-0357). Cumulative: ~217.
 [2026-03-21T10:32:49Z] Step 9: Updated Last Git Manager Pass to 2026-03-21T10:32:49Z (Cycle 254). Log trimmed to 150 lines.
 [2026-03-21T10:32:49Z] Step 10: HEAD confirmed on main. Clean state. === Cycle 254 End ===
-[2026-03-22T01:00:00Z] ## Cycle 255 — 2026-03-22T01:00:00Z
-[2026-03-22T01:00:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T18:45:00Z (>60s). Last Validator=2026-03-22T00:55:00Z (>60s). In-progress=0, In-validation=0. Proceeding.
-[2026-03-22T01:00:00Z] Step 1: Found 37 bugfix/BUG-* branches at cycle start. Down from 41 (BUG-0359/0366/0394/0443 now have new commits). No new orphaned worktrees detected.
-[2026-03-22T01:00:00Z] Step 2: Branch map rebuilt. 37 branches. Fixed: 33. Reopened: 3 (BUG-0355, BUG-0356, BUG-0359, BUG-0366, BUG-0394, BUG-0404, BUG-0409, BUG-0443). Conflict branches: 4 (BUG-0355/0356/0378/0413). 27 branches ~780 behind main.
-[2026-03-22T01:00:00Z] Step 3: 0 deletions. No true orphaned branches (all have tracker entries). No verified-but-surviving branches eligible for deletion. 0/5 cap used. Cumulative: ~217.
-[2026-03-22T01:00:00Z] Step 4: STALE WARNINGS — 27 branches 780 behind main (base 0b842ae). BUG-0357 (0 behind, rebased), BUG-0443 (0 behind), BUG-0409 (9 behind), BUG-0448 (15 behind). All others critically stale.
-[2026-03-22T01:00:00Z] Step 5: CONFLICT BRANCHES (4): BUG-0355 (1 conflict, redis/index.ts), BUG-0356 (2 conflicts, postgres/index.ts), BUG-0378 (1 conflict, pool.ts), BUG-0413 (1 conflict, validate-command.ts). All others clean (33 branches, 0 conflicts).
-[2026-03-22T01:00:00Z] Step 5b: REBASED BUG-0357 onto main HEAD d9839fc. Was 9 behind (base 3a3f31f). New tip: rebased, 0 behind. Clean 1-file fix (src/models/ollama.ts). 1/1 cap used.
-[2026-03-22T01:00:00Z] Step 6: FILE OVERLAPS — (1) define-agent.ts: BUG-0404 (780 behind, massive divergence) + BUG-0443 (0 behind, reopened) HIGH risk. (2) stores (redis+postgres): BUG-0355+BUG-0356 (both conflicted, exact same files) HIGH risk. (3) ollama.ts: BUG-0357 (rebased)+BUG-0377 (780 behind) MEDIUM — BUG-0377 may conflict post-merge. (4) agent-node.ts: BUG-0379+BUG-0410 LOW. (5) store/index.ts: BUG-0415+BUG-0421 LOW. (6) firecrawl.ts: BUG-0400+BUG-0428 LOW.
-[2026-03-22T01:00:00Z] Step 7: HEAD confirmed on main (d9839fc). Clean state.
-[2026-03-22T01:00:00Z] Step 8: GC skipped. Next at Cycle 258.
-[2026-03-22T01:00:00Z] ALERT: BUG-0357 — REBASED C255. ON MAIN HEAD d9839fc. Validator-ready PRIORITY #1. Ollama in-stream error detection.
-[2026-03-22T01:00:00Z] ALERT: BUG-0409 — 9 behind, fixed (reopened), 0 conflicts. Validator-ready PRIORITY #2. DLQ ID collision + test regex update.
-[2026-03-22T01:00:00Z] ALERT: BUG-0404 — 780 behind, carries full-codebase divergence. Fixer MUST delete bugfix/BUG-0404 and recreate from main before attempting re-fix.
-[2026-03-22T01:00:00Z] ALERT: BUG-0355/0356/0378/0413 — merge conflicts persist. Fixer must delete and recreate from main.
-[2026-03-22T01:00:00Z] BRANCH COUNT: 37 branches (unchanged). 0 deletions, 1 rebase (BUG-0357). Cumulative: ~217.
-[2026-03-22T01:00:00Z] Step 9: Updated Last Git Manager Pass. Log at 165 lines — trim needed.
-[2026-03-22T01:00:00Z] Step 10: HEAD confirmed on main. Clean state. === Cycle 255 End ===
+[2026-03-22T01:15:00Z] ## Cycle 256 — 2026-03-22T01:15:00Z
+[2026-03-22T01:15:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T19:05:00Z (>60s). Last Validator=2026-03-22T01:15:00Z (>60s). In-progress=0, In-validation=0. Proceeding.
+[2026-03-22T01:15:00Z] Step 1: Found 34 bugfix/BUG-* branches at cycle start. Down from 37 (BUG-0448/0449/0428 merged to main in prior cycles). No new orphaned worktrees detected.
+[2026-03-22T01:15:00Z] Step 2: Branch map rebuilt. 34 branches. Fixed: 34. All status=fixed. Conflict branches: 4 (BUG-0355/0356/0378/0413). 21 branches at 789 behind main.
+[2026-03-22T01:15:00Z] Step 3: 0 deletions. No orphaned/merged branches eligible for deletion (all have valid unique fixes, none squash-merged). 0/5 cap used. Cumulative: ~217.
+[2026-03-22T01:15:00Z] Step 4: STALE WARNINGS — 21 branches 789 behind main (BUG-0355/0356/0358/0377/0378/0379/0389/0390/0394/0400/0404/0413/0416/0417/0419/0420/0421/0422/0435/0450/0452). BUG-0443 (0 behind, rebased), BUG-0357 (9 behind), BUG-0409 (18 behind) least stale.
+[2026-03-22T01:15:00Z] Step 5: CONFLICT BRANCHES (4 persist, same as C255): BUG-0355 (1 conflict redis/index.ts), BUG-0356 (2 conflicts postgres/index.ts), BUG-0378 (1 conflict pool.ts), BUG-0413 (1 conflict validate-command.ts). 30 branches clean.
+[2026-03-22T01:15:00Z] Step 5b: REBASED BUG-0443 onto main HEAD 9cbc120. Was 9 behind (base cf25c69 era). New tip: 316be68, 0 behind, 1 ahead. Clean 1-file fix (src/agents/define-agent.ts). 1/1 cap used.
+[2026-03-22T01:15:00Z] Step 6: FILE OVERLAPS (6 pairs) — (1) define-agent.ts: BUG-0443 (0 behind, rebased) + BUG-0404 (789 behind) HIGH — merge BUG-0443 first. (2) ollama.ts: BUG-0357 (9 behind) + BUG-0377 (789 behind) MEDIUM. (3) agent-node.ts: BUG-0379+BUG-0410 MEDIUM. (4) harness/loop/index.ts: BUG-0359+BUG-0430 MEDIUM. (5) store/index.ts: BUG-0415+BUG-0421 LOW. (6) firecrawl.ts: BUG-0400 (solo, BUG-0428 merged) LOW.
+[2026-03-22T01:15:00Z] Step 7: HEAD confirmed on main (9cbc120). Clean state.
+[2026-03-22T01:15:00Z] Step 8: GC skipped. Next at Cycle 258.
+[2026-03-22T01:15:00Z] ALERT: BUG-0443 — REBASED C256. ON MAIN HEAD 9cbc120. define-agent.ts double-cast fix. Validator-ready PRIORITY #1.
+[2026-03-22T01:15:00Z] ALERT: BUG-0357 — 9 behind, clean, validated. Validator-ready PRIORITY #2. Ollama in-stream error detection.
+[2026-03-22T01:15:00Z] ALERT: BUG-0409 — 18 behind, clean, validated. PRIORITY #3. DLQ ID collision.
+[2026-03-22T01:15:00Z] ALERT: BUG-0355/0356/0378/0413 — merge conflicts persist. Fixer must delete and recreate from main.
+[2026-03-22T01:15:00Z] BRANCH COUNT: 34 branches (was 37 at C255). 0 deletions, 1 rebase (BUG-0443). Cumulative: ~217.
+[2026-03-22T01:15:00Z] Step 9: Updated Last Git Manager Pass to 2026-03-22T01:15:00Z (Cycle 256). Log trimmed to 150 lines.
+[2026-03-22T01:15:00Z] Step 10: HEAD confirmed on main. Clean state. === Cycle 256 End ===
