@@ -14,11 +14,11 @@
 | **Last Fixer Pass** | `2026-03-21T06:50:00Z` |
 | **Last Validator Pass** | `2026-03-21T05:23:12Z` |
 | **Last Digest Run** | `2026-03-21T05:29:59Z` |
-| **Last Security Scan** | `2026-03-23T14:30:00Z` |
+| **Last Security Scan** | `2026-03-23T15:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T14:00:00Z` |
+| **Last TestGen Run** | `2026-03-20T22:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T07:00:00Z` (Cycle 225) |
 | **Last Supervisor Pass** | `2026-03-21T05:35:29Z` |
 | **Total Found** | `397` |
@@ -266,7 +266,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0303
-- **status:** `in-validation`
+- **status:** `reopened`
 - **severity:** `low`
 - **file:** `src/lsp/index.ts`
 - **line:** `134`
@@ -1474,6 +1474,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** `2026-03-21T05:29:48Z`
 - **validator_completed:** `2026-03-21T05:34:54Z`
 - **validator_notes:** `Verified on bugfix/BUG-0382. Truly single-line change (+1/-1): Object.assign replaced with direct assignment. stripProtoKeys, askUser, onToolMetadata all confirmed present. File 285 lines same as main. tsc clean. Previous over-deletion resolved.`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/harness-tools-hook-args-replace.test.ts`
 
 ---
 
@@ -1655,6 +1657,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** `2026-03-21T05:29:48Z`
 - **validator_completed:** `2026-03-21T05:34:54Z`
 - **validator_notes:** `Verified on bugfix/BUG-0391. sanitize() strips newlines/CR and angle brackets. Applied to role, capability name/description in toManifest(). tsc clean.`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/registry-tomanifest-injection.test.ts`
 
 ---
 
@@ -1804,22 +1808,22 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0399
-- **status:** `in-validation`
+- **status:** `reopened`
 - **severity:** `high`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `169`
 - **category:** `security-auth`
 - **description:** Normal agent completion path spreads `result.context` into state without filtering `__`-prefixed privileged keys, allowing an agent to overwrite swarm-internal control fields like `__deadlineAbsolute`.
 - **context:** BUG-0305 fixed the handoff context merge at line 140 to filter `__`-prefixed keys, but the normal completion path at line 169 (`...((result as any).context ?? {})`) has the same vulnerability. A prompt-injected agent can return `context: { __deadlineAbsolute: Infinity }` to disable deadline enforcement for the entire swarm, or inject other `__`-prefixed internal state. The `__consumedMsgIds` field is safe (explicitly set at line 170 after the spread), but `__deadlineAbsolute` survives the spread. Fix: apply the same `__`-prefix filter from BUG-0305 to `result.context` before spreading. OWASP A01:2021 - Broken Access Control.
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0399`
 - **hunter_found:** `2026-03-23T13:55:00Z`
-- **fixer_started:** `2026-03-21T06:35:00Z`
-- **fixer_completed:** `2026-03-21T06:35:00Z`
-- **fix_summary:** `Filter __-prefixed keys from result.context on normal completion path, matching BUG-0305 handoff fix.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-21T05:29:48Z`
+- **validator_completed:** `2026-03-21T05:34:54Z`
+- **validator_notes:** `REOPENED: Core __-prefix filter correct (lines 122-132), but branch removes 4 existing guards: (1) onComplete try/catch on both paths (BUG-0305 regression), (2) onStart try/catch (BUG-0037 regression), (3) onError try/catch removed, (4) __pendingHandoff passthrough and BUG-0263 handoff.to validation dropped. Fixer must: delete old branch, create fresh from main, add ONLY the __-prefix filter to result.context at line 169.`
 
 ---
 
