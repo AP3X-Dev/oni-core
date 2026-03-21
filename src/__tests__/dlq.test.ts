@@ -15,7 +15,7 @@ describe("DeadLetterQueue", () => {
 
     const dl = dlq.record("t1", "agent", input, error, 3);
 
-    expect(dl.id).toMatch(/^dlq-\d+$/);
+    expect(dl.id).toMatch(/^dlq-\d+-[a-z0-9]+$/);
     expect(dl.node).toBe("agent");
     expect(dl.input).toBe(input);
     expect(dl.error).toBe(error);
