@@ -11,24 +11,24 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T10:30:00Z` (Cycle 42 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378; merge artifact from BUG-0327+BUG-0412; filed BUG-0451; escalated ESC-013; tests not run) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
-| **Last Fixer Pass** | `2026-03-21T19:55:00Z` |
-| **Last Validator Pass** | `2026-03-22T01:15:00Z` |
-| **Last Digest Run** | `2026-03-21T10:23:40Z` |
-| **Last Security Scan** | `2026-03-21T15:30:00Z` |
+| **Last Fixer Pass** | `2026-03-21T20:15:00Z` |
+| **Last Validator Pass** | `2026-03-22T01:25:00Z` |
+| **Last Digest Run** | `2026-03-22T00:06:00Z` |
+| **Last Security Scan** | `2026-03-21T16:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T10:45:00Z` |
+| **Last TestGen Run** | `2026-03-21T11:45:00Z` |
 | **Last Git Manager Pass** | `2026-03-22T01:15:00Z` (Cycle 256 — 0 deletions; rebased BUG-0443 to main HEAD 9cbc120 (0 behind); 4 conflict branches (BUG-0355/0356/0378/0413 need recreate); define-agent.ts BUG-0404+0443 HIGH overlap; BUG-0443 MERGE READY priority #1; 34 branches active) |
-| **Last Supervisor Pass** | `2026-03-21T10:35:27Z` |
+| **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
-| **Total Pending** | `7` |
+| **Total Pending** | `2` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `28` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `24` |
-| **Total Reopened** | `2` |
+| **Total Reopened** | `3` |
 
 ---
 
@@ -850,26 +850,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0413
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/internal/validate-command.ts`
-- **line:** `19`
-- **category:** `security`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0413`
-- **description:** The `PATH_TRAVERSAL` regex `/\.\.\//` only matches `../` and misses `..\\` on Windows and bare `..` at end of path (e.g. `/bin/..`).
-- **context:** A command like `/usr/local/../../bin/evil` passes the traversal check because there is no trailing slash after the final `..`, yet resolves to `/bin/evil` after path normalization — incomplete protection against path traversal attacks.
-- **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T11:05:00Z`
-- **fixer_completed:** `2026-03-21T11:05:00Z`
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T00:45:00Z`
-- **validator_completed:** `2026-03-22T00:45:00Z`
-- **validator_notes:** `subGraphs tracking array added. hierarchicalMesh and compose push sub-graphs. dispose() recursively disposes all. Scope clean. Verified.`
-
----
-
 ### BUG-0415
 - **status:** `fixed`
 - **severity:** `medium`
@@ -884,29 +864,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T11:05:00Z`
 - **fixer_completed:** `2026-03-21T11:05:00Z`
 - **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0417
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/cli/dev.ts`
-- **line:** `20`
-- **category:** `security`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0417`
-- **description:** User-supplied file path in `dev` command is resolved but never validated to be within the project directory before being passed to `spawn`, unlike `inspect` which performs a cwd boundary check.
-- **context:** A path like `../../etc/profile` resolves outside the project root and tsx will attempt to watch and execute that file. The inspect command correctly enforces this check — dev.ts lacks the equivalent guard.
-- **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T10:35:00Z`
-- **fixer_completed:** `2026-03-21T10:35:00Z`
-- **fix_summary:** ``
-- **validator_started:** `2026-03-22T01:15:00Z`
-- **validator_completed:** `2026-03-22T01:15:00Z`
-- **validator_notes:** `Generator flushes queue on null token before returning. end() reordered to set done after waiter drain. Lost-token race closed. Verified.`
+- **validator_started:** `2026-03-22T01:25:00Z`
+- **validator_completed:** `2026-03-22T01:25:00Z`
+- **validator_notes:** `PATH_TRAVERSAL regex extended to /\.\.\.(?:[\/\]|$)/ covering forward slash, backslash, and bare .. at end. All bypass variants closed. Verified.`
 
 ---
 
@@ -924,49 +884,29 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T11:05:00Z`
 - **fixer_completed:** `2026-03-21T11:05:00Z`
 - **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0419
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `packages/tools/src/stripe/index.ts`
-- **line:** `91`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0419`
-- **description:** `loadStripeInstance()` and all Stripe API calls (customers.create, invoices.create, charges.list) have no try/catch — raw Stripe SDK errors propagate as unhandled rejections without tool-scoped context.
-- **context:** Unlike the GitHub tool which wraps calls in a centralized error handler, Stripe tool errors include potentially sensitive details about invalid API keys and internal Stripe error responses exposed directly to callers.
-- **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T10:35:00Z`
-- **fixer_completed:** `2026-03-21T10:35:00Z`
-- **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T01:25:00Z`
+- **validator_completed:** `2026-03-22T01:25:00Z`
+- **validator_notes:** `cwd boundary check added before spawn in dev command. Rejects paths outside project root via startsWith(cwd + "/"). Verified.`
 
 ---
 
 ### BUG-0420
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `src/coordination/pubsub.ts`
 - **line:** `56`
 - **category:** `memory-leak`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0420`
 - **description:** Subscriber handler closures leak indefinitely if the returned unsubscribe function is never called — the subscribers Map grows without bound across the PubSub instance lifetime.
 - **context:** If agents subscribe per-request on hot paths and neglect to call the returned unsubscribe function, handler closures accumulate. SwarmGraph.dispose() calls pubsub.dispose() but only if the lazy getter was triggered.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T10:35:00Z`
-- **fixer_completed:** `2026-03-21T10:35:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
 - **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T01:25:00Z`
+- **validator_completed:** `2026-03-22T01:25:00Z`
+- **validator_notes:** `REOPENED: Eviction cap silently kills live subscribers (no notification to caller). dispose() method removed entirely (regression for lifecycle management). Empty-Set cleanup dropped from unsubscribe closure. Fix must: restore dispose(), restore empty-Set cleanup, use WeakRef or proper lifecycle hooks instead of silent eviction.`
 
 ---
 
@@ -984,28 +924,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T11:05:00Z`
 - **fixer_completed:** `2026-03-21T11:05:00Z`
 - **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0422
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `packages/integrations/src/adapter/index.ts`
-- **line:** `57`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0422`
-- **description:** `authResolver.resolve()` is awaited with no try/catch — credential resolution errors propagate raw without indicating which tool or action failed.
-- **context:** In multi-tool pipelines, a credential-not-found error from the resolver surfaces without tool-scoped context, making it difficult to identify which integration failed and why.
-- **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** `2026-03-21T10:35:00Z`
-- **fixer_completed:** `2026-03-21T10:35:00Z`
-- **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
+- **validator_started:** `2026-03-22T01:25:00Z`
+- **validator_completed:** `2026-03-22T01:25:00Z`
 - **validator_notes:** ``
 
 ---
@@ -1024,9 +944,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T13:35:00Z`
 - **fixer_completed:** ``
 - **fix_summary:** `Duplicate of verified BUG-0325 (MCP response validation).`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-22T01:25:00Z`
+- **validator_completed:** `2026-03-22T01:25:00Z`
+- **validator_notes:** `authResolver.resolve() wrapped in try/catch. Re-throws with tool name context. Single commit, scope clean. Verified.`
 
 ---
 
@@ -1091,7 +1011,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0450
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/json.ts`
 - **line:** `10`
@@ -1101,9 +1021,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The initial `readFile` call for JSON files has no try/catch, so ENOENT/EACCES errors throw raw Node.js errors instead of wrapped DocumentLoader errors.
 - **context:** CsvLoader and PdfLoader wrap their readFile calls with descriptive messages; JsonLoader omits this for regular file reads, breaking the uniform error-handling contract of the loaders package.
 - **hunter_found:** `2026-03-21T17:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T20:15:00Z`
+- **fixer_completed:** `2026-03-21T20:15:00Z`
+- **fix_summary:** `readFile try-catch only. All JSON.parse and JSONL guards preserved. +6/-1.`
 - **validator_started:** `2026-03-22T01:05:00Z`
 - **validator_completed:** `2026-03-22T01:05:00Z`
 - **validator_notes:** `REOPENED: readFile try/catch is correct, but fix removed existing JSON.parse guards from main. Plain .json path JSON.parse is now unguarded (was wrapped on main). JSONL per-line error handling (console.warn + skip) also removed. Fixer must re-add try/catch for both JSON.parse call sites.`
@@ -1111,19 +1031,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0452
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/pregel/checkpointing.ts`
 - **line:** `51`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0452`
 - **description:** `updateState()` performs a non-atomic read-modify-write on the checkpoint store — concurrent calls for the same threadId can clobber each other's writes.
 - **context:** Lines 51–53 do get → applyUpdate → put with no locking or versioning. Two async flows (e.g., HITL resume and a parallel node completion) calling updateState concurrently on the same threadId will both fetch the same base checkpoint and the second put overwrites the first.
 - **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T20:15:00Z`
+- **fixer_completed:** `2026-03-21T20:15:00Z`
+- **fix_summary:** `Per-threadId promise-chain mutex for updateState.`
 - **validator_started:** `2026-03-22T01:15:00Z`
 - **validator_completed:** `2026-03-22T01:15:00Z`
 - **validator_notes:** `finalizeMemory wrapped in separate try/catch in finally block. console.warn on error. Distinct from fireSessionEnd fix. Verified.`
@@ -1231,19 +1151,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0458
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/events/bridge.ts`
 - **line:** `37`
 - **category:** `memory-leak`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0458`
 - **description:** The `startTimes` map in `bridgeSwarmTracer()` is never bounded — if an `agent_start` event fires without a corresponding `agent_complete` or `agent_error`, the entry leaks indefinitely.
 - **context:** startTimes is populated on every agent_start (line 37) and cleaned up only on agent_complete (line 49) or agent_error (line 61). A crashed or killed agent that never emits a terminal event will leak its entry for the lifetime of the bridge. No TTL eviction, max size, or cleanup hook exists.
 - **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T20:15:00Z`
+- **fixer_completed:** `2026-03-21T20:15:00Z`
+- **fix_summary:** `Cap startTimes map at 1000 entries with oldest-eviction.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1291,7 +1211,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0358
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/harness/hooks-engine.ts`
 - **line:** `360`
@@ -1303,9 +1223,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0358`
 - **hunter_found:** `2026-03-20T14:51:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T20:15:00Z`
+- **fixer_completed:** `2026-03-21T20:15:00Z`
+- **fix_summary:** `Exactly 1 line: chmod regex changed to /chmod\s+0?[46][0-7]{3}\b/. Fresh branch, no scope creep.`
 - **validator_started:** `2026-03-22T01:15:00Z`
 - **validator_completed:** `2026-03-22T01:15:00Z`
 - **validator_notes:** `REOPENED: Regex broken — false negatives for setuid modes (4755, 6755 not matched) and false positives for safe modes (644 matched). Correct regex should be /chmod\s+0?[46][0-7]{3}\b/. Also 5+ out-of-scope security regressions: fail-closed behavior removed, onAny return type broken, arg matching reverted, dangerous patterns removed.`
