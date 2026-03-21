@@ -111,6 +111,9 @@ export abstract class PersistentCheckpointer<S> implements ONICheckpointer<S> {
     const all = await this.list(source);
     const upTo = all.filter((c) => c.step <= step);
     if (!upTo.length) return false;
+    // Clear any pre-existing checkpoints for the destination thread to prevent
+    // a corrupted mixed timeline when dest was previously used.
+    await this.delete(dest);
     for (const c of upTo) {
       await this.put({ ...c, threadId: dest });
     }
