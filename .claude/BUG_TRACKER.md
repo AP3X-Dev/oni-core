@@ -13,12 +13,12 @@
 | **Last Hunter Scan** | `2026-03-21T08:40:00Z` |
 | **Last Fixer Pass** | `2026-03-21T09:15:00Z` |
 | **Last Validator Pass** | `2026-03-21T06:33:09Z` |
-| **Last Digest Run** | `2026-03-21T05:52:59Z` |
+| **Last Digest Run** | `2026-03-21T06:41:21Z` |
 | **Last Security Scan** | `2026-03-23T19:20:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:58:00Z` |
+| **Last TestGen Run** | `2026-03-21T23:43:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T06:37:20Z` (Cycle 234) |
 | **Last Supervisor Pass** | `2026-03-21T06:40:31Z` |
 | **Total Found** | `399` |

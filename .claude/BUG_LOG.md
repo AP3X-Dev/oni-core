@@ -2318,6 +2318,64 @@
 
 ---
 
+### BUG-0320
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/swarm/compile-ext.ts`
+- **line:** `57`
+- **category:** `type-error`
+- **reopen_count:** `1`
+- **branch:** `bugfix/BUG-0320`
+- **fix_summary:** `Removed double cast. registry.register(def) direct.`
+- **validator_notes:** `Verified. Types align (same S generic). tsc exits 0.`
+- **archived:** `2026-03-21T06:33:09Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/compile-ext-spawn-register-fidelity.test.ts`
+
+---
+
+### BUG-0322
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/agents/define-agent.ts`
+- **line:** `159`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0322`
+- **fix_summary:** `Push full assistantMsg with toolCalls intact on budget break.`
+- **validator_notes:** `Verified. Full object pushed instead of partial. tsc clean.`
+- **archived:** `2026-03-21T06:33:09Z`
+
+---
+
+### BUG-0323
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/messages/index.ts`
+- **line:** `168`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0323`
+- **fix_summary:** `Only hoist first system message; preserve interleaved positions.`
+- **validator_notes:** `Verified. findIndex for first system, rest array preserves order. tsc clean.`
+- **archived:** `2026-03-21T06:33:09Z`
+
+---
+
+### BUG-0325
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/mcp/client.ts`
+- **line:** `240`
+- **category:** `type-error`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0325`
+- **fix_summary:** `Validate MCP response structure before casting at callTool and initialize.`
+- **validator_notes:** `Verified. callTool/initialize/refreshTools validated. Descriptive Error on malformed. tsc clean.`
+- **archived:** `2026-03-21T06:33:09Z`
+
+---
+
 ### BUG-0301
 - **status:** `verified`
 - **severity:** `high`
