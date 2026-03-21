@@ -50,7 +50,6 @@ export class ONIError extends Error {
       recoverable: this.recoverable,
       suggestion: this.suggestion,
       context: this.context,
-      stack: this.stack,
     };
   }
 
