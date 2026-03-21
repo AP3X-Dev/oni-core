@@ -1,14 +1,14 @@
-# Branch Map — Cycle 305
+# Branch Map — Cycle 306
 
-**Generated:** 2026-03-22T06:00:00Z
-**Main HEAD:** ebeb7c4
+**Generated:** 2026-03-22T07:00:00Z
+**Main HEAD:** 963f021
 **Total Branches:** 3 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
 |---|---|---|---|---|---|
-| bugfix/BUG-0343 | blocked | 49 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout fix correct but branch has 7-file scope contamination (redis/index.ts, checkpointers/redis.ts, pool.ts, .claude/ docs); reopen_count=3; auto-blocked; human must cherry-pick safety-gate.ts line only (commit ddec8f5) |
-| bugfix/BUG-0356 | blocked | 54 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — auto-blocked after 3 failed attempts; branch has out-of-scope regressions; human must cherry-pick single postgres .catch() line (commit 28a4811) |
-| bugfix/BUG-0359 | blocked | 54 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked (reopen_count=3); human intervention required (commit 27d8480) |
+| bugfix/BUG-0343 | blocked | 51 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout fix correct but branch has 7-file scope contamination (redis/index.ts, checkpointers/redis.ts, pool.ts, .claude/ docs); reopen_count=3; auto-blocked; human must cherry-pick safety-gate.ts line only (commit ddec8f5) |
+| bugfix/BUG-0356 | blocked | 56 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — auto-blocked after 3 failed attempts; branch has out-of-scope regressions; human must cherry-pick single postgres .catch() line (commit 28a4811) |
+| bugfix/BUG-0359 | blocked | 56 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked (reopen_count=3); human intervention required (commit 27d8480) |
 
 ## Active Worktrees
 
@@ -27,13 +27,13 @@ No active agent worktrees.
 
 No conflict branches this cycle. All 3 remaining bugfix branches are conflict-free via `git merge-tree`.
 
-## Status Changes Since C304
+## Status Changes Since C305
 
-No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts each increased by 1 (C304→C305): BUG-0343: 48→49, BUG-0356/0359: 53→54.
+No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts each increased by 2 (C305→C306): BUG-0343: 49→51, BUG-0356/0359: 54→56.
 
 ## GC Note
 
-**GC EXECUTED CYCLE 300.** Next GC: Cycle 306 (NEXT cycle — due now).
+**GC EXECUTED CYCLE 306.** Next GC: Cycle 312 (+6).
 
 ## File Overlap Summary (Cycle 305)
 
