@@ -4,6 +4,31 @@
 
 ---
 
+### ESC-014 — `2026-03-22T18:15:00Z`
+- **type:** `cooldown-escalation`
+- **bug_id:** `BUG-0455`
+- **cycles_persisted:** `4+` (first seen Cycle 68, persisted through Cycles 69, 70, 71, 72)
+- **file:** `src/harness/safety-gate.ts`
+- **line:** `96`
+- **error:** `TS2304: Cannot find name 'timeoutHandle'`
+- **description:** `timeoutHandle` is declared with `let` inside the `try` block (line 86) but referenced in the `catch` block (line 96), making it out of scope at the catch site. TypeScript correctly rejects this. Fix: move `let timeoutHandle: ReturnType<typeof setTimeout> | undefined;` to before the `try` statement (line ~77), outside the try/catch scope.
+- **impact:** Build broken — `tsc --noEmit` exits 2. Safety gate fail-closed path (`clearTimeout(timeoutHandle)` in catch) is unreachable/broken.
+- **action_required:** Human or Fixer must move the `timeoutHandle` declaration outside the `try` block in `src/harness/safety-gate.ts`. Exact fix: move line 86 (`let timeoutHandle: ReturnType<typeof setTimeout> | undefined;`) to before line 77 (`let response: ...`).
+- **escalated_by:** `CI Sentinel Cycle 72`
+
+---
+
+### CI Sentinel — Cycle 72 — `2026-03-22T18:15:00Z`
+- **result:** `build-failure + test-failures`
+- **build:** BROKEN — `src/harness/safety-gate.ts(96,20): error TS2304: Cannot find name 'timeoutHandle'`
+- **tests:** 14 failed / 1429 passed / 2 skipped (8 failed suites)
+- **bugs_filed:** 0
+- **escalations_filed:** 1 (ESC-014 — BUG-0455 cooldown, safety-gate.ts TS2304)
+- **consecutive_failures:** 1 (build broken this cycle; tests ran)
+- **notes:** All 14 test failures are attributed to known tracked bugs (BUG-0312: 2, BUG-0363: 3, BUG-0436: 1, BUG-0454: 1, BUG-0455: 2, BUG-0456: 1, BUG-0457: 3). No new regressions detected. BUG-0455 has persisted 4+ cycles — ESC-014 filed per cooldown rule. ESC-013 (BUG-0451 duplicate dispose()) — status unknown, may be resolved (build error changed from TS2393 to TS2304, suggesting BUG-0451 was fixed). 10 untracked Hunter test files present (picked up by vitest, all passing).
+
+---
+
 ### CI Sentinel — Cycle 63 — `2026-03-21T23:30:00Z`
 - **result:** `build-failure`
 - **build:** BROKEN — `src/swarm/graph.ts(245,3): error TS2393` and `src/swarm/graph.ts(378,3): error TS2393`
@@ -3405,5 +3430,314 @@
 - **validator_completed:** `2026-03-22T03:52:00Z`
 - **validator_notes:** `Confirmed on main: readFile try-catch (11-16), JSONL per-line try-catch (22-30), JSON.parse try-catch (36-40). All 3 coexist. Verified.`
 - **archived:** `2026-03-22T03:52:00Z`
+
+---
+
+### BUG-0452
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/harness/memory/index.ts`
+- **line:** `518`
+- **category:** `test-regression`
+- **description:** `MemoryLoader.buildSystemPrompt()` returns empty string after `wake()` because hydrated unit content is never written back to `this.units` — `applyBudget` returns a hydrated copy but the Map entry remains content-less, causing the `!unit.content` guard in `prompter.ts` to skip every unit.
+- **context:** CI Sentinel Cycle 69 (2026-03-21T18:20:41Z). Test `"includes content from loaded units"` in `src/__tests__/memory-loader.test.ts:248` fails — `loader.wake()` marks the key as loaded but `this.units` still holds the pre-hydration unit (no `content` field). `buildSystemPrompt` iterates `this.units`, hits `if (!unit.content) continue` at `prompter.ts:22`, and outputs `""`.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0452`
+- **hunter_found:** `2026-03-21T18:20:41Z`
+- **fixer_started:** `2026-03-22T19:22:00Z`
+- **fixer_completed:** `2026-03-22T19:26:00Z`
+- **fix_summary:** `Added this.units.set(unit.key, hydrated) in MemoryLoader.hydrate() after constructing the hydrated copy, so all load paths (wake/orient/match/query/load/loadType) persist content back to the map. buildSystemPrompt() now finds unit.content populated.`
+- **validator_started:** `2026-03-21T19:40:00Z`
+- **validator_completed:** `2026-03-21T19:46:00Z`
+- **validator_notes:** `Confirmed this.units.set(unit.key, hydrated) added at line 533 of hydrate(). All 6 load paths (wake/orient/match/query/load/loadType) route through hydrate(). Early return at line 519 prevents re-reads. Diff is minimal (1 file, 13 insertions, 5 deletions). tsc clean. Branch already merged to main (commit f3add0b). Verified.`
+- **archived:** `2026-03-21T19:46:00Z`
+
+---
+
+### BUG-0453
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/testing/index.ts`
+- **line:** `135`
+- **category:** `test-regression`
+- **description:** `createTestHarness.invoke()` uses `Date.now()` as the thread ID, which produces identical IDs for rapid back-to-back calls — test `"generates separate thread IDs per invocation"` fails because both invocations share the same millisecond timestamp and therefore the same thread, so state bleeds between them.
+- **context:** CI Sentinel Cycle 69 (2026-03-21T18:20:41Z). Test `"generates separate thread IDs per invocation"` in `src/__tests__/testing-utils.test.ts:173` fails: `expected 'bbb' to be 'BBB'`.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0453`
+- **hunter_found:** `2026-03-21T18:20:41Z`
+- **fixer_started:** `2026-03-22T19:22:00Z`
+- **fixer_completed:** `2026-03-22T19:24:00Z`
+- **fix_summary:** `Replaced Date.now() with crypto.randomUUID() (imported from node:crypto) in both invoke() and collectStream() of createTestHarness in src/testing/index.ts. Each invocation now gets a globally unique thread ID regardless of call timing.`
+- **validator_started:** `2026-03-21T19:40:00Z`
+- **validator_completed:** `2026-03-21T19:46:00Z`
+- **validator_notes:** `Confirmed randomUUID import from node:crypto at line 9. Both invoke() (line 135) and collectStream() (line 140) now use crypto.randomUUID(). 17/17 tests in testing-utils.test.ts pass including the previously failing test. Diff is minimal (3 lines in 1 file). No code depends on old numeric timestamp format. tsc clean. Verified.`
+- **archived:** `2026-03-21T19:46:00Z`
+
+---
+
+### BUG-0454
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/checkpointers/namespaced.ts`
+- **line:** `1`
+- **category:** `test-regression`
+- **description:** Subgraph checkpoints are not isolated from parent: `NamespacedCheckpointer.list("child:parent-1")` returns 0 entries even after the subgraph has written checkpoints, causing the test `"subgraph checkpoints are isolated from parent"` to fail with `expected 0 to be greater than 0`.
+- **context:** CI Sentinel Cycle 69 (2026-03-21T18:20:41Z). Test `"subgraph checkpoints are isolated from parent"` in `src/__tests__/checkpoint-namespace.test.ts:40` fails. Root cause: writes used `threadId:ns` format while reads expected `ns:threadId`.
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0454`
+- **hunter_found:** `2026-03-21T18:20:41Z`
+- **fixer_started:** `2026-03-22T19:22:00Z`
+- **fixer_completed:** `2026-03-22T19:26:00Z`
+- **fix_summary:** `Swapped subgraph checkpoint threadId interpolation order from "parentThreadId:subgraphName" to "subgraphName:parentThreadId" in src/pregel/streaming.ts:268 and src/graph.ts:94. NamespacedCheckpointer.list() expects ns:threadId format; writes were using threadId:ns, causing empty results on read.`
+- **validator_started:** `2026-03-21T19:40:00Z`
+- **validator_completed:** `2026-03-21T19:46:00Z`
+- **validator_notes:** `Confirmed NamespacedCheckpointer.prefix() constructs keys as ns:threadId (line 16-18). Fix swaps interpolation in streaming.ts:268 and graph.ts:94 to match. Both checkpoint-namespace tests pass on branch. 4 lines changed in 2 files. No regressions in related tests. tsc clean. Verified.`
+- **archived:** `2026-03-21T19:46:00Z`
+
+---
+
+### BUG-0294
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/graph.ts`
+- **line:** `226`
+- **category:** `security-injection`
+- **description:** `StateGraph.toMermaid()` embeds raw node names into Mermaid markup without sanitization, enabling Mermaid injection.
+- **reopen_count:** `3`
+- **branch:** _(fixed directly on main by human)_
+- **fix_summary:** `Added sanitize() helper in toMermaid() lbl() function. Strips newlines, semicolons, angle brackets, and other Mermaid-special characters from node names.`
+- **validator_notes:** `Human-verified. sanitize() applied in lbl() for non-START/non-END nodes. tsc clean, tests pass.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0304
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/guardrails/budget.ts`
+- **line:** `57`
+- **category:** `security-auth`
+- **description:** `BudgetTracker.record()` performs no validation on token counts — NaN or negative values permanently disable budget enforcement.
+- **reopen_count:** `3`
+- **branch:** _(fixed directly on main by human)_
+- **fix_summary:** `Added isFinite and non-negative validation at start of record(). Invalid values clamped to 0 with audit entry. All downstream uses reference sanitized locals.`
+- **validator_notes:** `Human-verified. NaN no longer poisons accumulators. tsc clean, tests pass.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0305
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `140`
+- **category:** `security-auth`
+- **description:** Handoff context merge allows overwriting privileged __-prefixed state fields.
+- **reopen_count:** `3`
+- **branch:** _(fixed directly on main by human)_
+- **fix_summary:** `Filter out __-prefixed keys from handoff.context before merging into state.context. Also applied same filter to normal completion path (BUG-0399 regression test now passes).`
+- **validator_notes:** `Human-verified. Both handoff and normal completion paths filter __-prefixed keys. BUG-0399 test passes.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0306
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/swarm/pool.ts`
+- **line:** `275`
+- **category:** `missing-error-handling`
+- **description:** `onError` hook awaited without try/catch — a throwing hook replaces the original error.
+- **reopen_count:** `3`
+- **branch:** _(fixed directly on main by human)_
+- **fix_summary:** `Wrapped onError hook call in try/catch with console.warn, matching onStart/onComplete guards.`
+- **validator_notes:** `Human-verified. 5-line fix, scoped to single call site. tsc clean.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0348
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/harness/loop/tools.ts`
+- **line:** `118`
+- **category:** `logic-bug`
+- **description:** Local `stripProtoKeys` function shadows module-level version with different behavior.
+- **reopen_count:** `0`
+- **branch:** _(fixed directly on main by human — Fixer incorrectly declared false positive)_
+- **fix_summary:** `Removed local redefinition at line 118. Now calls module-level stripProtoKeys which has proper array handling and uses PROTO_POLLUTING_KEYS set.`
+- **validator_notes:** `Human-verified. The bug was real — Fixer's "false positive" claim was incorrect. Code at lines 29 and 118 both existed.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0352
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/factories.ts`
+- **line:** `743`
+- **category:** `logic-bug`
+- **description:** `buildDag` mutates edges without clearing conditionalEdges/pathMaps.
+- **fix_summary:** `FALSE POSITIVE confirmed. StateGraph has no conditionalEdges or pathMaps fields. All edges stored in single edges[] array which is correctly cleared.`
+- **validator_notes:** `Human-verified false positive. grep confirms no conditionalEdges or pathMaps in factories.ts.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0354
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/swarm/pool.ts`
+- **line:** `211`
+- **category:** `dead-code`
+- **description:** `if (!total) return null` guard in pickSlot() round-robin case is unreachable.
+- **reopen_count:** `0`
+- **branch:** _(fixed directly on main by human — Fixer incorrectly declared false positive)_
+- **fix_summary:** `Removed dead code. available.length is guaranteed >0 by guard on line 204. Eliminated unnecessary total variable.`
+- **validator_notes:** `Human-verified. The bug was real — dead code existed at line 211.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0370
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `117`
+- **category:** `race-condition`
+- **fix_summary:** `BY DESIGN. Fan-out sends execute in parallel; LWW channels intentionally keep last write. Use appendList for accumulation. Not a bug.`
+- **validator_notes:** `Human-verified. LWW semantics are the intended behavior for fan-out.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0371
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `204`
+- **category:** `race-condition`
+- **fix_summary:** `BY DESIGN. Parallel node results applied sequentially with progressive accumulation. LWW semantics intentional.`
+- **validator_notes:** `Human-verified. Same design rationale as BUG-0370.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0385
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/integrations/src/adapter/auth-resolver.ts`
+- **line:** `47`
+- **category:** `dead-code`
+- **fix_summary:** `BY DESIGN. scope parameter is a placeholder for future access control. The warning is intentional documentation of the missing feature. Not dead code — it's an unimplemented feature placeholder.`
+- **validator_notes:** `Human-verified. Fixer incorrectly declared false positive — the code exists. But it's a feature gap, not a bug.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0396
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/pool.ts`
+- **line:** `269`
+- **category:** `missing-error-handling`
+- **fix_summary:** `DUPLICATE of BUG-0306 (same file, same line, same issue). Fixed as part of BUG-0306 resolution.`
+- **validator_notes:** `Human-verified duplicate. onError hook now wrapped in try/catch.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0405
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/swarm/compile-ext.ts`
+- **line:** `57`
+- **category:** `type-error`
+- **fix_summary:** `DUPLICATE of verified BUG-0320 (same file, same double-cast issue).`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0411
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/coordination/request-reply.ts`
+- **line:** `71`
+- **category:** `race-condition`
+- **fix_summary:** `DUPLICATE of verified BUG-0330 (same TOCTOU in request-reply.ts). Also: Node.js single-threaded event loop makes this a non-issue — setTimeout callbacks don't interleave with synchronous code.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0423
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/mcp/client.ts`
+- **line:** `121`
+- **category:** `type-error`
+- **fix_summary:** `DUPLICATE of verified BUG-0325 (MCP response validation).`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0424
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/mcp/client.ts`
+- **line:** `240`
+- **category:** `type-error`
+- **fix_summary:** `DUPLICATE of verified BUG-0325 (MCP response validation).`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0432
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/models/openai.ts`
+- **line:** `452`
+- **category:** `missing-error-handling`
+- **fix_summary:** `DUPLICATE of verified BUG-0376 (OpenAI embed JSON parsing).`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0368
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/__tests__/pregel-nodes-snapshot-regression.test.ts`
+- **category:** `test-regression`
+- **fix_summary:** `TRANSIENT. Test passes on current main. Regression was caused by stale working-tree changes, now resolved.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0369
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/__tests__/swarm/supervisor-routing-error.test.ts`
+- **category:** `infrastructure`
+- **fix_summary:** `TRANSIENT. Vitest worker pool issue triggered by BUG-0368 test hang. Self-resolved.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0401
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/__tests__/swarm/skill-evolver-esm-path.test.ts`
+- **category:** `infrastructure`
+- **fix_summary:** `TRANSIENT. Test passes in isolation (2/2 green). Vitest worker pool module resolution issue.`
+- **archived:** `2026-03-21T22:00:00Z`
+
+---
+
+### BUG-0402
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/__tests__/`
+- **category:** `infrastructure`
+- **fix_summary:** `TRANSIENT. Mass ghost-suite failure during parallel npm test. All suites pass in isolation. Vitest worker pool exhaustion under high concurrency.`
+- **archived:** `2026-03-21T22:00:00Z`
 
 ---
