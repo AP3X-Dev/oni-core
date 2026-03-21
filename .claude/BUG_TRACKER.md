@@ -11,16 +11,16 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-20T23:02:00Z` |
 | **Last Hunter Scan** | `2026-03-20T22:31:00Z` |
-| **Last Fixer Pass** | `2026-03-21T08:05:00Z` |
-| **Last Validator Pass** | `2026-03-21T06:05:19Z` |
+| **Last Fixer Pass** | `2026-03-21T08:25:00Z` |
+| **Last Validator Pass** | `2026-03-21T06:17:36Z` |
 | **Last Digest Run** | `2026-03-21T05:52:59Z` |
-| **Last Security Scan** | `2026-03-23T18:00:00Z` |
+| **Last Security Scan** | `2026-03-23T18:20:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:55:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T08:15:00Z` (Cycle 231) |
-| **Last Supervisor Pass** | `2026-03-21T06:20:30Z` |
+| **Last TestGen Run** | `2026-03-20T23:58:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T08:30:00Z` (Cycle 232) |
+| **Last Supervisor Pass** | `2026-03-21T06:25:30Z` |
 | **Total Found** | `399` |
 | **Total Pending** | `2` |
 | **Total In Progress** | `0` |
@@ -286,7 +286,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0305
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `122`
@@ -296,59 +296,17 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `2`
 - **branch:** `bugfix/BUG-0305-ctx`
 - **hunter_found:** `2026-03-20T20:08:29Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T08:25:00Z`
+- **fixer_completed:** `2026-03-21T08:25:00Z`
+- **fix_summary:** `Fresh branch from current main. Filter __-prefixed keys from handoff context. +4/-1 lines.`
 - **validator_started:** `2026-03-21T06:13:41Z`
 - **validator_completed:** `2026-03-21T06:17:36Z`
 - **validator_notes:** `REOPENED (2nd time): Fix code is correct (+5/-1 Object.fromEntries filter) but branch is 691 commits behind main. Merging would revert BUG-0305/0263/0285/0296/0240/0239 fixes in agent-node.ts. Fixer must: delete stale branch, create fresh from current main, apply the 5-line filter, commit.`
 
 ---
 
-### BUG-0312
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `src/coordination/pubsub.ts`
-- **line:** `34`
-- **category:** `race-condition`
-- **description:** `publish()` iterates `this.subscribers` Map with `for...of` while subscriber handlers can call `subscribe()` or unsubscribe during delivery. New subscriptions added mid-iteration may or may not be visited in the same `publish()` call, causing non-deterministic event delivery.
-- **context:** Per ECMAScript spec, entries added to a Map during `for...of` iteration will be visited if not yet passed. Handlers that add new subscriptions during delivery can receive the event that triggered them. Fix: snapshot subscribers before iterating (`[...this.subscribers.entries()]`).
-- **reopen_count:** `1`
-- **branch:** `bugfix/BUG-0312`
-- **hunter_found:** `2026-03-21T00:05:00Z`
-- **fixer_started:** `2026-03-21T08:05:00Z`
-- **fixer_completed:** `2026-03-21T08:05:00Z`
-- **fix_summary:** `Snapshot subscribers Map+Sets in publish(). Test file committed on branch. Fresh branch from main.`
-- **validator_started:** `2026-03-21T06:13:41Z`
-- **validator_completed:** `2026-03-21T06:17:36Z`
-- **validator_notes:** `Verified on bugfix/BUG-0312. [...this.subscribers] snapshots Map, [...handlers] snapshots each Set. Test file committed on branch this time (git show confirms). Previous reopen resolved. tsc clean.`
-- **test_generated:** `true`
-- **test_file:** `src/__tests__/pubsub-snapshot-during-publish.test.ts`
-
----
-
-### BUG-0319
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `src/harness/loop/experimental-executor.ts`
-- **line:** `45`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0319`
-- **description:** `timeBudget` is used as the timeout for each individual phase (baseline, applyChanges, post-measurement) rather than a total budget, so total wall time can reach 3x the specified budget.
-- **context:** A caller passing `timeBudget: 5000` expecting the experiment to complete within 5 seconds will instead see up to 15 seconds of execution, violating time expectations and potentially causing cascading timeouts.
-- **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** `2026-03-21T04:20:00Z`
-- **fixer_completed:** `2026-03-21T04:20:00Z`
-- **fix_summary:** `Track elapsed time; pass remaining budget to each phase instead of full timeBudget.`
-- **validator_started:** `2026-03-21T06:13:41Z`
-- **validator_completed:** `2026-03-21T06:17:36Z`
-- **validator_notes:** `Verified on bugfix/BUG-0319. _remaining() tracks elapsed from single startTime. Each phase receives remaining budget. Guard for <=0 returns early with rollback. Total wall time bounded by original timeBudget. tsc clean.`
-
----
-
 ### BUG-0320
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/compile-ext.ts`
 - **line:** `57`
@@ -358,32 +316,12 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `def` is double-cast via `as SwarmAgentDef<Record<string, unknown>> as any` when registering a dynamically spawned agent, completely erasing the generic state type parameter `S`.
 - **context:** The registry stores the agent with the wrong state type, so `createAgentNode` receives a state typed as `Record<string, unknown>` instead of the actual swarm state type, making strongly-typed state field access invisible to the type checker.
 - **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T08:25:00Z`
+- **fixer_completed:** `2026-03-21T08:25:00Z`
+- **fix_summary:** `Removed double cast. registry.register(def) compiles clean since S matches.`
 - **validator_started:** `2026-03-21T06:13:41Z`
 - **validator_completed:** `2026-03-21T06:17:36Z`
 - **validator_notes:** `REOPENED: Branch bugfix/BUG-0320 does not exist. Double cast still present at line 57. def is already SwarmAgentDef<S> matching registry's S, so registry.register(def) should work without any cast. Fixer must: create branch, remove both casts, verify tsc --noEmit clean.`
-
----
-
-### BUG-0321
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `packages/loaders/src/loaders/docx.ts`
-- **line:** `15`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0321`
-- **description:** The mammoth module is cast directly as `MammothLib` without checking for a `.default` export wrapper, so when mammoth is a CJS module loaded via ESM dynamic `import()` the `extractRawText` function resolves to undefined.
-- **context:** CJS packages imported via ESM `import()` frequently expose their API under `.default`. The call to `extractRawText` will crash with "not a function" at runtime rather than surfacing a clear dependency-resolution error.
-- **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** `2026-03-21T03:56:00Z`
-- **fixer_completed:** `2026-03-21T04:02:00Z`
-- **fix_summary:** `Handle CJS default export wrapper in mammoth dynamic import. Uses (raw.default ?? raw) pattern.`
-- **validator_started:** `2026-03-21T06:13:41Z`
-- **validator_completed:** `2026-03-21T06:17:36Z`
-- **validator_notes:** `Verified on bugfix/BUG-0321. (mod.default ?? mod) CJS interop pattern. Single-line change. Standard ESM/CJS interop idiom. tsc clean.`
 
 ---
 

@@ -2273,6 +2273,51 @@
 
 ---
 
+### BUG-0312
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/coordination/pubsub.ts`
+- **line:** `34`
+- **category:** `race-condition`
+- **reopen_count:** `1`
+- **branch:** `bugfix/BUG-0312`
+- **fix_summary:** `Snapshot Map+Sets in publish().`
+- **validator_notes:** `Verified. Snapshots correct. Test on branch. tsc clean.`
+- **archived:** `2026-03-21T06:17:36Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/pubsub-snapshot-during-publish.test.ts`
+- **test_notes:** `Test file exists on disk (3 cases). 2/3 fail because source fix is on bugfix/BUG-0312 branch, not main. Tests will pass once branch is merged.`
+
+---
+
+### BUG-0319
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/harness/loop/experimental-executor.ts`
+- **line:** `45`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0319`
+- **fix_summary:** `Track elapsed, pass remaining budget per phase.`
+- **validator_notes:** `Verified. _remaining() tracks elapsed. Rollback on timeout. tsc clean.`
+- **archived:** `2026-03-21T06:17:36Z`
+
+---
+
+### BUG-0321
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/loaders/src/loaders/docx.ts`
+- **line:** `15`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0321`
+- **fix_summary:** `(mod.default ?? mod) CJS interop.`
+- **validator_notes:** `Verified. Standard ESM/CJS idiom. tsc clean.`
+- **archived:** `2026-03-21T06:17:36Z`
+
+---
+
 ### BUG-0301
 - **status:** `verified`
 - **severity:** `high`
