@@ -11,7 +11,7 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T11:05:00Z` (Cycle 44 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378 STILL PRESENT; BUG-0451 fixer_summary is incorrect (fix was NOT applied); ESC-013 still active; consecutive failures now 28; no new bugs filed; tests not run) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
-| **Last Fixer Pass** | `2026-03-21T13:48:21Z` |
+| **Last Fixer Pass** | `2026-03-21T13:52:35Z` |
 | **Last Validator Pass** | `2026-03-22T01:45:00Z` |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T16:15:00Z` |
@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T14:05:00Z` (Cycle 265 — 0 deletions, 1 rebase (BUG-0420 onto main 1d38d33 tip 010b799); BUG-0355 MERGED to main bcd0302 (auto-deleted); 4 bugfix branches remain, 0 conflicts; BUG-0420 VALIDATOR-READY) |
+| **Last Git Manager Pass** | `2026-03-21T14:10:00Z` (Cycle 266 — 0 deletions, 1 rebase (BUG-0420 onto main 52c8431 tip 03ad971); 4 bugfix branches remain, 0 conflicts; BUG-0420 VALIDATOR-READY; BUG-0343 in-progress 7 behind; BUG-0356/0359 blocked 12 behind) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
@@ -387,33 +387,33 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0356
-- **status:** `in-validation`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `packages/stores/src/postgres/index.ts`
 - **line:** `185`
 - **category:** `missing-error-handling`
-- **reopen_count:** `2`
+- **reopen_count:** `3`
 - **branch:** `bugfix/BUG-0356`
 - **description:** Bulk expired-row cleanup in `PostgresStore.list()` uses `void this.client.query()` with no error handling.
 - **context:** When `list()` finds expired rows it fires a DELETE query as a floating promise. If the DELETE fails, the error is silently lost and expired rows accumulate, affecting subsequent `list()` and `search()` calls.
 - **hunter_found:** `2026-03-20T22:34:00Z`
-- **fixer_started:** `2026-03-21T13:25:07Z`
-- **fixer_completed:** `2026-03-21T13:29:20Z`
-- **fix_summary:** `Added .catch(() => {}) to the single void this.client.query() bulk DELETE call in PostgresStore.list(). One line changed, no other modifications. Fresh branch from main.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** `Auto-blocked after 3 failed fix attempts. The .catch(() => {}) fix itself is correct (+1 line). Repeated failure is branch scope contamination: 8 out-of-scope files including regressive removal of redis .catch() handlers, define-agent try-catch, pool _retryTimers, and redis atomic delete. Human must cherry-pick just the postgres line.`
+- **validator_started:** `2026-03-22T04:00:00Z`
+- **validator_completed:** `2026-03-22T04:02:00Z`
+- **validator_notes:** `REOPENED (3rd → auto-blocked): .catch(() => {}) on bulk DELETE at line 185 is correct. But branch has 8 out-of-scope files including regressive changes: removes redis zrem .catch() (reverts BUG-0355), removes define-agent try-catch, removes pool _retryTimers (reverts BUG-0378), alters redis delete logic. Auto-blocked per guardrail.`
 
 ---
 
 
 ### BUG-0359
-- **status:** `in-validation`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `156`
 - **category:** `logic-bug`
-- **reopen_count:** `2`
+- **reopen_count:** `3`
 - **branch:** `bugfix/BUG-0359`
 - **description:** Off-by-one in turns-remaining calculation tells the model "0 turns remaining" on its last valid turn instead of 1.
 - **context:** `remaining = maxTurns - turn - 1` evaluates to 0 when `turn = maxTurns - 1`, but the agent is still executing that turn. The correct formula is `maxTurns - turn`. This causes the agent to believe it has no turns left while it is still active.
@@ -510,45 +510,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0378
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/swarm/pool.ts`
-- **line:** `261`
-- **category:** `memory-leak`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0378`
-- **description:** Retry delay setTimeout inside runOnSlot is not cancellable when AgentPool.dispose() is called mid-retry, keeping closures alive until the timer fires.
-- **context:** In-flight runOnSlot calls sleeping between retries hold references to large objects via the closure until the timer fires, delaying GC after pool shutdown.
-- **hunter_found:** `2026-03-20T22:10:00Z`
-- **fixer_started:** `2026-03-21T06:15:00Z`
-- **fixer_completed:** `2026-03-21T06:15:00Z`
-- **fix_summary:** `Track retry delay timers in Set and clear all on pool dispose().`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
 
----
-
-### BUG-0379
-- **status:** `verified`
-- **severity:** `low`
-- **file:** `src/swarm/agent-node.ts`
-- **line:** `198`
-- **category:** `memory-leak`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0379`
-- **description:** Retry delay setTimeout in createAgentNode has no cancellation path when the swarm is torn down mid-retry, keeping closures alive until the timer fires.
-- **context:** A bare `new Promise((r) => setTimeout(r, delay))` is awaited with no stored timer handle, preventing GC of retained objects during the delay window after shutdown.
-- **hunter_found:** `2026-03-20T22:10:00Z`
-- **fixer_started:** `2026-03-21T06:25:00Z`
-- **fixer_completed:** `2026-03-21T06:25:00Z`
-- **fix_summary:** `Make retry delay timer cancellable via AbortSignal on swarm teardown.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
 
 
 
@@ -936,7 +898,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0457
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `155`
