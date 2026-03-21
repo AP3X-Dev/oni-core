@@ -50,7 +50,7 @@ function assertONIError(
   expect(json.category).toBe(expected.category);
   expect(json.message).toBe(err.message);
   expect(json.recoverable).toBe(expected.recoverable);
-  expect(typeof json.stack).toBe("string");
+  expect(json).not.toHaveProperty("stack");
 }
 
 // ── Tests ─────────────────────────────────────────────────────
@@ -100,7 +100,28 @@ describe("ONIError base class", () => {
       suggestion: "fix it",
       context: { a: 2 },
     });
-    expect(typeof json.stack).toBe("string");
+    expect(json).not.toHaveProperty("stack");
+  });
+
+  it("toInternalJSON() includes stack for internal logging", () => {
+    const err = new ONIError("msg", {
+      code: "ONI_X",
+      category: "STREAM",
+      recoverable: false,
+      suggestion: "fix it",
+      context: { a: 2 },
+    });
+    const internal = err.toInternalJSON();
+    expect(internal).toMatchObject({
+      name: "ONIError",
+      code: "ONI_X",
+      category: "STREAM",
+      message: "msg",
+      recoverable: false,
+      suggestion: "fix it",
+      context: { a: 2 },
+    });
+    expect(typeof internal.stack).toBe("string");
   });
 });
 
