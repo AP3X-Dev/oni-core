@@ -125,7 +125,7 @@ export class PostgresStore extends BaseStore {
       void this.client.query(
         `DELETE FROM oni_store WHERE prefix = $1 AND namespace = $2 AND key = $3`,
         [this.prefix, this.nsStr(namespace), key]
-      );
+      ).catch(err => console.error('Failed to delete expired row:', err));
       return null;
     }
 
