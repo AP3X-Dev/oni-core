@@ -96,6 +96,9 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
   while (true) {
     const nextNodes: NodeName[] = [];
     const nextSends: PendingSend[] = [];
+    // Snapshot the nodes map at the start of each superstep so concurrent
+    // spawnAgent()/removeAgent() mutations do not corrupt mid-iteration reads.
+    const nodesSnapshot = new Map(ctx.nodes);
 
     state = resetEphemeral(state, ctx._ephemeralKeys, ctx.channels);
 
@@ -116,7 +119,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
       // Build promises directly — avoids spread+flatMap intermediate arrays
       const sendPromises: Promise<{ name: string; result: NodeReturn<S> }>[] = [];
       for (const [node, sends] of sendGroups) {
-        const nodeDef = ctx.nodes.get(node);
+        const nodeDef = nodesSnapshot.get(node);
         if (!nodeDef) throw new NodeNotFoundError(node);
         for (const send of sends) {
           sendPromises.push(
@@ -179,7 +182,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
     if (modeDebug) {
       for (const nodeName of executableNodes) {
         const name = nodeName as string;
-        if (!ctx.nodes.has(name)) throw new NodeNotFoundError(name);
+        if (!nodesSnapshot.has(name)) throw new NodeNotFoundError(name);
         // Static interrupt BEFORE (check before emitting start)
         if (ctx.interruptConfig.interruptBefore?.includes(name))
           throw new ONIInterrupt(name, "before", state);
@@ -204,7 +207,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
     const allSettledResults = await Promise.allSettled(
       executableNodes.map(async (nodeName) => {
         const name    = nodeName as string;
-        const nodeDef = ctx.nodes.get(name);
+        const nodeDef = nodesSnapshot.get(name);
         if (!nodeDef) throw new NodeNotFoundError(name);
 
         // Static interrupt BEFORE (non-debug mode)
