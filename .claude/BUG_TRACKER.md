@@ -14,15 +14,15 @@
 | **Last Fixer Pass** | `2026-03-21T06:35:00Z` |
 | **Last Validator Pass** | `2026-03-21T05:23:12Z` |
 | **Last Digest Run** | `2026-03-20T00:17:00Z` |
-| **Last Security Scan** | `2026-03-23T13:55:00Z` |
+| **Last Security Scan** | `2026-03-23T14:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T13:45:00Z` |
-| **Last Git Manager Pass** | `2026-03-20T22:10:00Z` (Cycle 223) |
+| **Last Git Manager Pass** | `2026-03-21T05:22:30Z` (Cycle 224) |
 | **Last Supervisor Pass** | `2026-03-21T05:20:32Z` |
-| **Total Found** | `396` |
-| **Total Pending** | `4` |
+| **Total Found** | `397` |
+| **Total Pending** | `8` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `67` |
 | **Total In Validation** | `0` |
@@ -1458,7 +1458,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0382
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/harness/loop/tools.ts`
 - **line:** `128`
@@ -1639,7 +1639,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0391
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/swarm/registry.ts`
 - **line:** `178`
@@ -1722,7 +1722,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0395
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `high`
 - **file:** `src/swarm/self-improvement/experiment-log.ts`
 - **line:** `32`
@@ -1823,6 +1823,25 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
+### BUG-0400
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/tools/src/browser/firecrawl.ts`
+- **line:** `40`
+- **category:** `security-config`
+- **description:** `firecrawl_scrape` tool passes LLM-supplied URLs to the Firecrawl API without validating the URL scheme or host, enabling indirect SSRF via Firecrawl's scraping infrastructure.
+- **context:** The `i.url` parameter from LLM tool calls is sent directly to `https://api.firecrawl.dev/v0/scrape` at line 40 with no validation. A prompt-injected LLM can supply URLs targeting internal networks (`http://169.254.169.254/latest/meta-data/`, `http://localhost:8080/admin`, `http://10.0.0.1/`) which Firecrawl's servers will attempt to fetch. While the request is proxied through Firecrawl (not made from the agent's host), cloud scraping services may not block all internal IP ranges, and the scraped content is returned to the LLM context, potentially leaking sensitive metadata. Fix: validate URL scheme (https/http only) and reject private/reserved IP ranges (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, ::1) before sending to the API. OWASP A10:2021 - Server-Side Request Forgery.
+- **reopen_count:** `0`
+- **branch:** ``
+- **hunter_found:** `2026-03-23T14:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
 <!-- HUNTER: Append new bugs above this line -->
 
 ### BUG-0294
