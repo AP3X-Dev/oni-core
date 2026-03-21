@@ -1,7 +1,7 @@
-# Branch Map — Cycle 329
+# Branch Map — Cycle 330
 
-**Generated:** 2026-03-22T20:20:00Z
-**Main HEAD:** 4c6e9ed
+**Generated:** 2026-03-22T20:30:00Z
+**Main HEAD:** 97e94df
 **Total Branches:** 0 bugfix (0 active, 0 deleted this cycle)
 
 | Branch | Status | Classification | Notes |
@@ -16,15 +16,15 @@ None.
 
 None.
 
-## Status Changes Since C328
+## Status Changes Since C329
 
 No changes — repo remains quiescent.
 
 ## GC Note
 
-Next GC scheduled at Cycle 330 (329 % 6 = 5).
+GC executed this cycle (330 % 6 = 0). `git gc --auto` ran cleanly. Next GC scheduled at Cycle 336.
 
-## File Overlap Summary (Cycle 329)
+## File Overlap Summary (Cycle 330)
 
 No branches — no file overlaps to report.
 
