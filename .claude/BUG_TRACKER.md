@@ -9,7 +9,7 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-22T17:00:00Z` (Cycle 65 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378 STILL PRESENT; ESC-013 still active; 49 consecutive build failures; no new bugs filed; tests not run. 10 untracked Hunter test files present — cannot evaluate until build clean.) |
+| **Last CI Sentinel Pass** | `2026-03-22T18:00:00Z` (Cycle 66 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378 STILL PRESENT; ESC-013 still active; 50 consecutive build failures; no new bugs filed; tests not run. 10 untracked Hunter test files present — cannot evaluate until build clean.) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
 | **Last Fixer Pass** | `2026-03-21T14:44:00Z` |
 | **Last Validator Pass** | `2026-03-22T01:45:00Z` |
