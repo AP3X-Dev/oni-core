@@ -174,13 +174,17 @@ export class InMemoryStore extends BaseStore {
   async list(namespace: Namespace): Promise<StoreItem[]> {
     const prefix = JSON.stringify(namespace);
     const result: StoreItem[] = [];
+    const expired: string[] = [];
     for (const [k, item] of this.data) {
       if (this.isExpired(item)) {
-        this.data.delete(k);
-        this.vectors.delete(k);
+        expired.push(k);
         continue;
       }
       if (JSON.stringify(item.namespace) === prefix) result.push(item);
+    }
+    for (const k of expired) {
+      this.data.delete(k);
+      this.vectors.delete(k);
     }
     return result;
   }
