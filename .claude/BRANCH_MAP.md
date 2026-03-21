@@ -1,14 +1,14 @@
-# Branch Map — Cycle 309
+# Branch Map — Cycle 310
 
-**Generated:** 2026-03-22T12:00:00Z
-**Main HEAD:** 8dd9cbf
+**Generated:** 2026-03-22T14:00:00Z
+**Main HEAD:** caea856
 **Total Branches:** 3 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
 |---|---|---|---|---|---|
-| bugfix/BUG-0343 | blocked | 53 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout fix correct but branch has 7-file scope contamination (redis/index.ts, checkpointers/redis.ts, pool.ts, .claude/ docs); reopen_count=3; auto-blocked; human must cherry-pick safety-gate.ts line only (commit ddec8f5) |
-| bugfix/BUG-0356 | blocked | 58 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — auto-blocked after 3 failed attempts; branch has out-of-scope regressions; human must cherry-pick single postgres .catch() line (commit 28a4811) |
-| bugfix/BUG-0359 | blocked | 58 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked (reopen_count=3); human intervention required (commit 27d8480) |
+| bugfix/BUG-0343 | blocked | 54 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout fix correct but branch has 7-file scope contamination (redis/index.ts, checkpointers/redis.ts, pool.ts, .claude/ docs); reopen_count=3; auto-blocked; human must cherry-pick safety-gate.ts line only (commit ddec8f5) |
+| bugfix/BUG-0356 | blocked | 59 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — auto-blocked after 3 failed attempts; branch has out-of-scope regressions; human must cherry-pick single postgres .catch() line (commit 28a4811) |
+| bugfix/BUG-0359 | blocked | 59 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked (reopen_count=3); human intervention required (commit 27d8480) |
 
 ## Active Worktrees
 
@@ -27,15 +27,15 @@ No active agent worktrees.
 
 No conflict branches this cycle. All 3 remaining bugfix branches are conflict-free via `git merge-tree`.
 
-## Status Changes Since C308
+## Status Changes Since C309
 
-No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts each +1 vs C308 due to Cycle 308 chore commit on main: BUG-0343: 52→53; BUG-0356/0359: 57→58.
+No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts each +1 vs C309 due to Cycle 309 chore commit on main: BUG-0343: 53→54; BUG-0356/0359: 58→59.
 
 ## GC Note
 
-GC executed Cycle 306. Next GC: Cycle 312 (+3).
+GC executed Cycle 306. Next GC: Cycle 312 (+2).
 
-## File Overlap Summary (Cycle 309)
+## File Overlap Summary (Cycle 310)
 
 No overlaps — all 3 remaining bugfix branches touch distinct files:
 - `src/harness/safety-gate.ts` (BUG-0343)
