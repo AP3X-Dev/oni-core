@@ -11,7 +11,7 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T23:31:31Z` |
 | **Last Hunter Scan** | `2026-03-20T19:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T09:45:00Z` |
+| **Last Fixer Pass** | `2026-03-21T10:05:00Z` |
 | **Last Validator Pass** | `2026-03-21T06:43:59Z` |
 | **Last Digest Run** | `2026-03-21T06:41:21Z` |
 | **Last Security Scan** | `2026-03-23T20:20:00Z` |
@@ -19,8 +19,8 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-20T15:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T06:51:00Z` (Cycle 235) |
-| **Last Supervisor Pass** | `2026-03-21T06:45:30Z` |
+| **Last Git Manager Pass** | `2026-03-20T07:30:00Z` (Cycle 236) |
+| **Last Supervisor Pass** | `2026-03-21T06:55:33Z` |
 | **Total Found** | `419` |
 | **Total Pending** | `14` |
 | **Total In Progress** | `0` |
@@ -346,7 +346,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0333
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/json.ts`
 - **line:** `10`
@@ -366,7 +366,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0334
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/cli/init.ts`
 - **line:** `11`
@@ -386,7 +386,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0335
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/harness/context-compactor.ts`
 - **line:** `279`
@@ -406,7 +406,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0336
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/cli/run.ts`
 - **line:** `33`
@@ -1498,19 +1498,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0407
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
 - **line:** `291`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0407`
 - **description:** When a slot drains the queue after disposal, `invoke()` throws synchronously inside a `.then` continuation — `next.reject` is never called and the caller's promise hangs forever.
 - **context:** `invoke()` throws `Error("AgentPool disposed")` synchronously, but the call site chains `.then(next.resolve, next.reject)` expecting a promise. The synchronous throw is swallowed and the queued caller's promise never settles.
 - **hunter_found:** `2026-03-20T18:42:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T10:05:00Z`
+- **fixer_completed:** `2026-03-21T10:05:00Z`
+- **fix_summary:** `Replaced .then(resolve,reject) with .then(resolve).catch(reject) at 3 sites to catch sync throws.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1538,19 +1538,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0409
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/dlq.ts`
 - **line:** `5`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0409`
 - **description:** Module-level `_nextId` counter is a shared mutable variable with non-atomic increment — concurrent `DLQ.record()` calls from parallel node executions can produce duplicate entry IDs.
 - **context:** The Pregel engine executes nodes via Promise.allSettled in parallel; two simultaneous failures can race on `_nextId` pre-increment, producing two DeadLetter entries with identical IDs and breaking deduplication and `remove()` by ID.
 - **hunter_found:** `2026-03-20T18:42:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T10:05:00Z`
+- **fixer_completed:** `2026-03-21T10:05:00Z`
+- **fix_summary:** `Added timestamp suffix to DLQ entry IDs for collision resistance.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1558,19 +1558,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0410
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `176`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0410`
 - **description:** Non-handoff result path returns `handoffHistory` as a single-element array — if the channel reducer is not configured as an accumulator, this replaces all previous handoff history instead of appending.
 - **context:** Every agent completion silently discards all previous handoff history and replaces it with a single entry, making the audit trail useless for multi-agent runs unless the `handoffHistory` channel explicitly uses an append reducer.
 - **hunter_found:** `2026-03-20T18:42:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T10:05:00Z`
+- **fixer_completed:** `2026-03-21T10:05:00Z`
+- **fix_summary:** `Manually accumulate handoffHistory by spreading state.handoffHistory before new entry.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
