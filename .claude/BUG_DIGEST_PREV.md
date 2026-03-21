@@ -9,173 +9,202 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active Bugs | 86 |
+| Total Active Bugs | 79 |
 | Pending | 2 |
 | In Progress | 0 |
-| Fixed (awaiting validation) | 65 |
+| Fixed (awaiting validation) | 58 |
 | In Validation | 3 |
-| Reopened | 1 |
+| Reopened | 0 |
 | Blocked | 17 |
 
 ## 24h Activity Summary
 
 | Metric | Value |
 |--------|-------|
-| Bugs Found | 16 |
-| Bugs Fixed | 60 |
-| Bugs Verified | 10 |
-| Throughput | 10 bugs/day |
+| Bugs Found | 75 |
+| Bugs Fixed | 61 |
+| Bugs Verified | 17 |
+| Throughput | 17 bugs/day |
 | Mean Time to Fix | ~24 hours |
 | Mean Time to Verify | ~24 hours |
-| Reopen Rate | 9.1% |
-| First-Pass Fix Rate | 90.0% |
-| Queue Drain Rate | 0.13 |
-| Blocked Ratio | 19.8% |
+| Reopen Rate | 18.0% |
+| First-Pass Fix Rate | 82.0% |
+| Queue Drain Rate | 0.28 |
+| Blocked Ratio | 21.8% |
 
 ## Severity Distribution
 
 | Severity | Count |
 |----------|-------|
 | Critical | 1 |
-| High | 8 |
-| Medium | 61 |
-| Low | 16 |
+| High | 7 |
+| Medium | 57 |
+| Low | 14 |
 
 ## Top 5 Problem Files
 
 | File | Bug Count |
 |------|-----------|
 | `src/swarm/pool.ts` | 4 |
-| `src/swarm/agent-node.ts` | 3 |
-| `src/pregel/streaming.ts` | 3 |
 | `packages/stores/src/postgres/index.ts` | 3 |
-| `src/swarm/tracer.ts` | 2 |
+| `src/pregel/streaming.ts` | 3 |
+| `src/swarm/agent-node.ts` | 2 |
+| `packages/stores/src/redis/index.ts` | 2 |
 
 ## Top 5 Bug Categories
 
 | Category | Count |
 |----------|-------|
-| logic-bug | 19 |
+| logic-bug | 17 |
 | missing-error-handling | 15 |
 | race-condition | 12 |
-| memory-leak | 9 |
+| memory-leak | 8 |
 | type-error | 6 |
-
-## Recently Verified (Past 24h)
-
-10 bugs transitioned to verified status:
-
-- **BUG-0299** — agent_error latency contribution in scaling
-- **BUG-0327** — parameter chain in agent execution
-- **BUG-0338** — concurrent agent pool state
-- **BUG-0341** — skill registration race
-- **BUG-0349** — event log buffer
-- **BUG-0361** — error propagation in routing
-- **BUG-0373** — task cache coherency
-- **BUG-0382** — hook modifiedInput replacement
-- **BUG-0391** — manifest agent role sanitization
-- **BUG-0395** — concurrent experiment log safety
 
 ## Agent Health
 
 | Agent | Last Activity | Status |
 |-------|--------------|--------|
 | Hunter | 2026-03-20T22:31:00Z | Active (5m interval) |
-| Fixer | 2026-03-21T07:35:00Z | Active (2m interval) |
-| Validator | 2026-03-21T05:37:00Z | Active (5m interval) |
-| CI Sentinel | 2026-03-20T22:42:00Z | Green |
+| Fixer | 2026-03-21T08:05:00Z | Active (2m interval) |
+| Validator | 2026-03-21T06:05:19Z | Active (5m interval) |
+| CI Sentinel | 2026-03-20T23:02:00Z | Green |
 
 ## Bottleneck Analysis
 
-**Critical Concern: Validation Backlog Explosion**
+**Status: Accumulation Continuing**
 
-The validation queue has grown from 52 to 65 bugs fixed and awaiting review (a 25% increase). Despite improving throughput to 10 verified/day (from 7 yesterday), the fixed queue grows faster than verification can clear it.
+The fixed queue remains at 58 bugs awaiting validation (up from prior digests), indicating persistent backlog despite improved throughput.
 
 **Key indicators:**
-- **Fixed queue growth:** 52 → 65 (+13 in 24h, vs +10 verified) — net accumulation of 3 bugs
-- **Queue drain rate dropped to 0.13** — for every bug verified, we're finding and fixing 7.7 new bugs
-- **Blocked count surged to 17** (+8 from yesterday) — 8 bugs hit reopen limit (3 failed fix attempts) and auto-blocked
-- **Active pipeline grew 32%** — 65 → 86 bugs, indicating overall system overload
+- **Fixed queue:** 58 bugs (high watermark) — Fixer producing 61 fixes/24h
+- **Validated queue:** 17 bugs/24h cleared — Validator clearing at steady rate
+- **Net accumulation:** 58 - 17 = 41 net bugs awaiting validation (backlog)
+- **Blocked count:** 17 bugs (21.8% of active pipeline) — 5 infrastructure, 12 requiring human review
+- **Reopen rate:** 18.0% — Elevated; suggests fix quality variability
 
 **Root causes:**
-1. **Validator capacity ceiling reached:** Despite excellent fix quality (90% first-pass rate), the Validator can only clear 10/day. Fixer produces 60/day. This is a 6x throughput gap.
-2. **Reopen limit triggering:** 8 blocks in 24h from auto-reopen-limit-3 rule suggests systematic fix quality issues in specific categories (infrastructure, certain logic-bug patterns).
-3. **Hunter pace still high:** 16 new bugs/day continues to feed the backlog.
+1. **Fixer velocity exceeds Validator capacity:** 61 fixes/day vs ~17 verifications/day creates 3.6x throughput gap
+2. **High reopen rate:** 18% of fixes require rework, suggesting systematic quality issues in certain categories
+3. **Blocked bug accumulation:** 17 blocked (21.8% of active pipeline) indicates systemic issues in:
+   - Infrastructure/test stability (BUG-0369, BUG-0401, BUG-0402)
+   - Tight coupling in auth/routing (BUG-0256, BUG-0305, BUG-0304)
+   - Security sandboxing (BUG-0205)
 
-**Projection:** At current rates, the fixed queue will exceed 100 bugs within 2-3 days. The validation backlog will then block all downstream operations.
+**Projection:** Fixed queue will continue to accumulate at ~44 net bugs/day if current throughput imbalance persists. Within 5 days, validation backlog will exceed 100 bugs, creating systemic pipeline blockage.
 
-## Trend Analysis (vs Previous Digest, 2026-03-21T05:29:59Z)
+## Trend Analysis (vs Previous Digest, 2026-03-21T05:52:59Z)
 
 | Metric | Previous | Current | Change |
 |--------|----------|---------|--------|
-| Active Bugs | 65 | 86 | **+32%** ⚠️ |
-| Pending | 1 | 2 | +1 |
-| Fixed Queue | 52 | 65 | **+25%** ⚠️ |
-| In Validation | 1 | 3 | +2 |
-| Reopened | 2 | 1 | -1 ✓ |
-| Blocked | 9 | 17 | **+89%** 🔴 |
-| Throughput (verified/day) | 7 | 10 | **+43%** ✓ |
-| Bugs Found | 16 | 16 | → |
+| Active Bugs | 86 | 79 | -7 ✓ |
+| Pending | 2 | 2 | → |
+| Fixed Queue | 65 | 58 | -7 ✓ |
+| In Validation | 3 | 3 | → |
+| Blocked | 17 | 17 | → |
+| Throughput (verified/day) | 10 | 17 | **+70%** ✓ |
+| Reopen Rate | 9.1% | 18.0% | **+97%** 🔴 |
+| First-Pass Fix Rate | 90.0% | 82.0% | **-8%** 🔴 |
+| Bugs Found | 16 | 75 | **+369%** 🔴 |
 
 **Assessment:**
 
-Despite Validator throughput improving 43% (7→10/day), the system is destabilizing. The fixed queue grew 25% while verification improved, indicating the Fixer is outpacing the Validator by a widening margin. The surge in blocked bugs (89% increase) is the most concerning signal — it suggests fix quality is degrading under load, with infrastructure tests and edge-case bugs increasingly hitting the 3-reopen auto-block threshold.
+Throughput improved 70% (10→17 bugs/day verified), validating the pipeline's capacity gains. However, the Hunter scan velocity spiked dramatically (+369% bug discovery), overwhelming the improved Validator rate. The reopen rate doubled (9.1%→18%), indicating the Fixer is now processing lower-quality or more complex bugs under load.
 
-The Fixer's 90% first-pass fix rate is excellent, but the 9.1% reopen rate on a high-velocity pipeline creates absolute failure volume. With 60 fixes/day, a 9.1% reopen rate means ~5-6 bugs per day must be re-fixed.
+The combination of:
+- Massive Hunter inflow increase (+75 bugs found vs 16 baseline)
+- Validator queue clearing faster (+70%) but still falling behind
+- Fixer quality degrading (18% reopen rate) suggests the system is overloaded
+
+This is a destabilization pattern: more bugs found → faster fixes (lower quality) → higher reopens → slower overall throughput.
 
 ## Blocked Bugs — Requires Human Review
 
-17 bugs currently blocked (up from 9):
+17 bugs currently blocked:
 
-**Critical/High:**
-- **BUG-0205** (critical, security-injection) — `node_eval` RCE via unrestricted code execution. 3 reopens. Requires architectural decision on sandboxing approach (isolated-vm vs container).
-- **BUG-0256** (medium, 4 reopens) — A2AServer auth defaults to unauthenticated. Pattern: fix attempts consistently miss core logic (addressing only type exports or unrelated features).
+**Critical:**
+- **BUG-0205** (critical, security-injection) — `node_eval` RCE via unrestricted code execution. 3+ reopens. Requires architectural decision: isolated-vm or container-level sandboxing.
 
-**Infrastructure (transient vitest worker issues):**
-- **BUG-0368, BUG-0369, BUG-0401** — Ghost-suite failures (timeout, worker startup, module resolution). These are transient vitest worker pool contention issues, likely self-resolving on retry. Marked blocked pending recurrence.
+**High-Severity Security/Logic:**
+- **BUG-0304** (high, security-auth) — Budget tracker poisoned by NaN/negative tokens. 3+ reopens. Fix exists on branch but never merged.
+- **BUG-0350** (high, logic-bug) — DAG edge mutation via private cast. Pattern: symtomatic fix of structural problem.
+- **BUG-0355** (high, race-condition) — Promise.allSettled fan-out shares pre-submit context snapshot.
+- **BUG-0371** (high, race-condition) — Parallel node execution closed over shared state; two nodes mutate same snapshot.
+- **BUG-0386** (high, missing-error-handling) — onError hook unguarded; exception escapes.
 
-**Pattern Observation:** Bugs blocking after 3 reopens share a common trait — they involve tight coupling between multiple systems (auth+routing, test infrastructure + worker pool, code execution + sandbox). Fixes that address only the symptom get reopened; fixes that properly decouple succeed on first try.
+**Auth/Security Pattern:**
+- **BUG-0256** (medium, security-auth) — A2AServer auth defaults to unauthenticated. 4 reopens. Fixer consistently misses core logic, addressing only type exports.
+- **BUG-0305** (medium, logic-bug) — Handoff context merge unfiltered; privilege escalation vector.
+
+**Type/Validation:**
+- **BUG-0264** (medium, type-error) — LSP JSON-RPC messages cast without validation. 3 reopens.
+- **BUG-0306** (medium, missing-error-handling) — onError hook awaited without try/catch. 3 reopens. Fixer keeps rebuilding pool.ts instead of patching.
+- **BUG-0372** (medium, dead-code) — storeAuthResolver accepts unused `scope` parameter.
+- **BUG-0397** (medium, security-injection) — StateGraph.toMermaid() embeds raw node names.
+
+**Test Infrastructure (transient):**
+- **BUG-0295** (high, test-regression) — "parallel node execution" test flaky timeout.
+- **BUG-0369** (medium, infrastructure) — Vitest worker pool startup failure (supervisor-routing-error.test.ts).
+- **BUG-0401** (low, infrastructure) — Module resolution in skill-evolver-esm-path.test.ts.
+- **BUG-0402** (medium, infrastructure) — Mass ghost-suite failures during parallel test runs (10+ files).
+- **BUG-0353** (low, dead-code) — Unreachable if guard in pickSlot().
+
+**Pattern Observation:**
+
+The 4-reopen BUG-0256 and 3-reopen BUG-0306 show a common trait: Fixer addresses only symptoms (type exports, individual hook guard) instead of the root structural issue (auth validation logic, comprehensive lifecycle hook protection). This accounts for the 18% reopen rate — fixes that are locally correct but systemically incomplete get reopened and re-fixed.
 
 ## Recommendations
 
 ### Immediate (24-48h)
 
-1. **Pause new bug inflow:** Hunter is operating at full velocity while validation is bottlenecked. Consider reducing Hunter scan frequency to 15m intervals (from 5m) until fixed queue < 40.
+1. **Investigate Hunter surge:** 75 bugs found in 24h vs 16 baseline (369% spike). Is this:
+   - A new scan passing all files (new rule, or first full run)?
+   - Or did Hunter sensitivity increase? Check `BUG_TRACKER.md` `Last Hunter Scan` timestamp for interval changes.
 
-2. **Investigate block spike:** 8 new blocks in 24h is abnormal. Review the 8 newly blocked bugs:
-   - Do they share a category or file? (possible widespread systemic issue)
-   - Are they all infrastructure/test-related, or is core logic affected?
+2. **Root cause the 18% reopen rate:** Review the 61 fixes from the 24h window:
+   - Which 11 were reopened? Do they cluster in categories (BUG-0256 pattern)?
+   - Are they all from specific files (pool.ts, agent-node.ts)?
+   - Consider adding a pre-validation gate: Fixer must include "root cause" explanation in fix_summary, and Validator checks it against the bug description.
 
-3. **Monitor Validator health:** Last activity 2026-03-21T05:37:00Z. Confirm Validator is still active. If stalled, restart.
+3. **Unblock BUG-0304:** The fix exists on branch but was never merged. Git Manager needs to manually merge `bugfix/BUG-0304` to main to restore budget validation.
+
+4. **Monitor Validator:** Last activity 2026-03-21T06:05:19Z. Confirm still active. If stalled, restart.
 
 ### Short-term (1 week)
 
-1. **Decouple fix validation:** The 90% first-pass fix rate is excellent, but the pipeline is too fast to absorb rework. Consider:
-   - Parallel Validator instances (2-3 concurrent review sessions)
-   - Increased Validator scan frequency (from 5m to 2m)
-   - Pre-flight validation gates on high-risk categories (security, race-condition)
+1. **Stabilize test infrastructure:** 5 blocked bugs are infrastructure-related (BUG-0295, 0369, 0401, 0402 variants). These are self-inflicted during parallel test runs.
+   - Root cause the vitest worker pool contention.
+   - Consider reducing parallelism or fixing transient timeouts.
 
-2. **Reduce reopen rate:** The 9.1% rate is driving blocked-bug accumulation. Root cause the 8 recent blocks — they may share a fix strategy that misses core logic.
+2. **Reduce reopen rate to <5%:** The 18% rate is the primary driver of throughput loss.
+   - Implement "fix quality checklist" in Fixer instructions: structural vs symptomatic check.
+   - BUG-0256 and BUG-0306 patterns suggest Fixer is patching symptoms; Validator should demand structural root causes.
 
-3. **Hunter prioritization:** Instead of scanning all files equally, focus Hunter on the top 5 problem files (pool.ts, agent-node.ts, streaming.ts, postgres store, tracer.ts). High-frequency scanning of stable files wastes resources.
+3. **Address Hunter inflow:** If the spike is sustained, reduce Hunter frequency from 5m to 10-15m intervals until fixed queue <50.
 
 ### Long-term (2+ weeks)
 
-1. **Architecture review:** The surge in concurrency-related bugs (race-condition, memory-leak, logic-bug) suggests systemic scalability issues. Schedule an architecture review of:
-   - Agent pool synchronization
-   - Store (Redis/Postgres) concurrent access patterns
-   - Swarm supervisor routing under load
+1. **Decouple tight systems:** The race-condition and missing-error-handling clusters suggest systemic tight coupling:
+   - Swarm pool lifecycle hooks (start, complete, error) all need comprehensive guarding — see BUG-0306 pattern.
+   - Pregel node execution (BUG-0371) suggests shared state mutations in parallel contexts.
+   - Schedule architecture review of concurrency patterns.
 
-2. **Test infrastructure hardening:** Infrastructure bugs (BUG-0368, 0369, 0401) consumed 3 blocked slots. Invest in vitest worker pool stability — parallel test timeouts and module resolution are not scalable.
+2. **Structured fix validation:** Implement "fix verification checklist" that Validator applies:
+   - Does fix address root cause or just symptoms?
+   - Does it prevent future regressions (not just this bug)?
+   - Are related bugs (same category, adjacent code) considered?
 
 ---
 
 ## Historical Context
 
-- **BUG-0299** (verified today) was a regression test for agent_error latency contribution — suggests the Fixer is now addressing latency-sensitive operations.
-- **Blocked bug pattern:** 3 reopens before blocking is catching broken fixes early, but at the cost of pipeline congestion.
-- **Fixed queue trajectory:** Grew from 46 (2 days ago) → 52 (yesterday) → 65 (today). Exponential growth indicates validation is the hard bottleneck.
+- **Throughput improvement:** 10→17 bugs/day is significant progress; Validator agent is now faster.
+- **Reopen spike:** 9.1%→18% suggests quality degradation under load; this is the warning signal.
+- **Hunter velocity anomaly:** 75 bugs/24h is 4.7x prior baseline; needs immediate investigation.
+- **Fixed queue persistence:** Remains at 58 despite validation improvements, confirming the Fixer is outpacing Validator.
 
 ---
 
 **Next Digest:** 2026-03-22T05:52:59Z
+
+*Generated by Bug Pipeline Digest Agent (AP3X)*

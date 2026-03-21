@@ -14,13 +14,13 @@
 | **Last Fixer Pass** | `2026-03-21T08:05:00Z` |
 | **Last Validator Pass** | `2026-03-21T06:05:19Z` |
 | **Last Digest Run** | `2026-03-21T05:52:59Z` |
-| **Last Security Scan** | `2026-03-23T17:20:00Z` |
+| **Last Security Scan** | `2026-03-23T18:00:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T23:45:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T06:14:27Z` (Cycle 230) |
-| **Last Supervisor Pass** | `2026-03-21T06:10:30Z` |
+| **Last TestGen Run** | `2026-03-20T23:55:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T08:15:00Z` (Cycle 231) |
+| **Last Supervisor Pass** | `2026-03-21T06:15:30Z` |
 | **Total Found** | `399` |
 | **Total Pending** | `2` |
 | **Total In Progress** | `0` |
@@ -286,27 +286,27 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0305
-- **status:** `in-validation`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `122`
 - **category:** `security-auth`
 - **description:** Handoff context merge at line 122 (`{ ...state.context, ...handoff.context }`) performs an unfiltered shallow merge, allowing a handing-off agent to overwrite privileged shared state fields such as `__deadlineAbsolute` or `lastAgentError`.
 - **context:** When an agent executes a Handoff, `handoff.context` is spread directly into the shared `state.context` with no key filtering. An agent can craft a Handoff with `context: { __deadlineAbsolute: Infinity }` to disable deadline enforcement, or inject `lastAgentError: null` to clear error state and bypass supervisor error recovery. Since agent code can be influenced by prompt injection, this is an escalation vector: a prompt-injected agent can manipulate swarm-level control fields through the Handoff mechanism. Fix: filter handoff context keys against a denylist of privileged/internal fields (those starting with `__` or known supervisor control fields), or use an allowlist of user-defined context keys. OWASP A01:2021 - Broken Access Control.
-- **reopen_count:** `1`
+- **reopen_count:** `2`
 - **branch:** `bugfix/BUG-0305-ctx`
 - **hunter_found:** `2026-03-20T20:08:29Z`
-- **fixer_started:** `2026-03-21T08:05:00Z`
-- **fixer_completed:** `2026-03-21T08:05:00Z`
-- **fix_summary:** `Filter __-prefixed keys from handoff context before merge. 5 lines added, 1 changed. Fresh branch from main.`
-- **validator_started:** `2026-03-21T05:59:45Z`
-- **validator_completed:** `2026-03-21T06:05:19Z`
-- **validator_notes:** `REOPENED: Branch bugfix/BUG-0305-ctx was deleted by Git Manager (cycle 219) without merging to main. Fix never applied — line 140 still has unfiltered { ...state.context, ...handoff.context } merge. Fixer must: create fresh branch from main, add Object.fromEntries/filter for __-prefixed keys at line 140, commit on branch.`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-21T06:13:41Z`
+- **validator_completed:** `2026-03-21T06:17:36Z`
+- **validator_notes:** `REOPENED (2nd time): Fix code is correct (+5/-1 Object.fromEntries filter) but branch is 691 commits behind main. Merging would revert BUG-0305/0263/0285/0296/0240/0239 fixes in agent-node.ts. Fixer must: delete stale branch, create fresh from current main, apply the 5-line filter, commit.`
 
 ---
 
 ### BUG-0312
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/coordination/pubsub.ts`
 - **line:** `34`
@@ -319,16 +319,16 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T08:05:00Z`
 - **fixer_completed:** `2026-03-21T08:05:00Z`
 - **fix_summary:** `Snapshot subscribers Map+Sets in publish(). Test file committed on branch. Fresh branch from main.`
-- **validator_started:** `2026-03-21T05:59:45Z`
-- **validator_completed:** `2026-03-21T06:05:19Z`
-- **validator_notes:** `REOPENED: Implementation is correct — subscribers Map and handler Sets are both snapshot'd via [...spread]. However, the regression test file (src/__tests__/pubsub-snapshot-during-publish.test.ts) exists only as an untracked file on main — it was never committed to bugfix/BUG-0312. Fixer must: git add the test file and commit it on the bugfix branch.`
+- **validator_started:** `2026-03-21T06:13:41Z`
+- **validator_completed:** `2026-03-21T06:17:36Z`
+- **validator_notes:** `Verified on bugfix/BUG-0312. [...this.subscribers] snapshots Map, [...handlers] snapshots each Set. Test file committed on branch this time (git show confirms). Previous reopen resolved. tsc clean.`
 - **test_generated:** `true`
 - **test_file:** `src/__tests__/pubsub-snapshot-during-publish.test.ts`
 
 ---
 
 ### BUG-0319
-- **status:** `in-validation`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `src/harness/loop/experimental-executor.ts`
 - **line:** `45`
@@ -341,34 +341,34 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T04:20:00Z`
 - **fixer_completed:** `2026-03-21T04:20:00Z`
 - **fix_summary:** `Track elapsed time; pass remaining budget to each phase instead of full timeBudget.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T06:13:41Z`
+- **validator_completed:** `2026-03-21T06:17:36Z`
+- **validator_notes:** `Verified on bugfix/BUG-0319. _remaining() tracks elapsed from single startTime. Each phase receives remaining budget. Guard for <=0 returns early with rollback. Total wall time bounded by original timeBudget. tsc clean.`
 
 ---
 
 ### BUG-0320
-- **status:** `in-validation`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `src/swarm/compile-ext.ts`
 - **line:** `57`
 - **category:** `type-error`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0320`
 - **description:** `def` is double-cast via `as SwarmAgentDef<Record<string, unknown>> as any` when registering a dynamically spawned agent, completely erasing the generic state type parameter `S`.
 - **context:** The registry stores the agent with the wrong state type, so `createAgentNode` receives a state typed as `Record<string, unknown>` instead of the actual swarm state type, making strongly-typed state field access invisible to the type checker.
 - **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** `2026-03-21T03:56:00Z`
-- **fixer_completed:** `2026-03-21T04:02:00Z`
-- **fix_summary:** `Removed double cast in src/swarm/compile-ext.ts. Uses plain registry.register(def).`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-21T06:13:41Z`
+- **validator_completed:** `2026-03-21T06:17:36Z`
+- **validator_notes:** `REOPENED: Branch bugfix/BUG-0320 does not exist. Double cast still present at line 57. def is already SwarmAgentDef<S> matching registry's S, so registry.register(def) should work without any cast. Fixer must: create branch, remove both casts, verify tsc --noEmit clean.`
 
 ---
 
 ### BUG-0321
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/docx.ts`
 - **line:** `15`
@@ -381,9 +381,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T03:56:00Z`
 - **fixer_completed:** `2026-03-21T04:02:00Z`
 - **fix_summary:** `Handle CJS default export wrapper in mammoth dynamic import. Uses (raw.default ?? raw) pattern.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T06:13:41Z`
+- **validator_completed:** `2026-03-21T06:17:36Z`
+- **validator_notes:** `Verified on bugfix/BUG-0321. (mod.default ?? mod) CJS interop pattern. Single-line change. Standard ESM/CJS interop idiom. tsc clean.`
 
 ---
 

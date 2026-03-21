@@ -2129,6 +2129,8 @@
 - **fix_summary:** `Single-line: Object.assign → direct assignment.`
 - **validator_notes:** `Verified. +1/-1. stripProtoKeys/askUser/onToolMetadata preserved. tsc clean.`
 - **archived:** `2026-03-21T05:37:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/harness-tools-hook-args-replace.test.ts`
 
 ---
 
@@ -2144,6 +2146,8 @@
 - **fix_summary:** `Sanitize role and capability fields in toManifest().`
 - **validator_notes:** `Verified. sanitize() strips newlines/CR and angle brackets. tsc clean.`
 - **archived:** `2026-03-21T05:37:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/registry-tomanifest-injection.test.ts`
 
 ---
 
@@ -2159,5 +2163,132 @@
 - **fix_summary:** `Atomic [...records, full].slice(-MAX) reassignment.`
 - **validator_notes:** `Verified. Atomic slice, readonly removed, record included. tsc clean.`
 - **archived:** `2026-03-21T05:37:00Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/experiment-log-trim.test.ts`
+
+---
+
+### BUG-0399
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `169`
+- **category:** `security-auth`
+- **reopen_count:** `1`
+- **branch:** `bugfix/BUG-0399`
+- **description:** Normal completion path spreads result.context without filtering __-prefixed privileged keys.
+- **fix_summary:** `Extract rawCtx, filter __-prefixed keys into safeCtx, spread safeCtx. +6/-2.`
+- **validator_notes:** `Verified. +6/-2 diff. All existing guards intact (onStart/onComplete/onError try/catch, handoff validation). tsc clean.`
+- **archived:** `2026-03-21T05:53:04Z`
+
+---
+
+### BUG-0307
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/mcp/transport.ts`
+- **line:** `162`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0307`
+- **description:** StdioTransport.stop() kills process without removing listeners, preventing GC.
+- **fix_summary:** `Added removeAllListeners() before kill().`
+- **validator_notes:** `Verified. removeAllListeners() before kill() matches LSPClient pattern. tsc clean.`
+- **archived:** `2026-03-21T05:53:04Z`
+
+---
+
+### BUG-0308
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/models/google.ts`
+- **line:** `163`
+- **category:** `api-contract-violation`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0308`
+- **description:** mapFinishReason never returns stop_sequence for STOP_SEQUENCE from Gemini API.
+- **fix_summary:** `Added STOP_SEQUENCE → stop_sequence mapping.`
+- **validator_notes:** `Verified. Single-line addition. tsc clean.`
+- **archived:** `2026-03-21T05:53:04Z`
+
+---
+
+### BUG-0309
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/models/google.ts`
+- **line:** `432`
+- **category:** `api-contract-violation`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0308`
+- **description:** Google adapter emits tool_call_start with complete args instead of staged delivery.
+- **fix_summary:** `Emit tool_call_start with args:{}, then tool_call_delta with actual args, then tool_call_end.`
+- **validator_notes:** `Verified. Staged delivery matches OpenAI/Anthropic contract. tsc clean.`
+- **archived:** `2026-03-21T05:53:04Z`
+
+---
+
+### BUG-0310
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/streaming.ts`
+- **line:** `72`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0310`
+- **description:** TokenStreamWriter.push() has no guard against writes after end().
+- **fix_summary:** `Added if (this.done) return guard at top of push().`
+- **validator_notes:** `Verified. Single +1 line guard. tsc clean.`
+- **archived:** `2026-03-21T06:05:19Z`
+
+---
+
+### BUG-0311
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/hitl/resume.ts`
+- **line:** `43`
+- **category:** `logic-bug`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0311`
+- **description:** evict() sets status expired then immediately deletes — caller can't distinguish expired from never-existed.
+- **fix_summary:** `Keep expired sessions visible for 60s grace period via lazy eviction.`
+- **validator_notes:** `Verified. GRACE_PERIOD_MS=60000 with finalizedAt map. Lazy GC on next access. tsc clean.`
+- **archived:** `2026-03-21T06:05:19Z`
+
+---
+
+### BUG-0303
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/lsp/index.ts`
+- **line:** `134`
+- **category:** `security-injection`
+- **reopen_count:** `1`
+- **branch:** `bugfix/BUG-0303`
+- **description:** XML attribute injection via unescaped filePath, d.message, d.source in LSP output.
+- **fix_summary:** `escapeXml() handles all 5 XML chars including apos.`
+- **validator_notes:** `Verified. All 5 XML chars escaped. No unrelated changes. Previous single-quote omission resolved. tsc clean.`
+- **archived:** `2026-03-21T06:05:19Z`
+
+---
+
+### BUG-0301
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/factories.ts`
+- **line:** `87`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0301`
+- **description:** In `buildFanOut`'s `runAgent()` closure, `onComplete` was awaited without try/catch — a throwing hook was caught by the outer `catch (err)` block and recorded as an agent failure, discarding the real successful result. Similarly, `onError` was awaited without try/catch, so a throwing `onError` hook could escape the catch and become an unhandled rejection.
+- **context:** Any fanout agent whose `onComplete` hook throws (e.g., due to a logging or telemetry side-effect) would have its successful result silently converted to an error entry in `agentResults`. A throwing `onError` hook would abort the entire fan-out runner.
+- **fix_summary:** `Wrapped onComplete and onError hook calls in try/catch inside runAgent() in buildFanOut. Throwing hooks log a warning but do not corrupt agent results or abort fan-out execution. Merged via commit 1132abd.`
+- **validator_started:** `2026-03-20T22:04:00Z`
+- **validator_completed:** `2026-03-20T22:05:00Z`
+- **validator_notes:** `Verified on bugfix/BUG-0301. onComplete wrapped in try/catch (lines 87-91). onError wrapped in try/catch (lines 94-98). Both log warnings on throw. Successful result returned even when onComplete throws. Original agent error returned even when onError throws. Merged to main via 1132abd. tsc clean.`
+- **archived:** `2026-03-20T22:04:39Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/fanout-hook-error-isolation.test.ts`
 
 ---
