@@ -9,9 +9,9 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T04:05:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-21T21:00:00Z` |
 | **Last Hunter Scan** | `2026-03-21T00:25:00Z` |
-| **Last Fixer Pass** | `2026-03-21T03:54:00Z` |
+| **Last Fixer Pass** | `2026-03-21T04:02:00Z` |
 | **Last Validator Pass** | `2026-03-21T02:51:00Z` |
 | **Last Digest Run** | `2026-03-21T00:40:00Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
@@ -19,12 +19,12 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T21:05:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T04:20:00Z` (Cycle 213) |
-| **Last Supervisor Pass** | `2026-03-21T03:55:36Z` |
-| **Total Found** | `366` |
-| **Total Pending** | `47` |
+| **Last Git Manager Pass** | `2026-03-21T04:27:00Z` (Cycle 214) |
+| **Last Supervisor Pass** | `2026-03-21T04:05:33Z` |
+| **Total Found** | `367` |
+| **Total Pending** | `46` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `11` |
+| **Total Fixed** | `13` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `3` |
@@ -548,19 +548,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0321
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/loaders/src/loaders/docx.ts`
 - **line:** `15`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0321`
 - **description:** The mammoth module is cast directly as `MammothLib` without checking for a `.default` export wrapper, so when mammoth is a CJS module loaded via ESM dynamic `import()` the `extractRawText` function resolves to undefined.
 - **context:** CJS packages imported via ESM `import()` frequently expose their API under `.default`. The call to `extractRawText` will crash with "not a function" at runtime rather than surfacing a clear dependency-resolution error.
 - **hunter_found:** `2026-03-20T21:30:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T03:56:00Z`
+- **fixer_completed:** `2026-03-21T04:02:00Z`
+- **fix_summary:** `Handle CJS default export wrapper in mammoth dynamic import. Uses (raw.default ?? raw) pattern.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
