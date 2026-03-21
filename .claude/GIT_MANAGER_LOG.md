@@ -1,18 +1,3 @@
-[2026-03-20T07:30:00Z] Step 10: HEAD confirmed on main. Clean state.
-[2026-03-20T07:30:00Z] === Cycle 236 End ===
-[2026-03-21T00:00:00Z] ## Cycle 237 — 2026-03-21T00:00:00Z
-[2026-03-21T00:00:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T10:05:00Z (>60s). Last Validator=2026-03-21T06:54:53Z (>60s). In-progress=0, In-validation=0. Proceeding.
-[2026-03-21T00:00:00Z] Step 1: Found 60 bugfix/BUG-* branches. 4 new since C236: BUG-0412, BUG-0413 (oldest: 2026-03-15), BUG-0414, BUG-0415.
-[2026-03-21T00:00:00Z] Step 2: Branch map rebuilt. 60 branches. Fixed/clean: 44. Conflicts: 0 (all 6 C236 conflicts FULLY RESOLVED). Blocked: 4. In-validation: 5. Pending: 5.
-[2026-03-21T00:00:00Z] Step 3: 0 deletions. BUG-0412/0413/0414/0415 in active worktrees (skip). BUG-0407/0410 — C236 recorded as merged but both 1 commit ahead (C236 error corrected). 0/5 cap.
-[2026-03-21T00:00:00Z] Step 4: No stale branches. All commits 2026-03-20+. BUG-0413 oldest (2026-03-15) but in active worktree.
-[2026-03-21T00:00:00Z] Step 5: ALL 60 branches CLEAN. 0 conflict markers. Full resolution of BUG-0342/0346/0350/0353/0374/0378.
-[2026-03-21T00:00:00Z] Step 5b: Rebase skipped — unstaged changes in working tree prevented git rebase. BUG-0295 candidate for C238. 0/1 cap.
-[2026-03-21T00:00:00Z] Step 6: 4 overlaps — redis (BUG-0326+0355, safe), ollama (BUG-0357+0377, safe), pool.ts (BUG-0378+0407, NEW, monitor), agent-node (BUG-0379+0410, NEW, monitor).
-[2026-03-21T00:00:00Z] Step 7: HEAD confirmed on main.
-[2026-03-21T00:00:00Z] Step 8: GC skipped. Next Cycle 240.
-[2026-03-21T00:00:00Z] ALERT: BUG-0407/0410 — NOT merged (C236 error). Both 1 ahead. Validator should prioritize.
-[2026-03-21T00:00:00Z] ALERT: BUG-0413 — oldest branch (2026-03-15), fix not in main. Expedite.
 [2026-03-21T00:00:00Z] ALERT: BUG-0294 — 2 commits ahead, blocked. Human intervention required.
 [2026-03-21T00:00:00Z] BRANCH COUNT: 60 (was 57 C236). 0 deletions, 0 rebase. Cumulative: ~184.
 [2026-03-21T00:00:00Z] Step 9: Meta updated. Log trimmed to 150 lines.
@@ -148,3 +133,18 @@
 [2026-03-21T14:00:00Z] Step 9: Updated Last Git Manager Pass to 2026-03-21T14:00:00Z (Cycle 246). Log trimmed to 150 lines.
 [2026-03-21T14:00:00Z] Step 10: HEAD confirmed on main. Clean state.
 [2026-03-21T14:00:00Z] === Cycle 246 End ===
+[2026-03-21T23:59:00Z] ## Cycle 247 — 2026-03-21T23:59:00Z
+[2026-03-21T23:59:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T13:35:00Z (>60s). Last Validator=2026-03-21T08:32:14Z (>60s). In-progress=0, In-validation=0. Proceeding.
+[2026-03-21T23:59:00Z] Step 1: 52 bugfix/BUG-* branches. Active worktrees: /tmp/bug0306-wt4 (BUG-0306), /tmp/bug0355-typecheck (BUG-0355).
+[2026-03-21T23:59:00Z] Step 2: Map rebuilt. 51 branches post-deletion. Fixed: 43. In-validation: 4. Blocked: 1 (BUG-0306 worktree). 41 critically stale (~717 behind).
+[2026-03-21T23:59:00Z] Step 3: DELETED bugfix/BUG-0403 (orphan — no BUG-0403 tracker entry, 716 behind). 1/5 cap. Cumulative: ~205.
+[2026-03-21T23:59:00Z] Step 4: STALE — 41 branches ~717 behind. All last committed 2026-03-20/21. BUG-0295 current (0 behind post-rebase).
+[2026-03-21T23:59:00Z] Step 5: C246 CONFLICTS RESOLVED — BUG-0374/0378/0413 now clean (main evolution cleared them). All 50 non-blocked branches clean.
+[2026-03-21T23:59:00Z] Step 5b: REBASED BUG-0295 onto main. Was 4 behind, now 0 behind, 1 ahead. 1/1 cap used.
+[2026-03-21T23:59:00Z] Step 6: FILE OVERLAPS (5 pairs) — ollama.ts: BUG-0357+0377 (safe). pool.ts: BUG-0378+0407. agent-node.ts: BUG-0379+0410. firecrawl.ts: BUG-0400+0428. store/index.ts: BUG-0415+0421.
+[2026-03-21T23:59:00Z] Step 7: HEAD confirmed on main. Clean state.
+[2026-03-21T23:59:00Z] Step 8: GC skipped. Next at Cycle 252.
+[2026-03-21T23:59:00Z] ALERT: BUG-0295 rebased C247. 0 behind. Validator-ready PRIORITY #1. BUG-0374/0378/0413 conflicts cleared — validator can proceed.
+[2026-03-21T23:59:00Z] BRANCH COUNT: 51 (was 52). 1 deletion (BUG-0403 orphan), 1 rebase (BUG-0295). Cumulative: ~205.
+[2026-03-21T23:59:00Z] Step 9: Last Git Manager Pass updated. Log trimmed to 150 lines.
+[2026-03-21T23:59:00Z] Step 10: HEAD on main. Clean state. === Cycle 247 End ===
