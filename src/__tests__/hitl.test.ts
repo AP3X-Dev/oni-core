@@ -23,56 +23,48 @@ import type { InterruptValue } from "../hitl/index.js";
 
 describe("interrupt() throws NodeInterruptSignal", () => {
   it("throws NodeInterruptSignal with correct value and resumeId when no resume is available", async () => {
-    _installInterruptContext({
+    await _installInterruptContext({
       nodeName: "test-node",
       resumeValues: [],
+    }, async () => {
+      try {
+        await interrupt({ message: "Please approve" });
+        expect.unreachable("interrupt() should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(NodeInterruptSignal);
+        const signal = err as NodeInterruptSignal;
+        expect(signal.isNodeInterrupt).toBe(true);
+        expect(signal.value).toEqual({ message: "Please approve" });
+        expect(signal.resumeId).toMatch(/^test-node-/);
+      }
     });
-
-    try {
-      await interrupt({ message: "Please approve" });
-      expect.unreachable("interrupt() should have thrown");
-    } catch (err) {
-      expect(err).toBeInstanceOf(NodeInterruptSignal);
-      const signal = err as NodeInterruptSignal;
-      expect(signal.isNodeInterrupt).toBe(true);
-      expect(signal.value).toEqual({ message: "Please approve" });
-      expect(signal.resumeId).toMatch(/^test-node-/);
-    } finally {
-      _clearInterruptContext();
-    }
   });
 
   it("returns the resume value when hasResume is true", async () => {
-    _installInterruptContext({
+    await _installInterruptContext({
       nodeName: "test-node",
       resumeValues: ["user-response-123"],
-    });
-
-    try {
+    }, async () => {
       const result = await interrupt("ignored value");
       expect(result).toBe("user-response-123");
-    } finally {
-      _clearInterruptContext();
-    }
+    });
   });
 
   it("generates unique resumeIds across calls", async () => {
     const resumeIds: string[] = [];
 
     for (let i = 0; i < 3; i++) {
-      _installInterruptContext({
+      await _installInterruptContext({
         nodeName: "multi-node",
         resumeValues: [],
+      }, async () => {
+        try {
+          await interrupt("test");
+        } catch (err) {
+          const signal = err as NodeInterruptSignal;
+          resumeIds.push(signal.resumeId);
+        }
       });
-
-      try {
-        await interrupt("test");
-      } catch (err) {
-        const signal = err as NodeInterruptSignal;
-        resumeIds.push(signal.resumeId);
-      } finally {
-        _clearInterruptContext();
-      }
     }
 
     const unique = new Set(resumeIds);
@@ -86,91 +78,83 @@ describe("interrupt() throws NodeInterruptSignal", () => {
 
 describe("getUserInput() throws with correct metadata", () => {
   it("includes prompt and inputType in the interrupt value", async () => {
-    _installInterruptContext({
+    await _installInterruptContext({
       nodeName: "input-node",
       resumeValues: [],
+    }, async () => {
+      try {
+        await getUserInput({
+          prompt: "What is your name?",
+          inputType: "text",
+        });
+        expect.unreachable("getUserInput() should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(NodeInterruptSignal);
+        const signal = err as NodeInterruptSignal;
+        const val = signal.value as Record<string, unknown>;
+        expect(val.__type).toBe("user_input_request");
+        expect(val.prompt).toBe("What is your name?");
+        expect(val.inputType).toBe("text");
+        expect(val.hasValidator).toBe(false);
+      }
     });
-
-    try {
-      await getUserInput({
-        prompt: "What is your name?",
-        inputType: "text",
-      });
-      expect.unreachable("getUserInput() should have thrown");
-    } catch (err) {
-      expect(err).toBeInstanceOf(NodeInterruptSignal);
-      const signal = err as NodeInterruptSignal;
-      const val = signal.value as Record<string, unknown>;
-      expect(val.__type).toBe("user_input_request");
-      expect(val.prompt).toBe("What is your name?");
-      expect(val.inputType).toBe("text");
-      expect(val.hasValidator).toBe(false);
-    } finally {
-      _clearInterruptContext();
-    }
   });
 
   it("defaults inputType to 'text' when not provided", async () => {
-    _installInterruptContext({
+    await _installInterruptContext({
       nodeName: "input-node",
       resumeValues: [],
+    }, async () => {
+      try {
+        await getUserInput({ prompt: "Enter something" });
+        expect.unreachable("should have thrown");
+      } catch (err) {
+        const signal = err as NodeInterruptSignal;
+        const val = signal.value as Record<string, unknown>;
+        expect(val.inputType).toBe("text");
+      }
     });
-
-    try {
-      await getUserInput({ prompt: "Enter something" });
-      expect.unreachable("should have thrown");
-    } catch (err) {
-      const signal = err as NodeInterruptSignal;
-      const val = signal.value as Record<string, unknown>;
-      expect(val.inputType).toBe("text");
-    } finally {
-      _clearInterruptContext();
-    }
   });
 
   it("sets hasValidator to true when validate function is provided", async () => {
-    _installInterruptContext({
+    await _installInterruptContext({
       nodeName: "input-node",
       resumeValues: [],
+    }, async () => {
+      try {
+        await getUserInput({
+          prompt: "Enter a number",
+          inputType: "number",
+          validate: (v) => typeof v === "number",
+        });
+        expect.unreachable("should have thrown");
+      } catch (err) {
+        const signal = err as NodeInterruptSignal;
+        const val = signal.value as Record<string, unknown>;
+        expect(val.hasValidator).toBe(true);
+        expect(val.inputType).toBe("number");
+      }
     });
-
-    try {
-      await getUserInput({
-        prompt: "Enter a number",
-        inputType: "number",
-        validate: (v) => typeof v === "number",
-      });
-      expect.unreachable("should have thrown");
-    } catch (err) {
-      const signal = err as NodeInterruptSignal;
-      const val = signal.value as Record<string, unknown>;
-      expect(val.hasValidator).toBe(true);
-      expect(val.inputType).toBe("number");
-    } finally {
-      _clearInterruptContext();
-    }
   });
 
   it("includes the field name when provided", async () => {
-    _installInterruptContext({
+    await _installInterruptContext({
       nodeName: "input-node",
       resumeValues: [],
+    }, async () => {
+      try {
+        await getUserInput({
+          prompt: "Enter email",
+          field: "email",
+          inputType: "text",
+        });
+        expect.unreachable("should have thrown");
+      } catch (err) {
+        const signal = err as NodeInterruptSignal;
+        const val = signal.value as Record<string, unknown>;
+        expect(val.field).toBe("email");
+      }
     });
-
-    try {
-      await getUserInput({
-        prompt: "Enter email",
-        field: "email",
-        inputType: "text",
-      });
-      expect.unreachable("should have thrown");
-    } catch (err) {
-      const signal = err as NodeInterruptSignal;
-      const val = signal.value as Record<string, unknown>;
-      expect(val.field).toBe("email");
-    } finally {
-      _clearInterruptContext();
-    }
   });
 });
 
@@ -180,24 +164,22 @@ describe("getUserInput() throws with correct metadata", () => {
 
 describe("getUserApproval() throws with correct metadata", () => {
   it("creates a boolean approval request", async () => {
-    _installInterruptContext({
+    await _installInterruptContext({
       nodeName: "approval-node",
       resumeValues: [],
+    }, async () => {
+      try {
+        await getUserApproval("Deploy to production?");
+        expect.unreachable("getUserApproval() should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(NodeInterruptSignal);
+        const signal = err as NodeInterruptSignal;
+        const val = signal.value as Record<string, unknown>;
+        expect(val.__type).toBe("user_input_request");
+        expect(val.prompt).toBe("Deploy to production?");
+        expect(val.inputType).toBe("boolean");
+      }
     });
-
-    try {
-      await getUserApproval("Deploy to production?");
-      expect.unreachable("getUserApproval() should have thrown");
-    } catch (err) {
-      expect(err).toBeInstanceOf(NodeInterruptSignal);
-      const signal = err as NodeInterruptSignal;
-      const val = signal.value as Record<string, unknown>;
-      expect(val.__type).toBe("user_input_request");
-      expect(val.prompt).toBe("Deploy to production?");
-      expect(val.inputType).toBe("boolean");
-    } finally {
-      _clearInterruptContext();
-    }
   });
 });
 
@@ -207,25 +189,23 @@ describe("getUserApproval() throws with correct metadata", () => {
 
 describe("getUserSelection() throws with correct metadata", () => {
   it("includes choices in the interrupt value", async () => {
-    _installInterruptContext({
+    await _installInterruptContext({
       nodeName: "selection-node",
       resumeValues: [],
+    }, async () => {
+      try {
+        await getUserSelection("Pick a color", ["red", "green", "blue"]);
+        expect.unreachable("getUserSelection() should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(NodeInterruptSignal);
+        const signal = err as NodeInterruptSignal;
+        const val = signal.value as Record<string, unknown>;
+        expect(val.__type).toBe("user_input_request");
+        expect(val.prompt).toBe("Pick a color");
+        expect(val.inputType).toBe("select");
+        expect(val.choices).toEqual(["red", "green", "blue"]);
+      }
     });
-
-    try {
-      await getUserSelection("Pick a color", ["red", "green", "blue"]);
-      expect.unreachable("getUserSelection() should have thrown");
-    } catch (err) {
-      expect(err).toBeInstanceOf(NodeInterruptSignal);
-      const signal = err as NodeInterruptSignal;
-      const val = signal.value as Record<string, unknown>;
-      expect(val.__type).toBe("user_input_request");
-      expect(val.prompt).toBe("Pick a color");
-      expect(val.inputType).toBe("select");
-      expect(val.choices).toEqual(["red", "green", "blue"]);
-    } finally {
-      _clearInterruptContext();
-    }
   });
 });
 
@@ -497,14 +477,14 @@ describe("interrupt() outside context throws", () => {
     );
   });
 
-  it("context is properly cleared after _clearInterruptContext", () => {
+  it("context is properly scoped within _installInterruptContext callback", () => {
     _installInterruptContext({
       nodeName: "temp",
       resumeValues: [],
+    }, () => {
+      expect(_getInterruptContext()).not.toBeNull();
     });
-    expect(_getInterruptContext()).not.toBeNull();
-
-    _clearInterruptContext();
+    // After the callback returns, context is no longer available
     expect(_getInterruptContext()).toBeNull();
   });
 });
