@@ -207,9 +207,7 @@ export class AgentPool<S extends Record<string, unknown>> {
       case "least-busy":
         return available.reduce((a, b) => (a.activeTasks <= b.activeTasks ? a : b));
       case "round-robin": {
-        const total = available.length;
-        if (!total) return null;
-        const slot = available[this.rrIndex % total]!;
+        const slot = available[this.rrIndex % available.length]!;
         this.rrIndex++;
         return slot;
       }
@@ -271,8 +269,12 @@ export class AgentPool<S extends Record<string, unknown>> {
         }
       }
 
-      // All retries exhausted — fire onError hook
-      await agent.hooks?.onError?.(agent.id, lastError);
+      // All retries exhausted — fire onError hook (guarded like onStart/onComplete)
+      try {
+        await agent.hooks?.onError?.(agent.id, lastError);
+      } catch (hookErr) {
+        console.warn(`[oni] onError hook for agent "${agent.id}" threw:`, hookErr);
+      }
 
       throw lastError;
     } finally {

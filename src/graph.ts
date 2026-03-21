@@ -223,8 +223,9 @@ export class StateGraph<S extends Record<string, unknown>> {
 
   toMermaid(): string {
     const lines: string[] = ["graph TD"];
+    const sanitize = (s: string) => s.replace(/[\r\n]+/g, "_").replace(/[;"'`<>|{}()[\]#&]/g, "_");
     const lbl = (n: NodeName) =>
-      n === START ? "__start__" : n === END ? "__end__" : (n as string);
+      n === START ? "__start__" : n === END ? "__end__" : sanitize(n as string);
     for (const edge of this.edges) {
       lines.push(
         edge.type === "static"
