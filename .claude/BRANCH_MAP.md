@@ -1,7 +1,7 @@
-# Branch Map — Cycle 297
+# Branch Map — Cycle 298
 
-**Generated:** 2026-03-22T20:00:00Z
-**Main HEAD:** 9f1916c
+**Generated:** 2026-03-21T21:00:00Z
+**Main HEAD:** c7985b2
 **Total Branches:** 3 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
@@ -27,13 +27,13 @@ No active agent worktrees.
 
 No conflict branches this cycle. All 3 remaining bugfix branches are conflict-free via `git merge-tree`.
 
-## Status Changes Since C296
+## Status Changes Since C297
 
-No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts each increased by 2 (C296→C297: BUG-0343 40→42; BUG-0356/0359 45→47) due to 2 commits on main since C296 (9f1916c git-manager Cycle 296, 856f1fd ci-sentinel Cycle 55).
+No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts unchanged from C297 (BUG-0343: 42; BUG-0356/0359: 47) — no new commits on main since C297 (HEAD c7985b2 = C297 chore commit).
 
 ## GC Note
 
-`git gc --auto` executed at Cycle 294 (scheduled). Next scheduled GC at Cycle 300 (3 cycles away).
+`git gc --auto` executed at Cycle 294 (scheduled). Next scheduled GC at Cycle 300 (2 cycles away).
 
 ## File Overlap Summary (Cycle 297)
 
