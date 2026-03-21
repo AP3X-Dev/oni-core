@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T14:10:00Z` (Cycle 266 — 0 deletions, 1 rebase (BUG-0420 onto main 52c8431 tip 03ad971); 4 bugfix branches remain, 0 conflicts; BUG-0420 VALIDATOR-READY; BUG-0343 in-progress 7 behind; BUG-0356/0359 blocked 12 behind) |
+| **Last Git Manager Pass** | `2026-03-21T14:20:00Z` (Cycle 267 — 0 deletions, 1 rebase (BUG-0420 onto main 3d30b6b tip 84ab4f8); 4 bugfix branches remain, 0 conflicts; BUG-0420 VALIDATOR-READY; BUG-0343 in-validation 8 behind; BUG-0356/0359 blocked 13 behind) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
@@ -306,22 +306,22 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0343
-- **status:** `fixed`
+- **status:** `blocked`
 - **severity:** `low`
 - **file:** `src/harness/safety-gate.ts`
 - **line:** `86`
 - **category:** `memory-leak`
-- **reopen_count:** `2`
+- **reopen_count:** `3`
 - **branch:** `bugfix/BUG-0343`
 - **description:** When `responsePromise` rejects before the timeout fires, the catch block returns `FALLBACK_RESULT` without calling `clearTimeout(timeoutHandle)`, leaving a dangling timer.
 - **context:** Same uncleaned timeout pattern as BUG-0031 (inference.ts) and BUG-0018 (experimental-executor.ts).
 - **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** `2026-03-21T13:37:22Z`
-- **fixer_completed:** `2026-03-21T13:48:21Z`
-- **fix_summary:** `Added clearTimeout(timeoutHandle) in the catch block of check() in src/harness/safety-gate.ts, before returning FALLBACK_RESULT. One line added, no other changes. Fresh branch bugfix/BUG-0343 from main.`
-- **validator_started:** `2026-03-22T03:30:00Z`
-- **validator_completed:** `2026-03-22T03:32:00Z`
-- **validator_notes:** `REOPENED (2nd time): Branch bugfix/BUG-0343-0344 still does not exist. clearTimeout at line 92 still inside try after await — skipped when responsePromise rejects. Catch block at line 93 still returns FALLBACK_RESULT without clearTimeout. Fixer must: create branch, add clearTimeout(timeoutHandle) in catch block or restructure with finally.`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** `Auto-blocked after 3 failed fix attempts. The clearTimeout fix itself is correct (+1 line in catch block). Repeated failure is branch scope contamination: 7 files changed including redis.ts, checkpointers/redis.ts, pool.ts, and .claude/ docs. Human must cherry-pick just the safety-gate.ts line.`
+- **validator_started:** `2026-03-22T04:10:00Z`
+- **validator_completed:** `2026-03-22T04:12:00Z`
+- **validator_notes:** `REOPENED (3rd → auto-blocked): clearTimeout(timeoutHandle) correctly added before return FALLBACK_RESULT in catch. But branch has 7 files: safety-gate.ts (+1 correct), redis/index.ts (removes zrem .catch, regressive), checkpointers/redis.ts (alters delete logic), swarm/pool.ts (removes _retryTimers), plus 3 .claude/ docs. Same scope contamination. Auto-blocked per guardrail.`
 
 ---
 
@@ -575,28 +575,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0389
-- **status:** `fixed`
-- **severity:** `low`
-- **file:** `src/testing/index.ts`
-- **line:** `128`
-- **category:** `dead-code`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0389`
-- **description:** `invocationCount` closure variable is incremented on every call but never read for any assertion, return value, or observable behavior — it is write-only dead state.
-- **context:** The variable was likely intended to expose call-count telemetry to test authors, but the `TestHarness` interface has no `invocationCount` property and the value is never returned or accessible.
-- **hunter_found:** `2026-03-20T22:30:00Z`
-- **fixer_started:** `2026-03-21T06:25:00Z`
-- **fixer_completed:** `2026-03-21T06:25:00Z`
-- **fix_summary:** `Remove write-only invocationCount dead code from testing harness.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
 
 ### BUG-0390
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/checkpointers/namespaced.ts`
 - **line:** `17`
@@ -677,7 +658,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0410
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `low`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `176`
@@ -878,7 +859,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 ### BUG-0452
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/pregel/checkpointing.ts`
 - **line:** `51`
@@ -897,25 +878,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0457
-- **status:** `verified`
-- **severity:** `medium`
-- **file:** `src/checkpointers/redis.ts`
-- **line:** `155`
-- **category:** `race-condition`
-- **reopen_count:** `2`
-- **branch:** `bugfix/BUG-0457`
-- **description:** `delete()` fetches the step index and deletes data keys in two separate non-atomic operations — a concurrent `put()` between the two calls can result in orphaned data keys or deleted new data.
-- **context:** A put() that races between the zrange and del calls in delete() will store a new checkpoint whose data key is then deleted along with the old ones, or whose index entry is added after the index key is deleted. This leaves inconsistent state where get() returns null even though data exists.
-- **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** `2026-03-21T13:25:07Z`
-- **fixer_completed:** `2026-03-21T13:29:20Z`
-- **fix_summary:** `Combined two separate del() calls into single atomic del(idxKey, ...dataKeys) in RedisCheckpointer.delete(). Only src/checkpointers/redis.ts modified. Fresh branch from main.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
 
 <!-- HUNTER: Append new bugs above this line -->
 

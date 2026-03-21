@@ -1,15 +1,15 @@
-# Branch Map — Cycle 266
+# Branch Map — Cycle 267
 
-**Generated:** 2026-03-21T14:10:00Z
-**Main HEAD:** 52c8431
+**Generated:** 2026-03-21T14:20:00Z
+**Main HEAD:** 3d30b6b
 **Total Branches:** 4 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
 |---|---|---|---|---|---|
-| bugfix/BUG-0343 | in-progress | 7 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout in catch block fix; tracker entry inconsistency (in-progress vs meta=0) |
-| bugfix/BUG-0356 | blocked | 12 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — add .catch() to void client.query(); blocked; human intervention required |
-| bugfix/BUG-0359 | blocked | 12 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked; human intervention required |
-| bugfix/BUG-0420 | fixed | 0 | 0 | 2026-03-21 | `src/coordination/pubsub.ts` — REBASED C266 onto 52c8431; tip 03ad971; VALIDATOR-READY |
+| bugfix/BUG-0343 | in-validation | 8 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout in catch block; in-validation per tracker; reopen_count=2; validator_notes reference wrong branch name (BUG-0343-0344) but bugfix/BUG-0343 exists |
+| bugfix/BUG-0356 | blocked | 13 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — auto-blocked after 3 failed attempts; branch has out-of-scope regressions; human must cherry-pick single postgres line |
+| bugfix/BUG-0359 | blocked | 13 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked (reopen_count=3); human intervention required |
+| bugfix/BUG-0420 | fixed | 0 | 0 | 2026-03-21 | `src/coordination/pubsub.ts` — REBASED C267 onto 3d30b6b; tip 84ab4f8; VALIDATOR-READY |
 
 ## Active Worktrees
 
@@ -28,13 +28,13 @@ No active agent worktrees.
 
 No conflict branches this cycle. All 4 remaining bugfix branches are conflict-free via `git merge-tree`.
 
-## Status Changes Since C265
+## Status Changes Since C266
 
-| Branch | Prev Status | C266 Status | Reason |
+| Branch | Prev Status | C267 Status | Reason |
 |---|---|---|---|
-| bugfix/BUG-0420 | fixed (4 behind, tip 010b799) | fixed (REBASED C266) | Rebased onto main HEAD 52c8431; tip 03ad971; 0 behind; VALIDATOR-READY |
+| bugfix/BUG-0420 | fixed (1 behind, tip 03ad971) | fixed (REBASED C267) | Rebased onto main HEAD 3d30b6b; tip 84ab4f8; 0 behind; VALIDATOR-READY |
 
-## File Overlap Summary (Cycle 266)
+## File Overlap Summary (Cycle 267)
 
 No overlaps — all 4 remaining bugfix branches touch distinct files:
 - `src/harness/safety-gate.ts` (BUG-0343)
