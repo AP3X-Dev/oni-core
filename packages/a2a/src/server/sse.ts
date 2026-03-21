@@ -31,6 +31,9 @@ export function createSSEResponse(
       }
       controller.close();
     },
+    cancel() {
+      stream.return(undefined);
+    },
   });
   return new Response(readable, {
     headers: {
