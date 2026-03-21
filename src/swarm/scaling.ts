@@ -189,7 +189,7 @@ export class DynamicScalingMonitor {
         const stack = recentStartTimes.get(e.agentId) ?? [];
         stack.push(e.timestamp);
         recentStartTimes.set(e.agentId, stack);
-      } else if (e.type === "agent_complete") {
+      } else if (e.type === "agent_complete" || e.type === "agent_error") {
         const stack = recentStartTimes.get(e.agentId);
         if (stack && stack.length > 0) {
           const start = stack.shift()!;
