@@ -9,26 +9,26 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T09:32:48Z` (Cycle 36 — 5 failures all known cooldowns; no new regressions; test count stable at 1390) |
+| **Last CI Sentinel Pass** | `2026-03-21T02:52:03Z` (Cycle 38 — 5 failures all known cooldowns BUG-0312 + BUG-0363; no new regressions; test count stable at 1390) |
 | **Last Hunter Scan** | `2026-03-22T00:02:00Z` |
-| **Last Fixer Pass** | `2026-03-21T13:35:00Z` |
-| **Last Validator Pass** | `2026-03-21T08:32:14Z` |
+| **Last Fixer Pass** | `2026-03-21T14:35:00Z` |
+| **Last Validator Pass** | `2026-03-22T00:06:00Z` |
 | **Last Digest Run** | `2026-03-21T23:59:00Z` |
-| **Last Security Scan** | `2026-03-21T06:15:00Z` |
+| **Last Security Scan** | `2026-03-21T13:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T17:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T08:30:00Z` (Cycle 248) |
-| **Last Supervisor Pass** | `2026-03-21T09:45:25Z` |
+| **Last TestGen Run** | `2026-03-22T00:10:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T09:54:09Z` (Cycle 249 — deleted BUG-0429/BUG-0342, rebased BUG-0295 to main HEAD) |
+| **Last Supervisor Pass** | `2026-03-21T09:55:25Z` |
 | **Total Found** | `425` |
-| **Total Pending** | `14` |
+| **Total Pending** | `2` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `57` |
+| **Total Fixed** | `52` |
 | **Total In Validation** | `0` |
-| **Total Verified** | `0` |
-| **Total Blocked** | `19` |
-| **Total Reopened** | `2` |
+| **Total Verified** | `15` |
+| **Total Blocked** | `23` |
+| **Total Reopened** | `3` |
 
 ---
 
@@ -487,28 +487,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0342
-- **status:** `in-validation`
-- **severity:** `medium`
-- **file:** `src/harness/memory/scanner.ts`
-- **line:** `164`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0342`
-- **description:** `scanDirectory` skips all files named `"INDEX.md"` at every level, but `inferTierFromPath` explicitly handles `semantic/topics/INDEX.md` as tier 2 — the scanner and tier inferrer are inconsistent, so INDEX.md memory units are never registered.
-- **context:** Tier-2 semantic topic indexes are silently missing from the memory loader's unit map, making semantic memory queries incomplete.
-- **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** `2026-03-21T05:02:00Z`
-- **fixer_completed:** `2026-03-21T05:02:00Z`
-- **fix_summary:** `Scanner fix.`
-- **validator_started:** `2026-03-21T14:04:00Z`
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0343
-- **status:** `verified`
+- **status:** `reopened`
 - **severity:** `low`
 - **file:** `src/harness/safety-gate.ts`
 - **line:** `86`
@@ -518,11 +498,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** When `responsePromise` rejects before the timeout fires, the catch block returns `FALLBACK_RESULT` without calling `clearTimeout(timeoutHandle)`, leaving a dangling timer.
 - **context:** Same uncleaned timeout pattern as BUG-0031 (inference.ts) and BUG-0018 (experimental-executor.ts).
 - **hunter_found:** `2026-03-20T22:24:00Z`
-- **fixer_started:** `2026-03-21T05:12:00Z`
-- **fixer_completed:** `2026-03-21T05:12:00Z`
-- **fix_summary:** ``
 - **fixer_started:** ``
 - **fixer_completed:** ``
+- **fix_summary:** ``
 - **validator_started:** `2026-03-21T07:50:00Z`
 - **validator_completed:** `2026-03-21T08:03:29Z`
 - **validator_notes:** `REOPENED: Branch bugfix/BUG-0343-0344 does not exist. Bug confirmed on main — clearTimeout at line 92 is inside try after await, skipped when responsePromise rejects. Catch block returns FALLBACK_RESULT without clearTimeout. Fixer must: add clearTimeout in catch (or use finally).`
@@ -730,42 +708,42 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0355
-- **status:** `in-validation`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `191`
 - **category:** `missing-error-handling`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0355`
 - **description:** Three `void this.client.zrem()` calls in `list()` fire Redis cleanup operations as floating promises with no error handling.
 - **context:** When a data key has expired or is corrupt, stale sorted-set index entries are pruned via fire-and-forget `zrem`. If Redis connection is interrupted, the error is swallowed and phantom keys persist in `list()` results on every subsequent call.
 - **hunter_found:** `2026-03-20T22:34:00Z`
-- **fixer_started:** `2026-03-21T04:52:00Z`
-- **fixer_completed:** `2026-03-21T04:52:00Z`
-- **fix_summary:** `Add .catch() error handling to fire-and-forget Redis cleanup operations in get() and list().`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-22T00:01:00Z`
+- **validator_completed:** `2026-03-22T00:05:00Z`
+- **validator_notes:** `REOPENED: In list(), the raw==null and corrupt JSON parse-failure zrem() calls were deleted entirely rather than given .catch() handlers — stale index entries in those code paths are now never cleaned up, so phantom keys persist indefinitely. Only the isExpired branch in list() received correct .catch() handling. Additionally, the fix removed the eval method from the ioredis adapter but left eval declared as required in the RedisClient interface (packages/stores/src/redis/types.ts), causing a TypeScript compile error. Fix must: (1) restore all 3 zrem() calls with .catch(err => console.error(...)), (2) keep the eval interface consistent, (3) scope changes to error handling only.`
 
 ---
 
 ### BUG-0356
-- **status:** `in-validation`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `packages/stores/src/postgres/index.ts`
 - **line:** `185`
 - **category:** `missing-error-handling`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0356`
 - **description:** Bulk expired-row cleanup in `PostgresStore.list()` uses `void this.client.query()` with no error handling.
 - **context:** When `list()` finds expired rows it fires a DELETE query as a floating promise. If the DELETE fails, the error is silently lost and expired rows accumulate, affecting subsequent `list()` and `search()` calls.
 - **hunter_found:** `2026-03-20T22:34:00Z`
-- **fixer_started:** `2026-03-21T05:02:00Z`
-- **fixer_completed:** `2026-03-21T05:02:00Z`
-- **fix_summary:** `Postgres cleanup error handling.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-22T00:01:00Z`
+- **validator_completed:** `2026-03-22T00:05:00Z`
+- **validator_notes:** `REOPENED: Fix removes the void this.client.query(DELETE ...) block from list() and get() entirely instead of adding .catch() error handling — expired rows now accumulate unconditionally in the database rather than only when DELETE fails. Also makes out-of-scope changes to put() (adding pre-upsert SELECT) and pg import detection. Fix must: add .catch(err => console.error(...)) to the existing fire-and-forget DELETE, not remove it. Scope changes to lines 177-186 of packages/stores/src/postgres/index.ts only.`
 
 ---
 
@@ -1799,46 +1777,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0425
-- **status:** `in-validation`
-- **severity:** `high`
-- **file:** `src/mcp/transport.ts`
-- **line:** `124`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0425`
-- **description:** If the MCP server process exits cleanly (non-zero code, no `error` event) before `_doStart` resolves, `connected = true` is set on a dead process because the `exit` handler does not reject the spawn Promise.
-- **context:** Subsequent `send()` calls fail with stdin write errors rather than a clear connection error. The spawn timeout (up to 10s) is the only thing that eventually surfaces the failure, delaying error detection significantly.
-- **hunter_found:** `2026-03-21T23:58:00Z`
-- **fixer_started:** `2026-03-21T13:35:00Z`
-- **fixer_completed:** `2026-03-21T13:35:00Z`
-- **fix_summary:** `Reject spawn Promise on early exit + consume stderr to prevent pipe block.`
-- **validator_started:** `2026-03-21T14:04:00Z`
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0426
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/mcp/transport.ts`
-- **line:** `95`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0425`
-- **description:** Child process stderr is piped but never consumed — no `data` handler is attached to `this.process.stderr`.
-- **context:** If the MCP server writes enough to stderr (startup errors, crash traces), the pipe buffer fills and the child process blocks indefinitely, causing the spawn timeout to fire instead of a meaningful error.
-- **hunter_found:** `2026-03-21T23:58:00Z`
-- **fixer_started:** `2026-03-21T13:35:00Z`
-- **fixer_completed:** `2026-03-21T13:35:00Z`
-- **fix_summary:** `Added stderr data handler. Same commit as BUG-0425.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0427
 - **status:** `fixed`
 - **severity:** `medium`
@@ -1880,19 +1818,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0429
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `297`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0429`
 - **description:** `fireSessionEnd()` is called in the finally block without a try/catch, so a throwing session-end hook propagates out of the generator and masks the actual session outcome.
 - **context:** The finally block is the guaranteed cleanup path for every agent loop execution; a hook error here suppresses the real result and leaves callers' for-await-of loop in an unrecoverable error state with no actionable message.
 - **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T14:35:00Z`
+- **fixer_completed:** `2026-03-21T14:35:00Z`
+- **fix_summary:** `Wrap fireSessionEnd in try-catch in finally block. Fires for all outcomes.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1920,19 +1858,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0431
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/self-improvement/skill-evolver.ts`
 - **line:** `170`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0431`
 - **description:** The user-supplied `testFn` callback in `testSkillRevision()` is awaited without a try/catch, so any exception propagates uncaught and aborts the entire self-improvement cycle.
 - **context:** `testSkillRevision()` is a public API method expected to return an `ExperimentResult`; callers do not wrap it, so a throwing test function produces an unhandled promise rejection and halts the improvement loop.
 - **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T14:35:00Z`
+- **fixer_completed:** `2026-03-21T14:35:00Z`
+- **fix_summary:** `Wrap testFn in try-catch returning failed ExperimentResult on error.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1940,7 +1878,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0432
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `medium`
 - **file:** `src/models/openai.ts`
 - **line:** `452`
@@ -1950,9 +1888,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** The `embed()` function calls `res.json()` without a try/catch, so a malformed JSON body from the API throws an unhandled exception with no error context.
 - **context:** Unlike the chat() and stream() paths which have JSON parsing guards, embed() has no fallback; callers relying on embeddings for memory retrieval receive an unhandled rejection with no indication of which model or endpoint failed.
 - **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T14:35:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `Duplicate of verified BUG-0376 (same OpenAI embed JSON parsing issue).`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1960,19 +1898,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0433
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/graph.ts`
 - **line:** `180`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0433`
 - **description:** The HITL `resume()` method validates a session then awaits `runner.invoke()` before calling `markResumed()`, creating a TOCTOU race where two concurrent resume() calls for the same resumeId both pass validation.
 - **context:** A duplicate resume() call during the first's async gap will both proceed past the guard, causing the node to execute twice with the human-provided value, potentially producing duplicate side-effects or corrupted state.
 - **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T14:35:00Z`
+- **fixer_completed:** `2026-03-21T14:35:00Z`
+- **fix_summary:** `Move markResumed before invoke to prevent TOCTOU race on duplicate resume.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1980,19 +1918,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0434
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/pool.ts`
 - **line:** `88`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0434`
 - **description:** `pickSlot()` reads `slot.activeTasks` to enforce maxConcurrency, but `activeTasks` is only incremented inside `runOnSlot()` after an async gap; concurrent `invoke()` calls can all receive the same slot before any increments the counter.
 - **context:** With maxConcurrency=1, N concurrent invoke() calls can all be dispatched to the same slot simultaneously, violating the per-slot concurrency limit and overwhelming the underlying agent.
 - **hunter_found:** `2026-03-22T00:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T14:35:00Z`
+- **fixer_completed:** `2026-03-21T14:35:00Z`
+- **fix_summary:** `Increment activeTasks synchronously in pickSlot to prevent over-dispatch.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
