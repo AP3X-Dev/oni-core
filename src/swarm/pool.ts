@@ -46,6 +46,7 @@ export class AgentPool<S extends Record<string, unknown>> {
   private strategy: PoolStrategy;
   private rrIndex = 0;
   private _pendingRemoval = new Set<string>();
+  private _retryTimers = new Set<ReturnType<typeof setTimeout>>();
   private _disposed = false;
   private static readonly PRIORITY_ORDER: Record<string, number> = {
     critical: 0, high: 1, normal: 2, low: 3,
@@ -74,6 +75,8 @@ export class AgentPool<S extends Record<string, unknown>> {
 
   dispose(): void {
     this._disposed = true;
+    for (const timer of this._retryTimers) clearTimeout(timer);
+    this._retryTimers.clear();
     const drainError = new Error("AgentPool disposed");
     for (const item of this.queue) {
       item.reject(drainError);
@@ -258,7 +261,10 @@ export class AgentPool<S extends Record<string, unknown>> {
           lastError = err;
           if (attempt < maxRetries) {
             if (retryDelayMs && retryDelayMs > 0) {
-              await new Promise<void>((resolve) => setTimeout(resolve, retryDelayMs));
+              await new Promise<void>((resolve) => {
+                const timer = setTimeout(() => { this._retryTimers.delete(timer); resolve(); }, retryDelayMs);
+                this._retryTimers.add(timer);
+              });
             }
             continue;
           }
