@@ -1,22 +1,3 @@
-[2026-03-21T05:20:00Z] Step 4: No stale branches (all last commits within 48h).
-[2026-03-21T05:20:00Z] Step 5: Fixed/clean: 23 branches, 0 conflict markers. CONFLICT: BUG-0305-ctx (agent-node.ts), BUG-0325 (mcp/client.ts), BUG-0363 (skill-loader.ts).
-[2026-03-21T05:20:00Z] Step 5b: REBASE ATTEMPTED — bugfix/BUG-0363. Non-trivial conflict in skill-loader.ts. ABORTED. 0/1 rebases. Fixer must resolve manually.
-[2026-03-21T05:20:00Z] Step 6: FILE OVERLAP — BUG-0305-ctx/BUG-0325/BUG-0363 each conflict on different files (no inter-branch overlap). Independent conflicts.
-[2026-03-21T05:20:00Z] Step 7: HEAD confirmed on main. Clean state.
-[2026-03-21T05:20:00Z] Step 8: Cycle 217 % 6 ≠ 0. gc skipped. Next gc at Cycle 222.
-[2026-03-21T05:20:00Z] BRANCH COUNT: 35 branches remain after BUG-0336 deletion. 1 deletion this cycle. Cumulative: ~167.
-[2026-03-21T05:20:00Z] ALERT: BUG-0363 — rebase non-trivial. Fixer must manually rebase skill-loader.ts onto current main before validator can merge.
-[2026-03-21T05:20:00Z] ALERT: BUG-0332/0333/0334/0335 — fixes committed on branches, tracker still shows pending. Fixer must update status to fixed.
-[2026-03-21T05:20:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-21T05:20:00Z (Cycle 217). Log trimmed to 150 lines.
-[2026-03-21T05:20:00Z] Step 10: HEAD confirmed on main.
-[2026-03-21T05:20:00Z] === Git Manager Cycle 217 End ===
-[2026-03-21T05:35:00Z] === Git Manager Cycle 218 Start ===
-[2026-03-21T05:35:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer Pass=2026-03-21T04:42:00Z (>60s). Last Validator Pass=2026-03-21T02:51:00Z (>60s). In-progress=0, In-validation=0 per Meta. Proceeding.
-[2026-03-21T05:35:00Z] Step 1: Found 41 bugfix/BUG-* branches (pre-cycle). Worktrees: agent-a8eb9f05→BUG-0339, agent-aa075aba→BUG-0344, agent-aac18b18→BUG-0327.
-[2026-03-21T05:35:00Z] Step 2: Branch map rebuilt. New since Cycle 217: BUG-0327 (in-validation, worktree), BUG-0336 (re-created, fixed), BUG-0339 (fixed, worktree covers BUG-0339+0340), BUG-0344 (fixed, worktree). BUG-0306 has 0 commits ahead of main (reopened, no fix yet). Fixed/clean: 33 branches. Conflicts: BUG-0305-ctx (agent-node.ts), BUG-0325 (client.ts), BUG-0363 (skill-loader.ts). Blocked: BUG-0294 (19 conflicts), BUG-0304. In-validation: BUG-0327.
-[2026-03-21T05:35:00Z] Step 3: No orphaned branches found — all 41 branches have tracker entries. No branches fully merged into main. 0/5 deletions. Cumulative: ~167.
-[2026-03-21T05:35:00Z] Step 4: No stale branches — all last commits within 24h (most 2026-03-20). BUG-0306 reopened with no fix commit, noted in map.
-[2026-03-21T05:35:00Z] Step 5: Conflicts stable — BUG-0305-ctx: 1 (same as 217). BUG-0325: 1 (same). BUG-0363: 1 (same). BUG-0294: 19 (blocked, not merge-tree checked). All 33 other fixed branches: 0 conflict markers.
 [2026-03-21T05:35:00Z] Step 5b: REBASE — bugfix/BUG-0331 rebased onto main (was 5 behind; 0 conflicts; single file src/store/index.ts). Rebase cap: 1/1. BUG-0327 skipped (worktree-locked). BUG-0325/0305-ctx/0363 skipped (648 behind, non-trivial).
 [2026-03-21T05:35:00Z] Step 6: FILE OVERLAP — BUG-0344 (csv.ts TSV fix) and BUG-0343-0344 (compound) may overlap in csv.ts area. Validator must sequence. All other fixed branches have unique file footprints.
 [2026-03-21T05:35:00Z] Step 7: HEAD confirmed on main after rebase checkout + stash pop. Clean state.
@@ -148,3 +129,22 @@
 [2026-03-21T07:00:00Z] Step 9: Updated Last Git Manager Pass to 2026-03-21T07:00:00Z (Cycle 225). Log trimmed to 150 lines.
 [2026-03-21T07:00:00Z] Step 10: HEAD confirmed on main. Clean state.
 [2026-03-21T07:00:00Z] === Git Manager Cycle 225 End ===
+[2026-03-20T20:00:00Z] === Git Manager Cycle 226 Start ===
+[2026-03-20T20:00:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer Pass=2026-03-21T06:50:00Z (>60s ago). Last Validator Pass=2026-03-21T05:23:12Z (>60s ago). In-progress=0, In-validation=0. Proceeding.
+[2026-03-20T20:00:00Z] Step 1: Found 69 bugfix/BUG-* branches. No new branches since Cycle 225.
+[2026-03-20T20:00:00Z] Step 2: Branch map rebuilt. Key changes: BUG-0303 branch tip is ancestor of main (orphaned; worktree agent-adf5ee50 active, cannot delete). All prior mismatches resolved (tracker now shows fixed). BUG-0382/0391/0395 now verified. BUG-0306 blocked with active worktree at /tmp/bug0306-wt4.
+[2026-03-20T20:00:00Z] Step 3: BUG-0303 — orphaned branch (tip=0b842ae, merged into main; 0 commits ahead), worktree active — deletion skipped. BUG-0399 — deletion attempted (merge-base false positive from corrupted loop output), reversed after re-verification (23f1606 fix commit confirmed). 0/5 deletions.
+[2026-03-20T20:00:00Z] Step 4: No stale branches (all last fix commits 2026-03-20 or later). No 7-day threshold breaches.
+[2026-03-20T20:00:00Z] Step 5: Merge-tree results: BUG-0325 (mcp/client.ts, 6+ cycles), BUG-0342 (a2a/server/index.ts, 4 cycles), BUG-0346 (filesystem/index.ts, 4 cycles), BUG-0350 (skill-evolver.ts, 4 cycles), BUG-0353 (audit-agent.ts, 4 cycles), BUG-0374 (pdf.ts, 5 cycles). NEW CONFLICTS: BUG-0355 (redis/index.ts — BUG-0326 merge into main caused API incompatibility), BUG-0378 (pool.ts — new conflict). 8 total conflict branches.
+[2026-03-20T20:00:00Z] Step 5b: REBASE ATTEMPTED — bugfix/BUG-0355 (redis/index.ts). Conflict is non-trivial: HEAD uses indexKey local var + void zrem; branch uses this.idxKey(namespace) + .catch() chains — API diverged. ABORTED. 0/1 rebase cap. Fixer must reconcile BUG-0355 and BUG-0378 manually.
+[2026-03-20T20:00:00Z] Step 6: FILE OVERLAPS — ollama.ts: BUG-0357+BUG-0377 (both clean). pool.ts: BUG-0378 (conflicting)+BUG-0379 (clean). redis/index.ts: BUG-0326 (clean, already on main)+BUG-0355 (conflicting). agent-node.ts overlap removed (BUG-0399 now standalone, reopened).
+[2026-03-20T20:00:00Z] Step 7: HEAD confirmed on main. Stash pop clean. Working tree has uncommitted BUG_TRACKER.md changes (Fixer/Validator in-flight — will not touch).
+[2026-03-20T20:00:00Z] Step 8: GC next at Cycle 228. Skipped.
+[2026-03-20T20:00:00Z] ALERT: BUG-0325 — persistent conflict (mcp/client.ts) 6+ cycles. Fixer must delete branch and recreate from current main.
+[2026-03-20T20:00:00Z] ALERT: BUG-0355 — NEW conflict from BUG-0326 merge. API mismatch: branch uses old idxKey/dataKey API; main now has different cleanup pattern. Fixer must reconcile before validator can merge.
+[2026-03-20T20:00:00Z] ALERT: BUG-0378 — NEW conflict in pool.ts. Fixer must rebase before validator can merge.
+[2026-03-20T20:00:00Z] ALERT: BUG-0303 — branch tip (0b842ae) is orphaned ancestor of main; fix commit (a4db337) lives only in worktree agent-adf5ee50. Fixer must push fix commit to branch tip before worktree closes.
+[2026-03-20T20:00:00Z] BRANCH COUNT: 69 (unchanged). 0 new, 0 deletions this cycle. Cumulative: ~170.
+[2026-03-20T20:00:00Z] Step 9: Updated Last Git Manager Pass in BUG_TRACKER.md Meta to 2026-03-20T20:00:00Z (Cycle 226). Log trimmed to 150 lines.
+[2026-03-20T20:00:00Z] Step 10: HEAD confirmed on main. Clean state.
+[2026-03-20T20:00:00Z] === Git Manager Cycle 226 End ===
