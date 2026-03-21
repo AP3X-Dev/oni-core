@@ -1,7 +1,7 @@
-# Branch Map — Cycle 280
+# Branch Map — Cycle 281
 
-**Generated:** 2026-03-22T16:00:00Z
-**Main HEAD:** eccb9d5
+**Generated:** 2026-03-22T16:20:00Z
+**Main HEAD:** 7ab695b
 **Total Branches:** 3 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
@@ -27,15 +27,15 @@ No active agent worktrees.
 
 No conflict branches this cycle. All 3 remaining bugfix branches are conflict-free via `git merge-tree`.
 
-## Status Changes Since C279
+## Status Changes Since C280
 
-No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts increased by 1 (BUG-0343: 24→25; BUG-0356/0359: 29→30) due to 1 cycle commit on main since C279.
+No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts unchanged from C280 (no new commits on main since C280 commit 7ab695b — the C280 chore commit itself is the current HEAD, so counts hold at 25/30/30).
 
 ## GC Note
 
-`git gc --auto` executed at Cycle 275. Next scheduled GC at Cycle 282 (2 cycles remaining).
+`git gc --auto` executed at Cycle 275. Next scheduled GC at Cycle 282 (this is the NEXT cycle — GC due at C282).
 
-## File Overlap Summary (Cycle 280)
+## File Overlap Summary (Cycle 281)
 
 No overlaps — all 3 remaining bugfix branches touch distinct files:
 - `src/harness/safety-gate.ts` (BUG-0343)
