@@ -1,47 +1,41 @@
-# Branch Map — Cycle 319
+# Branch Map — Cycle 320
 
-**Generated:** 2026-03-21T18:15:38Z
-**Main HEAD:** 9cbc31b
-**Total Branches:** 3 bugfix
+**Generated:** 2026-03-21T18:20:00Z
+**Main HEAD:** 5f9986f
+**Total Branches:** 0 bugfix (all merged or deleted)
 
-| Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
-|---|---|---|---|---|---|
-| bugfix/BUG-0343 | blocked | 68 | 0 | 2026-03-21 | `src/harness/safety-gate.ts` — clearTimeout fix correct but branch has 7-file scope contamination (redis/index.ts, checkpointers/redis.ts, pool.ts, .claude/ docs); reopen_count=3; auto-blocked; human must cherry-pick safety-gate.ts line only (commit ddec8f5) |
-| bugfix/BUG-0356 | blocked | 73 | 0 | 2026-03-21 | `packages/stores/src/postgres/index.ts` — auto-blocked after 3 failed attempts; branch has out-of-scope regressions; human must cherry-pick single postgres .catch() line (commit 28a4811) |
-| bugfix/BUG-0359 | blocked | 73 | 0 | 2026-03-21 | `src/harness/loop/index.ts` — off-by-one turns-remaining fix; blocked (reopen_count=3); human intervention required (commit 27d8480) |
+| Branch | Status | Notes |
+|---|---|---|
+| bugfix/BUG-0343 | Merged | Merged to main (ac7c4c9) — clearTimeout fix in safety-gate.ts; branch deleted |
+| bugfix/BUG-0356 | Merged | Merged to main (fb46a5e) — .catch() on floating promise in PostgresStore; branch deleted |
+| bugfix/BUG-0359 | Merged | Merged to main (2998c4b) — off-by-one turns-remaining in loop/index.ts; branch deleted |
+| fix/bug-0257-a2a-security-headers | Deleted | Orphaned — no tracker entry; 1 commit ahead of main; deleted this cycle |
+| fix/bug-0285-context-prompt-injection | Deleted | Orphaned — no tracker entry; 1 commit ahead of main; deleted this cycle |
 
 ## Active Worktrees
 
 No active agent worktrees.
 
-## Non-Bugfix Branches (out of scope — not deleted per policy)
+## Non-Bugfix Branches (out of scope)
 
-| Branch | Notes |
-|---|---|
-| fix/bug-0257-a2a-security-headers | old fix branch, not managed |
-| fix/bug-0284-a2a-auth-expired-error | old fix branch, not managed |
-| fix/bug-0285-context-prompt-injection | old fix branch, not managed |
-| temp-return-main | contains BUG-0357 work (already merged); non-bugfix, not deleted |
+None remaining.
 
-## Status Changes Since C318
+## Status Changes Since C319
 
-No branch additions or deletions this cycle. All 3 bugfix branches remain blocked.
+Major cleanup this cycle:
+- BUG-0343, BUG-0356, BUG-0359: all merged to main by human (branches already removed)
+- fix/bug-0257, fix/bug-0285: orphaned branches detected and confirmed deleted
 
-Behind-main counts unchanged vs C318 — no new commits on main between C318 and C319.
-- BUG-0343: 68 (unchanged)
-- BUG-0356/0359: 73 (unchanged)
+Main HEAD advanced from 9cbc31b to 5f9986f (multiple merges including BUG-0343, BUG-0356, BUG-0359, fix/bug-0284, temp-return-main).
 
 ## GC Note
 
 Next `git gc --auto` scheduled at Cycle 324 (skipped this cycle).
 
-## File Overlap Summary (Cycle 319)
+## File Overlap Summary (Cycle 320)
 
-No code overlaps — all bugfix branches touch distinct source files:
-- `src/harness/safety-gate.ts` (BUG-0343)
-- `packages/stores/src/postgres/index.ts` (BUG-0356)
-- `src/harness/loop/index.ts` (BUG-0359)
+No active bugfix branches — no overlaps to check.
 
 ## Cumulative Deletions
 
-~229 total branches deleted since Git Manager began (0 deletions this cycle).
+~231 total branches deleted since Git Manager began (2 deletions this cycle: fix/bug-0257, fix/bug-0285 confirmed removed).

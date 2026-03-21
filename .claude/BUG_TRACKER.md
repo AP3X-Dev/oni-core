@@ -9,20 +9,20 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-22T19:00:00Z` (Cycle 68 — BUILD CLEAN: BUG-0451 fix merged to main (commit 8dd12dc). Duplicate dispose() in src/swarm/graph.ts resolved. npx tsc --noEmit exits 0. ESC-013 marked resolved. 51-cycle build failure streak ended. Tests not run this cycle. 10 untracked Hunter test files present.) |
+| **Last CI Sentinel Pass** | `2026-03-21T18:20:41Z` (Cycle 69 — BUILD CLEAN, TESTS: 10 failed / 1433 passed / 2 skipped across 7 failed suites. Known failures: BUG-0312 (2), BUG-0363 (3), BUG-0436 (1). New bugs filed: BUG-0452 (memory-loader buildSystemPrompt returns empty), BUG-0453 (createTestHarness thread ID collision), BUG-0454 (subgraph checkpoint namespace isolation). BUG-0451 build fix confirmed still holding.) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
-| **Last Fixer Pass** | `2026-03-21T14:44:00Z` |
-| **Last Validator Pass** | `2026-03-21T18:15:45Z` (no fixed/in-validation bugs — 26 blocked) |
+| **Last Fixer Pass** | `2026-03-22T19:18:00Z` (no actionable bugs — 0 pending, 0 reopened, 0 in-progress; all 26 blocked) |
+| **Last Validator Pass** | `2026-03-21T19:25:00Z` (no fixed/in-validation bugs — 26 blocked) |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
 | **Last Security Scan** | `2026-03-21T16:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T18:15:38Z` (Cycle 319 — 0 deletions, 0 rebases, gc skipped (next Cycle 324); 3 blocked branches pending human: BUG-0343 68 behind, BUG-0356/0359 73 behind; reopen_count=3 each; no code conflicts) |
+| **Last Git Manager Pass** | `2026-03-21T18:22:00Z` (Cycle 320 — 0 explicit deletions, 0 rebases, gc skipped (next Cycle 324); all 3 blocked branches now merged to main by human (BUG-0343 ac7c4c9, BUG-0356 fb46a5e, BUG-0359 2998c4b); 0 open bugfix branches; repository clean) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
-| **Total Found** | `433` |
-| **Total Pending** | `0` |
+| **Total Found** | `436` |
+| **Total Pending** | `3` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `0` |
 | **Total In Validation** | `0` |
@@ -631,6 +631,66 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 
 
+
+### BUG-0452
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/harness/memory/index.ts`
+- **line:** `518`
+- **category:** `test-regression`
+- **description:** `MemoryLoader.buildSystemPrompt()` returns empty string after `wake()` because hydrated unit content is never written back to `this.units` — `applyBudget` returns a hydrated copy but the Map entry remains content-less, causing the `!unit.content` guard in `prompter.ts` to skip every unit.
+- **context:** CI Sentinel Cycle 69 (2026-03-21T18:20:41Z). Test `"includes content from loaded units"` in `src/__tests__/memory-loader.test.ts:248` fails — `loader.wake()` marks the key as loaded but `this.units` still holds the pre-hydration unit (no `content` field). `buildSystemPrompt` iterates `this.units`, hits `if (!unit.content) continue` at `prompter.ts:22`, and outputs `""`. Fix: in `loadByTier` (and other load paths), after calling `hydrateUnit(u)`, write the hydrated unit back to `this.units` via `this.units.set(unit.key, hydratedUnit)` so subsequent `buildSystemPrompt` calls can find the content.
+- **hunter_found:** `2026-03-21T18:20:41Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **branch:** ``
+- **reopen_count:** `0`
+
+---
+
+### BUG-0453
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/testing/index.ts`
+- **line:** `135`
+- **category:** `test-regression`
+- **description:** `createTestHarness.invoke()` uses `Date.now()` as the thread ID, which produces identical IDs for rapid back-to-back calls — test `"generates separate thread IDs per invocation"` fails because both invocations share the same millisecond timestamp and therefore the same thread, so state bleeds between them and `r2.value` returns the accumulated result `"bbb"` instead of the isolated `"BBB"`.
+- **context:** CI Sentinel Cycle 69 (2026-03-21T18:20:41Z). Test `"generates separate thread IDs per invocation"` in `src/__tests__/testing-utils.test.ts:173` fails: `expected 'bbb' to be 'BBB'`. Root cause: `threadId: \`test-${Date.now()}\`` at line 135 of `src/testing/index.ts` produces the same integer when `invoke()` is called in rapid succession within the same millisecond. Both calls share a thread, so the checkpointer accumulates state across invocations. Fix: use a monotonically-unique ID (e.g., `crypto.randomUUID()` or a per-harness counter) instead of `Date.now()`.
+- **hunter_found:** `2026-03-21T18:20:41Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **branch:** ``
+- **reopen_count:** `0`
+
+---
+
+### BUG-0454
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/checkpointers/namespaced.ts`
+- **line:** `1`
+- **category:** `test-regression`
+- **description:** Subgraph checkpoints are not isolated from parent: `NamespacedCheckpointer.list("child:parent-1")` returns 0 entries even after the subgraph has written checkpoints, causing the test `"subgraph checkpoints are isolated from parent"` to fail with `expected 0 to be greater than 0`.
+- **context:** CI Sentinel Cycle 69 (2026-03-21T18:20:41Z). Test `"subgraph checkpoints are isolated from parent"` in `src/__tests__/checkpoint-namespace.test.ts:40` fails. The stderr shows `applyUpdate: unknown channel key "result" — skipping (not in channel schema)`, suggesting the subgraph invocation partially fails or its checkpoint is never committed. The `NamespacedCheckpointer.list()` call returns an empty array for the child namespace `"child:parent-1"` despite the subgraph having run. Root cause is likely that checkpoint writes under the namespaced thread ID are either dropped due to the schema mismatch or the namespace prefix is not applied consistently on writes vs. reads.
+- **hunter_found:** `2026-03-21T18:20:41Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+- **branch:** ``
+- **reopen_count:** `0`
+
+---
 
 <!-- HUNTER: Append new bugs above this line -->
 
