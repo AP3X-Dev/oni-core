@@ -9,26 +9,26 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T03:25:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-21T04:05:00Z` |
 | **Last Hunter Scan** | `2026-03-21T00:25:00Z` |
-| **Last Fixer Pass** | `2026-03-20T22:04:00Z` |
+| **Last Fixer Pass** | `2026-03-21T03:43:00Z` |
 | **Last Validator Pass** | `2026-03-21T02:51:00Z` |
 | **Last Digest Run** | `2026-03-21T00:40:00Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T12:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T03:28:03Z` (Cycle 209) |
+| **Last TestGen Run** | `2026-03-20T12:05:00Z` |
+| **Last Git Manager Pass** | `2026-03-21T04:10:00Z` (Cycle 212) |
 | **Last Supervisor Pass** | `2026-03-21T03:40:32Z` |
 | **Total Found** | `366` |
 | **Total Pending** | `49` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `46` |
+| **Total Fixed** | `9` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `3` |
-| **Total Reopened** | `1` |
+| **Total Reopened** | `0` |
 
 ---
 
@@ -284,7 +284,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0299
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/scaling.ts`
 - **line:** `192`
@@ -292,11 +292,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `recentMaxLatencyMs` computation only processes `agent_complete` events, not `agent_error`. An agent that errors after a long run never has its start time popped from `recentStartTimes`, so its latency is excluded from the scale-up decision — slow-then-erroring agents never trigger latency-based scale-up.
 - **context:** The `agent_error` branch is missing from the latency loop at lines 187-200. A slow agent that eventually errors will have its start timestamp orphaned in `recentStartTimes`, and the high latency will never be compared against `scaleUpLatencyMs`. Fix: add an `agent_error` branch that pops the start time and computes latency the same way `agent_complete` does.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `main`
 - **hunter_found:** `2026-03-20T23:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T03:35:00Z`
+- **fixer_completed:** `2026-03-21T03:43:00Z`
+- **fix_summary:** `Already fixed on main (commit 737963d). The else-if condition in the latency loop was extended to include agent_error alongside agent_complete, so erroring agents now have their start times popped and latency computed for scale-up decisions.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -304,7 +304,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0301
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/factories.ts`
 - **line:** `78`
@@ -312,11 +312,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** All three lifecycle hooks (`onStart` at line 78, `onComplete` at line 87, `onError` at line 90) in the fanout `runAgent()` are awaited without individual try/catch guards. If `onStart` throws, the catch block calls `onError` which is also unguarded — a double-throwing hook escapes `runAgent()` entirely and surfaces as an unhandled rejection to `Promise.all`.
 - **context:** Unlike `agent-node.ts` which guards `onStart` and `onError`, the fanout runner in `factories.ts` has no hook isolation. A misbehaving hook causes the entire fanout to fail rather than just one agent slot. Fix: wrap each hook call in its own try/catch.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0301`
 - **hunter_found:** `2026-03-20T23:45:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T03:35:00Z`
+- **fixer_completed:** `2026-03-21T03:43:00Z`
+- **fix_summary:** `Wrapped onComplete and onError hooks in individual try/catch blocks in fanout runAgent() in src/swarm/factories.ts. A throwing onComplete no longer falls to outer catch, and a throwing onError in the catch block no longer escapes runAgent. Matches isolation pattern from agent-node.ts.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -880,6 +880,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/mailbox-prompt-injection-sanitize.test.ts`
 
 ---
 
@@ -1146,7 +1148,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0352
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `high`
 - **file:** `src/swarm/factories.ts`
 - **line:** `743`
@@ -1156,9 +1158,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `buildDag` directly mutates private `(swarm.inner as any).edges = []` to rewire graph topology after `addAgent`, but does not clear other internal state (`conditionalEdges`, `pathMaps`) that `addAgent` may have registered.
 - **context:** Clearing only `edges` leaves dangling references in other internal structures that can cause `NodeNotFoundError` or silently skip nodes during execution. The same pattern at line 854 in `buildPool` has the same risk.
 - **hunter_found:** `2026-03-20T22:26:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T03:35:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `False positive. StateGraph has no separate conditionalEdges or pathMaps fields — all edge types are stored in the single edges[] array, which IS cleared. addAgent() only adds nodes, not edges. The edges=[] clearing is correct. Hunter should re-evaluate.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1346,19 +1348,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0363
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/harness/skill-loader.ts`
 - **line:** `269`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0363`
 - **description:** `skill.content` from SKILL.md files is injected raw into the XML `<skill-instructions>` wrapper without XML-escaping, enabling prompt injection via crafted skill files.
 - **context:** A SKILL.md file containing `</skill-instructions>` in its body breaks the XML fence and injects arbitrary content into the agent's system prompt. If skill files can be sourced from untrusted paths (e.g. community plugins), this is a direct prompt injection vector. OWASP A03:2021 - Injection.
 - **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T03:35:00Z`
+- **fixer_completed:** `2026-03-21T03:43:00Z`
+- **fix_summary:** `Added private escapeXml() method to SkillLoader in src/harness/skill-loader.ts. All three user-controlled strings (skill.content, name, args) are now XML-escaped before interpolation into the <skill-instructions> wrapper, preventing XML fence breakout.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1366,19 +1368,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0364
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/harness/loop/index.ts`
 - **line:** `160`
 - **category:** `security`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0364`
 - **description:** `config.env` values (cwd, gitBranch, gitStatus) are interpolated unsanitized into the agent system prompt, enabling prompt injection via crafted git branch names.
 - **context:** A malicious git branch name containing newlines and prompt-injection payloads (e.g. from a cloned repository) breaks out of the `<env>` XML block and injects arbitrary instructions into the LLM's system prompt, compromising agent behavior. OWASP A03:2021 - Injection.
 - **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T03:35:00Z`
+- **fixer_completed:** `2026-03-21T03:43:00Z`
+- **fix_summary:** `Added sanitizeEnvValue() helper in src/harness/loop/index.ts that strips control characters (including newlines) and XML-escapes <, >, & before env values are interpolated into the system prompt. All 5 env values (cwd, platform, date, gitBranch, gitStatus) now sanitized.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
