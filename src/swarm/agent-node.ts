@@ -174,6 +174,7 @@ export function createAgentNode<S extends BaseSwarmState>(
             [def.id]: result,
           },
           handoffHistory: [
+            ...(state.handoffHistory ?? []),
             {
               from:      def.id,
               to:        "__completed__",
