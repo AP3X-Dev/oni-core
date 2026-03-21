@@ -11,20 +11,20 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T04:05:00Z` |
 | **Last Hunter Scan** | `2026-03-21T00:25:00Z` |
-| **Last Fixer Pass** | `2026-03-21T03:43:00Z` |
+| **Last Fixer Pass** | `2026-03-21T03:54:00Z` |
 | **Last Validator Pass** | `2026-03-21T02:51:00Z` |
 | **Last Digest Run** | `2026-03-21T00:40:00Z` |
 | **Last Security Scan** | `2026-03-20T20:10:48Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T12:05:00Z` |
+| **Last TestGen Run** | `2026-03-21T20:58:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T04:10:00Z` (Cycle 212) |
-| **Last Supervisor Pass** | `2026-03-21T03:40:32Z` |
+| **Last Supervisor Pass** | `2026-03-21T03:55:36Z` |
 | **Total Found** | `366` |
-| **Total Pending** | `49` |
+| **Total Pending** | `47` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `9` |
+| **Total Fixed** | `11` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `3` |
@@ -198,6 +198,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **validator_started:** `2026-03-18T01:20:50Z`
 - **validator_completed:** `2026-03-18T01:30:00Z`
 - **validator_notes:** `REOPENED (3rd): [What] Network access still exploitable. [Why] GOOD: --experimental-permission blocks fs-write, child_process, worker_threads. IIFE scope isolation hides security vars. CJS require() blocked. BAD: eval("imp"+"ort('net')") bypasses import() regex via string concatenation, and ESM import() does not go through Module._resolveFilename (CJS-only hook). --experimental-permission has no network permission concept. [Fix approach] Close the network gap: (1) Override globalThis.eval = () => throw, blocking the concatenation trick. (2) Or use --import ESM loader hooks to intercept ESM resolution of network builtins. (3) Or accept the network gap is architectural and block this bug for human decision on whether to adopt isolated-vm or container-level sandboxing.`
+- **test_generated:** `true`
+- **test_file:** `packages/tools/src/__tests__/node-eval-esm-bypass.test.ts`
 
 ---
 
@@ -424,7 +426,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0305
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `122`
@@ -432,11 +434,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Handoff context merge at line 122 (`{ ...state.context, ...handoff.context }`) performs an unfiltered shallow merge, allowing a handing-off agent to overwrite privileged shared state fields such as `__deadlineAbsolute` or `lastAgentError`.
 - **context:** When an agent executes a Handoff, `handoff.context` is spread directly into the shared `state.context` with no key filtering. An agent can craft a Handoff with `context: { __deadlineAbsolute: Infinity }` to disable deadline enforcement, or inject `lastAgentError: null` to clear error state and bypass supervisor error recovery. Since agent code can be influenced by prompt injection, this is an escalation vector: a prompt-injected agent can manipulate swarm-level control fields through the Handoff mechanism. Fix: filter handoff context keys against a denylist of privileged/internal fields (those starting with `__` or known supervisor control fields), or use an allowlist of user-defined context keys. OWASP A01:2021 - Broken Access Control.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0305-ctx`
 - **hunter_found:** `2026-03-20T20:08:29Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T03:47:00Z`
+- **fixer_completed:** `2026-03-21T03:54:00Z`
+- **fix_summary:** `Filtered handoff.context keys starting with __ before merging into state.context in src/swarm/agent-node.ts. Uses Object.fromEntries/filter to strip privileged internal fields, preventing prompt-injected agents from overwriting supervisor control fields like __deadlineAbsolute.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -444,7 +446,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0310
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/streaming.ts`
 - **line:** `72`
@@ -452,11 +454,11 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `TokenStreamWriter.push()` has no guard against writes after `end()`. If `push(token)` is called after `end()` and the async iterator has already returned, the token is silently queued but never consumed — permanently dropped.
 - **context:** Triggered when a streaming LLM call emits a final token concurrently with a node timeout calling `end()`. The `push` method does not check `this.done` before enqueuing. Fix: add `if (this.done) return` at the top of `push()`.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0310`
 - **hunter_found:** `2026-03-21T00:05:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T03:47:00Z`
+- **fixer_completed:** `2026-03-21T03:54:00Z`
+- **fix_summary:** `Added if (this.done) return guard at the top of TokenStreamWriter.push() in src/streaming.ts. Prevents silently queuing tokens after end() has been called.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
