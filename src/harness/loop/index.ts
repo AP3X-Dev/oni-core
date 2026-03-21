@@ -156,12 +156,23 @@ export async function* agentLoop(
       const remaining = maxTurns - turn - 1;
       systemPrompt += `\n\nYou have ${remaining} turns remaining. Each turn lets you call multiple tools. Do NOT stop early — use your tools and complete the task autonomously.`;
       if (config.env) {
+        // Sanitize env values to prevent prompt injection via crafted
+        // git branch names or other untrusted environment strings.
+        // Strips control characters (including newlines) and XML-escapes
+        // <, >, & so values cannot break out of the <env> XML block.
+        const sanitizeEnvValue = (v: string): string =>
+          v
+            .replace(/[\x00-\x1f\x7f]/g, "") // strip control chars / newlines
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
         const envLines: string[] = [];
-        if (config.env.cwd) envLines.push(`Working directory: ${config.env.cwd}`);
-        if (config.env.platform) envLines.push(`Platform: ${config.env.platform}`);
-        if (config.env.date) envLines.push(`Date: ${config.env.date}`);
-        if (config.env.gitBranch) envLines.push(`Git branch: ${config.env.gitBranch}`);
-        if (config.env.gitStatus) envLines.push(`Git status: ${config.env.gitStatus}`);
+        if (config.env.cwd) envLines.push(`Working directory: ${sanitizeEnvValue(config.env.cwd)}`);
+        if (config.env.platform) envLines.push(`Platform: ${sanitizeEnvValue(config.env.platform)}`);
+        if (config.env.date) envLines.push(`Date: ${sanitizeEnvValue(config.env.date)}`);
+        if (config.env.gitBranch) envLines.push(`Git branch: ${sanitizeEnvValue(config.env.gitBranch)}`);
+        if (config.env.gitStatus) envLines.push(`Git status: ${sanitizeEnvValue(config.env.gitStatus)}`);
         if (envLines.length > 0) systemPrompt += `\n\n<env>\n${envLines.join("\n")}\n</env>`;
       }
 
