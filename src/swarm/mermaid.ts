@@ -22,6 +22,18 @@ const STATUS_STYLES: Partial<Record<AgentStatus, string>> = {
 };
 
 // ----------------------------------------------------------------
+// Sanitize user-supplied strings for safe embedding in Mermaid HTML labels
+// ----------------------------------------------------------------
+
+const sanitize = (s: string): string =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/[\n\r]/g, " ")
+    .replace(/\|/g, "\\|");
+
+// ----------------------------------------------------------------
 // toSwarmMermaid
 // ----------------------------------------------------------------
 
@@ -42,11 +54,11 @@ export function toSwarmMermaid(registry: AgentRegistry): string {
 
     // Build label: role + capabilities + stats
     const parts: string[] = [
-      `<b>${entry.role}</b>`,
+      `<b>${sanitize(entry.role)}</b>`,
     ];
 
     if (entry.capabilities.length > 0) {
-      const caps = entry.capabilities.map((c) => c.name).join(", ");
+      const caps = entry.capabilities.map((c) => sanitize(c.name)).join(", ");
       parts.push(`<i>${caps}</i>`);
     }
 
