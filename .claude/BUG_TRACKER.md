@@ -10,21 +10,21 @@
 | Key | Value |
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T04:42:00Z` |
-| **Last Hunter Scan** | `2026-03-21T00:25:00Z` |
-| **Last Fixer Pass** | `2026-03-21T05:12:00Z` |
-| **Last Validator Pass** | `2026-03-21T04:30:00Z` |
+| **Last Hunter Scan** | `2026-03-20T22:12:00Z` |
+| **Last Fixer Pass** | `2026-03-21T05:22:00Z` |
+| **Last Validator Pass** | `2026-03-21T04:42:00Z` |
 | **Last Digest Run** | `2026-03-21T04:44:19Z` |
 | **Last Security Scan** | `2026-03-23T11:35:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-21T21:38:00Z` |
-| **Last Git Manager Pass** | `2026-03-21T06:10:00Z` (Cycle 219) |
-| **Last Supervisor Pass** | `2026-03-21T04:40:30Z` |
+| **Last Git Manager Pass** | `2026-03-21T06:35:00Z` (Cycle 220) |
+| **Last Supervisor Pass** | `2026-03-21T04:45:29Z` |
 | **Total Found** | `370` |
-| **Total Pending** | `2` |
+| **Total Pending** | `1` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `50` |
+| **Total Fixed** | `51` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `10` |
@@ -246,7 +246,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0306
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/swarm/pool.ts`
 - **line:** `269`
@@ -266,7 +266,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0299
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/swarm/scaling.ts`
 - **line:** `192`
@@ -286,7 +286,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0301
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `src/swarm/factories.ts`
 - **line:** `78`
@@ -1209,28 +1209,6 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0361
-- **status:** `verified`
-- **severity:** `high`
-- **file:** `packages/a2a/src/server/handler.ts`
-- **line:** `53`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `main`
-- **description:** `handler()` call for `tasks/sendSubscribe` is not awaited — if handler returns a rejected Promise instead of a generator, the rejection is unhandled.
-- **context:** On line 53, `handler(messageText, taskId)` is called and immediately checked for `[Symbol.asyncIterator]` without awaiting. If `handler` returns a rejected Promise, the `catch` block on line 63 will not catch it — the error surfaces only when the stream is consumed by the SSE layer.
-- **hunter_found:** `2026-03-21T00:25:00Z`
-- **fixer_started:** `2026-03-21T00:42:00Z`
-- **fixer_completed:** `2026-03-21T03:22:00Z`
-- **fix_summary:** `Added await to handler(messageText, taskId) call in packages/a2a/src/server/handler.ts sendSubscribe path so rejected Promises are caught by the surrounding try/catch. Commit ada9de7 on main.`
-- **validator_started:** `2026-03-21T04:35:31Z`
-- **validator_completed:** `2026-03-21T04:39:25Z`
-- **validator_notes:** `Verified on main. Line 53 now reads 'const result = await handler(messageText, taskId)'. Awaited result checked for Symbol.asyncIterator on line 57. try/catch at lines 52-66 catches rejected promises. Commit ada9de7 present. Test file exists. tsc --noEmit clean.`
-- **test_generated:** `true`
-- **test_file:** `packages/a2a/src/__tests__/sendsubscribe-rejected-promise.test.ts`
-
----
-
 ### BUG-0362
 - **status:** `fixed`
 - **severity:** `medium`
@@ -1335,6 +1313,209 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
+
+### BUG-0370
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `117`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Fan-out sends execute in parallel via Promise.allSettled sharing the same pre-superstep state snapshot; concurrent sends writing the same last-write-wins channel key lose all but the last writer's update.
+- **context:** In a fan-out with N sends targeting the same channel keys using last-write-wins reducers, sends 1..N-1's writes are silently dropped because each applyUpdate starts from the same baseline state rather than accumulating.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+
+### BUG-0371
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/pregel/streaming.ts`
+- **line:** `204`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Parallel node execution closes over a single shared state snapshot; two nodes writing the same last-write-wins channel key will have all but the final node's write silently dropped after sequential applyUpdate.
+- **context:** When multiple nodes execute in the same superstep and both update a shared state key with a last-write-wins reducer, the sequential applyUpdate pass applies each node's diff against the same pre-superstep snapshot — the last node in iteration order wins.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0372
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/a2a/src/server/sse.ts`
+- **line:** `6`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** ReadableStream in createSSEResponse has no cancel() callback, so client disconnection does not signal the upstream AsyncGenerator to stop.
+- **context:** When an SSE client drops the connection, without a cancel() handler calling generator.return(), the generator keeps running and allocating until it naturally terminates.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0373
+- **status:** `pending`
+- **severity:** `high`
+- **file:** `src/cli/index.ts`
+- **line:** `24`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Top-level await on runCLI is unguarded — any unhandled rejection propagates as an uncaught exception with no user-facing error message.
+- **context:** If a command handler throws unexpectedly, Node.js prints a raw stack trace and exits bypassing graceful shutdown or formatted error output.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0374
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `packages/loaders/src/loaders/pdf.ts`
+- **line:** `33`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** pdf.js document loading and per-page getTextContent calls have no try/catch, so parse errors on corrupt PDFs surface as unhandled rejections with raw pdfjs internal errors.
+- **context:** Lines 33-39 are outside the try/catch that wraps only the file read, so callers receive raw pdfjs errors instead of contextualised PdfLoader-scoped messages.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0375
+- **status:** `pending`
+- **severity:** `medium`
+- **file:** `src/checkpointers/sqlite.ts`
+- **line:** `31`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** db.exec calls for PRAGMA and CREATE TABLE in SqliteCheckpointer.create are not wrapped in try/catch, so initialisation errors leave the database handle open.
+- **context:** Unlike PostgresCheckpointer.create which handles this, SqliteCheckpointer.create leaks the handle if schema creation fails.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0376
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/models/openai.ts`
+- **line:** `452`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** embed() calls res.json() without a catch, so a malformed non-JSON embeddings response causes an unhandled rejection.
+- **context:** A 200 response with non-JSON content throws a raw SyntaxError with no context about which model or endpoint was involved.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0377
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/models/ollama.ts`
+- **line:** `214`
+- **category:** `missing-error-handling`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** chat() calls res.json() without a catch, so a malformed Ollama response body causes an unhandled rejection; embed() at line 302 has the same pattern.
+- **context:** A 200 with non-JSON content during Ollama startup or proxy interception throws a raw SyntaxError with no model/endpoint context.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0378
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/swarm/pool.ts`
+- **line:** `261`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Retry delay setTimeout inside runOnSlot is not cancellable when AgentPool.dispose() is called mid-retry, keeping closures alive until the timer fires.
+- **context:** In-flight runOnSlot calls sleeping between retries hold references to large objects via the closure until the timer fires, delaying GC after pool shutdown.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+### BUG-0379
+- **status:** `pending`
+- **severity:** `low`
+- **file:** `src/swarm/agent-node.ts`
+- **line:** `198`
+- **category:** `memory-leak`
+- **reopen_count:** `0`
+- **branch:** ``
+- **description:** Retry delay setTimeout in createAgentNode has no cancellation path when the swarm is torn down mid-retry, keeping closures alive until the timer fires.
+- **context:** A bare `new Promise((r) => setTimeout(r, delay))` is awaited with no stored timer handle, preventing GC of retained objects during the delay window after shutdown.
+- **hunter_found:** `2026-03-20T22:10:00Z`
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** ``
+- **validator_completed:** ``
+- **validator_notes:** ``
+
+---
+
+
 <!-- HUNTER: Append new bugs above this line -->
 
 ### BUG-0294
@@ -1358,18 +1539,18 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0295
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/errors.ts`
 - **line:** `58`
 - **category:** `information-disclosure`
 - **description:** `ONIError.toJSON()` and `toInternalJSON()` are identical — both expose `stack` in their output. The method names imply different audiences (external vs internal), but the external-facing `toJSON()` leaks call stack traces, revealing internal file paths and library versions to callers. Any code that serializes an `ONIError` to a client or log sink via `JSON.stringify()` or similar will inadvertently expose stack information. Fix: remove the `stack` field from `toJSON()` so only `toInternalJSON()` includes it. OWASP A05:2021 - Security Misconfiguration.
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0295`
 - **hunter_found:** `2026-03-20T13:00:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T05:22:00Z`
+- **fixer_completed:** `2026-03-21T05:22:00Z`
+- **fix_summary:** `Removed stack field from ONIError.toJSON(). Stack now only in toInternalJSON() for internal use.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
