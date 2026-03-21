@@ -14,7 +14,7 @@ export class NamespacedCheckpointer<S> implements ONICheckpointer<S> {
   ) {}
 
   private prefix(threadId: string): string {
-    return `${threadId}:${this.ns}`;
+    return `${this.ns}:${threadId}`;
   }
 
   async get(threadId: string): Promise<ONICheckpoint<S> | null> {
