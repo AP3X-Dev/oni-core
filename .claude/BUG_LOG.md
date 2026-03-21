@@ -2451,3 +2451,44 @@
 - **test_file:** `src/__tests__/regression/store-capacity-race.test.ts`
 
 ---
+
+### BUG-0343
+- **status:** `verified`
+- **severity:** `low`
+- **file:** `src/harness/safety-gate.ts`
+- **line:** `86`
+- **category:** `memory-leak`
+- **branch:** `bugfix/BUG-0343`
+- **fix_summary:** `timeoutHandle hoisted, clearTimeout moved to finally block.`
+- **validator_notes:** `Verified. finally ensures clearTimeout on all paths. Idiomatic pattern. tsc clean.`
+- **archived:** `2026-03-21T08:32:14Z`
+
+---
+
+### BUG-0346
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `packages/loaders/src/loaders/html.ts`
+- **line:** `17`
+- **category:** `missing-error-handling`
+- **branch:** `bugfix/BUG-0346`
+- **fix_summary:** `try/catch with HtmlLoader descriptive error.`
+- **validator_notes:** `Verified. Correct file this time. readFile wrapped. Previous wrong-file issue resolved. tsc clean.`
+- **archived:** `2026-03-21T08:32:14Z`
+
+---
+
+### BUG-0350
+- **status:** `verified`
+- **severity:** `medium`
+- **file:** `src/swarm/self-improvement/skill-evolver.ts`
+- **line:** `86`
+- **category:** `race-condition`
+- **branch:** `bugfix/BUG-0350`
+- **fix_summary:** `splice replaced with atomic slice reassignment.`
+- **validator_notes:** `Verified. Matches BUG-0395 pattern. readonly removed, slice reassignment. tsc clean.`
+- **archived:** `2026-03-21T08:32:14Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/skill-evolver-splice-race.test.ts`
+
+---

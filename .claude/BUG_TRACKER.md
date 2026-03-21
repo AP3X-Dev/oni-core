@@ -9,18 +9,18 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T10:15:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-21T11:00:00Z` |
 | **Last Hunter Scan** | `2026-03-21T23:58:00Z` |
-| **Last Fixer Pass** | `2026-03-21T13:25:00Z` |
+| **Last Fixer Pass** | `2026-03-21T13:35:00Z` |
 | **Last Validator Pass** | `2026-03-21T08:32:14Z` |
 | **Last Digest Run** | `2026-03-21T23:00:00Z` |
-| **Last Security Scan** | `2026-03-21T11:15:00Z` |
+| **Last Security Scan** | `2026-03-21T11:30:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T23:45:00Z` |
+| **Last TestGen Run** | `2026-03-21T13:00:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T12:30:00Z` (Cycle 243) |
-| **Last Supervisor Pass** | `2026-03-21T08:35:35Z` |
+| **Last Supervisor Pass** | `2026-03-21T09:15:24Z` |
 | **Total Found** | `425` |
 | **Total Pending** | `14` |
 | **Total In Progress** | `0` |
@@ -306,7 +306,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0326
-- **status:** `fixed`
+- **status:** `in-validation`
 - **severity:** `medium`
 - **file:** `packages/stores/src/redis/index.ts`
 - **line:** `57`
@@ -319,7 +319,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T11:15:00Z`
 - **fixer_completed:** `2026-03-21T11:15:00Z`
 - **fix_summary:** `Fresh branch with full v4 shim: del spread + optional chaining for pexpire/disconnect. tsc clean.`
-- **validator_started:** `2026-03-21T06:39:48Z`
+- **validator_started:** `2026-03-21T23:59:25Z`
 - **validator_completed:** `2026-03-21T06:43:59Z`
 - **validator_notes:** `REOPENED: Del shim intent correct but tsc TS2345 — r.del(keys) passes string[] to rest-params signature. Must use r.del(...keys) to spread. One-character fix.`
 
@@ -1177,7 +1177,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0386
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `packages/integrations/src/adapter/auth-resolver.ts`
 - **line:** `55`
@@ -1190,9 +1190,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** ``
 - **fixer_completed:** ``
 - **fix_summary:** ``
-- **validator_started:** `2026-03-21T05:08:34Z`
-- **validator_completed:** `2026-03-21T05:23:12Z`
-- **validator_notes:** `REOPENED: Signature updated for type conformance (tsc passes), but both params are _authDef/_ctx (underscore-prefixed unused). ctx is never used for credential scoping — store.get() still uses only static integrationKey. The behavioral bug (shared credentials regardless of ctx) persists. Also removed options?.scope warning guard without replacement. Fixer must: actually use ctx parameter in the store.get() call for per-request credential scoping, or at minimum include ctx in the cache key.`
+- **validator_started:** `2026-03-21T23:59:25Z`
+- **validator_completed:** `2026-03-22T00:01:30Z`
+- **validator_notes:** `Confirmed resolve now takes (_authDef, ctx) and ctx is actively used — JSON.stringify(ctx) builds a cacheKey="${integrationKey}:${ctxKey}" for per-request credential scoping. Fallback to static key when ctx is null/undefined preserves backward compat. Removal of options?.scope is justified by ctx-based replacement. All previous reopen concerns addressed.`
 
 ---
 
@@ -1420,7 +1420,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0403
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/agents/define-agent.ts`
 - **line:** `138`
@@ -1433,9 +1433,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T09:45:00Z`
 - **fixer_completed:** `2026-03-21T09:45:00Z`
 - **fix_summary:** `Guard response.usage with nullish coalescing and wrap model.chat in try-catch.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T23:59:25Z`
+- **validator_completed:** `2026-03-22T00:01:30Z`
+- **validator_notes:** `Confirmed usage guarded with ?? { inputTokens: 0, outputTokens: 0 } applied to all 4 bare response.usage accesses. try-catch around model.chat re-throws after emitting llm.error event. No regressions — degraded counting is correct behavior for missing usage.`
 
 ---
 
@@ -1520,7 +1520,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0408
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `src/pregel/streaming.ts`
 - **line:** `401`
@@ -1533,9 +1533,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T09:45:00Z`
 - **fixer_completed:** `2026-03-21T09:45:00Z`
 - **fix_summary:** `Split allSettledResults into two passes: collect fulfilled first, then throw.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T23:59:25Z`
+- **validator_completed:** `2026-03-22T00:01:30Z`
+- **validator_notes:** `Confirmed two-pass approach: pass 1 collects all fulfilled results into nodeResults, pass 2 throws on first non-HITL rejection. State writes from succeeded nodes are preserved before error propagation. HITL interrupt path unchanged. Minimal +6/-3 diff, no regressions.`
 
 ---
 
@@ -1640,7 +1640,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0414
-- **status:** `fixed`
+- **status:** `verified`
 - **severity:** `high`
 - **file:** `packages/tools/src/code-execution/e2b.ts`
 - **line:** `53`
@@ -1653,9 +1653,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T11:05:00Z`
 - **fixer_completed:** `2026-03-21T11:05:00Z`
 - **fix_summary:** ``
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **validator_started:** `2026-03-21T23:59:25Z`
+- **validator_completed:** `2026-03-22T00:01:30Z`
+- **validator_notes:** `Confirmed sandbox declared as let undefined, create() moved inside try, finally uses sandbox?.close() with optional chaining. Original error propagates cleanly when create() fails. Happy path unchanged. Minimal 3-line fix.`
 
 ---
 
@@ -1820,7 +1820,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0423
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `high`
 - **file:** `src/mcp/client.ts`
 - **line:** `121`
@@ -1830,9 +1830,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `initResponse.result` is cast to `MCPInitializeResult` without runtime validation — a malformed server response silently produces `undefined` fields.
 - **context:** `initResult.serverInfo` is immediately dereferenced on line 122; if the server returns a non-conformant initialize response, this throws a runtime TypeError instead of a descriptive connection error. The error check on line 115 only guards `response.error`, not a missing/malformed `result`.
 - **hunter_found:** `2026-03-21T23:58:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T13:35:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `Duplicate of verified BUG-0325 (MCP response validation).`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1840,7 +1840,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0424
-- **status:** `pending`
+- **status:** `blocked`
 - **severity:** `high`
 - **file:** `src/mcp/client.ts`
 - **line:** `240`
@@ -1850,9 +1850,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** `response.result` is cast to `MCPCallToolResult` without runtime validation, silently accepting any shape the MCP server returns.
 - **context:** If an MCP server returns a non-conformant result (e.g., missing `content` array), callers that iterate `result.content` will throw at runtime. The error path returns a well-typed fallback, but the success path trusts the cast completely.
 - **hunter_found:** `2026-03-21T23:58:00Z`
-- **fixer_started:** ``
+- **fixer_started:** `2026-03-21T13:35:00Z`
 - **fixer_completed:** ``
-- **fix_summary:** ``
+- **fix_summary:** `Duplicate of verified BUG-0325 (MCP response validation).`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1860,19 +1860,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0425
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/mcp/transport.ts`
 - **line:** `124`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0425`
 - **description:** If the MCP server process exits cleanly (non-zero code, no `error` event) before `_doStart` resolves, `connected = true` is set on a dead process because the `exit` handler does not reject the spawn Promise.
 - **context:** Subsequent `send()` calls fail with stdin write errors rather than a clear connection error. The spawn timeout (up to 10s) is the only thing that eventually surfaces the failure, delaying error detection significantly.
 - **hunter_found:** `2026-03-21T23:58:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T13:35:00Z`
+- **fixer_completed:** `2026-03-21T13:35:00Z`
+- **fix_summary:** `Reject spawn Promise on early exit + consume stderr to prevent pipe block.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1880,19 +1880,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0426
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/mcp/transport.ts`
 - **line:** `95`
 - **category:** `missing-error-handling`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0425`
 - **description:** Child process stderr is piped but never consumed — no `data` handler is attached to `this.process.stderr`.
 - **context:** If the MCP server writes enough to stderr (startup errors, crash traces), the pipe buffer fills and the child process blocks indefinitely, causing the spawn timeout to fire instead of a meaningful error.
 - **hunter_found:** `2026-03-21T23:58:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T13:35:00Z`
+- **fixer_completed:** `2026-03-21T13:35:00Z`
+- **fix_summary:** `Added stderr data handler. Same commit as BUG-0425.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1900,19 +1900,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0427
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/mcp/client.ts`
 - **line:** `62`
 - **category:** `race-condition`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0427`
 - **description:** `connect()` returns early when `state === "ready"` without checking `_connectLock`, so a concurrent connect/disconnect/connect sequence can spawn two `StdioTransport` instances, leaking one child process.
 - **context:** The window is narrow (single event loop turn), but concurrent lifecycle calls result in two `_runConnect` calls running simultaneously — each spawning their own transport, with the first one becoming unreachable and leaked.
 - **hunter_found:** `2026-03-21T23:58:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T13:35:00Z`
+- **fixer_completed:** `2026-03-21T13:35:00Z`
+- **fix_summary:** `Check connect lock before early return to prevent duplicate transports.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
@@ -1920,19 +1920,19 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0428
-- **status:** `pending`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `packages/tools/src/browser/firecrawl.ts`
 - **line:** `42`
 - **category:** `logic-bug`
 - **reopen_count:** `0`
-- **branch:** ``
+- **branch:** `bugfix/BUG-0428`
 - **description:** The `formats` array is only partially mapped to the Firecrawl v0 API — `includeMarkdown` is never set to `false`, so requesting `formats: ["html"]` exclusively still returns markdown.
 - **context:** A caller that passes `formats: ["html"]` to avoid markdown output will silently receive markdown content anyway, since the v0 API defaults `includeMarkdown` to true and the code never disables it, breaking the caller's stated format contract.
 - **hunter_found:** `2026-03-21T23:58:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T13:35:00Z`
+- **fixer_completed:** `2026-03-21T13:35:00Z`
+- **fix_summary:** `Set includeMarkdown based on requested formats array.`
 - **validator_started:** ``
 - **validator_completed:** ``
 - **validator_notes:** ``
