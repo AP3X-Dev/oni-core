@@ -200,7 +200,14 @@ export function ollama(
       throwModelHttpError("Ollama", res.status, text, res.headers);
     }
 
-    const json = (await res.json()) as OllamaChatResponseBody;
+    let json: OllamaChatResponseBody;
+    try {
+      json = (await res.json()) as OllamaChatResponseBody;
+    } catch (err) {
+      throw new Error(
+        `Ollama chat: failed to parse response as JSON — ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
     if (!json.message) {
       // Ollama returns {"error":"...","done":true} with no message field on errors
       const errMsg = (json as unknown as Record<string, unknown>)["error"];
@@ -288,7 +295,14 @@ export function ollama(
         throwModelHttpError("Ollama", res.status, errText, res.headers);
       }
 
-      const json = (await res.json()) as OllamaEmbeddingsResponseBody;
+      let json: OllamaEmbeddingsResponseBody;
+      try {
+        json = (await res.json()) as OllamaEmbeddingsResponseBody;
+      } catch (err) {
+        throw new Error(
+          `Ollama embed: failed to parse response as JSON — ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
       // Support both legacy "embedding" (single vector) and newer "embeddings" (array)
       const vec = json.embedding ?? json.embeddings?.[0];
       if (!vec) {
