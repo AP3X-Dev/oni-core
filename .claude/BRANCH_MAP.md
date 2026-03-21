@@ -1,7 +1,7 @@
-# Branch Map — Cycle 314
+# Branch Map — Cycle 315
 
-**Generated:** 2026-03-22T22:00:00Z
-**Main HEAD:** f48b8a0
+**Generated:** 2026-03-22T23:00:00Z
+**Main HEAD:** 3a5739b
 **Total Branches:** 3 bugfix
 
 | Branch | Status | Behind Main | Conflicts | Last Commit | Notes |
@@ -27,15 +27,15 @@ No active agent worktrees.
 
 No conflict branches this cycle. All 3 remaining bugfix branches are conflict-free via `git merge-tree`.
 
-## Status Changes Since C313
+## Status Changes Since C314
 
-No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts each +2 vs C313 due to 1 new commit on main since C313 end (f48b8a0 C313-chore): BUG-0343: 59→61; BUG-0356/0359: 64→66.
+No status changes. All 3 branches remain blocked (reopen_count=3 each). Behind-main counts unchanged from C314 (no new commits on main this cycle): BUG-0343: 61; BUG-0356/0359: 66.
 
 ## GC Note
 
 GC executed Cycle 306 and Cycle 312. Next GC: Cycle 318.
 
-## File Overlap Summary (Cycle 314)
+## File Overlap Summary (Cycle 315)
 
 No overlaps — all 3 remaining bugfix branches touch distinct files:
 - `src/harness/safety-gate.ts` (BUG-0343)

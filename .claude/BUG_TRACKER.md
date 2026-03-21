@@ -19,7 +19,7 @@
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
 | **Last TestGen Run** | `2026-03-22T02:00:00Z` |
-| **Last Git Manager Pass** | `2026-03-22T22:00:00Z` (Cycle 314 — 0 deletions, 0 rebases, no gc (next Cycle 318); 3 bugfix branches remain (BUG-0343/0356/0359), all blocked reopen_count=3, 0 conflicts; BUG-0343 61 behind (+2), BUG-0356/0359 66 behind (+2); human intervention required for all 3) |
+| **Last Git Manager Pass** | `2026-03-22T23:00:00Z` (Cycle 315 — 0 deletions, 0 rebases, no gc (next Cycle 318); 3 bugfix branches remain (BUG-0343/0356/0359), all blocked reopen_count=3, 0 conflicts; BUG-0343 61 behind, BUG-0356/0359 66 behind (unchanged from C314); log trimmed to 150 lines; human intervention required for all 3) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
 | **Total Pending** | `0` |
