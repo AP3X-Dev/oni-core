@@ -260,6 +260,12 @@ export function ollama(
     }
 
     for await (const parsed of parseNDJSON(res.body)) {
+      // Ollama sends in-stream errors as {"error":"...","done":true}
+      const errorField = parsed["error"];
+      if (typeof errorField === "string" && errorField) {
+        throw new Error(`Ollama stream error: ${errorField}`);
+      }
+
       const message = parsed["message"] as { content?: string } | undefined;
       const done = parsed["done"] as boolean | undefined;
 
