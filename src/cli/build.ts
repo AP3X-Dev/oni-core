@@ -53,9 +53,9 @@ export async function buildCommand(args: ParsedArgs): Promise<void> {
     return 1;
   });
 
-  if (exitCode && exitCode !== 0) {
+  if (exitCode !== 0) {
     console.error("\n  Build failed — TypeScript compilation errors");
-    process.exitCode = exitCode;
+    process.exitCode = exitCode ?? 1;
     return;
   }
 
