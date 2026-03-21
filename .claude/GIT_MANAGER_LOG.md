@@ -1,22 +1,3 @@
-[2026-03-21T23:59:00Z] Step 5: C246 CONFLICTS RESOLVED — BUG-0374/0378/0413 now clean (main evolution cleared them). All 50 non-blocked branches clean.
-[2026-03-21T23:59:00Z] Step 5b: REBASED BUG-0295 onto main. Was 4 behind, now 0 behind, 1 ahead. 1/1 cap used.
-[2026-03-21T23:59:00Z] Step 6: FILE OVERLAPS (5 pairs) — ollama.ts: BUG-0357+0377 (safe). pool.ts: BUG-0378+0407. agent-node.ts: BUG-0379+0410. firecrawl.ts: BUG-0400+0428. store/index.ts: BUG-0415+0421.
-[2026-03-21T23:59:00Z] Step 7: HEAD confirmed on main. Clean state.
-[2026-03-21T23:59:00Z] Step 8: GC skipped. Next at Cycle 252.
-[2026-03-21T23:59:00Z] ALERT: BUG-0295 rebased C247. 0 behind. Validator-ready PRIORITY #1. BUG-0374/0378/0413 conflicts cleared — validator can proceed.
-[2026-03-21T23:59:00Z] BRANCH COUNT: 51 (was 52). 1 deletion (BUG-0403 orphan), 1 rebase (BUG-0295). Cumulative: ~205.
-[2026-03-21T23:59:00Z] Step 9: Last Git Manager Pass updated. Log trimmed to 150 lines.
-[2026-03-21T23:59:00Z] Step 10: HEAD on main. Clean state. === Cycle 247 End ===
-[2026-03-21T08:30:00Z] ## Cycle 248 — 2026-03-21T08:30:00Z
-[2026-03-21T08:30:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T13:35:00Z (>60s). Last Validator=2026-03-21T08:32:14Z (>60s). In-progress=0, In-validation=0. Proceeding.
-[2026-03-21T08:30:00Z] Step 1: 51 bugfix/BUG-* branches. Active worktrees: /tmp/bug0306-wt4 (BUG-0306), /tmp/bug0355-typecheck (BUG-0355).
-[2026-03-21T08:30:00Z] Step 2: Branch map rebuilt. 50 branches post-deletion. Fixed: 43. In-validation: 4 (BUG-0342, BUG-0355, BUG-0356, BUG-0425). Blocked: 1 (BUG-0306 worktree). No stale by timestamp (<48h).
-[2026-03-21T08:30:00Z] Step 3: DELETED bugfix/BUG-0306 — blocked (reopen_count=3), orphaned, worktree /tmp/bug0306-wt4 force-removed. 1/5 cap used. Cumulative: ~206.
-[2026-03-21T08:30:00Z] Step 4: No stale by timestamp. All branches last committed 2026-03-20/21 (<36h). No stale warnings issued.
-[2026-03-21T08:30:00Z] Step 5: Merge-tree — ALL 50 branches CLEAN (0 conflict markers). Top queue: BUG-0342 (in-validation, 0 behind post-rebase), BUG-0295 (fixed, on main HEAD).
-[2026-03-21T08:30:00Z] Step 5b: REBASED BUG-0342 onto main. Was behind (base=df7c01c), now ON MAIN HEAD. 1/1 cap used. Clean, 1-file fix (scanner.ts).
-[2026-03-21T08:30:00Z] Step 6: FILE OVERLAPS (5 pairs, all clean) — pool.ts: BUG-0378+0407. agent-node.ts: BUG-0379+0410. store/index.ts: BUG-0415+0421. firecrawl.ts: BUG-0400+0428. ollama.ts: BUG-0357+0377 (safe).
-[2026-03-21T08:30:00Z] Step 7: HEAD confirmed on main. Stash pop restored working tree.
 [2026-03-21T08:30:00Z] Step 8: GC skipped. Next at Cycle 252.
 [2026-03-21T08:30:00Z] ALERT: BUG-0342 — rebased C248, ON MAIN HEAD. Validator-ready PRIORITY #1.
 [2026-03-21T08:30:00Z] ALERT: BUG-0295 — ON MAIN HEAD, fixed, no validator started. PRIORITY #2.
@@ -148,3 +129,22 @@
 [2026-03-22T01:15:00Z] BRANCH COUNT: 34 branches (was 37 at C255). 0 deletions, 1 rebase (BUG-0443). Cumulative: ~217.
 [2026-03-22T01:15:00Z] Step 9: Updated Last Git Manager Pass to 2026-03-22T01:15:00Z (Cycle 256). Log trimmed to 150 lines.
 [2026-03-22T01:15:00Z] Step 10: HEAD confirmed on main. Clean state. === Cycle 256 End ===
+[2026-03-22T01:35:00Z] ## Cycle 257 — 2026-03-22T01:35:00Z
+[2026-03-22T01:35:00Z] Step 0: Pre-flight — No TRACKER_LOCK. Last Fixer=2026-03-21T19:55:00Z (>60s). Last Validator=2026-03-22T01:25:00Z (>60s). In-progress=0, In-validation=0. Proceeding.
+[2026-03-22T01:35:00Z] Step 1: 33 bugfix/BUG-* branches. Active worktrees: /home/cerebro/projects/oni-core/.claude/worktrees/agent-a1bb0c55 (BUG-0420), /tmp/bug0355-typecheck (BUG-0355).
+[2026-03-22T01:35:00Z] Step 2: Branch map rebuilt. 33 branches. Fixed: 27. Reopened: 2 (BUG-0420/0450). Pending: 2 (BUG-0452/0458). No-entry: 1 (BUG-0413). Conflict branches: 5 (BUG-0355/0356/0378/0413/0453).
+[2026-03-22T01:35:00Z] Step 3: 0 deletions. No fully-merged branches confirmed (earlier MERGED detection corrected; all have unique ahead commits). 0/5 cap used. Cumulative: ~217.
+[2026-03-22T01:35:00Z] Step 4: STALE WARNINGS — 17 branches 805 behind main (BUG-0355/0356/0358/0377/0378/0379/0389/0390/0400/0404/0413/0420/0421/0435/0450/0452/0453). BUG-0413 has no tracker entry.
+[2026-03-22T01:35:00Z] Step 5: CONFLICTS (5 branches): BUG-0355 (1 redis/index.ts), BUG-0356 (2 postgres/index.ts), BUG-0378 (1 pool.ts), BUG-0413 (1 validate-command.ts), BUG-0453 (1 checkpointing.ts). 28 branches clean.
+[2026-03-22T01:35:00Z] Step 5b: REBASED BUG-0357 onto main HEAD 5778897. Was 24 behind. New tip: c5f57d9, 0 behind, 1 ahead. Clean 1-file fix (src/models/ollama.ts). 1/1 cap used.
+[2026-03-22T01:35:00Z] Step 6: FILE OVERLAPS (4 pairs) — (1) checkpointing.ts: BUG-0452 (pending)+BUG-0453 (conflict) HIGH. (2) ollama.ts: BUG-0357 (0 behind, rebased)+BUG-0377 MEDIUM. (3) agent-node.ts: BUG-0379+BUG-0410 MEDIUM. (4) store/index.ts: BUG-0415+BUG-0421 LOW.
+[2026-03-22T01:35:00Z] Step 7: HEAD confirmed on main (5778897). Clean state.
+[2026-03-22T01:35:00Z] Step 8: GC skipped. Next at Cycle 258.
+[2026-03-22T01:35:00Z] ALERT: BUG-0357 — REBASED C257. ON MAIN HEAD 5778897. ollama.ts in-stream error detection. MERGE READY PRIORITY #1.
+[2026-03-22T01:35:00Z] ALERT: BUG-0409 — 33 behind, clean, fixed. PRIORITY #2. DLQ ID collision.
+[2026-03-22T01:35:00Z] ALERT: BUG-0454/0455/0456/0457 — 15 behind, clean, fixed. PRIORITY #3 (hitl/pregel fixes).
+[2026-03-22T01:35:00Z] ALERT: BUG-0355/0356/0378/0413/0453 — merge conflicts persist. BUG-0413 has no tracker entry. Fixer must investigate and recreate.
+[2026-03-22T01:35:00Z] ALERT: BUG-0452 — status=pending but has fix commit (serialize updateState per threadId). Fixer must update tracker status.
+[2026-03-22T01:35:00Z] BRANCH COUNT: 33 branches (was 34 at C256). 0 deletions, 1 rebase (BUG-0357). Cumulative: ~217.
+[2026-03-22T01:35:00Z] Step 9: Updated Last Git Manager Pass to 2026-03-22T01:35:00Z (Cycle 257). Log trimmed to 150 lines.
+[2026-03-22T01:35:00Z] Step 10: HEAD confirmed on main. Clean state. === Cycle 257 End ===

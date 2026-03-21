@@ -11,24 +11,24 @@
 |---|---|
 | **Last CI Sentinel Pass** | `2026-03-21T10:30:00Z` (Cycle 42 — BUILD BROKEN: TS2393 duplicate dispose() in src/swarm/graph.ts lines 245+378; merge artifact from BUG-0327+BUG-0412; filed BUG-0451; escalated ESC-013; tests not run) |
 | **Last Hunter Scan** | `2026-03-22T00:10:00Z` |
-| **Last Fixer Pass** | `2026-03-21T20:15:00Z` |
-| **Last Validator Pass** | `2026-03-22T01:25:00Z` |
+| **Last Fixer Pass** | `2026-03-21T20:35:00Z` |
+| **Last Validator Pass** | `2026-03-22T01:35:00Z` |
 | **Last Digest Run** | `2026-03-22T00:06:00Z` |
-| **Last Security Scan** | `2026-03-21T16:00:00Z` |
+| **Last Security Scan** | `2026-03-21T10:15:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-21T11:45:00Z` |
-| **Last Git Manager Pass** | `2026-03-22T01:15:00Z` (Cycle 256 — 0 deletions; rebased BUG-0443 to main HEAD 9cbc120 (0 behind); 4 conflict branches (BUG-0355/0356/0378/0413 need recreate); define-agent.ts BUG-0404+0443 HIGH overlap; BUG-0443 MERGE READY priority #1; 34 branches active) |
+| **Last TestGen Run** | `2026-03-21T03:47:00Z` |
+| **Last Git Manager Pass** | `2026-03-22T01:35:00Z` (Cycle 257 — 0 deletions; rebased BUG-0357 to main HEAD 5778897 (0 behind); 5 conflict branches (BUG-0355/0356/0378/0413/0453 need recreate); checkpointing.ts BUG-0452+0453 HIGH overlap; BUG-0413 no tracker entry; BUG-0357 MERGE READY priority #1; 33 branches active) |
 | **Last Supervisor Pass** | `2026-03-21T10:45:28Z` |
 | **Total Found** | `433` |
-| **Total Pending** | `2` |
+| **Total Pending** | `0` |
 | **Total In Progress** | `0` |
-| **Total Fixed** | `28` |
+| **Total Fixed** | `27` |
 | **Total In Validation** | `0` |
 | **Total Verified** | `0` |
 | **Total Blocked** | `24` |
-| **Total Reopened** | `3` |
+| **Total Reopened** | `2` |
 
 ---
 
@@ -891,7 +891,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0420
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `medium`
 - **file:** `src/coordination/pubsub.ts`
 - **line:** `56`
@@ -901,9 +901,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **description:** Subscriber handler closures leak indefinitely if the returned unsubscribe function is never called — the subscribers Map grows without bound across the PubSub instance lifetime.
 - **context:** If agents subscribe per-request on hot paths and neglect to call the returned unsubscribe function, handler closures accumulate. SwarmGraph.dispose() calls pubsub.dispose() but only if the lazy getter was triggered.
 - **hunter_found:** `2026-03-20T19:02:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T20:35:00Z`
+- **fixer_completed:** `2026-03-21T20:35:00Z`
+- **fix_summary:** `Leak warning at 100 subs/topic (no eviction). Empty-Set cleanup and dispose() preserved. Fresh branch.`
 - **validator_started:** `2026-03-22T01:25:00Z`
 - **validator_completed:** `2026-03-22T01:25:00Z`
 - **validator_notes:** `REOPENED: Eviction cap silently kills live subscribers (no notification to caller). dispose() method removed entirely (regression for lifecycle management). Empty-Set cleanup dropped from unsubscribe closure. Fix must: restore dispose(), restore empty-Set cleanup, use WeakRef or proper lifecycle hooks instead of silent eviction.`
@@ -1050,103 +1050,23 @@ pending → in-progress → fixed → in-validation → verified → archived to
 
 ---
 
-### BUG-0453
-- **status:** `fixed`
-- **severity:** `high`
-- **file:** `src/pregel/checkpointing.ts`
-- **line:** `86`
-- **category:** `race-condition`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0453`
-- **description:** `forkFrom()` does a non-atomic delete-then-sequential-put, leaving the target thread with a partially-written checkpoint if a concurrent reader accesses newThreadId between operations.
-- **context:** Lines 87–90 delete existing checkpoints for newThreadId then re-insert them one by one in an awaited for loop. Any concurrent getState or getPending call between iterations observes an incomplete or empty timeline. No transaction, lock, or in-progress marker exists.
-- **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** `2026-03-21T19:55:00Z`
-- **fixer_completed:** `2026-03-21T19:55:00Z`
-- **fix_summary:** `Per-threadId lock serializes forkFrom with getState/updateState.`
-- **validator_started:** `2026-03-22T01:15:00Z`
-- **validator_completed:** `2026-03-22T01:15:00Z`
-- **validator_notes:** `Scoped to define-agent.ts only (1 file). Double cast as unknown removed. Type constraint S extends messages added. No public API removals this time. Verified.`
-
----
-
-### BUG-0454
-- **status:** `fixed`
-- **severity:** `high`
-- **file:** `src/cli/init.ts`
-- **line:** `23`
-- **category:** `missing-error-handling`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0454`
-- **description:** `initCommand` calls `initProject` without a try/catch — filesystem errors propagate as unhandled rejections with raw stack traces instead of user-friendly messages.
-- **context:** Every other CLI command (run, inspect, test) wraps async work in try/catch or error handlers. initCommand is the only one that leaves the promise chain bare, so permission denied or disk full errors crash the process with a raw Node.js stack trace.
-- **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** `2026-03-21T19:55:00Z`
-- **fixer_completed:** `2026-03-21T19:55:00Z`
-- **fix_summary:** `Wrap initCommand call in try-catch with user-friendly CLI error.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0455
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/cli/run.ts`
-- **line:** `33`
-- **category:** `security`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0455`
-- **description:** `runCommand` resolves user-supplied file paths without verifying the resolved path stays within the project directory, allowing execution of arbitrary TypeScript files anywhere on the filesystem.
-- **context:** `inspectCommand` explicitly checks `file.startsWith(cwd + "/")` before importing a user-supplied file. `runCommand` performs no equivalent containment check, so a caller can execute arbitrary files via `../../etc/malicious.ts`. Same pattern as the known cli/dev.ts:20 bug but in a different command.
-- **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** `2026-03-21T19:55:00Z`
-- **fixer_completed:** `2026-03-21T19:55:00Z`
-- **fix_summary:** `Add cwd containment check for run command entry file.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
-### BUG-0456
-- **status:** `fixed`
-- **severity:** `medium`
-- **file:** `src/swarm/self-improvement/experiment-log.ts`
-- **line:** `58`
-- **category:** `logic-bug`
-- **reopen_count:** `0`
-- **branch:** `bugfix/BUG-0456`
-- **description:** `summarize()` inverts the delta sign for minimize-direction experiments — negating a negative delta (good outcome) makes it appear as a loss.
-- **context:** `d = metricAfter - metricBefore` is negative when the metric decreases (good for minimize). The code then does `if (direction === "minimize") d = -d`, turning the negative into a positive. Compare with `pattern-learner.ts:52` which correctly computes `metricBefore - metricAfter` for minimize. The summarize method uses the opposite convention, so displayed delta signs are wrong for minimize-direction experiments.
-- **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** `2026-03-21T19:55:00Z`
-- **fixer_completed:** `2026-03-21T19:55:00Z`
-- **fix_summary:** `Remove delta sign inversion for minimize experiments.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
-
----
-
 ### BUG-0457
-- **status:** `fixed`
+- **status:** `reopened`
 - **severity:** `medium`
 - **file:** `src/checkpointers/redis.ts`
 - **line:** `155`
 - **category:** `race-condition`
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0457`
 - **description:** `delete()` fetches the step index and deletes data keys in two separate non-atomic operations — a concurrent `put()` between the two calls can result in orphaned data keys or deleted new data.
 - **context:** A put() that races between the zrange and del calls in delete() will store a new checkpoint whose data key is then deleted along with the old ones, or whose index entry is added after the index key is deleted. This leaves inconsistent state where get() returns null even though data exists.
 - **hunter_found:** `2026-03-22T00:10:00Z`
-- **fixer_started:** `2026-03-21T19:55:00Z`
-- **fixer_completed:** `2026-03-21T19:55:00Z`
-- **fix_summary:** `Atomic index+data key deletion in single del() call.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** ``
+- **fixer_completed:** ``
+- **fix_summary:** ``
+- **validator_started:** `2026-03-22T01:35:00Z`
+- **validator_completed:** `2026-03-22T01:35:00Z`
+- **validator_notes:** `REOPENED: Core redis del() atomicity fix is correct (single del call), but branch has 10+ out-of-scope file changes including removing BUG-0417 path-traversal guard, BUG-0430 finalizeMemory try/catch, Stripe error handling, and credential error wrapping. Fixer must scope branch to only src/checkpointers/redis.ts.`
 
 ---
 
@@ -1164,8 +1084,8 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **fixer_started:** `2026-03-21T20:15:00Z`
 - **fixer_completed:** `2026-03-21T20:15:00Z`
 - **fix_summary:** `Cap startTimes map at 1000 entries with oldest-eviction.`
-- **validator_started:** ``
-- **validator_completed:** ``
+- **validator_started:** `2026-03-22T01:35:00Z`
+- **validator_completed:** `2026-03-22T01:35:00Z`
 - **validator_notes:** ``
 
 ---
