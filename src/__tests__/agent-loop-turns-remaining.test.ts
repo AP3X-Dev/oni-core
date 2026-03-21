@@ -3,10 +3,10 @@ import { agentLoop } from "../harness/loop/index.js";
 import type { AgentLoopConfig } from "../harness/types.js";
 import type { ChatResponse } from "../models/types.js";
 
-// BUG-0009 regression: `remaining = maxTurns - turn` was off by one.
-// On the final turn the model was told "1 turn remaining" instead of "0 turns remaining",
-// potentially causing the model to defer critical actions to a next turn that never comes.
-// Fix: changed to `maxTurns - turn - 1`.
+// BUG-0009 / BUG-0359: `remaining = maxTurns - turn` is the correct formula.
+// The agent sees "1 turn remaining" while executing its last valid turn, which is
+// accurate — it has 1 turn (the current one) remaining. The prior `- 1` variant
+// told the agent "0 turns remaining" on its last active turn, which is misleading.
 
 describe("agentLoop remaining-turns count (BUG-0009)", () => {
   function makeSuccessResponse(): ChatResponse {
@@ -47,9 +47,9 @@ describe("agentLoop remaining-turns count (BUG-0009)", () => {
     expect(mockModel.chat).toHaveBeenCalledOnce();
 
     const prompt = capturedPrompts[0] ?? "";
-    // With maxTurns=1 and turn=0: remaining = 1 - 0 - 1 = 0
-    expect(prompt).toMatch(/0 turns remaining/);
-    expect(prompt).not.toMatch(/1 turns remaining/);
+    // With maxTurns=1 and turn=0: remaining = 1 - 0 = 1
+    expect(prompt).toMatch(/1 turns remaining/);
+    expect(prompt).not.toMatch(/0 turns remaining/);
   });
 
   it("reports maxTurns-1 remaining turns on the first turn (turn=0)", async () => {
@@ -80,10 +80,10 @@ describe("agentLoop remaining-turns count (BUG-0009)", () => {
     const gen = agentLoop("do task", config);
     for await (const _msg of gen) { /* drain */ }
 
-    // First call: turn=0, remaining = 5 - 0 - 1 = 4
+    // First call: turn=0, remaining = 5 - 0 = 5
     const firstPrompt = capturedPrompts[0] ?? "";
-    expect(firstPrompt).toMatch(/4 turns remaining/);
-    expect(firstPrompt).not.toMatch(/5 turns remaining/);
+    expect(firstPrompt).toMatch(/5 turns remaining/);
+    expect(firstPrompt).not.toMatch(/6 turns remaining/);
   });
 
   it("reports 0 remaining on the last of multiple turns", async () => {
@@ -121,7 +121,7 @@ describe("agentLoop remaining-turns count (BUG-0009)", () => {
     // Specifically, no prompt should mention maxTurns turns remaining (which would be the
     // old behavior of `maxTurns - turn` on turn=0 when off by one going the wrong direction)
     for (const prompt of capturedPrompts) {
-      expect(prompt).not.toMatch(/3 turns remaining/);
+      expect(prompt).not.toMatch(/4 turns remaining/);
     }
   });
 });

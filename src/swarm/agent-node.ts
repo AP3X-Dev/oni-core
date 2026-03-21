@@ -137,7 +137,12 @@ export function createAgentNode<S extends BaseSwarmState>(
           }
           return new Command<S>({
             update: {
-              context: { ...(state.context ?? {}), ...(handoff.context ?? {}) },
+              context: {
+                ...(state.context ?? {}),
+                ...Object.fromEntries(
+                  Object.entries(handoff.context ?? {}).filter(([k]) => !k.startsWith("__")),
+                ),
+              },
               handoffHistory: [{
                 from:      def.id,
                 to:        handoff.to,
@@ -166,7 +171,9 @@ export function createAgentNode<S extends BaseSwarmState>(
           ...result,
           context: {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ...((result as any).context ?? {}), // SAFE: spreading unknown result context field
+            ...Object.fromEntries(
+              Object.entries((result as any).context ?? {}).filter(([k]) => !k.startsWith("__")),
+            ),
             __consumedMsgIds: newConsumedIds,
           },
           agentResults: {

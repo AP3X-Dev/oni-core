@@ -84,16 +84,18 @@ export class SafetyGate {
       });
 
       let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutHandle = setTimeout(() => reject(new Error("Safety check timeout")), this.timeout);
-      });
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(new Error("Safety check timeout")), this.timeout);
+        });
 
-      response = await Promise.race([responsePromise, timeoutPromise]);
-      clearTimeout(timeoutHandle);
+        response = await Promise.race([responsePromise, timeoutPromise]);
+      } finally {
+        clearTimeout(timeoutHandle);
+      }
     } catch {
       // Fail-closed for network errors and timeouts — block destructive tools
       // when the safety service is unavailable.
-      clearTimeout(timeoutHandle);
       return { ...FALLBACK_RESULT };
     }
 

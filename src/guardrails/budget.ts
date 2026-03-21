@@ -47,6 +47,19 @@ export class BudgetTracker {
   record(agentName: string, modelId: string, usage: TokenUsage): AuditEntry[] {
     const entries: AuditEntry[] = [];
 
+    // Validate token counts — NaN or negative values poison accumulators and
+    // silently disable budget enforcement (BUG-0304).
+    const inputTokens  = Number.isFinite(usage.inputTokens)  && usage.inputTokens  >= 0 ? usage.inputTokens  : 0;
+    const outputTokens = Number.isFinite(usage.outputTokens) && usage.outputTokens >= 0 ? usage.outputTokens : 0;
+    if (inputTokens !== usage.inputTokens || outputTokens !== usage.outputTokens) {
+      entries.push({
+        timestamp: Date.now(),
+        agent: agentName,
+        action: "budget.warning",
+        data: { modelId, rawInput: usage.inputTokens, rawOutput: usage.outputTokens, sanitizedInput: inputTokens, sanitizedOutput: outputTokens },
+      });
+    }
+
     // Update agent-level counters — atomic in-place mutation: initialise entry on
     // first access so the same object reference is always mutated (no read-then-set
     // window where a concurrent call could overwrite a sibling's increments).
@@ -54,19 +67,19 @@ export class BudgetTracker {
       this.agentTokens.set(agentName, { input: 0, output: 0 });
     }
     const existing = this.agentTokens.get(agentName)!;
-    existing.input += usage.inputTokens;
-    existing.output += usage.outputTokens;
+    existing.input += inputTokens;
+    existing.output += outputTokens;
 
     // Update run-level counters
-    this.totalInput += usage.inputTokens;
-    this.totalOutput += usage.outputTokens;
+    this.totalInput += inputTokens;
+    this.totalOutput += outputTokens;
 
     // Calculate cost for this usage
     const pricing = this.pricing[modelId];
     if (pricing) {
       const cost =
-        (usage.inputTokens / 1_000_000) * pricing.input +
-        (usage.outputTokens / 1_000_000) * pricing.output;
+        (inputTokens / 1_000_000) * pricing.input +
+        (outputTokens / 1_000_000) * pricing.output;
       this.totalCost += cost;
     } else {
       console.warn(
@@ -77,7 +90,7 @@ export class BudgetTracker {
         timestamp: Date.now(),
         agent: agentName,
         action: "budget.unknown_pricing",
-        data: { modelId, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens },
+        data: { modelId, inputTokens, outputTokens },
       });
     }
 
