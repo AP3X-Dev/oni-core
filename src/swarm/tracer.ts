@@ -218,7 +218,7 @@ export class SwarmTracer {
 
   /** Clear all recorded events. */
   clear(): void {
-    this.events = [];
+    this.events.length = 0;
   }
 }
 
