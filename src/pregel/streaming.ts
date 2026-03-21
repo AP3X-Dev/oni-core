@@ -260,12 +260,12 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                 const invocationKey = `${threadId}::${ctx._nextInvocationId.value++}`;
 
                 // Compute the namespaced threadId for this subgraph invocation.
-                // Format: "parentThreadId:subgraphName" — used as the child's threadId
-                // so that checkpoints are stored under the namespaced key directly.
+                // Format: "subgraphName:parentThreadId" — matches NamespacedCheckpointer
+                // convention (ns:threadId) so checkpoints are stored consistently.
                 // For concurrent safety (BUG-0082), the invocationKey is still unique
                 // but now derived from the namespaced threadId + counter.
                 const parentThreadId = config?.threadId ?? threadId;
-                const namespacedThreadId = `${parentThreadId}:${name}`;
+                const namespacedThreadId = `${name}:${parentThreadId}`;
 
                 if (childRunner) {
                   childRunner._subgraphRef.count++;
@@ -273,7 +273,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                 }
 
                 // Install the parent's checkpointer directly under the namespaced threadId
-                // so child checkpoints are stored as "parentThreadId:subgraphName".
+                // so child checkpoints are stored as "subgraphName:parentThreadId".
                 if (ctx.checkpointer && childRunner) {
                   childRunner._perInvocationCheckpointer.set(
                     namespacedThreadId,
