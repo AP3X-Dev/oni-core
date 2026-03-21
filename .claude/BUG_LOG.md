@@ -2112,5 +2112,52 @@
 - **validator_completed:** `2026-03-21T05:23:12Z`
 - **validator_notes:** `Verified on bugfix/BUG-0299. Line 192 now includes agent_error || agent_complete. Single-line change, in-flight loop unmodified. tsc clean.`
 - **archived:** `2026-03-21T05:23:12Z`
+- **test_generated:** `true`
+- **test_file:** `src/__tests__/swarm/scaling-error-latency-regression.test.ts`
+
+---
+
+### BUG-0382
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/harness/loop/tools.ts`
+- **line:** `128`
+- **category:** `logic-bug`
+- **reopen_count:** `1`
+- **branch:** `bugfix/BUG-0382`
+- **description:** Object.assign merges hook modifiedInput instead of replacing — original keys survive.
+- **fix_summary:** `Single-line: Object.assign → direct assignment.`
+- **validator_notes:** `Verified. +1/-1. stripProtoKeys/askUser/onToolMetadata preserved. tsc clean.`
+- **archived:** `2026-03-21T05:37:00Z`
+
+---
+
+### BUG-0391
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/registry.ts`
+- **line:** `178`
+- **category:** `security-injection`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0391`
+- **description:** toManifest() embeds unsanitized agent role/capability into supervisor prompt.
+- **fix_summary:** `Sanitize role and capability fields in toManifest().`
+- **validator_notes:** `Verified. sanitize() strips newlines/CR and angle brackets. tsc clean.`
+- **archived:** `2026-03-21T05:37:00Z`
+
+---
+
+### BUG-0395
+- **status:** `verified`
+- **severity:** `high`
+- **file:** `src/swarm/self-improvement/experiment-log.ts`
+- **line:** `32`
+- **category:** `race-condition`
+- **reopen_count:** `0`
+- **branch:** `bugfix/BUG-0395`
+- **description:** Non-atomic push+splice in log() — concurrent agents over-trim records.
+- **fix_summary:** `Atomic [...records, full].slice(-MAX) reassignment.`
+- **validator_notes:** `Verified. Atomic slice, readonly removed, record included. tsc clean.`
+- **archived:** `2026-03-21T05:37:00Z`
 
 ---

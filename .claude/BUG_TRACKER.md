@@ -9,20 +9,20 @@
 
 | Key | Value |
 |---|---|
-| **Last CI Sentinel Pass** | `2026-03-21T05:35:00Z` |
+| **Last CI Sentinel Pass** | `2026-03-20T22:42:00Z` |
 | **Last Hunter Scan** | `2026-03-20T22:31:00Z` |
-| **Last Fixer Pass** | `2026-03-21T06:50:00Z` |
+| **Last Fixer Pass** | `2026-03-21T07:15:00Z` |
 | **Last Validator Pass** | `2026-03-21T05:23:12Z` |
 | **Last Digest Run** | `2026-03-21T05:29:59Z` |
-| **Last Security Scan** | `2026-03-23T15:15:00Z` |
+| **Last Security Scan** | `2026-03-23T15:25:00Z` |
 | **Hunter Loop Interval** | `5min` |
 | **Fixer Loop Interval** | `2min` |
 | **Validator Loop Interval** | `5min` |
-| **Last TestGen Run** | `2026-03-20T22:00:00Z` |
+| **Last TestGen Run** | `2026-03-20T22:48:00Z` |
 | **Last Git Manager Pass** | `2026-03-21T07:00:00Z` (Cycle 225) |
-| **Last Supervisor Pass** | `2026-03-21T05:35:29Z` |
-| **Total Found** | `397` |
-| **Total Pending** | `1` |
+| **Last Supervisor Pass** | `2026-03-21T05:40:35Z` |
+| **Total Found** | `398` |
+| **Total Pending** | `2` |
 | **Total In Progress** | `0` |
 | **Total Fixed** | `67` |
 | **Total In Validation** | `0` |
@@ -266,22 +266,22 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0303
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `low`
 - **file:** `src/lsp/index.ts`
 - **line:** `134`
 - **category:** `security-injection`
 - **description:** `getErrorDiagnosticsText()` embeds `filePath` in an XML attribute (`<diagnostics file="${filePath}">`) without escaping, enabling XML attribute injection that can manipulate LLM context parsing.
 - **context:** The `filePath` parameter is passed directly into the XML attribute at line 134. A file path containing `"` followed by additional XML attributes or closing tags (e.g. `path" malicious="true`) would break out of the attribute context. While this output is consumed as LLM context (not browser HTML), it could affect how the LLM interprets diagnostic boundaries — a crafted file path could inject fake diagnostic blocks or override the file attribute to misattribute errors. Additionally, `formatDiagnostic()` at line 244 embeds `d.message` and `d.source` from LSP server responses without escaping. Fix: apply XML escaping to `filePath`, `d.message`, and `d.source` using the existing `escXml()` function from `skill-loader.ts`. OWASP A03:2021 - Injection.
-- **reopen_count:** `0`
+- **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0303`
 - **hunter_found:** `2026-03-20T20:04:36Z`
-- **fixer_started:** `2026-03-21T05:12:00Z`
-- **fixer_completed:** `2026-03-21T05:12:00Z`
-- **fix_summary:** `Added escapeXml() helper and applied to filePath, d.message, d.source in LSP XML output.`
-- **validator_started:** ``
-- **validator_completed:** ``
-- **validator_notes:** ``
+- **fixer_started:** `2026-03-21T07:15:00Z`
+- **fixer_completed:** `2026-03-21T07:15:00Z`
+- **fix_summary:** `Added escapeXml() with all 5 XML special chars (including apos). Applied to filePath, d.message, d.source. Fresh branch from main, no unrelated changes.`
+- **validator_started:** `2026-03-21T05:29:48Z`
+- **validator_completed:** `2026-03-21T05:37:00Z`
+- **validator_notes:** `REOPENED: escapeXml() handles &, <, >, " but missing single-quote (&apos;). Branch also introduces tsc errors in unrelated pregel files (TS2554, TS2741). Fixer must: add single-quote escape, delete old branch, create fresh from main.`
 
 ---
 
@@ -1808,7 +1808,7 @@ pending → in-progress → fixed → in-validation → verified → archived to
 ---
 
 ### BUG-0399
-- **status:** `reopened`
+- **status:** `fixed`
 - **severity:** `high`
 - **file:** `src/swarm/agent-node.ts`
 - **line:** `169`
@@ -1818,9 +1818,9 @@ pending → in-progress → fixed → in-validation → verified → archived to
 - **reopen_count:** `1`
 - **branch:** `bugfix/BUG-0399`
 - **hunter_found:** `2026-03-23T13:55:00Z`
-- **fixer_started:** ``
-- **fixer_completed:** ``
-- **fix_summary:** ``
+- **fixer_started:** `2026-03-21T07:05:00Z`
+- **fixer_completed:** `2026-03-21T07:05:00Z`
+- **fix_summary:** `Extract rawCtx, filter __-prefixed keys into safeCtx, spread safeCtx. 6 insertions, 2 deletions. No other code touched.`
 - **validator_started:** `2026-03-21T05:29:48Z`
 - **validator_completed:** `2026-03-21T05:34:54Z`
 - **validator_notes:** `REOPENED: Core __-prefix filter correct (lines 122-132), but branch removes 4 existing guards: (1) onComplete try/catch on both paths (BUG-0305 regression), (2) onStart try/catch (BUG-0037 regression), (3) onError try/catch removed, (4) __pendingHandoff passthrough and BUG-0263 handoff.to validation dropped. Fixer must: delete old branch, create fresh from main, add ONLY the __-prefix filter to result.context at line 169.`
