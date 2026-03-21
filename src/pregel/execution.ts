@@ -103,6 +103,9 @@ export async function executeNode<S extends Record<string, unknown>>(
         }
         // Apply redaction if content was rewritten by a redacting filter
         if (inputCheck.content !== inputStr) {
+          const threadId = config?.threadId ?? "unknown";
+          ctx.eventBus.emit({ type: "filter.redacted", filter: "pii", agent: nodeDef.name, direction: "input", timestamp: Date.now() });
+          ctx.auditLog?.record(threadId, { timestamp: Date.now(), agent: nodeDef.name, action: "filter.redacted", data: { direction: "input" } });
           try { state = JSON.parse(inputCheck.content) as S; } catch { /* leave state unchanged on parse failure */ }
         }
       }
@@ -180,6 +183,9 @@ export async function executeNode<S extends Record<string, unknown>>(
         }
         // Apply redaction if content was rewritten by a redacting filter
         if (outputCheck.content !== outputStr) {
+          const threadId = config?.threadId ?? "unknown";
+          ctx.eventBus.emit({ type: "filter.redacted", filter: "pii", agent: nodeDef.name, direction: "output", timestamp: Date.now() });
+          ctx.auditLog?.record(threadId, { timestamp: Date.now(), agent: nodeDef.name, action: "filter.redacted", data: { direction: "output" } });
           try { result = JSON.parse(outputCheck.content) as NodeReturn<S>; } catch { /* leave result unchanged on parse failure */ }
         }
       }

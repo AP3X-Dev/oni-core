@@ -62,7 +62,7 @@ export class AuditLog {
     }
     const VALID_ACTIONS = new Set([
       "llm.request", "llm.response", "tool.call", "tool.result",
-      "filter.blocked", "budget.warning", "budget.exceeded", "budget.unknown_pricing",
+      "filter.blocked", "filter.redacted", "budget.warning", "budget.exceeded", "budget.unknown_pricing",
     ]);
     const entries: AuditEntry[] = [];
     for (const entry of parsed) {
