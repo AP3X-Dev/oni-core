@@ -75,9 +75,21 @@ export class StdioTransport {
     const timeout = this.config.spawnTimeout ?? 10_000;
 
     return new Promise<void>((resolve, reject) => {
+      let settled = false;
+
+      const settle = (fn: () => void) => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          fn();
+        }
+      };
+
       const timer = setTimeout(() => {
         this.stop();
-        reject(new Error(`MCP server failed to start within ${timeout}ms`));
+        settle(() =>
+          reject(new Error(`MCP server failed to start within ${timeout}ms`)),
+        );
       }, timeout);
 
       // Build a minimal base environment — only essential system variables
@@ -98,17 +110,17 @@ export class StdioTransport {
           shell: false,
         });
       } catch (err) {
-        clearTimeout(timer);
-        reject(
-          new Error(
-            `Failed to spawn MCP server: ${err instanceof Error ? err.message : String(err)}`,
+        settle(() =>
+          reject(
+            new Error(
+              `Failed to spawn MCP server: ${err instanceof Error ? err.message : String(err)}`,
+            ),
           ),
         );
         return;
       }
 
       this.process.on("error", (err) => {
-        clearTimeout(timer);
         this.connected = false;
         const msg = `MCP server process error: ${err.message}`;
         // Reject all in-flight requests immediately — don't wait for their
@@ -118,18 +130,30 @@ export class StdioTransport {
           clearTimeout(req.timer);
           this.pending.delete(id);
         }
-        reject(new Error(msg));
+        settle(() => reject(new Error(msg)));
       });
 
       this.process.on("exit", (code) => {
         this.connected = false;
+        const exitMsg = `MCP server exited with code ${code}`;
         // Reject all pending requests
         for (const [id, req] of this.pending) {
-          req.reject(new Error(`MCP server exited with code ${code}`));
+          req.reject(new Error(exitMsg));
           clearTimeout(req.timer);
           this.pending.delete(id);
         }
+        // BUG-0425: If the process exits before the spawn Promise resolved,
+        // reject it so callers don't see connected=true on a dead process.
+        settle(() => reject(new Error(exitMsg)));
       });
+
+      // BUG-0426: Consume stderr to prevent the OS pipe buffer from filling
+      // and blocking the child process.
+      if (this.process.stderr) {
+        this.process.stderr.on("data", () => {
+          // Intentionally discarded — prevents backpressure stall.
+        });
+      }
 
       if (this.process.stdout) {
         this.process.stdout.on("data", (chunk: Buffer) => {
@@ -141,8 +165,7 @@ export class StdioTransport {
       // Process spawned successfully — consider it started
       // (actual MCP readiness is confirmed by the initialize handshake)
       this.connected = true;
-      clearTimeout(timer);
-      resolve();
+      settle(() => resolve());
     });
   }
 
