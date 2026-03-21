@@ -125,7 +125,6 @@ export function createTestHarness<S extends Record<string, unknown>>(
   graph: StateGraph<S>,
   options?: { checkpointer?: import("../types.js").ONICheckpointer<S>; store?: import("../store/index.js").BaseStore },
 ): TestHarness<S> {
-  let invocationCount = 0;
   const app = graph.compile({
     checkpointer: options?.checkpointer ?? new MemoryCheckpointer(),
     store: options?.store ?? new InMemoryStore(),
@@ -133,14 +132,12 @@ export function createTestHarness<S extends Record<string, unknown>>(
 
   return {
     async invoke(input, config) {
-      invocationCount++;
-      return app.invoke(input, { threadId: `test-${invocationCount}-${Date.now()}`, ...config });
+      return app.invoke(input, { threadId: `test-${Date.now()}`, ...config });
     },
     async collectStream(input, streamMode = "updates") {
-      invocationCount++;
       const events: (ONIStreamEvent<S> | CustomStreamEvent | MessageStreamEvent)[] = [];
       for await (const evt of app.stream(input, {
-        threadId: `test-stream-${invocationCount}-${Date.now()}`,
+        threadId: `test-stream-${Date.now()}`,
         streamMode,
       })) {
         events.push(evt);
