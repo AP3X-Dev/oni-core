@@ -85,6 +85,21 @@ function contentToString(content: string | ContentPart[]): string {
     .join("");
 }
 
+/** Check if content parts contain any non-text (image) parts */
+function hasMultimodal(content: string | ContentPart[]): boolean {
+  if (typeof content === "string") return false;
+  return content.some((p) => p.type !== "text");
+}
+
+/** Convert content parts to OpenAI multimodal format */
+function contentToMultimodal(content: ContentPart[]): unknown[] {
+  return content.map((p) => {
+    if (p.type === "text") return { type: "text", text: p.text ?? "" };
+    if (p.type === "image") return { type: "image_url", image_url: { url: p.imageUrl ?? "" } };
+    return { type: "text", text: "" };
+  });
+}
+
 function convertMessages(
   messages: ONIModelMessage[],
   systemPrompt?: string,
@@ -126,11 +141,18 @@ function convertMessages(
       continue;
     }
 
-    // Regular user or assistant message
-    converted.push({
-      role: msg.role as "user" | "assistant",
-      content: contentToString(msg.content),
-    });
+    // For user messages with images, send multimodal content
+    if (msg.role === "user" && hasMultimodal(msg.content)) {
+      converted.push({
+        role: "user",
+        content: contentToMultimodal(msg.content as ContentPart[]) as unknown as string,
+      });
+    } else {
+      converted.push({
+        role: msg.role as "user" | "assistant",
+        content: contentToString(msg.content),
+      });
+    }
   }
 
   return converted;

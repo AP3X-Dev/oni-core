@@ -95,6 +95,21 @@ for await (const chunk of app.stream(
 
 ---
 
+## Workspace Packages
+
+Extension packages in `packages/` — install separately as needed.
+
+| Package | Description |
+|---|---|
+| `@oni.bot/tools` | Prebuilt `ToolDefinition`-conforming tools (filesystem, HTTP, search, etc.) |
+| `@oni.bot/stores` | Persistent KV store backends (Redis, Postgres) |
+| `@oni.bot/loaders` | Document loaders (Markdown, JSON, CSV, PDF, HTML, DOCX) |
+| `@oni.bot/a2a` | A2A protocol client, server, and swarm integration |
+| `@oni.bot/integrations` | ActivePieces-to-ONI adapter (612 community integrations) |
+| `@oni.bot/community` | ActivePieces community integrations source (internal) |
+
+---
+
 ## Documentation
 
 - **[Developer Guide](./GUIDE.md)** — Progressive tutorial from zero to advanced: graphs, channels, streaming, checkpointing, agents, swarms, and more.

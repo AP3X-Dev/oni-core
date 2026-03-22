@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { fileSystemTools } from "../filesystem/index.js";
+
+// Cross-platform test paths
+const SAFE_DIR = join(tmpdir(), "oni-test-safe");
+const OUTSIDE_DIR = join(tmpdir(), "..", "oni-outside-boundary");
 
 describe("fileSystemTools", () => {
   it("returns an array of ToolDefinitions", () => {
@@ -49,10 +55,10 @@ describe("fileSystemTools", () => {
   });
 
   it("enforces allowedPaths security boundary", async () => {
-    const tools = fileSystemTools({ allowedPaths: ["/tmp/safe"] });
+    const tools = fileSystemTools({ allowedPaths: [SAFE_DIR] });
     const readTool = tools.find((t) => t.name === "fs_read_file")!;
     await expect(
-      readTool.execute({ path: "/etc/passwd" }, {} as never)
+      readTool.execute({ path: OUTSIDE_DIR }, {} as never)
     ).rejects.toThrow("Access denied");
   });
 
@@ -72,30 +78,28 @@ describe("fileSystemTools", () => {
     const tools = fileSystemTools();
     const readTool = tools.find((t) => t.name === "fs_read_file")!;
     await expect(
-      readTool.execute({ path: "/etc/passwd" }, {} as never)
+      readTool.execute({ path: OUTSIDE_DIR }, {} as never)
     ).rejects.toThrow("Access denied");
   });
 
-  it("allowedPaths: [] disables restriction and allows any path", async () => {
+  it("allowedPaths: [] rejects all paths (empty means no access)", async () => {
     const tools = fileSystemTools({ allowedPaths: [] });
     const readTool = tools.find((t) => t.name === "fs_read_file")!;
-    // Should not throw Access denied — it will attempt actual fs read,
-    // which may fail with ENOENT or succeed, but must NOT throw Access denied.
     await expect(
-      readTool.execute({ path: "/etc/hostname" }, {} as never)
-    ).resolves.toEqual(expect.objectContaining({ path: "/etc/hostname" }));
+      readTool.execute({ path: join(tmpdir(), "anything") }, {} as never)
+    ).rejects.toThrow("Access denied");
   });
 
   it("explicit allowedPaths allows listed paths and rejects others", async () => {
-    const tools = fileSystemTools({ allowedPaths: ["/tmp"] });
+    const tools = fileSystemTools({ allowedPaths: [tmpdir()] });
     const readTool = tools.find((t) => t.name === "fs_read_file")!;
-    // Path outside /tmp must be rejected
+    // Path outside tmpdir must be rejected
     await expect(
-      readTool.execute({ path: "/etc/passwd" }, {} as never)
+      readTool.execute({ path: OUTSIDE_DIR }, {} as never)
     ).rejects.toThrow("Access denied");
-    // Path inside /tmp must pass the allowedPaths check (may fail with ENOENT, not Access denied)
+    // Path inside tmpdir must pass the allowedPaths check (may fail with ENOENT, not Access denied)
     try {
-      await readTool.execute({ path: "/tmp/.oni-test-nonexistent-file" }, {} as never);
+      await readTool.execute({ path: join(tmpdir(), ".oni-test-nonexistent-file") }, {} as never);
     } catch (err: unknown) {
       const msg = (err as Error).message;
       expect(msg).not.toContain("Access denied");
