@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { resolve } from "node:path";
 import { fileSystemTools } from "../filesystem/index.js";
 
 describe("fileSystemTools — BUG-0025 secure default allowedPaths", () => {
@@ -9,10 +10,11 @@ describe("fileSystemTools — BUG-0025 secure default allowedPaths", () => {
     // must be rejected with an Access denied error.
     const tools = fileSystemTools();
     const readTool = tools.find((t) => t.name === "fs_read_file")!;
+    const outsidePath = resolve(process.cwd(), "..", "oni-outside-default-allowed-paths");
 
     // A path clearly outside cwd must be denied.
     await expect(
-      readTool.execute({ path: "/etc/passwd" }, {} as never)
+      readTool.execute({ path: outsidePath }, {} as never)
     ).rejects.toThrow("Access denied");
 
     // A path inside cwd must pass the allowedPaths check (may fail with ENOENT,

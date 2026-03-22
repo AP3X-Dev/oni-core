@@ -381,10 +381,10 @@ import { SqliteCheckpointer, PostgresCheckpointer, NamespacedCheckpointer } from
 // Dev/test: in-memory, full history
 const mem = new MemoryCheckpointer();
 
-// On-disk: SQLite (requires: npm install better-sqlite3)
+// On-disk: SQLite (requires: pnpm add better-sqlite3)
 const sqlite = await SqliteCheckpointer.create("./checkpoints.db");
 
-// Production: PostgreSQL (requires: npm install pg)
+// Production: PostgreSQL (requires: pnpm add pg)
 const pg = await PostgresCheckpointer.create("postgresql://localhost/oni");
 
 // Subgraph isolation: namespaced wrapper

@@ -4,7 +4,7 @@
 // ============================================================
 
 import { spawn } from "node:child_process";
-import { resolve } from "node:path";
+import { resolve, sep } from "node:path";
 import type { ParsedArgs } from "./router.js";
 
 export function resolveDevFile(file: string | undefined): string {
@@ -21,7 +21,7 @@ export async function devCommand(args: ParsedArgs): Promise<void> {
 
   // BUG-0417: Ensure entry file is within the project directory
   const cwd = process.cwd();
-  if (!entryFile.startsWith(cwd + "/") && entryFile !== cwd) {
+  if (!entryFile.startsWith(cwd + sep) && entryFile !== cwd) {
     console.error("  Error: entry file must be within the project directory");
     process.exitCode = 1;
     return;

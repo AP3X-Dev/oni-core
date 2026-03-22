@@ -318,8 +318,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // For non-supervised swarms, check that every agent has at least one incoming edge
     const edgeTargets = new Set<string>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const edge of (this.inner as any).edges) { // SAFE: external boundary — accessing private StateGraph.edges for topology validation
+    for (const edge of this.inner.getEdges()) {
       if (edge.type === "static") {
         edgeTargets.add(edge.to as string);
       }

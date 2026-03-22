@@ -1,6 +1,6 @@
 import { readFile, writeFile, readdir, mkdir, unlink, stat } from "node:fs/promises";
 import { realpathSync, existsSync } from "node:fs";
-import { resolve, normalize, dirname, basename, join } from "node:path";
+import { resolve, normalize, dirname, basename, join, sep } from "node:path";
 import type { ToolDefinition, ToolContext } from "../types.js";
 
 /**
@@ -34,7 +34,7 @@ function checkAllowedPath(filePath: string, allowedPaths: string[]): string {
   const normalizedAllowed = allowedPaths.map((ap) => normalize(resolve(ap)));
 
   // Lexical check first (fast path).
-  const lexicalOk = normalizedAllowed.some((ap) => normalized === ap || normalized.startsWith(ap + "/"));
+  const lexicalOk = normalizedAllowed.some((ap) => normalized === ap || normalized.startsWith(ap + sep));
   if (!lexicalOk) {
     throw new Error(
       `Access denied: path "${filePath}" is not within allowed paths: ${allowedPaths.join(", ")}`
@@ -45,7 +45,7 @@ function checkAllowedPath(filePath: string, allowedPaths: string[]): string {
   const real = resolveReal(filePath);
   const realAllowed = normalizedAllowed.some((ap) => {
     const realAp = existsSync(ap) ? realpathSync(ap) : ap;
-    return real === realAp || real.startsWith(realAp + "/");
+    return real === realAp || real.startsWith(realAp + sep);
   });
   if (!realAllowed) {
     throw new Error(

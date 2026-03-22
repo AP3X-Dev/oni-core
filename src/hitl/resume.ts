@@ -88,6 +88,12 @@ export class HITLSessionStore<S> {
     if (s) s.status = "resumed";
   }
 
+  /** Revert a resumed session back to pending (e.g. after invoke failure). */
+  markPending(resumeId: string): void {
+    const s = this.sessions.get(resumeId);
+    if (s && s.status === "resumed") s.status = "pending";
+  }
+
   pendingCount(): number {
     this.evict();
     return [...this.sessions.values()].filter((s) => s.status === "pending").length;

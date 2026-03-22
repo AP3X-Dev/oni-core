@@ -3,8 +3,8 @@
 // ============================================================
 // Persistent on-disk checkpointing via better-sqlite3.
 //
-//   npm install better-sqlite3
-//   npm install -D @types/better-sqlite3
+//   pnpm add better-sqlite3
+//   pnpm add -D @types/better-sqlite3
 // ============================================================
 
 import type { ONICheckpoint, ONICheckpointer, CheckpointListOptions } from "../types.js";

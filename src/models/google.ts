@@ -82,6 +82,31 @@ function contentToString(content: string | ContentPart[]): string {
     .join("");
 }
 
+/** Check if content parts contain any non-text (image) parts */
+function hasMultimodal(content: string | ContentPart[]): boolean {
+  if (typeof content === "string") return false;
+  return content.some((p) => p.type !== "text");
+}
+
+/** Parse a data URL into mimeType and base64 data */
+function parseDataUrl(dataUrl: string): { mimeType: string; data: string } {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (match) return { mimeType: match[1]!, data: match[2]! };
+  return { mimeType: "application/octet-stream", data: dataUrl };
+}
+
+/** Convert content parts to Gemini multimodal parts */
+function contentToGeminiParts(content: ContentPart[]): GeminiPart[] {
+  return content.map((p) => {
+    if (p.type === "text") return { text: p.text ?? "" };
+    if (p.type === "image") {
+      const { mimeType, data } = parseDataUrl(p.imageUrl ?? "");
+      return { inlineData: { mimeType, data } };
+    }
+    return { text: "" };
+  });
+}
+
 function convertMessages(messages: ONIModelMessage[]): {
   systemInstruction: { parts: GeminiPart[] } | undefined;
   contents: GeminiContent[];
@@ -139,10 +164,17 @@ function convertMessages(messages: ONIModelMessage[]): {
 
     // Regular user or assistant message
     const role = msg.role === "assistant" ? "model" : "user";
-    contents.push({
-      role,
-      parts: [{ text: contentToString(msg.content) }],
-    });
+    if (role === "user" && hasMultimodal(msg.content)) {
+      contents.push({
+        role,
+        parts: contentToGeminiParts(msg.content as ContentPart[]),
+      });
+    } else {
+      contents.push({
+        role,
+        parts: [{ text: contentToString(msg.content) }],
+      });
+    }
   }
 
   return { systemInstruction, contents };

@@ -3,7 +3,7 @@
 // Print graph topology as table or Mermaid
 // ============================================================
 
-import { resolve, extname } from "node:path";
+import { resolve, extname, sep } from "node:path";
 import type { ParsedArgs } from "./router.js";
 import type { GraphDescriptor } from "../inspect.js";
 
@@ -65,7 +65,7 @@ export async function inspectCommand(args: ParsedArgs): Promise<void> {
   // Validate: resolve to absolute path, restrict extensions, ensure within cwd
   const file = resolve(process.cwd(), rawFile);
   const cwd = process.cwd();
-  if (!file.startsWith(cwd + "/") && file !== cwd) {
+  if (!file.startsWith(cwd + sep) && file !== cwd) {
     console.error("  Error: file must be within the project directory");
     process.exitCode = 1;
     return;
@@ -90,22 +90,18 @@ export async function inspectCommand(args: ParsedArgs): Promise<void> {
       return;
     }
 
-    // Import inspect utilities
-    const { buildGraphDescriptor, toMermaidDetailed } = await import("../inspect.js");
+    // Use the stable getGraph() API if available (StateGraph instances),
+    // fall back to getNodeMap()/getEdges() for direct access.
+    const { toMermaidDetailed } = await import("../inspect.js");
 
-    // Access internal state (nodes + edges) to build descriptor
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nodes = (graph as any).nodes ?? (graph as any)._nodes; // SAFE: external boundary — CLI introspects unknown user-exported graph object
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const edges = (graph as any).edges ?? (graph as any)._edges; // SAFE: external boundary — CLI introspects unknown user-exported graph object
-
-    if (!nodes || !edges) {
+    let descriptor;
+    if (typeof graph.getGraph === "function") {
+      descriptor = graph.getGraph();
+    } else {
       console.error("  Error: could not extract graph structure. Is this a StateGraph?");
       process.exitCode = 1;
       return;
     }
-
-    const descriptor = buildGraphDescriptor(nodes, edges);
 
     if (format === "mermaid") {
       console.log(toMermaidDetailed(descriptor));
