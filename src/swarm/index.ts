@@ -6,6 +6,12 @@ export { SwarmGraph, baseSwarmChannels, quickAgent } from "./graph.js";
 export type { BaseSwarmState, SwarmCompileOpts, SwarmExtensions, HierarchicalConfig, FanOutConfig, PipelineConfig, PeerNetworkConfig, MapReduceConfig, DebateConfig, HierarchicalMeshConfig } from "./graph.js";
 export type { SwarmCompileOpts as SwarmCompileOptions } from "./graph.js";
 
+// GAN loop types
+export type {
+  AgentDefinition, EvaluationCriterion, CriterionScore,
+  GANIterationResult, GANLoopConfig, GANState,
+} from "./graph.js";
+
 export { AgentRegistry }                      from "./registry.js";
 export type { AgentRecord }                   from "./registry.js";
 
