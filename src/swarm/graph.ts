@@ -10,7 +10,7 @@
 
 import { StateGraph } from "../graph.js";
 import type { ONISkeletonV3 } from "../graph.js";
-import { START, END } from "../types.js";
+import { START, END, lastValue } from "../types.js";
 import type {
   NodeFn, ONISkeleton, ChannelSchema,
 } from "../types.js";
@@ -355,6 +355,144 @@ export class SwarmGraph<S extends BaseSwarmState> {
     return this;
   }
 
+  // ---- Static factory: GAN loop template ----
+
+  /**
+   * Create a generator/evaluator loop (GAN-inspired).
+   * Generator produces output → evaluator scores it → loop decides
+   * refine, pivot, or accept. Returns a StateGraph that can be compiled.
+   */
+  static ganLoop<TState extends Record<string, unknown> = Record<string, unknown>>(
+    config: GANLoopConfig<TState>,
+  ): StateGraph<GANState<TState>> {
+    const maxIterations = config.maxIterations ?? 10;
+    const passingThreshold = config.passingThreshold ?? 0.80;
+    const pivotThreshold = config.pivotThreshold ?? 0.40;
+
+    // Validate criteria weights sum to 1.0 (within floating-point tolerance)
+    const weightSum = config.criteria.reduce((sum, c) => sum + c.weight, 0);
+    if (Math.abs(weightSum - 1.0) > 0.001) {
+      throw new Error(
+        `GAN loop criteria weights must sum to 1.0, got ${weightSum.toFixed(4)}`
+      );
+    }
+
+    // Define channels
+    const channels = {
+      iteration:          lastValue(() => 0),
+      decision:           lastValue((): "refine" | "pivot" | "accept" => "refine"),
+      done:               lastValue(() => false),
+      generatorOutput:    lastValue((): TState => ({} as TState)),
+      scores:             lastValue((): CriterionScore[] => []),
+      compositeScore:     lastValue(() => 0),
+      evaluatorFeedback:  lastValue(() => ""),
+      criteria:           lastValue((): EvaluationCriterion[] => config.criteria),
+      bestIteration:      lastValue((): GANIterationResult<TState> | null => null),
+      bestCompositeScore: lastValue(() => 0),
+      maxIterations:      lastValue(() => maxIterations),
+      passingThreshold:   lastValue(() => passingThreshold),
+      pivotThreshold:     lastValue(() => pivotThreshold),
+    } as ChannelSchema<GANState<TState>>;
+
+    const graph = new StateGraph<GANState<TState>>({ channels });
+
+    // ── Generator node ──
+    graph.addNode("__gan_generator__", async (state) => {
+      const result = await config.generator.fn(state);
+      return {
+        ...(result as Partial<GANState<TState>>),
+        iteration: state.iteration + 1,
+      } as Partial<GANState<TState>>;
+    });
+
+    // ── Evaluator node ──
+    graph.addNode("__gan_evaluator__", async (state) => {
+      // Run the evaluator function
+      const evalResult = await config.evaluator.fn(state);
+      const updates = (evalResult ?? {}) as Partial<GANState<TState>>;
+
+      // Extract scores from evaluator output
+      const scores: CriterionScore[] = updates.scores ?? state.scores;
+      const feedback: string = updates.evaluatorFeedback ?? state.evaluatorFeedback;
+
+      // Compute composite score
+      let compositeScore = 0;
+      for (const score of scores) {
+        const criterion = config.criteria.find(c => c.id === score.criterionId);
+        if (criterion) compositeScore += criterion.weight * score.score;
+      }
+
+      // Check hard thresholds
+      let hardFail = false;
+      for (const score of scores) {
+        const criterion = config.criteria.find(c => c.id === score.criterionId);
+        if (criterion?.hardThreshold !== undefined && score.score < criterion.hardThreshold) {
+          hardFail = true;
+          break;
+        }
+      }
+
+      // Determine decision
+      let decision: "refine" | "pivot" | "accept";
+      if (!hardFail && compositeScore >= passingThreshold) {
+        decision = "accept";
+      } else if (compositeScore < pivotThreshold) {
+        decision = "pivot";
+      } else {
+        decision = "refine";
+      }
+
+      // Build iteration result
+      const iterResult: GANIterationResult<TState> = {
+        iteration: state.iteration,
+        generatorOutput: state.generatorOutput,
+        scores,
+        compositeScore,
+        decision,
+        evaluatorFeedback: feedback,
+      };
+
+      // Track best iteration
+      let bestIteration = state.bestIteration;
+      let bestCompositeScore = state.bestCompositeScore;
+      if (compositeScore > bestCompositeScore) {
+        bestIteration = iterResult;
+        bestCompositeScore = compositeScore;
+      }
+
+      // Check termination conditions
+      let done = decision === "accept";
+      if (state.iteration >= maxIterations) done = true;
+
+      // Call onIteration callback if provided
+      if (config.onIteration && !done) {
+        const shouldContinue = await config.onIteration(state.iteration, scores, decision);
+        if (!shouldContinue) done = true;
+      }
+
+      return {
+        ...updates,
+        scores,
+        compositeScore,
+        evaluatorFeedback: feedback,
+        decision,
+        done,
+        bestIteration,
+        bestCompositeScore,
+      } as Partial<GANState<TState>>;
+    });
+
+    // ── Edges ──
+    graph.addEdge(START, "__gan_generator__");
+    graph.addEdge("__gan_generator__", "__gan_evaluator__");
+    graph.addConditionalEdges("__gan_evaluator__", (state: GANState<TState>) => {
+      if (state.done) return END;
+      return "__gan_generator__";
+    });
+
+    return graph;
+  }
+
   // ---- Dispose ----
 
   /**
@@ -455,3 +593,74 @@ export type {
   HierarchicalConfig, FanOutConfig, PipelineConfig, PeerNetworkConfig,
   MapReduceConfig, DebateConfig, HierarchicalMeshConfig,
 } from "./config.js";
+
+// ----------------------------------------------------------------
+// GAN Loop Types
+// ----------------------------------------------------------------
+
+export interface AgentDefinition<TState> {
+  /** Agent identifier, used as node name prefix */
+  id: string;
+  /** The agent's execution function */
+  fn: (state: GANState<TState>) => Promise<Partial<GANState<TState>>> | Partial<GANState<TState>>;
+}
+
+export interface EvaluationCriterion {
+  id: string;
+  name: string;
+  description: string;
+  /** Weight 0-1, all weights must sum to 1.0 */
+  weight: number;
+  /** If set, failing this criterion fails the entire evaluation */
+  hardThreshold?: number;
+}
+
+export interface CriterionScore {
+  criterionId: string;
+  score: number;
+  rationale: string;
+  passed: boolean;
+}
+
+export interface GANIterationResult<TState> {
+  iteration: number;
+  generatorOutput: TState;
+  scores: CriterionScore[];
+  compositeScore: number;
+  decision: "refine" | "pivot" | "accept";
+  evaluatorFeedback: string;
+}
+
+export interface GANLoopConfig<TState> {
+  /** The agent that produces output */
+  generator: AgentDefinition<TState>;
+  /** The agent that evaluates and critiques output */
+  evaluator: AgentDefinition<TState>;
+  /** Scoring criteria passed to both agents */
+  criteria: EvaluationCriterion[];
+  /** Max iterations before forced termination. Default: 10 */
+  maxIterations?: number;
+  /** Composite score threshold for acceptance. Default: 0.80 */
+  passingThreshold?: number;
+  /** Called after each evaluation — return true to continue, false to stop */
+  onIteration?: (iteration: number, scores: CriterionScore[], decision: "refine" | "pivot" | "accept") => Promise<boolean>;
+  /** Score below this triggers a pivot (full approach change). Default: 0.40 */
+  pivotThreshold?: number;
+}
+
+export type GANState<TState = Record<string, unknown>> = {
+  iteration: number;
+  decision: "refine" | "pivot" | "accept";
+  done: boolean;
+  generatorOutput: TState;
+  scores: CriterionScore[];
+  compositeScore: number;
+  evaluatorFeedback: string;
+  criteria: EvaluationCriterion[];
+  bestIteration: GANIterationResult<TState> | null;
+  bestCompositeScore: number;
+  maxIterations: number;
+  passingThreshold: number;
+  pivotThreshold: number;
+  [key: string]: unknown;
+};
