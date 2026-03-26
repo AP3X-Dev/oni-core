@@ -56,3 +56,48 @@ export { generateId } from "./types.js";
 
 // Tool argument validation
 export { validateToolArgs } from "./validate-args.js";
+
+// ── Harness Upgrade Primitives ──────────────────────────────
+
+// Errors
+export {
+  ONIHarnessError,
+  FeatureRegistryMutationError,
+  FeatureRegistryAlreadyInitializedError,
+  FeatureNotFoundError,
+  SessionBridgeNotOpenError,
+  EnvironmentUnhealthyError,
+  ContractNotFoundError,
+  ContractNotApprovedError,
+  WorkspaceGitUnavailableWarning,
+} from "./errors.js";
+
+// Utilities
+export { randomId, atomicWriteJSON, readJSON, withFileLock, execGit, isGitAvailable } from "./utils.js";
+
+// Feature registry
+export { FeatureRegistry } from "./FeatureRegistry.js";
+export type { Feature, FeatureRegistrySnapshot, FeatureRegistrySummary, FeatureInit } from "./FeatureRegistry.js";
+
+// Session bridge
+export { SessionBridge } from "./SessionBridge.js";
+export type { SessionMode, SessionArtifact } from "./SessionBridge.js";
+
+// Workspace checkpointer
+export { WorkspaceCheckpointer } from "./WorkspaceCheckpointer.js";
+export type { WorkspaceCheckpointerConfig, CheckpointCommit, CheckpointMetadata } from "./WorkspaceCheckpointer.js";
+
+// Session init
+export { runSessionInit } from "./SessionInit.js";
+export type { SessionInitConfig, SessionInitResult } from "./SessionInit.js";
+
+// Context reset
+export { ContextReset } from "./ContextReset.js";
+export type { ContextResetConfig, ResetResult } from "./ContextReset.js";
+
+// Negotiated handoff
+export { NegotiatedHandoff } from "./NegotiatedHandoff.js";
+export type {
+  WorkProposal, VerificationCriterion, ProposalReview,
+  ReviewDecision, NegotiatedContract, ContractStatus,
+} from "./NegotiatedHandoff.js";
