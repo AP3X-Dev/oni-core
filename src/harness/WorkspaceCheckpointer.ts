@@ -3,13 +3,16 @@
 // ============================================================
 // Git-aware checkpointer that wraps SqliteCheckpointer.
 // Every graph checkpoint optionally creates a git commit.
-// Rollback = git checkout to a checkpoint's commit hash.
+// Rollback = git checkout + SQLite state restore.
+//
+// Git logic lives in put() — the method Pregel actually calls —
+// not in a separate save() that the engine would never invoke.
 // ============================================================
 
 import { resolve } from "node:path";
 import type { ONICheckpoint, ONICheckpointer, CheckpointListOptions } from "../types.js";
 import { SqliteCheckpointer } from "../checkpointers/sqlite.js";
-import { execGit, isGitAvailable, randomId, atomicWriteJSON, readJSON, ensureDir } from "./utils.js";
+import { execGit, isGitAvailable, atomicWriteJSON, readJSON, ensureDir } from "./utils.js";
 import { WorkspaceGitUnavailableWarning } from "./errors.js";
 
 // ----------------------------------------------------------------
@@ -44,6 +47,9 @@ interface CommitMappingStore {
   mappings: CheckpointCommit[];
 }
 
+// Commit hashes are hex strings — validate before passing to git
+const COMMIT_HASH_RE = /^[0-9a-f]{4,40}$/i;
+
 // ----------------------------------------------------------------
 // WorkspaceCheckpointer
 // ----------------------------------------------------------------
@@ -54,6 +60,9 @@ export class WorkspaceCheckpointer<S> implements ONICheckpointer<S> {
   private readonly mappingPath: string;
   private readonly gitAvailable: boolean;
   private sqlite: SqliteCheckpointer<S> | null = null;
+
+  /** Optional metadata for the next put() — set via setNextMetadata() */
+  private pendingMetadata: CheckpointMetadata | null = null;
 
   private constructor(
     sqlite: SqliteCheckpointer<S>,
@@ -66,7 +75,7 @@ export class WorkspaceCheckpointer<S> implements ONICheckpointer<S> {
     this.mappingPath = resolve(config.dbPath + ".commits.json");
     this.gitAvailable = gitAvailable;
 
-    if (!gitAvailable) {
+    if (!gitAvailable && config.autoCommit) {
       const warning = new WorkspaceGitUnavailableWarning();
       console.warn(`[ONI] ${warning.message}`);
     }
@@ -82,14 +91,35 @@ export class WorkspaceCheckpointer<S> implements ONICheckpointer<S> {
     return new WorkspaceCheckpointer<S>(sqlite, config, gitAvailable);
   }
 
-  // ── ONICheckpointer interface delegation ──
+  /**
+   * Set metadata that will be used by the next put() call.
+   * This allows callers to attach a description/featureId before Pregel
+   * calls put() through the standard ONICheckpointer interface.
+   */
+  setNextMetadata(metadata: CheckpointMetadata): void {
+    this.pendingMetadata = metadata;
+  }
+
+  // ── ONICheckpointer interface ──
 
   async get(threadId: string): Promise<ONICheckpoint<S> | null> {
     return this.sqlite!.get(threadId);
   }
 
+  /**
+   * Write checkpoint to SQLite, then optionally commit workspace to git.
+   * This is the method Pregel calls — git logic lives here, not in a
+   * separate save() that the engine would never invoke.
+   */
   async put(checkpoint: ONICheckpoint<S>): Promise<void> {
-    return this.sqlite!.put(checkpoint);
+    await this.sqlite!.put(checkpoint);
+
+    if (this.config.autoCommit && this.gitAvailable) {
+      this.commitWorkspace(checkpoint);
+    }
+
+    // Consume pending metadata
+    this.pendingMetadata = null;
   }
 
   async list(threadId: string, opts?: CheckpointListOptions): Promise<ONICheckpoint<S>[]> {
@@ -101,58 +131,26 @@ export class WorkspaceCheckpointer<S> implements ONICheckpointer<S> {
   }
 
   /**
-   * Save a checkpoint with optional git commit.
-   * After writing to SQLite, optionally commits the workspace.
-   */
-  async save(checkpoint: ONICheckpoint<S>, metadata?: CheckpointMetadata): Promise<void> {
-    // Write to SQLite
-    await this.sqlite!.put(checkpoint);
-
-    // Optionally commit to git
-    if (this.config.autoCommit && this.gitAvailable) {
-      const checkpointId = `${checkpoint.threadId}-step${checkpoint.step}`;
-      const desc = metadata?.description ?? `step ${checkpoint.step}`;
-      const commitMessage = `${this.config.commitMessagePrefix} checkpoint ${checkpointId} — ${desc}`;
-
-      // Stage all changes
-      execGit("add -A", this.workspaceDir);
-
-      // Check if there are changes to commit
-      const status = execGit("status --porcelain", this.workspaceDir);
-      if (status && status.length > 0) {
-        const escaped = commitMessage.replace(/"/g, '\\"');
-        const commitHash = execGit(`commit -m "${escaped}"`, this.workspaceDir);
-
-        if (commitHash !== null) {
-          const hash = execGit("rev-parse HEAD", this.workspaceDir);
-          if (hash) {
-            this.addCommitMapping({
-              checkpointId,
-              commitHash: hash,
-              commitMessage,
-              timestamp: new Date().toISOString(),
-            });
-          }
-        }
-      }
-    }
-  }
-
-  /**
    * Returns all checkpoints with their associated git commit hashes.
    */
   async listWithCommits(): Promise<CheckpointCommit[]> {
-    const store = this.readMappings();
-    return store.mappings;
+    return this.readMappings().mappings;
   }
 
   /**
    * Rolls back to a prior checkpoint:
-   * 1. Stashes current changes
-   * 2. Checks out the commit associated with the checkpoint
-   * 3. Restores graph state from SQLite
+   * 1. Stashes current changes to avoid dirty workspace conflicts
+   * 2. Checks out the git commit associated with the checkpoint
+   * 3. Truncates the SQLite checkpoint history so that `get(threadId)`
+   *    returns the rolled-back checkpoint — not a later one.
+   *
+   * This is critical: Pregel resumes from whatever `get()` returns.
+   * Simply reading the old checkpoint is not enough — later checkpoints
+   * must be removed so the engine picks the correct one.
+   *
+   * Returns the restored checkpoint so callers can resume from it.
    */
-  async rollbackTo(checkpointId: string): Promise<void> {
+  async rollbackTo(checkpointId: string): Promise<ONICheckpoint<S> | null> {
     const store = this.readMappings();
     const mapping = store.mappings.find(m => m.checkpointId === checkpointId);
 
@@ -164,14 +162,47 @@ export class WorkspaceCheckpointer<S> implements ONICheckpointer<S> {
       throw new Error("Cannot rollback: git is not available");
     }
 
+    // Validate commit hash before passing to git
+    if (!COMMIT_HASH_RE.test(mapping.commitHash)) {
+      throw new Error(`Invalid commit hash in mapping: "${mapping.commitHash}"`);
+    }
+
+    // Parse threadId and step from checkpointId
+    // Format: "{threadId}-step{step}"
+    const stepMatch = checkpointId.match(/-step(\d+)$/);
+    if (!stepMatch) {
+      throw new Error(`Cannot parse threadId/step from checkpointId: "${checkpointId}"`);
+    }
+
+    const threadId = checkpointId.slice(0, checkpointId.length - stepMatch[0].length);
+    const targetStep = parseInt(stepMatch[1]!, 10);
+
     // Stash current changes to avoid dirty workspace conflicts
-    const status = execGit("status --porcelain", this.workspaceDir);
-    if (status && status.length > 0) {
-      execGit("stash push -m \"oni-checkpoint-rollback\"", this.workspaceDir);
+    try {
+      const status = execGit(["status", "--porcelain"], this.workspaceDir);
+      if (status && status.length > 0) {
+        execGit(["stash", "push", "-m", "oni-checkpoint-rollback"], this.workspaceDir);
+      }
+    } catch {
+      // Non-fatal: if stash fails, checkout may still work on a clean tree
     }
 
     // Checkout to the checkpoint's commit
-    execGit(`checkout ${mapping.commitHash}`, this.workspaceDir);
+    execGit(["checkout", mapping.commitHash], this.workspaceDir);
+
+    // Truncate SQLite history: delete the thread, then re-insert only
+    // checkpoints up to and including the target step.
+    // This mirrors the pattern used by forkFrom() in pregel/checkpointing.ts.
+    const allCheckpoints = await this.sqlite!.list(threadId);
+    const kept = allCheckpoints.filter(cp => cp.step <= targetStep);
+
+    await this.sqlite!.delete(threadId);
+    for (const cp of kept) {
+      await this.sqlite!.put(cp);
+    }
+
+    // Return the target checkpoint — now also what get(threadId) will return
+    return kept.find(cp => cp.step === targetStep) ?? null;
   }
 
   /**
@@ -193,12 +224,18 @@ export class WorkspaceCheckpointer<S> implements ONICheckpointer<S> {
       return "[git unavailable — cannot produce diff]";
     }
 
-    const result = execGit(
-      `diff ${fromMapping.commitHash}..${toMapping.commitHash} --stat`,
-      this.workspaceDir,
-    );
+    // Validate commit hashes
+    if (!COMMIT_HASH_RE.test(fromMapping.commitHash) || !COMMIT_HASH_RE.test(toMapping.commitHash)) {
+      throw new Error("Invalid commit hash in mapping");
+    }
 
-    return result ?? "[no diff output]";
+    const diffRange = `${fromMapping.commitHash}..${toMapping.commitHash}`;
+    try {
+      const result = execGit(["diff", diffRange, "--stat"], this.workspaceDir);
+      return result ?? "[no diff output]";
+    } catch {
+      return "[git diff failed]";
+    }
   }
 
   /**
@@ -209,6 +246,39 @@ export class WorkspaceCheckpointer<S> implements ONICheckpointer<S> {
   }
 
   // ---- Internal ----
+
+  private commitWorkspace(checkpoint: ONICheckpoint<S>): void {
+    const checkpointId = `${checkpoint.threadId}-step${checkpoint.step}`;
+    const desc = this.pendingMetadata?.description ?? `step ${checkpoint.step}`;
+    const commitMessage = `${this.config.commitMessagePrefix} checkpoint ${checkpointId} — ${desc}`;
+
+    try {
+      // Stage all changes
+      execGit(["add", "-A"], this.workspaceDir);
+
+      // Check if there are staged changes to commit
+      const status = execGit(["status", "--porcelain"], this.workspaceDir);
+      if (!status || status.length === 0) return;
+
+      // Commit — message passed as argument, not interpolated into shell string
+      execGit(["commit", "-m", commitMessage], this.workspaceDir);
+
+      // Record the mapping
+      const hash = execGit(["rev-parse", "HEAD"], this.workspaceDir);
+      if (hash) {
+        this.addCommitMapping({
+          checkpointId,
+          commitHash: hash,
+          commitMessage,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch {
+      // Git commit failure should not break checkpoint persistence.
+      // The SQLite write already succeeded — log and continue.
+      console.warn(`[ONI] git commit failed for checkpoint ${checkpointId}, continuing without git`);
+    }
+  }
 
   private readMappings(): CommitMappingStore {
     return readJSON<CommitMappingStore>(this.mappingPath) ?? { mappings: [] };

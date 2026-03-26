@@ -9,7 +9,7 @@
 
 import { resolve, join } from "node:path";
 import { existsSync, readdirSync } from "node:fs";
-import { randomId, atomicWriteJSON, readJSON, ensureDir } from "./utils.js";
+import { randomId, atomicWriteJSON, readJSON, ensureDir, sanitizeForPrompt } from "./utils.js";
 import { SessionBridgeNotOpenError } from "./errors.js";
 
 // ----------------------------------------------------------------
@@ -138,28 +138,26 @@ export class SessionBridge {
 
   /**
    * Returns the last N artifacts for debugging/inspection.
-   * Sorted newest first.
+   * Sorted newest first by timestamp (not by filename).
    */
   async history(n = 10): Promise<SessionArtifact[]> {
-    if (!existsSync(this.artifactDir)) return [];
+    const allArtifacts = this.readAllArtifacts();
 
-    const files = readdirSync(this.artifactDir)
-      .filter(f => f.startsWith("session-") && f.endsWith(".json"))
-      .sort()
-      .reverse();
+    // Sort newest first by endedAt (or startedAt as fallback)
+    allArtifacts.sort((a, b) => {
+      const timeA = a.endedAt ?? a.startedAt;
+      const timeB = b.endedAt ?? b.startedAt;
+      return timeB.localeCompare(timeA);
+    });
 
-    const artifacts: SessionArtifact[] = [];
-    for (const file of files.slice(0, n)) {
-      const data = readJSON<SessionArtifact>(join(this.artifactDir, file));
-      if (data) artifacts.push(data);
-    }
-
-    return artifacts;
+    return allArtifacts.slice(0, n);
   }
 
   /**
    * Returns a compact string summary suitable for injecting into a new agent's context.
    * Deterministic and token-efficient.
+   *
+   * All artifact-sourced text is sanitized before injection.
    */
   async contextSummary(): Promise<string> {
     const lastArtifact = this.findLatestArtifact();
@@ -169,12 +167,14 @@ export class SessionBridge {
 
     const lines: string[] = [
       "=== SESSION CONTEXT ===",
-      `Mode: resume`,
-      `Previous session completed: ${lastArtifact.progress.summary}`,
+      "Mode: resume",
+      `Previous session completed: ${sanitizeForPrompt(lastArtifact.progress.summary)}`,
     ];
 
     if (lastArtifact.nextSession.blockers.length > 0) {
-      lines.push(`BLOCKERS: ${lastArtifact.nextSession.blockers.join("; ")}`);
+      const sanitizedBlockers = lastArtifact.nextSession.blockers
+        .map(b => sanitizeForPrompt(b));
+      lines.push(`BLOCKERS: ${sanitizedBlockers.join("; ")}`);
     }
 
     const env = lastArtifact.environment;
@@ -185,10 +185,10 @@ export class SessionBridge {
       lines.push(`Next feature ID: ${lastArtifact.nextSession.nextFeatureId}`);
     }
 
-    lines.push(`Suggested first action: ${lastArtifact.nextSession.suggestedFirstAction}`);
+    lines.push(`Suggested first action: ${sanitizeForPrompt(lastArtifact.nextSession.suggestedFirstAction)}`);
 
     if (lastArtifact.handoffNotes) {
-      lines.push(`Handoff notes: ${lastArtifact.handoffNotes}`);
+      lines.push(`Handoff notes: ${sanitizeForPrompt(lastArtifact.handoffNotes)}`);
     }
 
     lines.push("======================");
@@ -197,27 +197,33 @@ export class SessionBridge {
 
   // ---- Internal ----
 
-  private findLatestArtifact(): SessionArtifact | null {
-    if (!existsSync(this.artifactDir)) return null;
+  private readAllArtifacts(): SessionArtifact[] {
+    if (!existsSync(this.artifactDir)) return [];
 
     const files = readdirSync(this.artifactDir)
-      .filter(f => f.startsWith("session-") && f.endsWith(".json"))
-      .sort();
+      .filter(f => f.startsWith("session-") && f.endsWith(".json"));
 
-    if (files.length === 0) return null;
+    const artifacts: SessionArtifact[] = [];
+    for (const file of files) {
+      const data = readJSON<SessionArtifact>(join(this.artifactDir, file));
+      if (data) artifacts.push(data);
+    }
+    return artifacts;
+  }
 
-    // Read all artifacts, find the one with the latest endedAt timestamp
+  private findLatestArtifact(): SessionArtifact | null {
+    const artifacts = this.readAllArtifacts();
+    if (artifacts.length === 0) return null;
+
+    // Find the one with the latest endedAt (or startedAt as fallback)
     let latest: SessionArtifact | null = null;
     let latestTime = "";
 
-    for (const file of files) {
-      const data = readJSON<SessionArtifact>(join(this.artifactDir, file));
-      if (data) {
-        const time = data.endedAt ?? data.startedAt;
-        if (time > latestTime) {
-          latestTime = time;
-          latest = data;
-        }
+    for (const artifact of artifacts) {
+      const time = artifact.endedAt ?? artifact.startedAt;
+      if (time > latestTime) {
+        latestTime = time;
+        latest = artifact;
       }
     }
 

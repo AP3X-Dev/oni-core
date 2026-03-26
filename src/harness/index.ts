@@ -69,11 +69,12 @@ export {
   EnvironmentUnhealthyError,
   ContractNotFoundError,
   ContractNotApprovedError,
+  ContractAlreadyFinalizedError,
   WorkspaceGitUnavailableWarning,
 } from "./errors.js";
 
 // Utilities
-export { randomId, atomicWriteJSON, readJSON, withFileLock, execGit, isGitAvailable } from "./utils.js";
+export { randomId, atomicWriteJSON, readJSON, withFileLock, execGit, isGitAvailable, sanitizeForPrompt } from "./utils.js";
 
 // Feature registry
 export { FeatureRegistry } from "./FeatureRegistry.js";

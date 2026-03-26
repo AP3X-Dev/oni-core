@@ -180,6 +180,26 @@ describe("FeatureRegistry", () => {
     expect(updated.failureNotes).toContain("---");
   });
 
+  it("markResult() clears passedAt when a passing feature fails again", async () => {
+    const reg = new FeatureRegistry(registryPath);
+    await reg.initialize(SAMPLE_FEATURES);
+
+    const all = await reg.getAll();
+    const feature = all[0]!;
+
+    // Mark as passing
+    await reg.markResult(feature.id, true);
+    let updated = (await reg.getAll()).find(f => f.id === feature.id)!;
+    expect(updated.passedAt).toBeTruthy();
+
+    // Mark as failing again — passedAt should be cleared
+    await reg.markResult(feature.id, false, "Regression");
+    updated = (await reg.getAll()).find(f => f.id === feature.id)!;
+    expect(updated.passes).toBe(false);
+    expect(updated.passedAt).toBeUndefined();
+    expect(updated.failureNotes).toContain("Regression");
+  });
+
   it("markResult() clears failureNotes on pass", async () => {
     const reg = new FeatureRegistry(registryPath);
     await reg.initialize(SAMPLE_FEATURES);
@@ -238,6 +258,22 @@ describe("FeatureRegistry", () => {
 
     expect(() => {
       FeatureRegistry.validateMutation(feature, { id: "different" });
+    }).toThrow(FeatureRegistryMutationError);
+  });
+
+  it("validateMutation() rejects passedAt mutation", () => {
+    const feature = {
+      id: "test-id",
+      category: "functional" as const,
+      description: "original",
+      priority: 1,
+      steps: ["step1"],
+      passes: true,
+      passedAt: "2026-01-01T00:00:00.000Z",
+    };
+
+    expect(() => {
+      FeatureRegistry.validateMutation(feature, { passedAt: "2099-01-01T00:00:00.000Z" });
     }).toThrow(FeatureRegistryMutationError);
   });
 
