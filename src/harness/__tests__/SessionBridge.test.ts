@@ -106,7 +106,7 @@ describe("SessionBridge", () => {
 
   // ── history() ──
 
-  it("history() returns artifacts in newest-first order", async () => {
+  it("history() returns artifacts in newest-first order by timestamp", async () => {
     // Create 3 sessions
     for (let i = 0; i < 3; i++) {
       const bridge = new SessionBridge(tmpDir);
@@ -120,6 +120,13 @@ describe("SessionBridge", () => {
     const bridge = new SessionBridge(tmpDir);
     const hist = await bridge.history();
     expect(hist).toHaveLength(3);
+
+    // Verify newest-first ordering by comparing timestamps
+    for (let i = 0; i < hist.length - 1; i++) {
+      const timeA = hist[i]!.endedAt ?? hist[i]!.startedAt;
+      const timeB = hist[i + 1]!.endedAt ?? hist[i + 1]!.startedAt;
+      expect(timeA >= timeB).toBe(true);
+    }
   });
 
   it("history(n) limits to N results", async () => {

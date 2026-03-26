@@ -128,7 +128,7 @@ describe("ContextReset", () => {
 
   // ── buildResumePrompt() ──
 
-  it("buildResumePrompt() produces structured prompt", () => {
+  it("buildResumePrompt() produces structured prompt with default orientation steps", () => {
     const artifact = {
       sessionId: "test-session",
       previousSessionId: null,
@@ -178,6 +178,30 @@ describe("ContextReset", () => {
     expect(prompt).toContain("Flaky CI");
     expect(prompt).toContain("Check the login redirect");
     expect(prompt).toContain("Do not begin implementing");
+    // Default orientation steps should NOT reference workspace-specific files
+    expect(prompt).not.toContain("claude-progress.txt");
+    expect(prompt).not.toContain("./init.sh");
+  });
+
+  it("buildResumePrompt() accepts custom orientation steps", () => {
+    const artifact = {
+      sessionId: "s1",
+      previousSessionId: null,
+      mode: "init" as const,
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T01:00:00.000Z",
+      agentVersion: "1.1.1",
+      progress: { featuresAttempted: [], featuresPassed: [], featuresFailed: [], summary: "Done" },
+      environment: { workingDirectory: "/app", gitCommitHash: null, gitBranch: null, serverRunning: false, lastSmokeTestPassed: false, lastSmokeTestAt: null },
+      nextSession: { suggestedFirstAction: "Start", blockers: [], nextFeatureId: null },
+      handoffNotes: "",
+    };
+
+    const customSteps = ["Run `make setup`", "Check `docker ps`"];
+    const prompt = ContextReset.buildResumePrompt(artifact, null, customSteps);
+
+    expect(prompt).toContain("Run `make setup`");
+    expect(prompt).toContain("Check `docker ps`");
   });
 
   it("buildResumePrompt() handles null nextFeature", () => {

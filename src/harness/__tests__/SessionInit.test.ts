@@ -180,6 +180,81 @@ describe("runSessionInit", () => {
     warnSpy.mockRestore();
   });
 
+  it("context summary says UNHEALTHY without auto-fix detail on warn path", async () => {
+    const bridge1 = new SessionBridge(bridgeDir);
+    await bridge1.open();
+    await bridge1.close(
+      { featuresAttempted: [], featuresPassed: [], featuresFailed: [], summary: "prior" },
+      "notes",
+    );
+
+    const bridge2 = new SessionBridge(bridgeDir);
+    const registry = new FeatureRegistry(registryPath);
+    await registry.initialize(SAMPLE_FEATURES);
+
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await runSessionInit({
+      bridge: bridge2,
+      registry,
+      smokeTest: async () => false,
+      onBrokenEnvironment: "warn",
+    });
+
+    // Should say UNHEALTHY without claiming auto-fix
+    expect(result.contextSummary).toContain("UNHEALTHY");
+    expect(result.contextSummary).not.toContain("auto-fix");
+  });
+
+  it("context summary says healthy (auto-fixed) when fixer succeeds", async () => {
+    const bridge1 = new SessionBridge(bridgeDir);
+    await bridge1.open();
+    await bridge1.close(
+      { featuresAttempted: [], featuresPassed: [], featuresFailed: [], summary: "prior" },
+      "notes",
+    );
+
+    const bridge2 = new SessionBridge(bridgeDir);
+    const registry = new FeatureRegistry(registryPath);
+    await registry.initialize(SAMPLE_FEATURES);
+
+    let callCount = 0;
+    const result = await runSessionInit({
+      bridge: bridge2,
+      registry,
+      smokeTest: async () => { callCount++; return callCount > 1; },
+      onBrokenEnvironment: "fix",
+      environmentFixer: async () => {},
+    });
+
+    expect(result.contextSummary).toContain("healthy (auto-fixed)");
+  });
+
+  it("context summary says UNHEALTHY (auto-fix attempted but failed) when fixer fails", async () => {
+    const bridge1 = new SessionBridge(bridgeDir);
+    await bridge1.open();
+    await bridge1.close(
+      { featuresAttempted: [], featuresPassed: [], featuresFailed: [], summary: "prior" },
+      "notes",
+    );
+
+    const bridge2 = new SessionBridge(bridgeDir);
+    const registry = new FeatureRegistry(registryPath);
+    await registry.initialize(SAMPLE_FEATURES);
+
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await runSessionInit({
+      bridge: bridge2,
+      registry,
+      smokeTest: async () => false,
+      onBrokenEnvironment: "fix",
+      environmentFixer: async () => {},
+    });
+
+    expect(result.contextSummary).toContain("UNHEALTHY (auto-fix attempted but failed)");
+  });
+
   it("calls environmentFixer when smoke test fails and onBrokenEnvironment='fix'", async () => {
     const bridge1 = new SessionBridge(bridgeDir);
     await bridge1.open();

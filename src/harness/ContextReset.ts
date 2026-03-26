@@ -9,7 +9,7 @@
 import type { SessionBridge, SessionArtifact } from "./SessionBridge.js";
 import type { FeatureRegistry, Feature } from "./FeatureRegistry.js";
 import type { WorkspaceCheckpointer } from "./WorkspaceCheckpointer.js";
-import { execGit } from "./utils.js";
+import { execGit, sanitizeForPrompt } from "./utils.js";
 
 // ----------------------------------------------------------------
 // Types
@@ -25,6 +25,13 @@ export interface ContextResetConfig {
 
   /** If true, commits workspace state before reset */
   commitBeforeReset?: boolean;
+
+  /**
+   * Custom orientation steps for the resume prompt.
+   * Replaces the default "first actions" list. If omitted, a generic
+   * set of orientation steps is used (no workspace-specific commands).
+   */
+  orientationSteps?: string[];
 }
 
 export interface ResetResult {
@@ -32,6 +39,15 @@ export interface ResetResult {
   artifact: SessionArtifact;
   contextSummary: string;
 }
+
+// Default orientation steps — generic, no workspace-specific assumptions
+const DEFAULT_ORIENTATION_STEPS = [
+  "Run `pwd` to confirm your working directory",
+  "Read the git log: `git log --oneline -10`",
+  "Check git status: `git status`",
+  "Review any progress/status files in the project root",
+  "Run the smoke test to verify environment health",
+];
 
 // ----------------------------------------------------------------
 // ContextReset
@@ -64,22 +80,32 @@ export class ContextReset {
     currentProgress: SessionArtifact["progress"],
     handoffNotes: string,
   ): Promise<ResetResult> {
-    const { bridge, registry, checkpointer, commitBeforeReset } = this.config;
+    const { bridge, registry, commitBeforeReset } = this.config;
 
     // Optionally commit workspace state before reset
     if (commitBeforeReset) {
       const cwd = process.cwd();
-      execGit("add -A", cwd);
-      const status = execGit("status --porcelain", cwd);
-      if (status && status.length > 0) {
-        execGit('commit -m "chore(oni): pre-reset checkpoint"', cwd);
+      try {
+        execGit(["add", "-A"], cwd);
+        const status = execGit(["status", "--porcelain"], cwd);
+        if (status && status.length > 0) {
+          execGit(["commit", "-m", "chore(oni): pre-reset checkpoint"], cwd);
+        }
+      } catch {
+        // Git commit failure should not block the reset
       }
     }
 
     // Gather environment state
     const cwd = process.cwd();
-    const gitCommitHash = execGit("rev-parse HEAD", cwd);
-    const gitBranch = execGit("rev-parse --abbrev-ref HEAD", cwd);
+    let gitCommitHash: string | null = null;
+    let gitBranch: string | null = null;
+    try {
+      gitCommitHash = execGit(["rev-parse", "HEAD"], cwd);
+      gitBranch = execGit(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
+    } catch {
+      // git not available or not a repo
+    }
 
     // Resolve next feature for the new session
     let nextFeatureId: string | null = null;
@@ -112,7 +138,11 @@ export class ContextReset {
     );
 
     // Build context summary for the new agent
-    const contextSummary = ContextReset.buildResumePrompt(artifact, nextFeature);
+    const contextSummary = ContextReset.buildResumePrompt(
+      artifact,
+      nextFeature,
+      this.config.orientationSteps,
+    );
 
     return {
       newSessionId: artifact.sessionId,
@@ -124,37 +154,45 @@ export class ContextReset {
   /**
    * Returns a system prompt fragment that orients a fresh agent.
    * Suitable for injection as the first message in a new context.
+   *
+   * All artifact-sourced text is sanitized before injection to prevent
+   * prompt injection from stored content.
    */
-  static buildResumePrompt(artifact: SessionArtifact, nextFeature: Feature | null): string {
+  static buildResumePrompt(
+    artifact: SessionArtifact,
+    nextFeature: Feature | null,
+    orientationSteps?: string[],
+  ): string {
+    const steps = orientationSteps ?? DEFAULT_ORIENTATION_STEPS;
+
     const lines: string[] = [
       "You are resuming work on an ongoing software project.",
       "",
       "PRIOR SESSION SUMMARY:",
-      artifact.progress.summary,
+      sanitizeForPrompt(artifact.progress.summary),
       "",
       "ENVIRONMENT STATE:",
-      `- Working directory: ${artifact.environment.workingDirectory}`,
+      `- Working directory: ${sanitizeForPrompt(artifact.environment.workingDirectory)}`,
       `- Git commit: ${artifact.environment.gitCommitHash ?? "unknown"}`,
       `- Last smoke test: ${artifact.environment.lastSmokeTestPassed ? "passed" : "failed"} at ${artifact.environment.lastSmokeTestAt ?? "unknown"}`,
       "",
       "YOUR FIRST ACTIONS (do these before anything else):",
-      "1. Run `pwd` to confirm your working directory",
-      "2. Read the git log: `git log --oneline -10`",
-      "3. Read the progress file: `cat claude-progress.txt`",
-      "4. Start the development server using `./init.sh`",
-      "5. Run the smoke test to verify environment health",
     ];
+
+    for (let i = 0; i < steps.length; i++) {
+      lines.push(`${i + 1}. ${steps[i]}`);
+    }
 
     if (nextFeature) {
       lines.push(
         "",
         "NEXT FEATURE TO IMPLEMENT:",
-        `[${nextFeature.id}] ${nextFeature.description} (priority: ${nextFeature.priority})`,
+        `[${nextFeature.id}] ${sanitizeForPrompt(nextFeature.description)} (priority: ${nextFeature.priority})`,
         "",
         "Verification steps:",
       );
       for (let i = 0; i < nextFeature.steps.length; i++) {
-        lines.push(`${i + 1}. ${nextFeature.steps[i]}`);
+        lines.push(`${i + 1}. ${sanitizeForPrompt(nextFeature.steps[i]!)}`);
       }
     }
 
@@ -162,13 +200,13 @@ export class ContextReset {
     lines.push(
       "",
       "BLOCKERS FROM PRIOR SESSION:",
-      blockers.length > 0 ? blockers.join("\n") : "None",
+      blockers.length > 0 ? blockers.map(b => sanitizeForPrompt(b)).join("\n") : "None",
     );
 
     lines.push(
       "",
       "HANDOFF NOTES:",
-      artifact.handoffNotes || "None",
+      artifact.handoffNotes ? sanitizeForPrompt(artifact.handoffNotes) : "None",
       "",
       "Do not begin implementing until you have completed the orientation steps above.",
     );

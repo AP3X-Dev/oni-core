@@ -7,9 +7,10 @@
 import { randomUUID } from "node:crypto";
 import {
   writeFileSync, renameSync, existsSync, unlinkSync,
-  readFileSync, mkdirSync,
+  readFileSync, mkdirSync, openSync, closeSync, statSync,
+  constants as fsConstants,
 } from "node:fs";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { dirname } from "node:path";
 
 /**
@@ -44,51 +45,91 @@ export function readJSON<T>(filePath: string): T | null {
 }
 
 /**
- * Simple file-based lock with exponential backoff.
- * Prevents concurrent writes to the same file.
+ * File-based lock using atomic exclusive-create (O_CREAT | O_EXCL via 'wx' flag).
+ * Two concurrent callers cannot both succeed — the OS guarantees only one
+ * `open(..., O_EXCL)` wins on the same path.
+ *
+ * Stale lock detection uses file mtime: if the lock file is older than
+ * `staleLockMs`, it is assumed to be from a crashed process and removed.
  */
-export async function withFileLock<T>(lockPath: string, fn: () => Promise<T>): Promise<T> {
-  const maxWaitMs = 5000;
+export async function withFileLock<T>(
+  lockPath: string,
+  fn: () => Promise<T>,
+  staleLockMs = 30_000,
+): Promise<T> {
+  const maxWaitMs = 10_000;
   const baseDelayMs = 50;
   let waited = 0;
 
-  while (existsSync(lockPath)) {
-    if (waited >= maxWaitMs) {
-      // Stale lock detection: if lock file is older than maxWaitMs, remove it
+  while (true) {
+    try {
+      // Atomic lock acquisition: O_CREAT | O_EXCL — fails if file exists
+      const fd = openSync(lockPath, fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY);
+      // Write PID for diagnostics
+      const buf = Buffer.from(process.pid.toString(), "utf8");
+      writeFileSync(fd, buf);
+      closeSync(fd);
+      break;
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "EEXIST") throw err; // Unexpected error — propagate
+
+      // Lock file exists — check if it's stale
       try {
-        unlinkSync(lockPath);
-        break;
+        const stat = statSync(lockPath);
+        const ageMs = Date.now() - stat.mtimeMs;
+        if (ageMs > staleLockMs) {
+          // Stale lock from a crashed process — remove and retry
+          try { unlinkSync(lockPath); } catch { /* another process cleaned it */ }
+          continue;
+        }
       } catch {
-        throw new Error(`Lock timeout: ${lockPath} held for ${maxWaitMs}ms`);
+        // Lock was just released between our open attempt and stat — retry
+        continue;
       }
+
+      if (waited >= maxWaitMs) {
+        throw new Error(
+          `Lock timeout: ${lockPath} held for ${maxWaitMs}ms. ` +
+          `If the holding process crashed, the lock will auto-clear after ${staleLockMs}ms.`,
+        );
+      }
+
+      const delay = Math.min(baseDelayMs * 2 ** Math.floor(waited / baseDelayMs), 500);
+      await new Promise(r => setTimeout(r, delay));
+      waited += delay;
     }
-    const delay = Math.min(baseDelayMs * 2 ** Math.floor(waited / baseDelayMs), 500);
-    await new Promise(r => setTimeout(r, delay));
-    waited += delay;
   }
 
-  writeFileSync(lockPath, process.pid.toString(), "utf8");
   try {
     return await fn();
   } finally {
-    if (existsSync(lockPath)) {
-      try { unlinkSync(lockPath); } catch { /* lock already cleaned */ }
-    }
+    try { unlinkSync(lockPath); } catch { /* lock already cleaned */ }
   }
 }
 
 /**
- * Execute a git command, return stdout. Returns null if git unavailable or command fails.
+ * Execute a git command safely using execFileSync with argument arrays.
+ * Never passes through a shell — immune to shell injection.
+ *
+ * Returns stdout on success, null only if git binary is not found (ENOENT).
+ * Throws on all other failures (bad args, git errors) so callers can
+ * distinguish "git not installed" from "git command failed".
  */
-export function execGit(args: string, cwd: string): string | null {
+export function execGit(args: string[], cwd: string): string | null {
   try {
-    return execSync(`git ${args}`, {
+    return execFileSync("git", args, {
       cwd,
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
+      timeout: 30_000,
     }).trim();
-  } catch {
-    return null;
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException).code;
+    // ENOENT = git binary not found — expected in some environments
+    if (code === "ENOENT") return null;
+    // All other errors (bad args, merge conflicts, etc.) should propagate
+    throw err;
   }
 }
 
@@ -96,7 +137,12 @@ export function execGit(args: string, cwd: string): string | null {
  * Check if git is available in the current environment.
  */
 export function isGitAvailable(): boolean {
-  return execGit("--version", process.cwd()) !== null;
+  try {
+    execGit(["--version"], process.cwd());
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -106,4 +152,24 @@ export function ensureDir(dirPath: string): void {
   if (!existsSync(dirPath)) {
     mkdirSync(dirPath, { recursive: true });
   }
+}
+
+/**
+ * Sanitize text before injecting into agent prompts.
+ * Strips patterns that could manipulate agent behavior when
+ * reinjected from untrusted stored artifacts.
+ */
+export function sanitizeForPrompt(text: string): string {
+  return text
+    // Strip common prompt injection delimiters
+    .replace(/<\/?system[^>]*>/gi, "")
+    .replace(/<\/?user[^>]*>/gi, "")
+    .replace(/<\/?assistant[^>]*>/gi, "")
+    .replace(/<\/?human[^>]*>/gi, "")
+    // Strip CDATA-style injections
+    .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, "")
+    // Strip XML-style processing instructions
+    .replace(/<\?[\s\S]*?\?>/g, "")
+    // Collapse excessive whitespace that could hide content
+    .replace(/\n{4,}/g, "\n\n\n");
 }

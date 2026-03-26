@@ -85,6 +85,17 @@ export class ContractNotApprovedError extends ONIHarnessError {
   }
 }
 
+export class ContractAlreadyFinalizedError extends ONIHarnessError {
+  constructor(proposalId: string, existingContractId: string) {
+    super(
+      `Proposal "${proposalId}" already has an active contract ("${existingContractId}"). ` +
+      `A proposal can only be finalized once.`,
+      "CONTRACT_ALREADY_FINALIZED",
+    );
+    this.name = "ContractAlreadyFinalizedError";
+  }
+}
+
 export class WorkspaceGitUnavailableWarning {
   readonly message = "git not found in PATH. WorkspaceCheckpointer running in SQLite-only mode.";
   readonly code = "GIT_UNAVAILABLE";

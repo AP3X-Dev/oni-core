@@ -52,7 +52,7 @@ export type FeatureInit = Omit<Feature, "id" | "passes" | "passedAt">;
 // ----------------------------------------------------------------
 
 const IMMUTABLE_FIELDS: ReadonlySet<string> = new Set([
-  "id", "category", "description", "priority", "steps",
+  "id", "category", "description", "priority", "steps", "passedAt",
 ]);
 
 // ----------------------------------------------------------------
@@ -167,11 +167,15 @@ export class FeatureRegistry {
         feature.passedAt = new Date().toISOString();
         // Clear failure notes on pass
         feature.failureNotes = undefined;
-      } else if (failureNotes !== undefined) {
-        // Append failure notes, never overwrite
-        feature.failureNotes = feature.failureNotes
-          ? `${feature.failureNotes}\n---\n${failureNotes}`
-          : failureNotes;
+      } else {
+        // Clear passedAt when a feature fails again — prevents stale timestamps
+        feature.passedAt = undefined;
+        if (failureNotes !== undefined) {
+          // Append failure notes, never overwrite
+          feature.failureNotes = feature.failureNotes
+            ? `${feature.failureNotes}\n---\n${failureNotes}`
+            : failureNotes;
+        }
       }
 
       snapshot.features[idx] = feature;

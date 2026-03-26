@@ -15,18 +15,27 @@ vi.mock("../../checkpointers/sqlite.js", () => {
   return {
     SqliteCheckpointer: {
       create: vi.fn().mockImplementation(async () => {
-        const checkpoints = new Map<string, unknown[]>();
+        const checkpoints = new Map<string, Map<number, unknown>>();
         return {
           get: vi.fn(async (threadId: string) => {
-            const list = checkpoints.get(threadId);
-            return list ? list[list.length - 1] ?? null : null;
+            const steps = checkpoints.get(threadId);
+            if (!steps || steps.size === 0) return null;
+            const maxStep = Math.max(...steps.keys());
+            return steps.get(maxStep) ?? null;
           }),
           put: vi.fn(async (cp: Record<string, unknown>) => {
             const threadId = cp.threadId as string;
-            if (!checkpoints.has(threadId)) checkpoints.set(threadId, []);
-            checkpoints.get(threadId)!.push(cp);
+            const step = cp.step as number;
+            if (!checkpoints.has(threadId)) checkpoints.set(threadId, new Map());
+            checkpoints.get(threadId)!.set(step, cp);
           }),
-          list: vi.fn(async (threadId: string) => checkpoints.get(threadId) ?? []),
+          getAt: vi.fn(async (threadId: string, step: number) => {
+            return checkpoints.get(threadId)?.get(step) ?? null;
+          }),
+          list: vi.fn(async (threadId: string) => {
+            const steps = checkpoints.get(threadId);
+            return steps ? [...steps.values()] : [];
+          }),
           delete: vi.fn(async (threadId: string) => { checkpoints.delete(threadId); }),
           close: vi.fn(),
         };
@@ -88,11 +97,11 @@ describe("WorkspaceCheckpointer", () => {
     wc.close();
   });
 
-  it("save() writes checkpoint to SQLite (autoCommit=false)", async () => {
+  it("put() writes checkpoint to SQLite without git when autoCommit=false", async () => {
     const wc = await WorkspaceCheckpointer.create(makeConfig());
 
     const checkpoint = {
-      threadId: "save-test",
+      threadId: "put-test",
       step: 1,
       state: { v: 1 },
       nextNodes: [],
@@ -100,7 +109,9 @@ describe("WorkspaceCheckpointer", () => {
       timestamp: Date.now(),
     };
 
-    await wc.save(checkpoint, { description: "test save" });
+    await wc.put(checkpoint);
+    const result = await wc.get("put-test");
+    expect(result).toBeDefined();
     wc.close();
   });
 
@@ -111,21 +122,22 @@ describe("WorkspaceCheckpointer", () => {
     wc.close();
   });
 
-  it("save() with autoCommit stages and commits when git is available", async () => {
+  it("put() with autoCommit stages and commits when git is available", async () => {
     const execGitSpy = vi.spyOn(utils, "execGit");
     const isGitSpy = vi.spyOn(utils, "isGitAvailable").mockReturnValue(true);
 
-    // Mock git commands
-    execGitSpy.mockImplementation((args: string) => {
-      if (args === "--version") return "git version 2.40.0";
-      if (args === "add -A") return "";
-      if (args === "status --porcelain") return "M file.ts";
-      if (args.startsWith("commit")) return "abc123";
-      if (args === "rev-parse HEAD") return "abc123def456";
+    // Mock git commands — execGit now takes string[] not string
+    execGitSpy.mockImplementation((args: string[]) => {
+      if (args[0] === "--version") return "git version 2.40.0";
+      if (args[0] === "add") return "";
+      if (args[0] === "status") return "M file.ts";
+      if (args[0] === "commit") return "";
+      if (args[0] === "rev-parse" && args[1] === "HEAD") return "abc123def456";
       return "";
     });
 
     const wc = await WorkspaceCheckpointer.create(makeConfig({ autoCommit: true }));
+    wc.setNextMetadata({ description: "feature X" });
 
     const checkpoint = {
       threadId: "commit-test",
@@ -136,11 +148,12 @@ describe("WorkspaceCheckpointer", () => {
       timestamp: Date.now(),
     };
 
-    await wc.save(checkpoint, { description: "feature X" });
+    // put() — the method Pregel calls — should trigger git
+    await wc.put(checkpoint);
 
-    // Verify git commands were called
-    expect(execGitSpy).toHaveBeenCalledWith("add -A", expect.any(String));
-    expect(execGitSpy).toHaveBeenCalledWith("status --porcelain", expect.any(String));
+    // Verify git commands were called with arg arrays
+    expect(execGitSpy).toHaveBeenCalledWith(["add", "-A"], expect.any(String));
+    expect(execGitSpy).toHaveBeenCalledWith(["status", "--porcelain"], expect.any(String));
 
     // Verify commit mapping was stored
     const commits = await wc.listWithCommits();
@@ -167,7 +180,8 @@ describe("WorkspaceCheckpointer", () => {
       timestamp: Date.now(),
     };
 
-    await wc.save(checkpoint);
+    // put() should still work — just without git
+    await wc.put(checkpoint);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("git not found"),
     );
@@ -195,5 +209,38 @@ describe("WorkspaceCheckpointer", () => {
     );
 
     wc.close();
+  });
+
+  it("setNextMetadata() influences commit message in put()", async () => {
+    const execGitSpy = vi.spyOn(utils, "execGit");
+    const isGitSpy = vi.spyOn(utils, "isGitAvailable").mockReturnValue(true);
+
+    let capturedMessage = "";
+    execGitSpy.mockImplementation((args: string[]) => {
+      if (args[0] === "commit" && args[1] === "-m") {
+        capturedMessage = args[2]!;
+      }
+      if (args[0] === "status") return "M file.ts";
+      if (args[0] === "rev-parse") return "deadbeef";
+      return "";
+    });
+
+    const wc = await WorkspaceCheckpointer.create(makeConfig({ autoCommit: true }));
+    wc.setNextMetadata({ description: "login page" });
+
+    await wc.put({
+      threadId: "meta-test",
+      step: 1,
+      state: {},
+      nextNodes: [],
+      pendingSends: [],
+      timestamp: Date.now(),
+    });
+
+    expect(capturedMessage).toContain("login page");
+
+    wc.close();
+    execGitSpy.mockRestore();
+    isGitSpy.mockRestore();
   });
 });

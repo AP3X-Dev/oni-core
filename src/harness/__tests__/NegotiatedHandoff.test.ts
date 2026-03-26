@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { NegotiatedHandoff } from "../NegotiatedHandoff.js";
-import { ContractNotFoundError, ContractNotApprovedError } from "../errors.js";
+import { ContractNotFoundError, ContractNotApprovedError, ContractAlreadyFinalizedError } from "../errors.js";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -144,6 +144,26 @@ describe("NegotiatedHandoff", () => {
     const nh = new NegotiatedHandoff(tmpDir);
     await expect(nh.finalizeContract("nonexistent")).rejects.toThrow(
       ContractNotFoundError,
+    );
+  });
+
+  it("finalizeContract() throws on duplicate finalization", async () => {
+    const nh = new NegotiatedHandoff(tmpDir);
+    const proposal = await nh.submitProposal(makeSampleProposal());
+    await nh.submitReview(proposal.proposalId, {
+      proposalId: proposal.proposalId,
+      reviewedBy: "eval",
+      decision: "approved",
+      concerns: [],
+      requiredChanges: [],
+    });
+
+    // First finalization succeeds
+    await nh.finalizeContract(proposal.proposalId);
+
+    // Second finalization throws
+    await expect(nh.finalizeContract(proposal.proposalId)).rejects.toThrow(
+      ContractAlreadyFinalizedError,
     );
   });
 
