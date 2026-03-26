@@ -8,8 +8,8 @@
 
 import { resolve, join } from "node:path";
 import { existsSync, readdirSync } from "node:fs";
-import { randomId, atomicWriteJSON, readJSON, ensureDir, withFileLock } from "./utils.js";
-import { ContractNotFoundError, ContractNotApprovedError } from "./errors.js";
+import { randomId, atomicWriteJSON, readJSON, ensureDir, withFileLock, sanitizeForPrompt } from "./utils.js";
+import { ContractNotFoundError, ContractNotApprovedError, ContractAlreadyFinalizedError } from "./errors.js";
 
 // ----------------------------------------------------------------
 // Types
@@ -132,26 +132,36 @@ export class NegotiatedHandoff {
   /**
    * Once both have agreed, locks the contract.
    * Only proposals with an "approved" review can be finalized.
+   * Throws if a contract already exists for this proposal (prevents
+   * duplicate/concurrent finalization).
    */
   async finalizeContract(proposalId: string): Promise<NegotiatedContract> {
-    const proposal = this.readProposal(proposalId);
-    if (!proposal) throw new ContractNotFoundError(proposalId);
+    return withFileLock(this.lockPath, async () => {
+      const proposal = this.readProposal(proposalId);
+      if (!proposal) throw new ContractNotFoundError(proposalId);
 
-    const review = this.findReviewForProposal(proposalId);
-    if (!review) throw new ContractNotFoundError(proposalId);
-    if (review.decision !== "approved") throw new ContractNotApprovedError(proposalId);
+      const review = this.findReviewForProposal(proposalId);
+      if (!review) throw new ContractNotFoundError(proposalId);
+      if (review.decision !== "approved") throw new ContractNotApprovedError(proposalId);
 
-    const contract: NegotiatedContract = {
-      contractId: randomId(),
-      proposal,
-      review,
-      agreedAt: new Date().toISOString(),
-      status: "active",
-    };
+      // Check whether this proposal already has a contract
+      const existing = this.findContractForProposal(proposalId);
+      if (existing) {
+        throw new ContractAlreadyFinalizedError(proposalId, existing.contractId);
+      }
 
-    const filePath = join(this.contractDir, `contract-${contract.contractId}.json`);
-    atomicWriteJSON(filePath, contract);
-    return contract;
+      const contract: NegotiatedContract = {
+        contractId: randomId(),
+        proposal,
+        review,
+        agreedAt: new Date().toISOString(),
+        status: "active",
+      };
+
+      const filePath = join(this.contractDir, `contract-${contract.contractId}.json`);
+      atomicWriteJSON(filePath, contract);
+      return contract;
+    });
   }
 
   /**
@@ -209,6 +219,7 @@ export class NegotiatedHandoff {
 
   /**
    * Returns a formatted contract summary for agent context injection.
+   * All stored text is sanitized before injection to prevent prompt injection.
    */
   async getContractSummary(contractId: string): Promise<string> {
     const contract = this.readContract(contractId);
@@ -216,34 +227,35 @@ export class NegotiatedHandoff {
 
     const p = contract.proposal;
     const r = contract.review;
+    const s = sanitizeForPrompt;
     const lines: string[] = [
       `=== CONTRACT ${contract.contractId} ===`,
       `Status: ${contract.status}`,
-      `Feature: ${p.featureId}`,
-      `Proposed by: ${p.proposedBy}`,
-      `Reviewed by: ${r.reviewedBy}`,
+      `Feature: ${s(p.featureId)}`,
+      `Proposed by: ${s(p.proposedBy)}`,
+      `Reviewed by: ${s(r.reviewedBy)}`,
       `Agreed at: ${contract.agreedAt}`,
       "",
       "IMPLEMENTATION:",
-      `  ${p.implementation.description}`,
-      `  Approach: ${p.implementation.technicalApproach}`,
-      `  Files: ${p.implementation.filesAffected.join(", ")}`,
+      `  ${s(p.implementation.description)}`,
+      `  Approach: ${s(p.implementation.technicalApproach)}`,
+      `  Files: ${p.implementation.filesAffected.map(f => s(f)).join(", ")}`,
       `  Estimated steps: ${p.implementation.estimatedSteps}`,
       "",
       "VERIFICATION CRITERIA:",
     ];
 
     for (const c of p.verification.criteria) {
-      lines.push(`  [${c.id}] ${c.description}`);
-      lines.push(`    Pass: ${c.passingCondition}`);
-      lines.push(`    Fail: ${c.failingCondition}`);
+      lines.push(`  [${s(c.id)}] ${s(c.description)}`);
+      lines.push(`    Pass: ${s(c.passingCondition)}`);
+      lines.push(`    Fail: ${s(c.failingCondition)}`);
     }
 
     if (p.verification.automatedTests.length > 0) {
       lines.push("");
       lines.push("AUTOMATED TESTS:");
       for (const t of p.verification.automatedTests) {
-        lines.push(`  $ ${t}`);
+        lines.push(`  $ ${s(t)}`);
       }
     }
 
@@ -251,7 +263,7 @@ export class NegotiatedHandoff {
       lines.push("");
       lines.push("OUT OF SCOPE:");
       for (const o of p.outOfScope) {
-        lines.push(`  - ${o}`);
+        lines.push(`  - ${s(o)}`);
       }
     }
 
@@ -259,13 +271,13 @@ export class NegotiatedHandoff {
       lines.push("");
       lines.push("ACTUAL FILES CHANGED:");
       for (const f of contract.actualFilesChanged) {
-        lines.push(`  ${f}`);
+        lines.push(`  ${s(f)}`);
       }
     }
 
     if (contract.resolutionNotes) {
       lines.push("");
-      lines.push(`RESOLUTION: ${contract.resolutionNotes}`);
+      lines.push(`RESOLUTION: ${s(contract.resolutionNotes)}`);
     }
 
     lines.push("=========================");
@@ -302,5 +314,21 @@ export class NegotiatedHandoff {
   private readContract(contractId: string): NegotiatedContract | null {
     const filePath = join(this.contractDir, `contract-${contractId}.json`);
     return readJSON<NegotiatedContract>(filePath);
+  }
+
+  private findContractForProposal(proposalId: string): NegotiatedContract | null {
+    if (!existsSync(this.contractDir)) return null;
+
+    const files = readdirSync(this.contractDir)
+      .filter(f => f.startsWith("contract-") && f.endsWith(".json"));
+
+    for (const file of files) {
+      const data = readJSON<NegotiatedContract>(join(this.contractDir, file));
+      if (data && data.proposal.proposalId === proposalId) {
+        return data;
+      }
+    }
+
+    return null;
   }
 }

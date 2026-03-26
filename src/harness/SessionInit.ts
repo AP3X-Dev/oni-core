@@ -9,6 +9,7 @@
 import type { SessionBridge, SessionArtifact, SessionMode } from "./SessionBridge.js";
 import type { FeatureRegistry, Feature } from "./FeatureRegistry.js";
 import { EnvironmentUnhealthyError } from "./errors.js";
+import { sanitizeForPrompt } from "./utils.js";
 
 // ----------------------------------------------------------------
 // Types
@@ -55,6 +56,8 @@ export async function runSessionInit(config: SessionInitConfig): Promise<Session
   // 3. Run smoke test if resuming and smokeTest is provided
   let environmentHealthy = true;
   let smokeTestSkipped = true;
+  let fixerAttempted = false;
+  let fixerSucceeded = false;
 
   if (mode === "resume" && smokeTest) {
     smokeTestSkipped = false;
@@ -67,11 +70,13 @@ export async function runSessionInit(config: SessionInitConfig): Promise<Session
     // 4. Handle broken environment
     if (!environmentHealthy) {
       if (onBrokenEnvironment === "fix" && environmentFixer) {
+        fixerAttempted = true;
         try {
           await environmentFixer();
           // Re-run smoke test after fix
           try {
             environmentHealthy = await withTimeout(smokeTest(), smokeTestTimeoutMs);
+            fixerSucceeded = environmentHealthy;
           } catch {
             environmentHealthy = false;
           }
@@ -105,7 +110,10 @@ export async function runSessionInit(config: SessionInitConfig): Promise<Session
   }
 
   // 6. Build context summary
-  const contextSummary = buildContextSummary(mode, artifact, nextFeature, environmentHealthy, smokeTestSkipped);
+  const contextSummary = buildContextSummary(
+    mode, artifact, nextFeature, environmentHealthy, smokeTestSkipped,
+    fixerAttempted, fixerSucceeded,
+  );
 
   return {
     mode,
@@ -127,6 +135,8 @@ function buildContextSummary(
   nextFeature: Feature | null,
   environmentHealthy: boolean,
   smokeTestSkipped: boolean,
+  fixerAttempted: boolean,
+  fixerSucceeded: boolean,
 ): string {
   const lines: string[] = [
     "=== SESSION CONTEXT ===",
@@ -134,32 +144,36 @@ function buildContextSummary(
   ];
 
   if (mode === "resume" && artifact) {
-    lines.push(`Previous session completed: ${artifact.progress.summary}`);
+    lines.push(`Previous session completed: ${sanitizeForPrompt(artifact.progress.summary)}`);
 
     if (artifact.nextSession.blockers.length > 0) {
-      lines.push(`BLOCKERS: ${artifact.nextSession.blockers.join("; ")}`);
+      const sanitizedBlockers = artifact.nextSession.blockers.map(b => sanitizeForPrompt(b));
+      lines.push(`BLOCKERS: ${sanitizedBlockers.join("; ")}`);
     }
   }
 
   if (smokeTestSkipped) {
     lines.push("Environment: unknown (smoke test skipped)");
+  } else if (environmentHealthy) {
+    const suffix = fixerAttempted && fixerSucceeded ? " (auto-fixed)" : "";
+    lines.push(`Environment: healthy${suffix}`);
   } else {
-    const healthStr = environmentHealthy ? "healthy" : "UNHEALTHY — was auto-fixed";
-    lines.push(`Environment: ${healthStr}`);
+    const detail = fixerAttempted ? " (auto-fix attempted but failed)" : "";
+    lines.push(`Environment: UNHEALTHY${detail}`);
   }
 
   if (nextFeature) {
-    lines.push(`Next feature to work on: [${nextFeature.id}] ${nextFeature.description}`);
+    lines.push(`Next feature to work on: [${nextFeature.id}] ${sanitizeForPrompt(nextFeature.description)}`);
     lines.push("Verification steps:");
     for (let i = 0; i < nextFeature.steps.length; i++) {
-      lines.push(`  ${i + 1}. ${nextFeature.steps[i]}`);
+      lines.push(`  ${i + 1}. ${sanitizeForPrompt(nextFeature.steps[i]!)}`);
     }
   } else {
     lines.push("Next feature to work on: none (all features passing or registry empty)");
   }
 
   if (mode === "resume" && artifact) {
-    lines.push(`Suggested first action: ${artifact.nextSession.suggestedFirstAction}`);
+    lines.push(`Suggested first action: ${sanitizeForPrompt(artifact.nextSession.suggestedFirstAction)}`);
   }
 
   lines.push("======================");
