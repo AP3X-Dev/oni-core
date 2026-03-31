@@ -7,7 +7,7 @@
 // ============================================================
 
 import { START, END } from "../types.js";
-import type { RubricConfig, RubricScore, VerificationResult, Vulnerability, Patch, VulnerabilitySeverity, SwarmAgentDef, BranchState } from "./types.js";
+import type { RubricConfig, RubricScore, VerificationResult, Vulnerability, Patch, VulnerabilitySeverity, SwarmAgentDef, BranchState, SprintContract, SprintAttempt, SprintResult } from "./types.js";
 import type {
   BaseSwarmState,
   CritiqueRefineConfig,
@@ -18,6 +18,7 @@ import type {
   SocraticElicitConfig,
   AutoResearchConfig,
   TreeOfThoughtConfig,
+  AdversarialDevConfig,
 } from "./config.js";
 import { runWithTimeout } from "../internal/timeout.js";
 
@@ -1048,6 +1049,205 @@ export function buildTreeOfThought<S extends BaseSwarmState>(
 
   swarm.inner.addEdge(START, "__tot_runner__");
   swarm.inner.addEdge("__tot_runner__", END);
+
+  return swarm;
+}
+
+// ----------------------------------------------------------------
+// buildAdversarialDev
+// ----------------------------------------------------------------
+
+export function buildAdversarialDev<S extends BaseSwarmState>(
+  config: AdversarialDevConfig<S>,
+  swarm: SwarmGraph<S>,
+): SwarmGraph<S> {
+  const {
+    planner,
+    generator,
+    evaluator,
+    passThreshold,
+    maxSprints,
+    maxRetriesPerSprint,
+    onSprintComplete,
+  } = config;
+  const contractNegotiationRounds = config.contractNegotiationRounds ?? 2;
+
+  swarm.registry.register(planner);
+  swarm.agentIds.add(planner.id);
+  swarm.registry.register(generator);
+  swarm.agentIds.add(generator.id);
+  swarm.registry.register(evaluator);
+  swarm.agentIds.add(evaluator.id);
+
+  swarm.inner.addNode("__ad_runner__", async (state: S, cfg?) => {
+    const sprints: SprintResult[] = ((state.context as Record<string, unknown>)?.sprints as SprintResult[] | undefined) ?? [];
+    let plannerDone = false;
+
+    for (let sprintIndex = 0; sprintIndex < maxSprints; sprintIndex++) {
+      // ── Phase 1: Plan ──
+      const plannerInput = {
+        ...state,
+        context: {
+          ...(state.context ?? {}),
+          sprints,
+          sprintIndex,
+        },
+      } as S;
+
+      const plannerResult = await planner.skeleton.invoke(
+        plannerInput,
+        { ...cfg, agentId: planner.id },
+      );
+      const plannerCtx = (plannerResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+
+      if (plannerCtx?.plannerDone) {
+        plannerDone = true;
+        break;
+      }
+
+      const sprintDescription = (plannerCtx?.sprintDescription as string | undefined) ?? "";
+      const suggestedCriteria = (plannerCtx?.suggestedCriteria as string[] | undefined) ?? [];
+      const constraints = (plannerCtx?.constraints as string[] | undefined) ?? [];
+
+      // ── Phase 2: Contract Negotiation ──
+      let acceptanceCriteria: string[] = [...suggestedCriteria];
+
+      for (let round = 0; round < contractNegotiationRounds; round++) {
+        const negotiationCtxBase = {
+          ...(state.context ?? {}),
+          sprints,
+          sprintIndex,
+          sprintDescription,
+          acceptanceCriteria,
+          constraints,
+          negotiationPhase: true,
+          negotiationRound: round,
+        };
+
+        // Generator refines criteria
+        const genNegResult = await generator.skeleton.invoke(
+          { ...state, context: negotiationCtxBase } as S,
+          { ...cfg, agentId: generator.id },
+        );
+        const genNegCtx = (genNegResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+        if (genNegCtx?.acceptanceCriteria) {
+          acceptanceCriteria = genNegCtx.acceptanceCriteria as string[];
+        }
+
+        // Evaluator refines criteria
+        const evalNegResult = await evaluator.skeleton.invoke(
+          { ...state, context: { ...negotiationCtxBase, acceptanceCriteria } } as S,
+          { ...cfg, agentId: evaluator.id },
+        );
+        const evalNegCtx = (evalNegResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+        if (evalNegCtx?.acceptanceCriteria) {
+          acceptanceCriteria = evalNegCtx.acceptanceCriteria as string[];
+        }
+      }
+
+      // Lock contract
+      const contract: SprintContract = {
+        sprintIndex,
+        description: sprintDescription,
+        acceptanceCriteria,
+        constraints,
+      };
+
+      // ── Phase 3: Generate / Evaluate loop ──
+      const attempts: SprintAttempt[] = [];
+      let sprintPassed = false;
+      let finalScore = 0;
+      let previousFeedback: string | undefined;
+      let generatorOutput: unknown;
+
+      for (let attemptIndex = 0; attemptIndex <= maxRetriesPerSprint; attemptIndex++) {
+        // Generate
+        const genResult = await generator.skeleton.invoke(
+          {
+            ...state,
+            context: {
+              ...(state.context ?? {}),
+              sprints,
+              sprintIndex,
+              contract,
+              attemptIndex,
+              previousFeedback,
+              negotiationPhase: false,
+            },
+          } as S,
+          { ...cfg, agentId: generator.id },
+        );
+        const genCtx = (genResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+        generatorOutput = genCtx?.generatorOutput ?? genCtx ?? genResult;
+
+        // Evaluate
+        const evalResult = await evaluator.skeleton.invoke(
+          {
+            ...state,
+            context: {
+              ...(state.context ?? {}),
+              sprints,
+              sprintIndex,
+              contract,
+              generatorOutput,
+              attemptIndex,
+              negotiationPhase: false,
+            },
+          } as S,
+          { ...cfg, agentId: evaluator.id },
+        );
+        const evalCtx = (evalResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+        const score = (evalCtx?.score as number | undefined) ?? 0;
+        const feedback = (evalCtx?.feedback as string | undefined) ?? "";
+
+        const passed = score >= passThreshold;
+
+        const attempt: SprintAttempt = {
+          attemptIndex,
+          score,
+          feedback,
+          passed,
+        };
+        attempts.push(attempt);
+
+        finalScore = score;
+        previousFeedback = feedback;
+
+        if (passed) {
+          sprintPassed = true;
+          break;
+        }
+      }
+
+      // ── Phase 4: Record sprint result ──
+      const sprintResult: SprintResult = {
+        sprintIndex,
+        contract,
+        attempts,
+        passed: sprintPassed,
+        finalScore,
+      };
+
+      sprints.push(sprintResult);
+
+      if (onSprintComplete) {
+        await onSprintComplete(sprintResult);
+      }
+    }
+
+    return {
+      context: {
+        ...(state.context ?? {}),
+        sprints,
+        plannerDone,
+        sprintIndex: sprints.length,
+      },
+      done: true,
+    } as Partial<S>;
+  });
+
+  swarm.inner.addEdge(START, "__ad_runner__");
+  swarm.inner.addEdge("__ad_runner__", END);
 
   return swarm;
 }
