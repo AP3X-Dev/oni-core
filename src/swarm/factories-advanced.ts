@@ -12,7 +12,9 @@ import type {
   BaseSwarmState,
   CritiqueRefineConfig,
   StepwiseVerifyConfig,
+  EnsembleVoteConfig,
 } from "./config.js";
+import { runWithTimeout } from "../internal/timeout.js";
 
 // SwarmGraph — type-only to avoid circular dep
 import type { SwarmGraph } from "./graph.js";
@@ -223,6 +225,112 @@ export function buildStepwiseVerify<S extends BaseSwarmState>(
 
   swarm.inner.addEdge(START, "__sv_runner__");
   swarm.inner.addEdge("__sv_runner__", END);
+
+  return swarm;
+}
+
+// ----------------------------------------------------------------
+// buildEnsembleVote
+// ----------------------------------------------------------------
+
+export function buildEnsembleVote<S extends BaseSwarmState>(
+  config: EnsembleVoteConfig<S>,
+  swarm: SwarmGraph<S>,
+): SwarmGraph<S> {
+  const timeoutMs = config.timeoutMs;
+
+  for (const agent of config.agents) {
+    swarm.registry.register(agent);
+    swarm.agentIds.add(agent.id);
+  }
+
+  swarm.inner.addNode("__ev_runner__", async (state: S, cfg?) => {
+    async function runAgent(agent: typeof config.agents[0]) {
+      try {
+        const result = await runWithTimeout(
+          () => agent.skeleton.invoke(
+            { ...state } as S,
+            { ...cfg, agentId: agent.id },
+          ),
+          timeoutMs,
+          () => new Error(`Agent "${agent.id}" timed out after ${timeoutMs}ms`),
+        );
+        return { id: agent.id, result, error: null };
+      } catch (err) {
+        return { id: agent.id, result: null, error: err };
+      }
+    }
+
+    const allResults = await Promise.all(config.agents.map(runAgent));
+
+    const agentResults: Record<string, unknown> = {};
+    for (const { id, result, error } of allResults) {
+      if (error) {
+        agentResults[id] = {
+          _error: true, agent: id,
+          error: String(error instanceof Error ? error.message : error),
+        };
+      } else {
+        agentResults[id] = result;
+      }
+    }
+
+    const stateWithResults = { ...state, agentResults } as S;
+
+    // Aggregate based on mode
+    if (typeof config.mode === "function") {
+      const custom = config.mode(agentResults, stateWithResults);
+      return { agentResults, ...custom, done: true } as Partial<S>;
+    }
+
+    if (config.mode === "vote" && config.judge) {
+      const resultsText = Object.entries(agentResults)
+        .filter(([, v]) => !(v as any)?._error)
+        .map(([id, r]) => `${id}: ${JSON.stringify(r)}`)
+        .join("\n\n");
+
+      const response = await config.judge.model.chat({
+        messages: [{ role: "user", content: `Pick the best response and explain why.\n\n${resultsText}\n\nRespond with JSON: {"winner": "agent-id", "reasoning": "why"}` }],
+        systemPrompt: config.judge.systemPrompt ?? "You are evaluating multiple agent responses. Pick the best one.",
+      });
+
+      let winner: string | null = null;
+      let reasoning = "";
+      try {
+        const parsed = JSON.parse(response.content);
+        winner = parsed.winner ?? null;
+        reasoning = parsed.reasoning ?? "";
+      } catch {
+        winner = null;
+        reasoning = response.content;
+      }
+
+      return {
+        agentResults,
+        context: { ...(state.context ?? {}), winner, reasoning },
+        done: true,
+      } as Partial<S>;
+    }
+
+    if (config.mode === "synthesize" && config.synthesizer) {
+      const synthResult = await config.synthesizer.skeleton.invoke(
+        stateWithResults,
+        { ...cfg, agentId: config.synthesizer.id },
+      );
+      const synthCtx = (synthResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+
+      return {
+        agentResults,
+        context: { ...(state.context ?? {}), ...(synthCtx ?? {}) },
+        done: true,
+      } as Partial<S>;
+    }
+
+    return { agentResults, done: true } as Partial<S>;
+  });
+
+  swarm.inner.addEdge(START, "__ev_runner__");
+  swarm.inner.addEdge("__ev_runner__", END);
 
   return swarm;
 }
