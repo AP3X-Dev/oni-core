@@ -31,6 +31,7 @@ import type {
   SpeculativeExecutionConfig,
   RedTeamConfig,
   SocraticElicitConfig,
+  AutoResearchConfig,
 } from "./config.js";
 import { createSupervisorNode, type SupervisorState } from "./supervisor.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
@@ -49,6 +50,7 @@ import {
   buildSpeculativeExecution,
   buildRedTeam,
   buildSocraticElicit,
+  buildAutoResearch,
 } from "./factories-advanced.js";
 
 // ----------------------------------------------------------------
@@ -326,6 +328,21 @@ export class SwarmGraph<S extends BaseSwarmState> {
     config: SocraticElicitConfig<S>,
   ): SwarmGraph<S> {
     return buildSocraticElicit(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: auto-research template ----
+
+  /**
+   * Create a recursive research loop.
+   * A decomposer breaks the question into sub-questions, a researcher
+   * investigates each in parallel, and a synthesizer merges findings,
+   * scores confidence, and identifies gaps. The loop recurses on gaps
+   * until confidence >= threshold, no gaps remain, or maxDepth is hit.
+   */
+  static autoResearch<S extends BaseSwarmState>(
+    config: AutoResearchConfig<S>,
+  ): SwarmGraph<S> {
+    return buildAutoResearch(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
   }
 
   // ---- Agent registration ----
