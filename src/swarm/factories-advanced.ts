@@ -13,6 +13,7 @@ import type {
   CritiqueRefineConfig,
   StepwiseVerifyConfig,
   EnsembleVoteConfig,
+  SpeculativeExecutionConfig,
 } from "./config.js";
 import { runWithTimeout } from "../internal/timeout.js";
 
@@ -331,6 +332,124 @@ export function buildEnsembleVote<S extends BaseSwarmState>(
 
   swarm.inner.addEdge(START, "__ev_runner__");
   swarm.inner.addEdge("__ev_runner__", END);
+
+  return swarm;
+}
+
+// ----------------------------------------------------------------
+// buildSpeculativeExecution
+// ----------------------------------------------------------------
+
+export function buildSpeculativeExecution<S extends BaseSwarmState>(
+  config: SpeculativeExecutionConfig<S>,
+  swarm: SwarmGraph<S>,
+): SwarmGraph<S> {
+  const timeoutMs = config.timeoutMs;
+  const perStrategyTimeoutMs = config.perStrategyTimeoutMs;
+
+  for (const agent of config.strategies) {
+    swarm.registry.register(agent);
+    swarm.agentIds.add(agent.id);
+  }
+
+  swarm.inner.addNode("__se_race__", async (state: S, cfg?) => {
+    type RaceResult = { id: string; result: unknown; error: unknown | null };
+    const abortController = new AbortController();
+
+    const strategyPromises: Promise<RaceResult>[] = config.strategies.map((agent) => {
+      let p: Promise<RaceResult> = agent.skeleton
+        .invoke(
+          { ...state } as S,
+          { ...cfg, agentId: agent.id, signal: abortController.signal },
+        )
+        .then(
+          (result) => ({ id: agent.id, result, error: null } as RaceResult),
+          (err) => ({ id: agent.id, result: null, error: err } as RaceResult),
+        );
+
+      if (perStrategyTimeoutMs != null) {
+        let timer: ReturnType<typeof setTimeout>;
+        const timeoutP = new Promise<RaceResult>((resolve) => {
+          timer = setTimeout(
+            () => resolve({ id: agent.id, result: null, error: new Error("timeout") }),
+            perStrategyTimeoutMs,
+          );
+        });
+        p = Promise.race([p, timeoutP]).finally(() => clearTimeout(timer!));
+      }
+      return p;
+    });
+
+    let globalTimer: ReturnType<typeof setTimeout> | undefined;
+    if (timeoutMs != null) {
+      globalTimer = setTimeout(() => abortController.abort(), timeoutMs);
+    }
+
+    const allResults: RaceResult[] = [];
+
+    const winner = await new Promise<RaceResult | null>((resolve) => {
+      let resolved = false;
+      let remaining = strategyPromises.length;
+      if (remaining === 0) { resolve(null); return; }
+
+      for (const p of strategyPromises) {
+        p.then(async (r) => {
+          allResults.push(r);
+          if (resolved) return;
+
+          let valid = false;
+          try {
+            if (!r.error) valid = await config.validator(r.result, state);
+          } catch { /* validator threw = not valid */ }
+
+          if (valid) {
+            resolved = true;
+            resolve(r);
+            abortController.abort();
+          } else {
+            remaining--;
+            if (remaining === 0) resolve(null);
+          }
+        });
+      }
+    });
+
+    if (globalTimer) clearTimeout(globalTimer);
+
+    let winnerId: string | null = null;
+    let winnerResult: unknown = null;
+    const cancelledStrategies: string[] = [];
+
+    if (winner) {
+      winnerId = winner.id;
+      winnerResult = winner.result;
+      for (const agent of config.strategies) {
+        if (agent.id !== winnerId) {
+          cancelledStrategies.push(agent.id);
+          try { await config.onCancel?.(agent.id); } catch { /* swallow */ }
+        }
+      }
+    }
+
+    const agentResults: Record<string, unknown> = {};
+    for (const r of allResults) {
+      agentResults[r.id] = r.error ? { _error: true, error: String(r.error) } : r.result;
+    }
+
+    return {
+      agentResults,
+      context: {
+        ...(state.context ?? {}),
+        winnerId,
+        winnerResult,
+        cancelledStrategies,
+      },
+      done: true,
+    } as Partial<S>;
+  });
+
+  swarm.inner.addEdge(START, "__se_race__");
+  swarm.inner.addEdge("__se_race__", END);
 
   return swarm;
 }
