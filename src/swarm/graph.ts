@@ -30,6 +30,7 @@ import type {
   EnsembleVoteConfig,
   SpeculativeExecutionConfig,
   RedTeamConfig,
+  SocraticElicitConfig,
 } from "./config.js";
 import { createSupervisorNode, type SupervisorState } from "./supervisor.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
@@ -47,6 +48,7 @@ import {
   buildEnsembleVote,
   buildSpeculativeExecution,
   buildRedTeam,
+  buildSocraticElicit,
 } from "./factories-advanced.js";
 
 // ----------------------------------------------------------------
@@ -310,6 +312,20 @@ export class SwarmGraph<S extends BaseSwarmState> {
     config: RedTeamConfig<S>,
   ): SwarmGraph<S> {
     return buildRedTeam(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: socratic-elicit template ----
+
+  /**
+   * Create a Socratic elicitation loop.
+   * An interviewer asks questions to a respondent (agent or human interrupt),
+   * tracking coverage across defined dimensions. When enough dimensions are
+   * covered or maxQuestions is reached, a synthesizer produces a final output.
+   */
+  static socraticElicit<S extends BaseSwarmState>(
+    config: SocraticElicitConfig<S>,
+  ): SwarmGraph<S> {
+    return buildSocraticElicit(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
   }
 
   // ---- Agent registration ----

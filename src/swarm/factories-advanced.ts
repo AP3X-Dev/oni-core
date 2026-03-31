@@ -7,7 +7,7 @@
 // ============================================================
 
 import { START, END } from "../types.js";
-import type { RubricConfig, RubricScore, VerificationResult, Vulnerability, Patch, VulnerabilitySeverity } from "./types.js";
+import type { RubricConfig, RubricScore, VerificationResult, Vulnerability, Patch, VulnerabilitySeverity, SwarmAgentDef } from "./types.js";
 import type {
   BaseSwarmState,
   CritiqueRefineConfig,
@@ -15,6 +15,7 @@ import type {
   EnsembleVoteConfig,
   SpeculativeExecutionConfig,
   RedTeamConfig,
+  SocraticElicitConfig,
 } from "./config.js";
 import { runWithTimeout } from "../internal/timeout.js";
 
@@ -566,6 +567,176 @@ export function buildRedTeam<S extends BaseSwarmState>(
 
   swarm.inner.addEdge(START, "__rt_runner__");
   swarm.inner.addEdge("__rt_runner__", END);
+
+  return swarm;
+}
+
+// ----------------------------------------------------------------
+// buildSocraticElicit
+// ----------------------------------------------------------------
+
+export function buildSocraticElicit<S extends BaseSwarmState>(
+  config: SocraticElicitConfig<S>,
+  swarm: SwarmGraph<S>,
+): SwarmGraph<S> {
+  const {
+    interviewer,
+    respondent,
+    synthesizer,
+    coverageDimensions,
+    completionThreshold,
+    maxQuestions,
+    outputFormat,
+  } = config;
+
+  // Register interviewer always
+  swarm.registry.register(interviewer);
+  swarm.agentIds.add(interviewer.id);
+
+  // Register respondent only if it's an agent (not "interrupt")
+  if (respondent !== "interrupt") {
+    const respondentDef = respondent as SwarmAgentDef<S>;
+    swarm.registry.register(respondentDef);
+    swarm.agentIds.add(respondentDef.id);
+  }
+
+  // Register synthesizer if distinct from interviewer
+  if (synthesizer && synthesizer.id !== interviewer.id) {
+    swarm.registry.register(synthesizer);
+    swarm.agentIds.add(synthesizer.id);
+  }
+
+  swarm.inner.addNode("__so_runner__", async (state: S, cfg?) => {
+    const dimensions = coverageDimensions;
+    let coverageMap: Record<string, boolean> =
+      ((state.context as Record<string, unknown>)?.coverageMap as Record<string, boolean> | undefined) ??
+      Object.fromEntries(dimensions.map((d) => [d, false]));
+
+    const transcript: Array<{ question: string; answer: string; questionIndex: number }> =
+      ((state.context as Record<string, unknown>)?.transcript as Array<{ question: string; answer: string; questionIndex: number }> | undefined) ?? [];
+
+    let questionCount: number =
+      ((state.context as Record<string, unknown>)?.questionCount as number | undefined) ?? 0;
+
+    // ── Interview loop ──
+    while (true) {
+      const coveredCount = Object.values(coverageMap).filter(Boolean).length;
+
+      // Check coverage threshold
+      if (dimensions.length > 0 && coveredCount / dimensions.length >= completionThreshold) {
+        break;
+      }
+
+      // Check max questions
+      if (questionCount >= maxQuestions) {
+        break;
+      }
+
+      // ── Step 1: Run interviewer ──
+      const interviewerInput = {
+        ...state,
+        context: {
+          ...(state.context ?? {}),
+          coverageMap,
+          transcript,
+          coverageDimensions: dimensions,
+          questionCount,
+        },
+      } as S;
+
+      const interviewerResult = await interviewer.skeleton.invoke(
+        interviewerInput,
+        { ...cfg, agentId: interviewer.id },
+      );
+      const interviewerCtx = (interviewerResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+
+      // Extract currentQuestion and updated coverageMap from interviewer output
+      const currentQuestion = (interviewerCtx?.currentQuestion as string | undefined) ?? "";
+      if (interviewerCtx?.coverageMap != null) {
+        coverageMap = { ...coverageMap, ...(interviewerCtx.coverageMap as Record<string, boolean>) };
+      }
+
+      // ── Step 2: Run respondent ──
+      let currentAnswer: string;
+
+      if (respondent === "interrupt") {
+        // Full interrupt() integration is a future enhancement
+        currentAnswer = "[INTERRUPT: awaiting human input]";
+      } else {
+        const respondentDef = respondent as SwarmAgentDef<S>;
+        const respondentInput = {
+          ...state,
+          context: {
+            ...(state.context ?? {}),
+            coverageMap,
+            transcript,
+            coverageDimensions: dimensions,
+            questionCount,
+            currentQuestion,
+          },
+        } as S;
+
+        const respondentResult = await respondentDef.skeleton.invoke(
+          respondentInput,
+          { ...cfg, agentId: respondentDef.id },
+        );
+        const respondentCtx = (respondentResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+        currentAnswer = (respondentCtx?.currentAnswer as string | undefined) ?? "";
+      }
+
+      // ── Step 3: Append to transcript ──
+      transcript.push({ question: currentQuestion, answer: currentAnswer, questionIndex: questionCount });
+      questionCount++;
+
+      // ── Step 4: Check coverage after this exchange ──
+      const coveredNow = Object.values(coverageMap).filter(Boolean).length;
+      if (dimensions.length > 0 && coveredNow / dimensions.length >= completionThreshold) {
+        break;
+      }
+
+      // ── Step 5: Check maxQuestions ──
+      if (questionCount >= maxQuestions) {
+        break;
+      }
+    }
+
+    // ── Step 6: Run synthesizer ──
+    const synthAgent = synthesizer ?? interviewer;
+    const synthInput = {
+      ...state,
+      context: {
+        ...(state.context ?? {}),
+        coverageMap,
+        transcript,
+        coverageDimensions: dimensions,
+        questionCount,
+        synthesize: true,
+        outputFormat: outputFormat ?? null,
+      },
+    } as S;
+
+    const synthResult = await synthAgent.skeleton.invoke(
+      synthInput,
+      { ...cfg, agentId: synthAgent.id },
+    );
+    const synthCtx = (synthResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+    const synthesizedOutput = (synthCtx?.synthesizedOutput as unknown) ?? null;
+
+    return {
+      context: {
+        ...(state.context ?? {}),
+        coverageMap,
+        transcript,
+        coverageDimensions: dimensions,
+        questionCount,
+        synthesizedOutput,
+      },
+      done: true,
+    } as Partial<S>;
+  });
+
+  swarm.inner.addEdge(START, "__so_runner__");
+  swarm.inner.addEdge("__so_runner__", END);
 
   return swarm;
 }
