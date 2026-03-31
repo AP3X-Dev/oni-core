@@ -29,6 +29,7 @@ import type {
   StepwiseVerifyConfig,
   EnsembleVoteConfig,
   SpeculativeExecutionConfig,
+  RedTeamConfig,
 } from "./config.js";
 import { createSupervisorNode, type SupervisorState } from "./supervisor.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
@@ -45,6 +46,7 @@ import {
   buildStepwiseVerify,
   buildEnsembleVote,
   buildSpeculativeExecution,
+  buildRedTeam,
 } from "./factories-advanced.js";
 
 // ----------------------------------------------------------------
@@ -294,6 +296,20 @@ export class SwarmGraph<S extends BaseSwarmState> {
     config: SpeculativeExecutionConfig<S>,
   ): SwarmGraph<S> {
     return buildSpeculativeExecution(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: red-team template ----
+
+  /**
+   * Create an adversarial security loop.
+   * An attacker agent finds vulnerabilities, a builder agent patches them.
+   * Repeats until the attacker finds nothing significant or maxRounds is exhausted.
+   * Optionally filter low-severity findings with severityThreshold.
+   */
+  static redTeam<S extends BaseSwarmState>(
+    config: RedTeamConfig<S>,
+  ): SwarmGraph<S> {
+    return buildRedTeam(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
   }
 
   // ---- Agent registration ----
