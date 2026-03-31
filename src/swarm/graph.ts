@@ -27,6 +27,7 @@ import type {
   SwarmCompileOpts, SwarmExtensions,
   CritiqueRefineConfig,
   StepwiseVerifyConfig,
+  EnsembleVoteConfig,
 } from "./config.js";
 import { createSupervisorNode, type SupervisorState } from "./supervisor.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
@@ -41,6 +42,7 @@ import {
 import {
   buildCritiqueRefine,
   buildStepwiseVerify,
+  buildEnsembleVote,
 } from "./factories-advanced.js";
 
 // ----------------------------------------------------------------
@@ -266,6 +268,18 @@ export class SwarmGraph<S extends BaseSwarmState> {
     config: StepwiseVerifyConfig<S>,
   ): SwarmGraph<S> {
     return buildStepwiseVerify(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: ensemble-vote template ----
+
+  /**
+   * Run all agents in parallel and aggregate results via vote (judge picks best),
+   * synthesize (a synthesizer agent merges all outputs), or a custom aggregator function.
+   */
+  static ensembleVote<S extends BaseSwarmState>(
+    config: EnsembleVoteConfig<S>,
+  ): SwarmGraph<S> {
+    return buildEnsembleVote(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
   }
 
   // ---- Agent registration ----
