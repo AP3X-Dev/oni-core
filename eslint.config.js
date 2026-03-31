@@ -37,7 +37,9 @@ export default [
       'packages/*/src/**/*.test.ts', 'packages/*/src/__tests__/**/*.ts',
     ],
     rules: {
+      '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
+      'prefer-const': 'warn',
     },
   },
 ];

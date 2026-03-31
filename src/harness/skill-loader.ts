@@ -265,8 +265,11 @@ export class SkillLoader {
     const skill = this.skills.get(name);
     if (!skill) return false;
 
-    const argsBlock = args ? `\n\n## Input\n\n${args}` : "";
-    this.pendingInjection = `<skill-instructions name="${escXml(name)}">\n${skill.content}${argsBlock}\n</skill-instructions>`;
+    const argsBlock = args ? `\n\n## Input\n\n${escXml(args)}` : "";
+    this.pendingInjection =
+      `<skill-instructions name="${escXml(name)}">\n` +
+      `${escXml(skill.content)}${argsBlock}\n` +
+      `</skill-instructions>`;
     return true;
   }
 

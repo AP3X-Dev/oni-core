@@ -54,7 +54,7 @@ export class PostgresCheckpointer<S> implements ONICheckpointer<S> {
       "SELECT * FROM oni_checkpoints WHERE thread_id=$1 ORDER BY step DESC LIMIT 1",
       [threadId]
     );
-    return rows.length > 0 ? this.deserialize(rows[0]) : null;
+    return rows.length > 0 ? this.deserialize(rows[0]!) : null;
   }
 
   async put(cp: ONICheckpoint<S>): Promise<void> {

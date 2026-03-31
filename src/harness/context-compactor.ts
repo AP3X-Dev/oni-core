@@ -296,9 +296,7 @@ export class ContextCompactor {
     });
 
     const summaryMatch = /<summary>([\s\S]*?)<\/summary>/.exec(response.content);
-    const summaryText = summaryMatch
-      ? summaryMatch[1].trim()
-      : response.content.trim();
+    const summaryText = summaryMatch?.[1]?.trim() ?? response.content.trim();
 
     this._lastSummary = summaryText;
 
@@ -326,7 +324,9 @@ export class ContextCompactor {
 
     // Walk backwards to keep the most recent messages that fit in the budget
     for (let i = messages.length - 1; i >= 0; i--) {
-      const len = this.contentLength(messages[i]);
+      const msg = messages[i];
+      if (!msg) continue;
+      const len = this.contentLength(msg);
       if (totalChars + len > budget) {
         // If this is the most recent message (first one we examine) and nothing
         // has been kept yet, truncate it to fit rather than dropping it entirely
@@ -335,7 +335,6 @@ export class ContextCompactor {
           const remaining = budget - totalChars;
           const suffix = " [truncated]";
           const allowedChars = Math.max(0, remaining - suffix.length);
-          const msg = messages[i];
           let truncatedMsg: ONIModelMessage;
           if (typeof msg.content === "string") {
             truncatedMsg = { ...msg, content: msg.content.slice(0, allowedChars) + suffix };
@@ -357,7 +356,7 @@ export class ContextCompactor {
         break;
       }
       totalChars += len;
-      kept.unshift(messages[i]);
+      kept.unshift(msg);
     }
 
     return [

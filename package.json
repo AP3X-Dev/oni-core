@@ -1,6 +1,6 @@
 {
   "name": "@oni.bot/core",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "The graph execution engine for agent swarms — production-grade orchestration with zero dependencies",
   "type": "module",
   "sideEffects": false,
@@ -105,7 +105,7 @@
     "test:packages": "pnpm --filter './packages/*' run test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint src packages/*/src",
+    "lint": "eslint \"src/**/*.ts\" \"packages/*/src/**/*.ts\"",
     "verify": "pnpm run typecheck && pnpm test && pnpm run typecheck:packages && pnpm run test:packages",
     "demo": "tsx examples/demo-content-pipeline.ts",
     "bench": "tsx benchmarks/index.ts"

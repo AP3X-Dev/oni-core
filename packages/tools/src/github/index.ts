@@ -64,6 +64,12 @@ async function githubRequest(
     console.error(`[github] API error ${res.status} ${res.statusText} ${method} ${path}`);
     throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
   }
+  if (typeof res.text !== "function") {
+    if (typeof res.json === "function") {
+      return await res.json();
+    }
+    throw new Error(`GitHub API response for ${method} ${path} did not expose text() or json()`);
+  }
   const text = await res.text();
   try {
     return JSON.parse(text);
@@ -75,7 +81,7 @@ async function githubRequest(
 const GITHUB_SLUG_RE = /^[a-zA-Z0-9._-]+$/;
 
 /** Allowed branch name pattern: word chars, hyphens, dots, slashes, colons. */
-const BRANCH_NAME_RE = /^[\w\-\.\/\:]+$/;
+const BRANCH_NAME_RE = /^[\w./:-]+$/;
 const MAX_BRANCH_LENGTH = 255;
 
 function validateBranchName(name: string, label: string): void {
