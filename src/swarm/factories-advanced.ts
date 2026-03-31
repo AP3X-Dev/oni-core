@@ -16,6 +16,7 @@ import type {
   SpeculativeExecutionConfig,
   RedTeamConfig,
   SocraticElicitConfig,
+  AutoResearchConfig,
 } from "./config.js";
 import { runWithTimeout } from "../internal/timeout.js";
 
@@ -737,6 +738,149 @@ export function buildSocraticElicit<S extends BaseSwarmState>(
 
   swarm.inner.addEdge(START, "__so_runner__");
   swarm.inner.addEdge("__so_runner__", END);
+
+  return swarm;
+}
+
+// ----------------------------------------------------------------
+// buildAutoResearch
+// ----------------------------------------------------------------
+
+export function buildAutoResearch<S extends BaseSwarmState>(
+  config: AutoResearchConfig<S>,
+  swarm: SwarmGraph<S>,
+): SwarmGraph<S> {
+  const { decomposer, researcher, synthesizer, maxDepth, confidenceThreshold } = config;
+  const maxConcurrentSearches = config.maxConcurrentSearches ?? Infinity;
+
+  swarm.registry.register(decomposer);
+  swarm.agentIds.add(decomposer.id);
+  swarm.registry.register(researcher);
+  swarm.agentIds.add(researcher.id);
+  swarm.registry.register(synthesizer);
+  swarm.agentIds.add(synthesizer.id);
+
+  swarm.inner.addNode("__ar_runner__", async (state: S, cfg?) => {
+    let findings: Record<string, { subQuestion: string; answer: string; sources: unknown[] }> =
+      ((state.context as Record<string, unknown>)?.findings as Record<string, { subQuestion: string; answer: string; sources: unknown[] }> | undefined) ?? {};
+    let gaps: string[] =
+      ((state.context as Record<string, unknown>)?.gaps as string[] | undefined) ?? [];
+    let synthesis: string | undefined =
+      (state.context as Record<string, unknown>)?.synthesis as string | undefined;
+    let confidence = 0;
+    let currentDepth = 0;
+
+    // ── Research loop ──
+    for (let depth = 0; depth < maxDepth; depth++) {
+      // ── Step 1: Decompose ──
+      const decomposerInput = {
+        ...state,
+        context: {
+          ...(state.context ?? {}),
+          findings,
+          gaps,
+          currentDepth: depth,
+        },
+      } as S;
+
+      const decomposerResult = await decomposer.skeleton.invoke(
+        decomposerInput,
+        { ...cfg, agentId: decomposer.id },
+      );
+      const decomposerCtx = (decomposerResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+      const subQuestions: string[] = (decomposerCtx?.subQuestions as string[] | undefined) ?? [];
+
+      // ── Step 2: Terminate if no sub-questions ──
+      if (subQuestions.length === 0) {
+        break;
+      }
+
+      // ── Step 3: Research sub-questions in parallel (capped) ──
+      const cap = Math.min(subQuestions.length, maxConcurrentSearches);
+      const batches: string[][] = [];
+      for (let i = 0; i < subQuestions.length; i += cap) {
+        batches.push(subQuestions.slice(i, i + cap));
+      }
+
+      for (const batch of batches) {
+        const batchResults = await Promise.all(
+          batch.map(async (subQuestion) => {
+            const researcherInput = {
+              ...state,
+              context: {
+                ...(state.context ?? {}),
+                findings,
+                gaps,
+                currentDepth: depth,
+                currentSubQuestion: subQuestion,
+              },
+            } as S;
+
+            const researcherResult = await researcher.skeleton.invoke(
+              researcherInput,
+              { ...cfg, agentId: researcher.id },
+            );
+            const researcherCtx = (researcherResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+            const finding = researcherCtx?.finding as { subQuestion: string; answer: string; sources: unknown[] } | undefined;
+            return { subQuestion, finding };
+          }),
+        );
+
+        // ── Step 4: Accumulate findings ──
+        for (const { subQuestion, finding } of batchResults) {
+          const key = subQuestion;
+          findings = {
+            ...findings,
+            [key]: finding ?? { subQuestion, answer: "", sources: [] },
+          };
+        }
+      }
+
+      // ── Step 5: Synthesize ──
+      const synthesizerInput = {
+        ...state,
+        context: {
+          ...(state.context ?? {}),
+          findings,
+          currentDepth: depth,
+        },
+      } as S;
+
+      const synthesizerResult = await synthesizer.skeleton.invoke(
+        synthesizerInput,
+        { ...cfg, agentId: synthesizer.id },
+      );
+      const synthesizerCtx = (synthesizerResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+      synthesis = (synthesizerCtx?.synthesis as string | undefined) ?? synthesis;
+      confidence = (synthesizerCtx?.confidence as number | undefined) ?? 0;
+      gaps = (synthesizerCtx?.gaps as string[] | undefined) ?? [];
+
+      // Completed this depth
+      currentDepth = depth + 1;
+
+      // ── Step 6: Triple termination ──
+      if (confidence >= confidenceThreshold || gaps.length === 0) {
+        break;
+      }
+
+      // Gaps become the input for next depth's decomposer via context.gaps
+    }
+
+    return {
+      context: {
+        ...(state.context ?? {}),
+        findings,
+        synthesis,
+        confidence,
+        gaps,
+        currentDepth,
+      },
+      done: true,
+    } as Partial<S>;
+  });
+
+  swarm.inner.addEdge(START, "__ar_runner__");
+  swarm.inner.addEdge("__ar_runner__", END);
 
   return swarm;
 }
