@@ -33,6 +33,7 @@ import type {
   SocraticElicitConfig,
   AutoResearchConfig,
   TreeOfThoughtConfig,
+  AdversarialDevConfig,
 } from "./config.js";
 import { createSupervisorNode, type SupervisorState } from "./supervisor.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
@@ -53,6 +54,7 @@ import {
   buildSocraticElicit,
   buildAutoResearch,
   buildTreeOfThought,
+  buildAdversarialDev,
 } from "./factories-advanced.js";
 
 // ----------------------------------------------------------------
@@ -359,6 +361,20 @@ export class SwarmGraph<S extends BaseSwarmState> {
     config: TreeOfThoughtConfig<S>,
   ): SwarmGraph<S> {
     return buildTreeOfThought(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: adversarialDev template ----
+
+  /**
+   * Create an adversarial development topology with sprint contracts and retry budget.
+   * A planner produces sprint scope, generator and evaluator negotiate acceptance criteria,
+   * then generator builds and evaluator scores (0–10). Retries up to maxRetriesPerSprint
+   * before declaring the sprint failed. Repeats for maxSprints or until planner sets done.
+   */
+  static adversarialDev<S extends BaseSwarmState>(
+    config: AdversarialDevConfig<S>,
+  ): SwarmGraph<S> {
+    return buildAdversarialDev(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
   }
 
   // ---- Agent registration ----
