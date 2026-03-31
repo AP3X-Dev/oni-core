@@ -7,13 +7,14 @@
 // ============================================================
 
 import { START, END } from "../types.js";
-import type { RubricConfig, RubricScore, VerificationResult } from "./types.js";
+import type { RubricConfig, RubricScore, VerificationResult, Vulnerability, Patch, VulnerabilitySeverity } from "./types.js";
 import type {
   BaseSwarmState,
   CritiqueRefineConfig,
   StepwiseVerifyConfig,
   EnsembleVoteConfig,
   SpeculativeExecutionConfig,
+  RedTeamConfig,
 } from "./config.js";
 import { runWithTimeout } from "../internal/timeout.js";
 
@@ -450,6 +451,121 @@ export function buildSpeculativeExecution<S extends BaseSwarmState>(
 
   swarm.inner.addEdge(START, "__se_race__");
   swarm.inner.addEdge("__se_race__", END);
+
+  return swarm;
+}
+
+// ----------------------------------------------------------------
+// buildRedTeam
+// ----------------------------------------------------------------
+
+const SEVERITY_ORDER: Record<VulnerabilitySeverity, number> = {
+  low:      0,
+  medium:   1,
+  high:     2,
+  critical: 3,
+};
+
+export function buildRedTeam<S extends BaseSwarmState>(
+  config: RedTeamConfig<S>,
+  swarm: SwarmGraph<S>,
+): SwarmGraph<S> {
+  const maxRounds = config.maxRounds;
+  const severityThreshold = config.severityThreshold;
+
+  swarm.registry.register(config.attacker);
+  swarm.agentIds.add(config.attacker.id);
+  swarm.registry.register(config.builder);
+  swarm.agentIds.add(config.builder.id);
+
+  swarm.inner.addNode("__rt_runner__", async (state: S, cfg?) => {
+    let cumulativeVulnerabilities: Vulnerability[] =
+      ((state.context as Record<string, unknown>)?.vulnerabilities as Vulnerability[] | undefined) ?? [];
+    let cumulativePatches: Patch[] =
+      ((state.context as Record<string, unknown>)?.patches as Patch[] | undefined) ?? [];
+    let currentRound = 0;
+
+    for (let round = 0; round < maxRounds; round++) {
+      currentRound = round + 1;
+
+      // ── Run attacker ──
+      const attackerInput = {
+        ...state,
+        context: {
+          ...(state.context ?? {}),
+          vulnerabilities: cumulativeVulnerabilities,
+          patches: cumulativePatches,
+          attackSurface: config.attackSurface ?? [],
+          currentRound,
+        },
+      } as S;
+
+      const attackerResult = await config.attacker.skeleton.invoke(
+        attackerInput,
+        { ...cfg, agentId: config.attacker.id },
+      );
+      const attackerCtx = (attackerResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+      let newVulnerabilities: Vulnerability[] =
+        (attackerCtx?.newVulnerabilities as Vulnerability[] | undefined) ?? [];
+
+      // ── Filter by severity threshold ──
+      if (severityThreshold !== undefined) {
+        const minLevel = SEVERITY_ORDER[severityThreshold];
+        newVulnerabilities = newVulnerabilities.filter(
+          (v) => SEVERITY_ORDER[v.severity] >= minLevel,
+        );
+      }
+
+      // ── Termination: no significant findings ──
+      if (newVulnerabilities.length === 0) {
+        break;
+      }
+
+      // ── Accumulate vulnerabilities ──
+      cumulativeVulnerabilities = [...cumulativeVulnerabilities, ...newVulnerabilities];
+
+      // ── Run builder ──
+      const builderInput = {
+        ...state,
+        context: {
+          ...(state.context ?? {}),
+          vulnerabilities: cumulativeVulnerabilities,
+          patches: cumulativePatches,
+          newVulnerabilities,
+          currentRound,
+        },
+      } as S;
+
+      const builderResult = await config.builder.skeleton.invoke(
+        builderInput,
+        { ...cfg, agentId: config.builder.id },
+      );
+      const builderCtx = (builderResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+      const newPatches: Patch[] =
+        (builderCtx?.newPatches as Patch[] | undefined) ?? [];
+
+      cumulativePatches = [...cumulativePatches, ...newPatches];
+
+      // Update vulnerability statuses based on patches
+      const patchedIds = new Set(newPatches.map((p) => p.vulnerabilityId));
+      cumulativeVulnerabilities = cumulativeVulnerabilities.map((v) =>
+        patchedIds.has(v.id) ? { ...v, status: "patched" as const } : v,
+      );
+    }
+
+    return {
+      context: {
+        ...(state.context ?? {}),
+        vulnerabilities: cumulativeVulnerabilities,
+        patches: cumulativePatches,
+        currentRound,
+      },
+      done: true,
+    } as Partial<S>;
+  });
+
+  swarm.inner.addEdge(START, "__rt_runner__");
+  swarm.inner.addEdge("__rt_runner__", END);
 
   return swarm;
 }
