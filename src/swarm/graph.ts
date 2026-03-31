@@ -26,6 +26,7 @@ import type {
   MapReduceConfig, DebateConfig, HierarchicalMeshConfig,
   SwarmCompileOpts, SwarmExtensions,
   CritiqueRefineConfig,
+  StepwiseVerifyConfig,
 } from "./config.js";
 import { createSupervisorNode, type SupervisorState } from "./supervisor.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
@@ -39,6 +40,7 @@ import {
 } from "./factories.js";
 import {
   buildCritiqueRefine,
+  buildStepwiseVerify,
 } from "./factories-advanced.js";
 
 // ----------------------------------------------------------------
@@ -251,6 +253,19 @@ export class SwarmGraph<S extends BaseSwarmState> {
     config: CritiqueRefineConfig<S>,
   ): SwarmGraph<S> {
     return buildCritiqueRefine(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: stepwise-verify template ----
+
+  /**
+   * Create a sequential multi-stage pipeline where each stage's output
+   * is verified before proceeding. Supports halt or skip failure modes
+   * and per-stage retry with optional delay.
+   */
+  static stepwiseVerify<S extends BaseSwarmState>(
+    config: StepwiseVerifyConfig<S>,
+  ): SwarmGraph<S> {
+    return buildStepwiseVerify(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
   }
 
   // ---- Agent registration ----

@@ -7,10 +7,11 @@
 // ============================================================
 
 import { START, END } from "../types.js";
-import type { RubricConfig, RubricScore } from "./types.js";
+import type { RubricConfig, RubricScore, VerificationResult } from "./types.js";
 import type {
   BaseSwarmState,
   CritiqueRefineConfig,
+  StepwiseVerifyConfig,
 } from "./config.js";
 
 // SwarmGraph — type-only to avoid circular dep
@@ -99,6 +100,129 @@ export function buildCritiqueRefine<S extends BaseSwarmState>(
     if (state.done) return END;
     return "__cr_generator__";
   });
+
+  return swarm;
+}
+
+// ----------------------------------------------------------------
+// buildStepwiseVerify
+// ----------------------------------------------------------------
+
+export function buildStepwiseVerify<S extends BaseSwarmState>(
+  config: StepwiseVerifyConfig<S>,
+  swarm: SwarmGraph<S>,
+): SwarmGraph<S> {
+  const onFailure = config.onStageFailure ?? "halt";
+  const stages = config.stages;
+
+  for (const stage of stages) {
+    swarm.registry.register(stage.worker);
+    swarm.agentIds.add(stage.worker.id);
+  }
+
+  swarm.inner.addNode("__sv_runner__", async (state: S, cfg?) => {
+    const stageResults: Array<{
+      stageIndex: number;
+      workerId: string;
+      status: "passed" | "failed" | "skipped";
+      attempts: number;
+      verificationHistory: VerificationResult[];
+      output: unknown;
+    }> = [];
+
+    let failedStage: { stageIndex: number; reason: string } | null = null;
+    let accumulatedContext: Record<string, unknown> = { ...(state.context ?? {}) };
+
+    for (let i = 0; i < stages.length; i++) {
+      const stage = stages[i];
+      const verificationHistory: VerificationResult[] = [];
+      let passed = false;
+      let attempts = 0;
+      let lastOutput: unknown = null;
+
+      for (let attempt = 0; attempt <= stage.maxRetries; attempt++) {
+        attempts++;
+
+        const inputState = {
+          ...state,
+          context: {
+            ...accumulatedContext,
+            ...(verificationHistory.length > 0
+              ? { verifierFeedback: verificationHistory[verificationHistory.length - 1].feedback }
+              : {}),
+          },
+        } as S;
+
+        const workerResult = await stage.worker.skeleton.invoke(
+          inputState,
+          { ...cfg, agentId: stage.worker.id },
+        );
+        lastOutput = workerResult;
+
+        const workerCtx = (workerResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+        if (workerCtx) {
+          accumulatedContext = { ...accumulatedContext, ...workerCtx };
+        }
+
+        let verification: VerificationResult;
+        if (typeof stage.verifier === "function") {
+          verification = await stage.verifier(workerResult, { ...state, context: accumulatedContext } as S);
+        } else {
+          const verifierResult = await stage.verifier.skeleton.invoke(
+            { ...state, context: accumulatedContext } as S,
+            { ...cfg, agentId: stage.verifier.id },
+          );
+          const vCtx = (verifierResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+          verification = {
+            passed: !!(vCtx?.passed),
+            feedback: (vCtx?.feedback as string) ?? "",
+            confidence: vCtx?.confidence as number | undefined,
+          };
+        }
+
+        verificationHistory.push(verification);
+
+        if (verification.passed) {
+          passed = true;
+          break;
+        }
+
+        if (stage.retryDelayMs && attempt < stage.maxRetries) {
+          await new Promise((r) => setTimeout(r, stage.retryDelayMs));
+        }
+      }
+
+      if (passed) {
+        stageResults.push({
+          stageIndex: i, workerId: stage.worker.id,
+          status: "passed", attempts, verificationHistory, output: lastOutput,
+        });
+      } else if (onFailure === "halt") {
+        stageResults.push({
+          stageIndex: i, workerId: stage.worker.id,
+          status: "failed", attempts, verificationHistory, output: lastOutput,
+        });
+        failedStage = {
+          stageIndex: i,
+          reason: verificationHistory[verificationHistory.length - 1]?.feedback ?? "verification failed",
+        };
+        break;
+      } else {
+        stageResults.push({
+          stageIndex: i, workerId: stage.worker.id,
+          status: "skipped", attempts, verificationHistory, output: lastOutput,
+        });
+      }
+    }
+
+    return {
+      context: { ...accumulatedContext, stageResults, failedStage },
+      done: true,
+    } as Partial<S>;
+  });
+
+  swarm.inner.addEdge(START, "__sv_runner__");
+  swarm.inner.addEdge("__sv_runner__", END);
 
   return swarm;
 }
