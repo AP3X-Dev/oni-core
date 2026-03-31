@@ -32,6 +32,7 @@ import type {
   RedTeamConfig,
   SocraticElicitConfig,
   AutoResearchConfig,
+  TreeOfThoughtConfig,
 } from "./config.js";
 import { createSupervisorNode, type SupervisorState } from "./supervisor.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
@@ -51,6 +52,7 @@ import {
   buildRedTeam,
   buildSocraticElicit,
   buildAutoResearch,
+  buildTreeOfThought,
 } from "./factories-advanced.js";
 
 // ----------------------------------------------------------------
@@ -343,6 +345,20 @@ export class SwarmGraph<S extends BaseSwarmState> {
     config: AutoResearchConfig<S>,
   ): SwarmGraph<S> {
     return buildAutoResearch(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: tree-of-thought template ----
+
+  /**
+   * Create a branching Tree-of-Thought topology.
+   * At each depth, surviving branches are expanded by branchFactor, scored,
+   * and pruned via a dual strategy (topK cap + pruneThreshold floor).
+   * The highest-scoring surviving branch is selected as the final answer.
+   */
+  static treeOfThought<S extends BaseSwarmState>(
+    config: TreeOfThoughtConfig<S>,
+  ): SwarmGraph<S> {
+    return buildTreeOfThought(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
   }
 
   // ---- Agent registration ----
