@@ -28,6 +28,7 @@ import type {
   CritiqueRefineConfig,
   StepwiseVerifyConfig,
   EnsembleVoteConfig,
+  SpeculativeExecutionConfig,
 } from "./config.js";
 import { createSupervisorNode, type SupervisorState } from "./supervisor.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
@@ -43,6 +44,7 @@ import {
   buildCritiqueRefine,
   buildStepwiseVerify,
   buildEnsembleVote,
+  buildSpeculativeExecution,
 } from "./factories-advanced.js";
 
 // ----------------------------------------------------------------
@@ -280,6 +282,18 @@ export class SwarmGraph<S extends BaseSwarmState> {
     config: EnsembleVoteConfig<S>,
   ): SwarmGraph<S> {
     return buildEnsembleVote(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: speculative-execution template ----
+
+  /**
+   * Race multiple strategy agents — first valid result wins, all others are cancelled.
+   * Supports per-strategy and global timeouts, an async validator, and an onCancel callback.
+   */
+  static speculativeExecution<S extends BaseSwarmState>(
+    config: SpeculativeExecutionConfig<S>,
+  ): SwarmGraph<S> {
+    return buildSpeculativeExecution(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
   }
 
   // ---- Agent registration ----
