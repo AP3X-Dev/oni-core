@@ -189,7 +189,7 @@ export class A2AServer {
           const buf = await fetchRes.arrayBuffer();
           res.end(Buffer.from(buf));
         }
-      } catch (err) {
+      } catch {
         if (!res.headersSent) {
           res.writeHead(500, { "Content-Type": "text/plain", ...SECURITY_HEADERS });
         }

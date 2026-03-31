@@ -27,7 +27,13 @@ export async function* parseSSEData(
       for (const line of lines) {
         if (line.startsWith("data: ")) {
           const data = line.slice(6).trim();
-          if (data === "[DONE]") return;
+          if (data === "[DONE]") {
+            if (dataLines.length > 0) {
+              yield dataLines.join("\n");
+              dataLines = [];
+            }
+            return;
+          }
           dataLines.push(data);
         } else if (line.trim() === "") {
           // Blank line = event terminator — emit buffered data lines
@@ -44,6 +50,13 @@ export async function* parseSSEData(
       for (const line of buffer.split("\n")) {
         if (line.startsWith("data: ")) {
           const data = line.slice(6).trim();
+          if (data === "[DONE]") {
+            if (dataLines.length > 0) {
+              yield dataLines.join("\n");
+              dataLines = [];
+            }
+            return;
+          }
           if (data && data !== "[DONE]") dataLines.push(data);
         } else if (line.trim() === "") {
           if (dataLines.length > 0) {

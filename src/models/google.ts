@@ -217,7 +217,7 @@ import { parseSSEData as parseSSE } from "./sse.js";
  * Rejects path traversal sequences and any characters that could alter
  * the URL structure (slashes, colons with scheme-like patterns, etc.).
  */
-const VALID_MODEL_ID_RE = /^[a-zA-Z0-9._\-]+$/;
+const VALID_MODEL_ID_RE = /^[a-zA-Z0-9._-]+$/;
 
 function validateModelId(modelId: string): void {
   if (!modelId) {

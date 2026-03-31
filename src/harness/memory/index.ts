@@ -62,6 +62,13 @@ export class MemoryLoader {
     this.scan();
   }
 
+  private sanitizeFileSegment(value: string): string {
+    return value
+      .replace(/\.\./g, "_")
+      .replace(/[/\\]/g, "_")
+      .replaceAll("\0", "_");
+  }
+
   // ── Factory ──────────────────────────────────────────────────────────────
 
   static fromRoot(root: string, opts?: Partial<MemoryLoaderConfig>): MemoryLoader {
@@ -257,7 +264,8 @@ export class MemoryLoader {
       : path.resolve(this.config.root, type);
 
     const absPath = path.resolve(folder, filename);
-    if (!absPath.startsWith(root + "/") && absPath !== root) {
+    const relToRoot = path.relative(root, absPath);
+    if (relToRoot.startsWith("..") || path.isAbsolute(relToRoot)) {
       throw new Error(`Path traversal detected: resolved path escapes memory root`);
     }
     const relPath = path.relative(root, absPath);
@@ -318,7 +326,7 @@ export class MemoryLoader {
    */
   persistEpisodic(sessionId: string, content: string): MemoryUnit {
     const date = new Date().toISOString().split("T")[0]!;
-    const safeSessionId = sessionId.replace(/\.\./g, "_").replace(/[\/\\]/g, "_").replace(/\x00/g, "_");
+    const safeSessionId = this.sanitizeFileSegment(sessionId);
     const filename = `${date}_${safeSessionId}.md`;
     // Skip autoIndex for episodic/recent — INDEX.md would pollute the dated file listing
     const unit = this.persistInternal("episodic", filename, content, "recent", true);
@@ -332,8 +340,8 @@ export class MemoryLoader {
    */
   persistSemantic(domain: string, topic: string, content: string): MemoryUnit {
     const path = getPath();
-    const safeDomain = domain.replace(/\.\./g, '_').replace(/[\/\\]/g, '_').replace(/\x00/g, '_');
-    const safeTopic = topic.replace(/\.\./g, '_').replace(/[\/\\]/g, '_').replace(/\x00/g, '_');
+    const safeDomain = this.sanitizeFileSegment(domain);
+    const safeTopic = this.sanitizeFileSegment(topic);
     const filename = `${safeTopic.toLowerCase().replace(/\s+/g, "-")}.md`;
     const unit = this.persist("semantic", filename, content, safeDomain);
 

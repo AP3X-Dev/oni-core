@@ -101,16 +101,18 @@ export class A2AClient {
     this.assertNotUnauthorized(res, this.config.baseUrl);
     if (!res.ok || !res.body) throw new Error(`A2A stream failed: ${res.status}`);
 
-    const reader = res.body.getReader();
+    const reader: ReadableStreamDefaultReader<Uint8Array> = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
     const readTimeoutMs = this.config.timeout ?? 30_000;
 
     const readWithTimeout = async (
-      r: ReturnType<ReadableStream<Uint8Array>["getReader"]>,
+      r: ReadableStreamDefaultReader<Uint8Array>,
       timeoutMs: number,
     ) => {
-      const timer = setTimeout(() => r.cancel(), timeoutMs);
+      const timer = setTimeout(() => {
+        void r.cancel("A2A stream read timeout");
+      }, timeoutMs);
       try {
         return await r.read();
       } finally {

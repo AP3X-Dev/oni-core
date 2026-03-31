@@ -160,9 +160,15 @@ export async function* agentLoop(
         // git branch names or other untrusted environment strings.
         // Strips control characters (including newlines) and XML-escapes
         // <, >, & so values cannot break out of the <env> XML block.
+        const stripControlChars = (value: string): string =>
+          [...value]
+            .filter((char) => {
+              const code = char.charCodeAt(0);
+              return code >= 32 && code !== 127;
+            })
+            .join("");
         const sanitizeEnvValue = (v: string): string =>
-          v
-            .replace(/[\x00-\x1f\x7f]/g, "") // strip control chars / newlines
+          stripControlChars(v)
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;");

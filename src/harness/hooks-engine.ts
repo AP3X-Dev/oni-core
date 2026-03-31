@@ -343,6 +343,7 @@ export class HooksEngine {
     const dangerousBashPatterns = [
       /mkfs/,
       /dd\s+if=/,
+      /chmod\s+777\b/,
       /chmod\s+0?[46][0-7]{3}\b/,
       /curl[^|]*\|\s*sh/,
       /curl[^|]*\|\s*bash/,

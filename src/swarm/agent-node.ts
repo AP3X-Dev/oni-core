@@ -167,12 +167,15 @@ export function createAgentNode<S extends BaseSwarmState>(
         }
 
         // ---- Normal result ----
+        const resultContext =
+          "context" in result && result.context && typeof result.context === "object"
+            ? result.context as Record<string, unknown>
+            : {};
         return {
           ...result,
           context: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ...Object.fromEntries(
-              Object.entries((result as any).context ?? {}).filter(([k]) => !k.startsWith("__")),
+              Object.entries(resultContext).filter(([k]) => !k.startsWith("__")),
             ),
             __consumedMsgIds: newConsumedIds,
           },

@@ -45,7 +45,6 @@ export function storeAuthResolver(
   options?: { scope?: string },
 ): AuthResolver {
   if (!options?.scope) {
-    // eslint-disable-next-line no-console
     console.warn(
       `[auth-resolver] storeAuthResolver for "${integrationKey}" was created without an access scope. ` +
       `Credentials are readable by any caller. Pass options.scope to restrict access.`,
@@ -56,7 +55,7 @@ export function storeAuthResolver(
       const item = await store.get(["credentials"], integrationKey);
       if (!item) {
         throw new Error(
-          `Credential not found for integration "${integrationKey}".`,
+          `No credentials found for integration "${integrationKey}".`,
         );
       }
       return item.value;
