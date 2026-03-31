@@ -25,6 +25,7 @@ import type {
   HierarchicalConfig, FanOutConfig, PipelineConfig, PeerNetworkConfig,
   MapReduceConfig, DebateConfig, HierarchicalMeshConfig,
   SwarmCompileOpts, SwarmExtensions,
+  CritiqueRefineConfig,
 } from "./config.js";
 import { createSupervisorNode, type SupervisorState } from "./supervisor.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
@@ -36,6 +37,9 @@ import {
   buildMapReduce, buildDebate, buildHierarchicalMesh, buildRace,
   buildDag, buildPool, buildCompose,
 } from "./factories.js";
+import {
+  buildCritiqueRefine,
+} from "./factories-advanced.js";
 
 // ----------------------------------------------------------------
 // SwarmGraph
@@ -234,6 +238,19 @@ export class SwarmGraph<S extends BaseSwarmState> {
       parent.subGraphs.push(stage.swarm);
     }
     return buildCompose(config, parent);
+  }
+
+  // ---- Static factory: critique-refine template ----
+
+  /**
+   * Create a generator/critic refinement loop.
+   * Generator produces output, critic evaluates it, loop continues
+   * until approval (freeform) or all rubric dimensions pass (rubric).
+   */
+  static critiqueRefine<S extends BaseSwarmState>(
+    config: CritiqueRefineConfig<S>,
+  ): SwarmGraph<S> {
+    return buildCritiqueRefine(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
   }
 
   // ---- Agent registration ----
