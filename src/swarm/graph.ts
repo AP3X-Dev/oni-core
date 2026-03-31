@@ -732,6 +732,15 @@ export { baseSwarmChannels } from "./config.js";
 export type {
   HierarchicalConfig, FanOutConfig, PipelineConfig, PeerNetworkConfig,
   MapReduceConfig, DebateConfig, HierarchicalMeshConfig,
+  CritiqueRefineConfig,
+  EnsembleVoteConfig, EnsembleCustomAggregator,
+  SpeculativeExecutionConfig,
+  TreeOfThoughtConfig,
+  AutoResearchConfig,
+  AdversarialDevConfig,
+  SocraticElicitConfig,
+  RedTeamConfig,
+  StepwiseVerifyConfig, StepwiseStage,
 } from "./config.js";
 
 // ----------------------------------------------------------------
