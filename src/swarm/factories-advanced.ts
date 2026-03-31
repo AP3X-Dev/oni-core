@@ -7,7 +7,7 @@
 // ============================================================
 
 import { START, END } from "../types.js";
-import type { RubricConfig, RubricScore, VerificationResult, Vulnerability, Patch, VulnerabilitySeverity, SwarmAgentDef } from "./types.js";
+import type { RubricConfig, RubricScore, VerificationResult, Vulnerability, Patch, VulnerabilitySeverity, SwarmAgentDef, BranchState } from "./types.js";
 import type {
   BaseSwarmState,
   CritiqueRefineConfig,
@@ -17,6 +17,7 @@ import type {
   RedTeamConfig,
   SocraticElicitConfig,
   AutoResearchConfig,
+  TreeOfThoughtConfig,
 } from "./config.js";
 import { runWithTimeout } from "../internal/timeout.js";
 
@@ -881,6 +882,172 @@ export function buildAutoResearch<S extends BaseSwarmState>(
 
   swarm.inner.addEdge(START, "__ar_runner__");
   swarm.inner.addEdge("__ar_runner__", END);
+
+  return swarm;
+}
+
+// ----------------------------------------------------------------
+// buildTreeOfThought
+// ----------------------------------------------------------------
+
+export function buildTreeOfThought<S extends BaseSwarmState>(
+  config: TreeOfThoughtConfig<S>,
+  swarm: SwarmGraph<S>,
+): SwarmGraph<S> {
+  const { thinker, scorer, branchFactor, maxDepth, topK, pruneThreshold } = config;
+
+  swarm.registry.register(thinker);
+  swarm.agentIds.add(thinker.id);
+
+  if (typeof scorer !== "function") {
+    swarm.registry.register(scorer);
+    swarm.agentIds.add(scorer.id);
+  }
+
+  swarm.inner.addNode("__tot_runner__", async (state: S, cfg?) => {
+    let nextBranchIndex = 0;
+    function makeBranchId(): string {
+      return `branch-${nextBranchIndex++}`;
+    }
+
+    // Start with one virtual root branch
+    const rootId = makeBranchId();
+    let survivingBranches: BranchState<S>[] = [
+      {
+        branchId: rootId,
+        depth: -1,
+        parentBranchId: null,
+        path: [],
+        thought: null,
+        score: 1,
+        state: {},
+      },
+    ];
+
+    const allBranches: BranchState<S>[] = [];
+    const prunedBranches: BranchState<S>[] = [];
+    let currentDepth = 0;
+
+    for (let depth = 0; depth < maxDepth; depth++) {
+      currentDepth = depth + 1;
+
+      // Expand: for each surviving branch, spawn branchFactor children
+      const expansions = survivingBranches.flatMap((parent) =>
+        Array.from({ length: branchFactor }, () => ({ parent })),
+      );
+
+      const expandedBranches: BranchState<S>[] = await Promise.all(
+        expansions.map(async ({ parent }) => {
+          const branchContext = {
+            parentBranchId: parent.branchId,
+            parentThought: parent.thought,
+            depth,
+            path: [...parent.path, parent.branchId],
+          };
+
+          const thinkerInput = {
+            ...state,
+            context: {
+              ...(state.context ?? {}),
+              branchContext,
+              accumulatedState: parent.state,
+            },
+          } as S;
+
+          const thinkerResult = await thinker.skeleton.invoke(
+            thinkerInput,
+            { ...cfg, agentId: thinker.id },
+          );
+          const thinkerCtx = (thinkerResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+
+          const thought = thinkerCtx?.thought ?? null;
+          const stateDelta = (thinkerCtx?.stateDelta ?? {}) as Partial<S>;
+
+          const branchId = makeBranchId();
+          return {
+            branchId,
+            depth,
+            parentBranchId: parent.branchId,
+            path: [...parent.path, parent.branchId],
+            thought,
+            score: 0,
+            state: { ...parent.state, ...stateDelta },
+          } as BranchState<S>;
+        }),
+      );
+
+      // Score all expanded branches
+      const scoredBranches: BranchState<S>[] = await Promise.all(
+        expandedBranches.map(async (branch) => {
+          let score: number;
+
+          if (typeof scorer === "function") {
+            score = await scorer(branch, state);
+          } else {
+            const scorerInput = {
+              ...state,
+              context: {
+                ...(state.context ?? {}),
+                branchToScore: branch,
+              },
+            } as S;
+
+            const scorerResult = await scorer.skeleton.invoke(
+              scorerInput,
+              { ...cfg, agentId: scorer.id },
+            );
+            const scorerCtx = (scorerResult as Record<string, unknown>).context as Record<string, unknown> | undefined;
+            score = (scorerCtx?.score as number | undefined) ?? 0;
+          }
+
+          return { ...branch, score };
+        }),
+      );
+
+      // Accumulate all branches for audit
+      allBranches.push(...scoredBranches);
+
+      // Prune: remove branches below threshold, then keep topK
+      const aboveThreshold = scoredBranches.filter((b) => b.score >= pruneThreshold);
+      const belowThreshold = scoredBranches.filter((b) => b.score < pruneThreshold);
+      prunedBranches.push(...belowThreshold);
+
+      // Sort descending by score, keep topK
+      aboveThreshold.sort((a, b) => b.score - a.score);
+      const kept = aboveThreshold.slice(0, topK);
+      const topKPruned = aboveThreshold.slice(topK);
+      prunedBranches.push(...topKPruned);
+
+      survivingBranches = kept;
+
+      if (survivingBranches.length === 0) {
+        break;
+      }
+    }
+
+    // Select highest-scoring surviving branch
+    let selectedBranch: BranchState<S> | null = null;
+    if (survivingBranches.length > 0) {
+      selectedBranch = survivingBranches.reduce((best, b) =>
+        b.score > best.score ? b : best,
+        survivingBranches[0]!,
+      );
+    }
+
+    return {
+      context: {
+        ...(state.context ?? {}),
+        branches: allBranches,
+        prunedBranches,
+        selectedBranch,
+        currentDepth,
+      },
+      done: true,
+    } as Partial<S>;
+  });
+
+  swarm.inner.addEdge(START, "__tot_runner__");
+  swarm.inner.addEdge("__tot_runner__", END);
 
   return swarm;
 }
