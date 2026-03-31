@@ -56,7 +56,7 @@ export function buildCritiqueRefine<S extends BaseSwarmState>(
         ...((ctx as Record<string, unknown>) ?? {}),
         round: ((state.context as Record<string, unknown>)?.round as number ?? 0) + 1,
       },
-    } as Partial<S>;
+    } as unknown as Partial<S>;
   });
 
   // ── Critic node ──
@@ -98,7 +98,7 @@ export function buildCritiqueRefine<S extends BaseSwarmState>(
     return {
       context: merged,
       done: isDone,
-    } as Partial<S>;
+    } as unknown as Partial<S>;
   });
 
   // ── Edges ──
@@ -226,7 +226,7 @@ export function buildStepwiseVerify<S extends BaseSwarmState>(
     return {
       context: { ...accumulatedContext, stageResults, failedStage },
       done: true,
-    } as Partial<S>;
+    } as unknown as Partial<S>;
   });
 
   swarm.inner.addEdge(START, "__sv_runner__");
@@ -286,7 +286,7 @@ export function buildEnsembleVote<S extends BaseSwarmState>(
     // Aggregate based on mode
     if (typeof config.mode === "function") {
       const custom = config.mode(agentResults, stateWithResults);
-      return { agentResults, ...custom, done: true } as Partial<S>;
+      return { agentResults, ...custom, done: true } as unknown as Partial<S>;
     }
 
     if (config.mode === "vote" && config.judge) {
@@ -315,7 +315,7 @@ export function buildEnsembleVote<S extends BaseSwarmState>(
         agentResults,
         context: { ...(state.context ?? {}), winner, reasoning },
         done: true,
-      } as Partial<S>;
+      } as unknown as Partial<S>;
     }
 
     if (config.mode === "synthesize" && config.synthesizer) {
@@ -329,10 +329,10 @@ export function buildEnsembleVote<S extends BaseSwarmState>(
         agentResults,
         context: { ...(state.context ?? {}), ...(synthCtx ?? {}) },
         done: true,
-      } as Partial<S>;
+      } as unknown as Partial<S>;
     }
 
-    return { agentResults, done: true } as Partial<S>;
+    return { agentResults, done: true } as unknown as Partial<S>;
   });
 
   swarm.inner.addEdge(START, "__ev_runner__");
@@ -450,7 +450,7 @@ export function buildSpeculativeExecution<S extends BaseSwarmState>(
         cancelledStrategies,
       },
       done: true,
-    } as Partial<S>;
+    } as unknown as Partial<S>;
   });
 
   swarm.inner.addEdge(START, "__se_race__");
@@ -565,7 +565,7 @@ export function buildRedTeam<S extends BaseSwarmState>(
         currentRound,
       },
       done: true,
-    } as Partial<S>;
+    } as unknown as Partial<S>;
   });
 
   swarm.inner.addEdge(START, "__rt_runner__");
@@ -735,7 +735,7 @@ export function buildSocraticElicit<S extends BaseSwarmState>(
         synthesizedOutput,
       },
       done: true,
-    } as Partial<S>;
+    } as unknown as Partial<S>;
   });
 
   swarm.inner.addEdge(START, "__so_runner__");
@@ -878,7 +878,7 @@ export function buildAutoResearch<S extends BaseSwarmState>(
         currentDepth,
       },
       done: true,
-    } as Partial<S>;
+    } as unknown as Partial<S>;
   });
 
   swarm.inner.addEdge(START, "__ar_runner__");
@@ -1044,7 +1044,7 @@ export function buildTreeOfThought<S extends BaseSwarmState>(
         currentDepth,
       },
       done: true,
-    } as Partial<S>;
+    } as unknown as Partial<S>;
   });
 
   swarm.inner.addEdge(START, "__tot_runner__");
@@ -1243,7 +1243,7 @@ export function buildAdversarialDev<S extends BaseSwarmState>(
         sprintIndex: sprints.length,
       },
       done: true,
-    } as Partial<S>;
+    } as unknown as Partial<S>;
   });
 
   swarm.inner.addEdge(START, "__ad_runner__");
