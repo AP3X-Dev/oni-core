@@ -13,7 +13,6 @@ import type { MemoryLoader } from "./index.js";
 const FACT_CATEGORIES = ["decision", "preference", "fact", "pattern", "warning"] as const;
 const FACT_LINE_RE = new RegExp(
   `^- \\[(${FACT_CATEGORIES.join("|")})\\]\\s+(.+)$`,
-  "m",
 );
 
 // ─── MemoryExtractor ─────────────────────────────────────────────────────────
