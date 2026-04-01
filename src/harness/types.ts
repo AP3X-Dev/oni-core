@@ -102,6 +102,8 @@ export interface AgentLoopConfig {
   memoryRoot?: string;
   memoryBudgets?: Partial<Record<0 | 1 | 2 | 3, number>>;
   memoryDebug?: boolean;
+  /** Message queue for injecting user messages into a running agent loop. Used by spawnAgent(). */
+  messageQueue?: string[];
 }
 
 // ─── Harness Config ──────────────────────────────────────────────────────────
