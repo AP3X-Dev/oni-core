@@ -23,6 +23,10 @@ import type {
   LSPClientState,
   LSPClientInfo,
   LSPDiagnostic,
+  LSPLocation,
+  LSPDocumentSymbol,
+  LSPHover,
+  LSPCompletionItem,
   JsonRpcRequest,
   JsonRpcResponse,
   JsonRpcNotification,
@@ -164,6 +168,11 @@ export class LSPClient {
             publishDiagnostics: {
               versionSupport: true,
             },
+            definition: { dynamicRegistration: false },
+            references: { dynamicRegistration: false },
+            documentSymbol: { dynamicRegistration: false },
+            hover: { contentFormat: ["markdown", "plaintext"] },
+            completion: { dynamicRegistration: false },
           },
           window: {
             workDoneProgress: true,
@@ -305,6 +314,111 @@ export class LSPClient {
    */
   getAllDiagnostics(): Map<string, LSPDiagnostic[]> {
     return new Map(this.diagnosticsCache);
+  }
+
+  // ── Request Methods ─────────────────────────────────────
+
+  /**
+   * Get definition locations for a symbol at the given position.
+   */
+  async getDefinition(filePath: string, line: number, character: number): Promise<LSPLocation[]> {
+    if (this.state !== "ready") return [];
+    this.ensureFileOpen(filePath);
+    try {
+      const uri = pathToFileURL(filePath).toString();
+      const response = await this.sendRequest("textDocument/definition", {
+        textDocument: { uri },
+        position: { line, character },
+      });
+      if (response.error || !response.result) return [];
+      const result = response.result;
+      if (Array.isArray(result)) return result as LSPLocation[];
+      return [result as LSPLocation];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Get reference locations for a symbol at the given position.
+   */
+  async getReferences(filePath: string, line: number, character: number): Promise<LSPLocation[]> {
+    if (this.state !== "ready") return [];
+    this.ensureFileOpen(filePath);
+    try {
+      const uri = pathToFileURL(filePath).toString();
+      const response = await this.sendRequest("textDocument/references", {
+        textDocument: { uri },
+        position: { line, character },
+        context: { includeDeclaration: true },
+      });
+      if (response.error || !response.result) return [];
+      return (response.result as LSPLocation[]) ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Get document symbols for the given file.
+   */
+  async getDocumentSymbols(filePath: string): Promise<LSPDocumentSymbol[]> {
+    if (this.state !== "ready") return [];
+    this.ensureFileOpen(filePath);
+    try {
+      const uri = pathToFileURL(filePath).toString();
+      const response = await this.sendRequest("textDocument/documentSymbol", {
+        textDocument: { uri },
+      });
+      if (response.error || !response.result) return [];
+      return (response.result as LSPDocumentSymbol[]) ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Get hover information for a symbol at the given position.
+   */
+  async getHover(filePath: string, line: number, character: number): Promise<LSPHover | null> {
+    if (this.state !== "ready") return null;
+    this.ensureFileOpen(filePath);
+    try {
+      const uri = pathToFileURL(filePath).toString();
+      const response = await this.sendRequest("textDocument/hover", {
+        textDocument: { uri },
+        position: { line, character },
+      });
+      if (response.error || !response.result) return null;
+      return response.result as LSPHover;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get completion items at the given position.
+   */
+  async getCompletions(filePath: string, line: number, character: number): Promise<LSPCompletionItem[]> {
+    if (this.state !== "ready") return [];
+    this.ensureFileOpen(filePath);
+    try {
+      const uri = pathToFileURL(filePath).toString();
+      const response = await this.sendRequest("textDocument/completion", {
+        textDocument: { uri },
+        position: { line, character },
+      });
+      if (response.error || !response.result) return [];
+      const result = response.result;
+      // Handle both CompletionItem[] and CompletionList { items: [] } shapes
+      if (Array.isArray(result)) return result as LSPCompletionItem[];
+      if (result && typeof result === "object" && "items" in (result as Record<string, unknown>)) {
+        return (result as { items: LSPCompletionItem[] }).items;
+      }
+      return [];
+    } catch {
+      return [];
+    }
   }
 
   // ── State Queries ────────────────────────────────────────
@@ -583,6 +697,17 @@ export class LSPClient {
   }
 
   // ── Helpers ──────────────────────────────────────────────
+
+  /**
+   * Ensure a file is open on the server. If not already tracked,
+   * call touchFile to send didOpen.
+   */
+  private ensureFileOpen(filePath: string): void {
+    if (!this.fileVersions.has(filePath)) {
+      // Fire-and-forget: open the file on the server without waiting for diagnostics
+      this.touchFile(filePath, false).catch(() => {});
+    }
+  }
 
   private uriToPath(uri: string): string {
     // file:///C:/foo/bar.ts → C:/foo/bar.ts (Windows)
