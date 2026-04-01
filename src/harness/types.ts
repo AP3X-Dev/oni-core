@@ -104,6 +104,10 @@ export interface AgentLoopConfig {
   memoryDebug?: boolean;
   /** Message queue for injecting user messages into a running agent loop. Used by spawnAgent(). */
   messageQueue?: string[];
+  /** Optional memory extractor for automatic fact extraction at session end. */
+  memoryExtractor?: import("./memory/extractor.js").MemoryExtractor;
+  /** If true, run memory consolidation at session end (expensive). @default false */
+  autoConsolidate?: boolean;
 }
 
 // ─── Harness Config ──────────────────────────────────────────────────────────
