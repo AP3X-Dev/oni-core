@@ -87,18 +87,37 @@ export function buildEpisodicLog(
   ].join("\n");
 }
 
-/** Persist episodic memory and reset session state. */
-export function finalizeMemory(
+/** Persist episodic memory, run extraction if configured, and reset session state. */
+export async function finalizeMemory(
   memoryLoader: MemoryLoader | null,
   sessionId: string,
   prompt: string,
   turn: number,
   sessionOutcome: SessionOutcome,
   config: AgentLoopConfig,
-): void {
+): Promise<void> {
   if (memoryLoader) {
     const log = buildEpisodicLog(sessionId, prompt, turn, sessionOutcome, config.compactor);
     memoryLoader.persistEpisodic(sessionId, log);
+
+    // Run memory extraction if configured
+    if (config.memoryExtractor) {
+      const summary = config.compactor?.getLastSummary() ?? prompt;
+      try {
+        await config.memoryExtractor.extractFromSummary(sessionId, summary);
+      } catch {
+        // Extraction errors are non-fatal
+      }
+
+      if (config.autoConsolidate) {
+        try {
+          await config.memoryExtractor.consolidate();
+        } catch {
+          // Consolidation errors are non-fatal
+        }
+      }
+    }
+
     memoryLoader.resetSession();
   }
 }
