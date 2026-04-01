@@ -19,10 +19,21 @@ Thumbs.db
 
 # Debug / temp
 *.log
+*.tmp
+*.swp
 npm-debug.log*
 .oni/session-progress.json
 .oni/scheduled_tasks.json
 .tmp-*
+
+# Secrets / credentials
+*.pem
+*.key
+id_rsa*
+credentials.json
+serviceAccountKey.json
+*.p12
+*.pfx
 
 # Test artifacts
 coverage/
