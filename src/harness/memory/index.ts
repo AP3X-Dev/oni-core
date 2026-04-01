@@ -26,6 +26,7 @@ import { applyBudget, rankAndLoad } from "./ranker.js";
 import { buildSystemPrompt } from "./prompter.js";
 
 export * from "./types.js";
+export { MemoryExtractor } from "./extractor.js";
 
 import type {
   MemoryTier,

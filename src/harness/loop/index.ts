@@ -316,7 +316,7 @@ export async function* agentLoop(
       }
     }
     try {
-      finalizeMemory(memoryLoader, sessionId, prompt, turn, sessionOutcome, config);
+      await finalizeMemory(memoryLoader, sessionId, prompt, turn, sessionOutcome, config);
     } catch (e) {
       console.warn("[oni] finalizeMemory failed:", e);
     }
