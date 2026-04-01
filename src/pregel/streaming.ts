@@ -12,7 +12,6 @@ import {
   type NodeReturn,
 } from "../types.js";
 import { RecursionLimitError, NodeNotFoundError, ONIInterrupt, NodeExecutionError } from "../errors.js";
-import { NamespacedCheckpointer } from "../checkpointers/namespaced.js";
 import { StreamWriterImpl, _withTokenHandler } from "../streaming.js";
 import {
   NodeInterruptSignal, HITLInterruptException,
@@ -257,7 +256,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
                 // Per-invocation key for concurrent-safe state isolation
                 // Include a unique counter suffix so concurrent calls sharing the
                 // same threadId don't collide in _perInvocationParentUpdates / _perInvocationCheckpointer.
-                const invocationKey = `${threadId}::${ctx._nextInvocationId.value++}`;
+                ctx._nextInvocationId.value++;
 
                 // Compute the namespaced threadId for this subgraph invocation.
                 // Format: "subgraphName:parentThreadId" — matches NamespacedCheckpointer

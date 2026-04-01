@@ -56,7 +56,7 @@ function safeSkillPath(skillsRoot: string, skillName: string, ...rest: string[])
   }
   const root = path.resolve(skillsRoot);
   const resolved = path.resolve(root, skillName, ...rest);
-  if (!resolved.startsWith(root + "/") && resolved !== root) {
+  if (!resolved.startsWith(root + path.sep) && resolved !== root) {
     throw new Error(`Path traversal detected: skillName "${skillName}" escapes skills root`);
   }
   return resolved;

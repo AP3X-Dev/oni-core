@@ -147,6 +147,42 @@ describe("anthropic adapter", () => {
     expect(hasSystem).toBe(false);
   });
 
+  it("chat() passes image content parts through to the API", async () => {
+    mockFetchResponse({
+      id: "msg_vision",
+      type: "message",
+      role: "assistant",
+      content: [{ type: "text", text: "I see a cat." }],
+      stop_reason: "end_turn",
+      usage: { input_tokens: 100, output_tokens: 10 },
+    });
+
+    const model = anthropic("claude-sonnet-4-20250514", { apiKey: "sk-test" });
+    await model.chat({
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "What's in this image?" },
+            { type: "image", imageUrl: "data:image/png;base64,iVBOR..." },
+          ],
+        },
+      ],
+    });
+
+    const { body } = lastFetchCall();
+    const messages = body["messages"] as Array<Record<string, unknown>>;
+    const content = messages[0]!["content"] as Array<Record<string, unknown>>;
+
+    expect(Array.isArray(content)).toBe(true);
+    expect(content.length).toBe(2);
+    expect(content[0]).toEqual({ type: "text", text: "What's in this image?" });
+    expect(content[1]).toEqual({
+      type: "image",
+      source: { type: "base64", media_type: "image/png", data: "iVBOR..." },
+    });
+  });
+
   it("chat() throws on API error", async () => {
     mockFetchResponse(
       { type: "error", error: { type: "authentication_error", message: "invalid x-api-key" } },

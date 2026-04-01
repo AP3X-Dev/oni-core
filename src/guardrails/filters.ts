@@ -44,7 +44,10 @@ export function piiFilter(options: PiiFilterOptions): ContentFilter {
           detectedKinds.push(kind);
           if (redact) {
             const globalPattern = new RegExp(pattern.source, "g");
-            currentContent = currentContent.replace(globalPattern, REDACT_LABELS[kind]);
+            const label = REDACT_LABELS[kind];
+            if (label !== undefined) {
+              currentContent = currentContent.replace(globalPattern, label);
+            }
           }
         }
       }

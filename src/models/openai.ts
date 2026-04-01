@@ -85,6 +85,21 @@ function contentToString(content: string | ContentPart[]): string {
     .join("");
 }
 
+/** Check if content parts contain any non-text (image) parts */
+function hasMultimodal(content: string | ContentPart[]): boolean {
+  if (typeof content === "string") return false;
+  return content.some((p) => p.type !== "text");
+}
+
+/** Convert content parts to OpenAI multimodal format */
+function contentToMultimodal(content: ContentPart[]): unknown[] {
+  return content.map((p) => {
+    if (p.type === "text") return { type: "text", text: p.text ?? "" };
+    if (p.type === "image") return { type: "image_url", image_url: { url: p.imageUrl ?? "" } };
+    return { type: "text", text: "" };
+  });
+}
+
 function convertMessages(
   messages: ONIModelMessage[],
   systemPrompt?: string,
@@ -126,11 +141,18 @@ function convertMessages(
       continue;
     }
 
-    // Regular user or assistant message
-    converted.push({
-      role: msg.role as "user" | "assistant",
-      content: contentToString(msg.content),
-    });
+    // For user messages with images, send multimodal content
+    if (msg.role === "user" && hasMultimodal(msg.content)) {
+      converted.push({
+        role: "user",
+        content: contentToMultimodal(msg.content as ContentPart[]) as unknown as string,
+      });
+    } else {
+      converted.push({
+        role: msg.role as "user" | "assistant",
+        content: contentToString(msg.content),
+      });
+    }
   }
 
   return converted;
@@ -161,6 +183,26 @@ function mapFinishReason(
 /* ------------------------------------------------------------------ */
 
 import { parseSSEData as parseSSE } from "./sse.js";
+
+function parseStreamPayloads(data: string): Record<string, unknown>[] {
+  try {
+    return [JSON.parse(data) as Record<string, unknown>];
+  } catch (err) {
+    const lines = data
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (lines.length > 1 && lines.every((line) => line.startsWith("{") || line.startsWith("["))) {
+      try {
+        return lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+      } catch {
+        // Fall through to the warning below.
+      }
+    }
+    console.warn("[oni-core] OpenAI SSE: failed to parse JSON chunk:", err, "| data length:", data?.length ?? 0);
+    return [];
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /*  Factory                                                           */
@@ -339,95 +381,89 @@ export function openai(
     const activeToolCalls = new Map<number, { id: string; name: string; args: string }>();
 
     for await (const data of parseSSE(res.body)) {
-      let parsed: Record<string, unknown>;
-      try {
-        parsed = JSON.parse(data) as Record<string, unknown>;
-      } catch (err) {
-        console.warn("[oni-core] OpenAI SSE: failed to parse JSON chunk:", err, "| data length:", data?.length ?? 0);
-        continue;
-      }
+      for (const parsed of parseStreamPayloads(data)) {
+        const choices = parsed["choices"] as Array<Record<string, unknown>> | undefined;
+        if ((!choices || choices.length === 0) && !parsed["usage"]) continue;
 
-      const choices = parsed["choices"] as Array<Record<string, unknown>> | undefined;
-      if ((!choices || choices.length === 0) && !parsed["usage"]) continue;
+        if (choices && choices.length > 0) {
+          const choice = choices[0]!;
+          const delta = choice["delta"] as Record<string, unknown> | undefined;
+          if (delta) {
+            // Text content
+            if (delta["content"] && typeof delta["content"] === "string") {
+              yield { type: "text", text: delta["content"] };
+            }
 
-      if (choices && choices.length > 0) {
-        const choice = choices[0]!;
-        const delta = choice["delta"] as Record<string, unknown> | undefined;
-        if (delta) {
-          // Text content
-          if (delta["content"] && typeof delta["content"] === "string") {
-            yield { type: "text", text: delta["content"] };
-          }
+            // Tool calls
+            const toolCalls = delta["tool_calls"] as Array<Record<string, unknown>> | undefined;
+            if (toolCalls) {
+              for (const tc of toolCalls) {
+                const rawIndex = tc["index"];
+                const index = typeof rawIndex === "string" ? parseInt(rawIndex, 10) : Number(rawIndex ?? 0);
+                const fn = tc["function"] as Record<string, unknown> | undefined;
 
-          // Tool calls
-          const toolCalls = delta["tool_calls"] as Array<Record<string, unknown>> | undefined;
-          if (toolCalls) {
-            for (const tc of toolCalls) {
-              const rawIndex = tc["index"];
-              const index = typeof rawIndex === "string" ? parseInt(rawIndex, 10) : Number(rawIndex ?? 0);
-              const fn = tc["function"] as Record<string, unknown> | undefined;
-
-              if (tc["id"]) {
-                // New tool call starting
-                activeToolCalls.set(index, {
-                  id: tc["id"] as string,
-                  name: fn?.["name"] as string ?? "",
-                  args: (fn?.["arguments"] as string) ?? "",
-                });
-                yield {
-                  type: "tool_call_start",
-                  toolCall: {
+                if (tc["id"]) {
+                  // New tool call starting
+                  activeToolCalls.set(index, {
                     id: tc["id"] as string,
                     name: fn?.["name"] as string ?? "",
-                    args: {},
-                  },
-                };
-              } else if (fn?.["arguments"]) {
-                // Delta for existing tool call
-                const active = activeToolCalls.get(index);
-                if (active) {
-                  active.args += fn["arguments"] as string;
+                    args: (fn?.["arguments"] as string) ?? "",
+                  });
+                  yield {
+                    type: "tool_call_start",
+                    toolCall: {
+                      id: tc["id"] as string,
+                      name: fn?.["name"] as string ?? "",
+                      args: {},
+                    },
+                  };
+                } else if (fn?.["arguments"]) {
+                  // Delta for existing tool call
+                  const active = activeToolCalls.get(index);
+                  if (active) {
+                    active.args += fn["arguments"] as string;
+                  }
+                  yield {
+                    type: "tool_call_delta",
+                    toolCall: {
+                      args: { __partial: fn["arguments"] as string } as unknown as Record<string, unknown>,
+                    },
+                  };
                 }
-                yield {
-                  type: "tool_call_delta",
-                  toolCall: {
-                    args: { __partial: fn["arguments"] as string } as unknown as Record<string, unknown>,
-                  },
-                };
               }
             }
           }
-        }
 
-        // Check for finish_reason to emit tool_call_end
-        const finishReason = choice["finish_reason"] as string | null;
-        if (finishReason === "tool_calls") {
-          for (const [, active] of activeToolCalls) {
-            let args: Record<string, unknown> = {};
-            try {
-              args = JSON.parse(active.args) as Record<string, unknown>;
-            } catch {
-              // partial args
+          // Check for finish_reason to emit tool_call_end
+          const finishReason = choice["finish_reason"] as string | null;
+          if (finishReason === "tool_calls") {
+            for (const [, active] of activeToolCalls) {
+              let args: Record<string, unknown> = {};
+              try {
+                args = JSON.parse(active.args) as Record<string, unknown>;
+              } catch {
+                // partial args
+              }
+              yield {
+                type: "tool_call_end",
+                toolCall: { id: active.id, name: active.name, args },
+              };
             }
-            yield {
-              type: "tool_call_end",
-              toolCall: { id: active.id, name: active.name, args },
-            };
+            activeToolCalls.clear();
           }
-          activeToolCalls.clear();
         }
-      }
 
-      // Usage (OpenAI sends usage in the final chunk when stream_options.include_usage is set)
-      const usage = parsed["usage"] as { prompt_tokens?: number; completion_tokens?: number } | undefined;
-      if (usage) {
-        yield {
-          type: "usage",
-          usage: {
-            inputTokens: usage.prompt_tokens ?? 0,
-            outputTokens: usage.completion_tokens ?? 0,
-          },
-        };
+        // Usage (OpenAI sends usage in the final chunk when stream_options.include_usage is set)
+        const usage = parsed["usage"] as { prompt_tokens?: number; completion_tokens?: number } | undefined;
+        if (usage) {
+          yield {
+            type: "usage",
+            usage: {
+              inputTokens: usage.prompt_tokens ?? 0,
+              outputTokens: usage.completion_tokens ?? 0,
+            },
+          };
+        }
       }
     }
   }

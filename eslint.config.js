@@ -3,12 +3,12 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default [
-  { ignores: ['dist/**', 'examples/**', 'benchmarks/**'] },
+  { ignores: ['dist/**', 'examples/**', 'benchmarks/**', 'packages/*/dist/**'] },
 
-  // Base for all TS
+  // Base for all TS (root + workspace packages)
   ...tseslint.config({
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.ts', 'packages/*/src/**/*.ts'],
     rules: {
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -20,8 +20,11 @@ export default [
 
   // STRICT: production source — no explicit any
   {
-    files: ['src/**/*.ts'],
-    ignores: ['src/**/*.test.ts', 'src/__tests__/**/*.ts'],
+    files: ['src/**/*.ts', 'packages/*/src/**/*.ts'],
+    ignores: [
+      'src/**/*.test.ts', 'src/__tests__/**/*.ts',
+      'packages/*/src/**/*.test.ts', 'packages/*/src/__tests__/**/*.ts',
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
     },
@@ -29,9 +32,14 @@ export default [
 
   // LENIENT: test files — warn only
   {
-    files: ['src/**/*.test.ts', 'src/__tests__/**/*.ts'],
+    files: [
+      'src/**/*.test.ts', 'src/__tests__/**/*.ts',
+      'packages/*/src/**/*.test.ts', 'packages/*/src/__tests__/**/*.ts',
+    ],
     rules: {
+      '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
+      'prefer-const': 'warn',
     },
   },
 ];

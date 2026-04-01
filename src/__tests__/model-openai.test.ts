@@ -160,6 +160,46 @@ describe("openai adapter", () => {
     expect(body["input"]).toEqual(["hello", "world"]);
   });
 
+  it("chat() passes image content parts through to the API", async () => {
+    mockFetchResponse({
+      id: "chatcmpl-vision",
+      object: "chat.completion",
+      choices: [
+        {
+          index: 0,
+          message: { role: "assistant", content: "I see a cat." },
+          finish_reason: "stop",
+        },
+      ],
+      usage: { prompt_tokens: 100, completion_tokens: 10, total_tokens: 110 },
+    });
+
+    const model = openai("gpt-4o", { apiKey: "sk-test" });
+    await model.chat({
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "What's in this image?" },
+            { type: "image", imageUrl: "data:image/png;base64,iVBOR..." },
+          ],
+        },
+      ],
+    });
+
+    const { body } = lastFetchCall();
+    const messages = body["messages"] as Array<Record<string, unknown>>;
+    const content = messages[0]!["content"] as Array<Record<string, unknown>>;
+
+    expect(Array.isArray(content)).toBe(true);
+    expect(content.length).toBe(2);
+    expect(content[0]).toEqual({ type: "text", text: "What's in this image?" });
+    expect(content[1]).toEqual({
+      type: "image_url",
+      image_url: { url: "data:image/png;base64,iVBOR..." },
+    });
+  });
+
   it("has correct metadata", () => {
     const model = openai("gpt-4o", { apiKey: "sk-test" });
 

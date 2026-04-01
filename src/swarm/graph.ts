@@ -25,6 +25,15 @@ import type {
   HierarchicalConfig, FanOutConfig, PipelineConfig, PeerNetworkConfig,
   MapReduceConfig, DebateConfig, HierarchicalMeshConfig,
   SwarmCompileOpts, SwarmExtensions,
+  CritiqueRefineConfig,
+  StepwiseVerifyConfig,
+  EnsembleVoteConfig,
+  SpeculativeExecutionConfig,
+  RedTeamConfig,
+  SocraticElicitConfig,
+  AutoResearchConfig,
+  TreeOfThoughtConfig,
+  AdversarialDevConfig,
 } from "./config.js";
 import { createSupervisorNode, type SupervisorState } from "./supervisor.js";
 import { RequestReplyBroker } from "../coordination/request-reply.js";
@@ -36,6 +45,17 @@ import {
   buildMapReduce, buildDebate, buildHierarchicalMesh, buildRace,
   buildDag, buildPool, buildCompose,
 } from "./factories.js";
+import {
+  buildCritiqueRefine,
+  buildStepwiseVerify,
+  buildEnsembleVote,
+  buildSpeculativeExecution,
+  buildRedTeam,
+  buildSocraticElicit,
+  buildAutoResearch,
+  buildTreeOfThought,
+  buildAdversarialDev,
+} from "./factories-advanced.js";
 
 // ----------------------------------------------------------------
 // SwarmGraph
@@ -236,6 +256,127 @@ export class SwarmGraph<S extends BaseSwarmState> {
     return buildCompose(config, parent);
   }
 
+  // ---- Static factory: critique-refine template ----
+
+  /**
+   * Create a generator/critic refinement loop.
+   * Generator produces output, critic evaluates it, loop continues
+   * until approval (freeform) or all rubric dimensions pass (rubric).
+   */
+  static critiqueRefine<S extends BaseSwarmState>(
+    config: CritiqueRefineConfig<S>,
+  ): SwarmGraph<S> {
+    return buildCritiqueRefine(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: stepwise-verify template ----
+
+  /**
+   * Create a sequential multi-stage pipeline where each stage's output
+   * is verified before proceeding. Supports halt or skip failure modes
+   * and per-stage retry with optional delay.
+   */
+  static stepwiseVerify<S extends BaseSwarmState>(
+    config: StepwiseVerifyConfig<S>,
+  ): SwarmGraph<S> {
+    return buildStepwiseVerify(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: ensemble-vote template ----
+
+  /**
+   * Run all agents in parallel and aggregate results via vote (judge picks best),
+   * synthesize (a synthesizer agent merges all outputs), or a custom aggregator function.
+   */
+  static ensembleVote<S extends BaseSwarmState>(
+    config: EnsembleVoteConfig<S>,
+  ): SwarmGraph<S> {
+    return buildEnsembleVote(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: speculative-execution template ----
+
+  /**
+   * Race multiple strategy agents — first valid result wins, all others are cancelled.
+   * Supports per-strategy and global timeouts, an async validator, and an onCancel callback.
+   */
+  static speculativeExecution<S extends BaseSwarmState>(
+    config: SpeculativeExecutionConfig<S>,
+  ): SwarmGraph<S> {
+    return buildSpeculativeExecution(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: red-team template ----
+
+  /**
+   * Create an adversarial security loop.
+   * An attacker agent finds vulnerabilities, a builder agent patches them.
+   * Repeats until the attacker finds nothing significant or maxRounds is exhausted.
+   * Optionally filter low-severity findings with severityThreshold.
+   */
+  static redTeam<S extends BaseSwarmState>(
+    config: RedTeamConfig<S>,
+  ): SwarmGraph<S> {
+    return buildRedTeam(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: socratic-elicit template ----
+
+  /**
+   * Create a Socratic elicitation loop.
+   * An interviewer asks questions to a respondent (agent or human interrupt),
+   * tracking coverage across defined dimensions. When enough dimensions are
+   * covered or maxQuestions is reached, a synthesizer produces a final output.
+   */
+  static socraticElicit<S extends BaseSwarmState>(
+    config: SocraticElicitConfig<S>,
+  ): SwarmGraph<S> {
+    return buildSocraticElicit(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: auto-research template ----
+
+  /**
+   * Create a recursive research loop.
+   * A decomposer breaks the question into sub-questions, a researcher
+   * investigates each in parallel, and a synthesizer merges findings,
+   * scores confidence, and identifies gaps. The loop recurses on gaps
+   * until confidence >= threshold, no gaps remain, or maxDepth is hit.
+   */
+  static autoResearch<S extends BaseSwarmState>(
+    config: AutoResearchConfig<S>,
+  ): SwarmGraph<S> {
+    return buildAutoResearch(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: tree-of-thought template ----
+
+  /**
+   * Create a branching Tree-of-Thought topology.
+   * At each depth, surviving branches are expanded by branchFactor, scored,
+   * and pruned via a dual strategy (topK cap + pruneThreshold floor).
+   * The highest-scoring surviving branch is selected as the final answer.
+   */
+  static treeOfThought<S extends BaseSwarmState>(
+    config: TreeOfThoughtConfig<S>,
+  ): SwarmGraph<S> {
+    return buildTreeOfThought(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
+  // ---- Static factory: adversarialDev template ----
+
+  /**
+   * Create an adversarial development topology with sprint contracts and retry budget.
+   * A planner produces sprint scope, generator and evaluator negotiate acceptance criteria,
+   * then generator builds and evaluator scores (0–10). Retries up to maxRetriesPerSprint
+   * before declaring the sprint failed. Repeats for maxSprints or until planner sets done.
+   */
+  static adversarialDev<S extends BaseSwarmState>(
+    config: AdversarialDevConfig<S>,
+  ): SwarmGraph<S> {
+    return buildAdversarialDev(config, new SwarmGraph<S>(config.channels as Partial<ChannelSchema<S>>));
+  }
+
   // ---- Agent registration ----
 
   addAgent(def: SwarmAgentDef<S>): this {
@@ -318,8 +459,7 @@ export class SwarmGraph<S extends BaseSwarmState> {
 
     // For non-supervised swarms, check that every agent has at least one incoming edge
     const edgeTargets = new Set<string>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const edge of (this.inner as any).edges) { // SAFE: external boundary — accessing private StateGraph.edges for topology validation
+    for (const edge of this.inner.getEdges()) {
       if (edge.type === "static") {
         edgeTargets.add(edge.to as string);
       }
@@ -592,6 +732,15 @@ export { baseSwarmChannels } from "./config.js";
 export type {
   HierarchicalConfig, FanOutConfig, PipelineConfig, PeerNetworkConfig,
   MapReduceConfig, DebateConfig, HierarchicalMeshConfig,
+  CritiqueRefineConfig,
+  EnsembleVoteConfig, EnsembleCustomAggregator,
+  SpeculativeExecutionConfig,
+  TreeOfThoughtConfig,
+  AutoResearchConfig,
+  AdversarialDevConfig,
+  SocraticElicitConfig,
+  RedTeamConfig,
+  StepwiseVerifyConfig, StepwiseStage,
 } from "./config.js";
 
 // ----------------------------------------------------------------

@@ -18,7 +18,7 @@
 // Requires: OPENAI_API_KEY environment variable
 //
 // Run:  npx tsx examples/demo-content-pipeline.ts
-//       npm run demo
+//       pnpm run demo
 // ============================================================
 
 import OpenAI from "openai";

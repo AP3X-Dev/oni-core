@@ -14,41 +14,49 @@ high-quality pull requests.
 
 2. **Install dependencies**
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Run the test suite**
    ```bash
-   npm test
+   pnpm test
    ```
 
 4. **Type check**
    ```bash
-   npm run typecheck
+   pnpm run typecheck
    ```
 
 5. **Build**
    ```bash
-   npm run build
+   pnpm run build
    ```
 
 ## Project Structure
 
 ```
-src/
-  graph.ts          — StateGraph builder, compiles to executable skeleton
-  pregel.ts         — Pregel superstep execution engine
-  types.ts          — Core types (Channel, Command, Send, StreamMode, etc.)
-  context.ts        — AsyncLocalStorage runtime context
-  streaming.ts      — Token streaming (emitToken, TokenStreamWriter)
-  checkpoint.ts     — Checkpointer implementations
-  store/            — BaseStore, InMemoryStore, NamespacedStore
-  hitl/             — Human-in-the-loop (interrupt / getUserInput)
-  agents/           — Prebuilt agent patterns (createReactAgent, etc.)
-  models/           — Model adapters (OpenAI, Anthropic, OpenRouter)
-  tools/            — Tool definitions and execution
-  testing/          — Test utilities (mockModel, helpers)
-  __tests__/        — Test files
+src/                  — Core library source
+  graph.ts            — StateGraph builder, compiles to executable skeleton
+  pregel.ts           — Pregel superstep execution engine
+  types.ts            — Core types (Channel, Command, Send, StreamMode, etc.)
+  context.ts          — AsyncLocalStorage runtime context
+  streaming.ts        — Token streaming (emitToken, TokenStreamWriter)
+  checkpoint.ts       — Checkpointer implementations
+  store/              — BaseStore, InMemoryStore, NamespacedStore
+  hitl/               — Human-in-the-loop (interrupt / getUserInput)
+  agents/             — Prebuilt agent patterns (createReactAgent, etc.)
+  models/             — Model adapters (OpenAI, Anthropic, OpenRouter)
+  tools/              — Tool definitions and execution
+  testing/            — Test utilities (mockModel, helpers)
+  __tests__/          — Test files
+
+packages/             — Workspace extension packages
+  tools/              — @oni.bot/tools (prebuilt tool definitions)
+  stores/             — @oni.bot/stores (Redis, Postgres KV backends)
+  loaders/            — @oni.bot/loaders (document loaders)
+  a2a/                — @oni.bot/a2a (A2A protocol integration)
+  integrations/       — @oni.bot/integrations (ActivePieces adapter)
+  community/          — @oni.bot/community (ActivePieces source)
 ```
 
 ## Making Changes
@@ -58,8 +66,7 @@ src/
 3. **Make your changes** in the relevant source files.
 4. **Verify everything passes:**
    ```bash
-   npm test
-   npm run typecheck
+   pnpm run verify
    ```
 5. **Submit a pull request** against `main` with a clear description of the change.
 
@@ -73,10 +80,12 @@ src/
 
 ## Testing
 
-- **Run all tests:** `npm test`
-- **Watch mode:** `npm run test:watch`
+- **Run core tests:** `pnpm test`
+- **Run package tests:** `pnpm run test:packages`
+- **Run everything:** `pnpm run verify`
+- **Watch mode:** `pnpm run test:watch`
 - **Use `mockModel()`** from `@oni.bot/core/testing` to mock LLM responses in tests.
-- Tests live alongside source code in `src/__tests__/`.
+- Core tests live in `src/__tests__/`, package tests in `packages/*/src/__tests__/`.
 
 ## Architecture Decisions
 
