@@ -40,7 +40,13 @@ coverage/
 
 # Internal / planning docs
 docs/
+CLAUDE.md
+AGENTS.md
+GEMINI.md
 .claude/
+.cursor/
+.copilot/
+.superpowers/
 memory/
 !src/**/memory/
 agent-builder/
