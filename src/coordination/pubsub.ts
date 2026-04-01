@@ -31,7 +31,10 @@ export class PubSub {
     if (this.buffer.length > this.maxBufferSize) {
       this.buffer = this.buffer.slice(this.buffer.length - this.maxBufferSize);
     }
-    for (const [pattern, handlers] of this.subscribers) {
+    const subscriberSnapshot = [...this.subscribers.entries()].map(
+      ([pattern, handlers]) => [pattern, [...handlers]] as const,
+    );
+    for (const [pattern, handlers] of subscriberSnapshot) {
       if (topicMatches(pattern, topic)) {
         for (const handler of handlers) {
           try {

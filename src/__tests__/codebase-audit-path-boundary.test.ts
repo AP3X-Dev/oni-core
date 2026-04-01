@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { normalize, resolve, join } from "node:path";
+import { homedir, tmpdir } from "node:os";
+import { normalize, resolve, join, sep } from "node:path";
 
 // BUG-0245: LLM-exposed read_file tool in example harness files called
 // readFile(input.path) with no path sanitization, allowing path traversal
@@ -14,47 +15,43 @@ import { normalize, resolve, join } from "node:path";
  */
 function isPathAllowed(inputPath: string, cwd: string = process.cwd()): boolean {
   const boundary = normalize(resolve(cwd));
-  const resolved = normalize(resolve(inputPath));
-  return resolved.startsWith(boundary + "/") || resolved === boundary;
+  const resolved = normalize(resolve(cwd, inputPath));
+  return resolved.startsWith(boundary + sep) || resolved === boundary;
 }
 
 describe("BUG-0245: read_file tool path boundary check", () => {
+  const cwd = join(tmpdir(), "audit-sandbox");
+
   it("BUG-0245: allows paths within the working directory", () => {
-    const cwd = process.cwd();
     expect(isPathAllowed(join(cwd, "src", "index.ts"), cwd)).toBe(true);
     expect(isPathAllowed(join(cwd, "package.json"), cwd)).toBe(true);
   });
 
   it("BUG-0245: allows the working directory itself", () => {
-    const cwd = process.cwd();
     expect(isPathAllowed(cwd, cwd)).toBe(true);
   });
 
   it("BUG-0245: blocks path traversal to parent directory (/etc/passwd style)", () => {
-    const cwd = "/tmp/audit-sandbox";
-    expect(isPathAllowed("/etc/passwd", cwd)).toBe(false);
-    expect(isPathAllowed("../../etc/passwd", cwd)).toBe(false);
-    expect(isPathAllowed("/root/.ssh/id_rsa", cwd)).toBe(false);
+    expect(isPathAllowed(join(tmpdir(), "outside-audit-sandbox", "passwd"), cwd)).toBe(false);
+    expect(isPathAllowed(join("..", "..", "etc", "passwd"), cwd)).toBe(false);
+    expect(isPathAllowed(join(homedir(), ".ssh", "id_rsa"), cwd)).toBe(false);
   });
 
   it("BUG-0245: blocks path traversal that resolves outside cwd via double-dots", () => {
-    const cwd = "/tmp/audit-sandbox";
-    // These all resolve outside /tmp/audit-sandbox
-    expect(isPathAllowed("/tmp/audit-sandbox/../../../etc/shadow", cwd)).toBe(false);
-    expect(isPathAllowed("/tmp/audit-sandbox-evil", cwd)).toBe(false);
+    // These all resolve outside the sandbox root.
+    expect(isPathAllowed(join(cwd, "..", "..", "..", "etc", "shadow"), cwd)).toBe(false);
+    expect(isPathAllowed(`${cwd}-evil`, cwd)).toBe(false);
   });
 
   it("BUG-0245: a sibling directory with a matching prefix is NOT allowed", () => {
-    // Without the trailing "/" guard, /tmp/audit-sandbox-evil would pass
-    // a naive startsWith("/tmp/audit-sandbox") check.
-    const cwd = "/tmp/audit-sandbox";
-    expect(isPathAllowed("/tmp/audit-sandbox-evil/secret.txt", cwd)).toBe(false);
+    // Without the trailing separator guard, a sibling with a matching prefix
+    // would pass a naive startsWith(boundary) check.
+    expect(isPathAllowed(join(`${cwd}-evil`, "secret.txt"), cwd)).toBe(false);
   });
 
   it("BUG-0245: normalizes paths with redundant components before checking", () => {
-    const cwd = "/tmp/audit-sandbox";
     // These should be allowed — they normalize to paths inside cwd
-    expect(isPathAllowed("/tmp/audit-sandbox/./subdir/file.ts", cwd)).toBe(true);
-    expect(isPathAllowed("/tmp/audit-sandbox/subdir/../file.ts", cwd)).toBe(true);
+    expect(isPathAllowed(join(cwd, ".", "subdir", "file.ts"), cwd)).toBe(true);
+    expect(isPathAllowed(join(cwd, "subdir", "..", "file.ts"), cwd)).toBe(true);
   });
 });

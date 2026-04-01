@@ -54,7 +54,8 @@ function toolCallChunk(
 }
 
 function mockStreamResponse(sseLines: string[], status = 200): void {
-  const text = sseLines.join("\n") + "\n";
+  // Each element is a separate SSE event — separate with blank lines per spec
+  const text = sseLines.join("\n\n") + "\n";
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {

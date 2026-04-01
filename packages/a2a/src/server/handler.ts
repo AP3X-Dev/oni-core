@@ -1,10 +1,21 @@
 import type { A2ATask } from "../types.js";
 
-export type TaskHandler = (message: string, taskId: string) => Promise<string> | AsyncGenerator<string>;
+export type TaskHandler = (
+  message: string,
+  taskId: string,
+) => string | Promise<string> | AsyncGenerator<string>;
 
 /** Extract a safe error message from an unknown throw value (BUG-0029). */
 function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
+}
+
+function isAsyncGenerator(value: unknown): value is AsyncGenerator<string> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator] === "function"
+  );
 }
 
 export async function handleJsonRPC(
@@ -23,14 +34,14 @@ export async function handleJsonRPC(
 
   if (req.method === "tasks/send") {
     try {
-      const result = handler(messageText, taskId);
+      const result = await handler(messageText, taskId);
       let output: string;
-      if (typeof (result as AsyncGenerator<string>)[Symbol.asyncIterator] === "function") {
+      if (isAsyncGenerator(result)) {
         const chunks: string[] = [];
-        for await (const chunk of result as AsyncGenerator<string>) chunks.push(chunk);
+        for await (const chunk of result) chunks.push(chunk);
         output = chunks.join("");
       } else {
-        output = await (result as Promise<string>);
+        output = result;
       }
       const task: A2ATask = {
         id: taskId,
@@ -54,15 +65,18 @@ export async function handleJsonRPC(
       async function* safeStream(gen: AsyncGenerator<string>): AsyncGenerator<string> {
         yield* gen;
       }
-      if (typeof (result as AsyncGenerator<string>)[Symbol.asyncIterator] === "function") {
-        return { stream: safeStream(result as AsyncGenerator<string>), taskId };
+      if (isAsyncGenerator(result)) {
+        return { stream: safeStream(result), taskId };
       }
+      const output: string = result;
       // Wrap promise as single-item stream
-      async function* single(): AsyncGenerator<string> { yield await (result as Promise<string>); }
+      async function* single(): AsyncGenerator<string> {
+        yield output;
+      }
       return { stream: safeStream(single()), taskId };
     } catch (e: unknown) {
       console.error("[a2a] tasks/sendSubscribe error:", errorMessage(e));
-      return { response: { jsonrpc: "2.0", id: req.id, error: { code: -32603, message: "Internal server error" } } };
+      return { response: { jsonrpc: "2.0", id: req.id, error: { code: -32603, message: errorMessage(e) } } };
     }
   }
 

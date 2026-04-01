@@ -747,9 +747,8 @@ export function buildDag<S extends BaseSwarmState>(
   });
 
   // Wire: START → __dag_runner__ → END
-  // Remove any edges added by addAgent — reset private edges field
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (swarm.inner as any).edges = []; // SAFE: external boundary — clearing private StateGraph.edges to rewire DAG topology
+  // Remove any edges added by addAgent — reset edges for DAG topology
+  swarm.inner.clearEdges();
   swarm.inner.addEdge(START, "__dag_runner__");
   swarm.inner.addEdge("__dag_runner__", END);
 
@@ -822,9 +821,8 @@ export function buildPool<S extends BaseSwarmState>(
 
           running++;
           // Use the full wrapped agentNode (hooks, retries, timeout) stored
-          // by addAgent() in swarm.inner.nodes rather than raw skeleton.invoke.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const wrappedFn = (swarm.inner as any).nodes.get(work.targetId)?.fn as // SAFE: external boundary — accessing private StateGraph.nodes map
+          // by addAgent() in swarm.inner rather than raw skeleton.invoke.
+          const wrappedFn = swarm.inner.getNodeDef(work.targetId)?.fn as
             ((state: S, cfg?: ONIConfig) => Promise<NodeReturn<S>>) | undefined;
           const invocation = wrappedFn
             ? wrappedFn({ ...state, task: String(work.item) } as S, { ...cfg, agentId: work.targetId })
@@ -859,8 +857,7 @@ export function buildPool<S extends BaseSwarmState>(
   });
 
   // Wire: START → __pool_runner__ → END (bypass agent edges)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (swarm.inner as any).edges = []; // SAFE: external boundary — clearing private StateGraph.edges to rewire pool topology
+  swarm.inner.clearEdges();
   swarm.inner.addEdge(START, "__pool_runner__");
   swarm.inner.addEdge("__pool_runner__", END);
 

@@ -4,6 +4,19 @@
 
 export { SwarmGraph, baseSwarmChannels, quickAgent } from "./graph.js";
 export type { BaseSwarmState, SwarmCompileOpts, SwarmExtensions, HierarchicalConfig, FanOutConfig, PipelineConfig, PeerNetworkConfig, MapReduceConfig, DebateConfig, HierarchicalMeshConfig } from "./graph.js";
+
+// Advanced topology config types
+export type {
+  CritiqueRefineConfig,
+  EnsembleVoteConfig, EnsembleCustomAggregator,
+  SpeculativeExecutionConfig,
+  TreeOfThoughtConfig,
+  AutoResearchConfig,
+  AdversarialDevConfig,
+  SocraticElicitConfig,
+  RedTeamConfig,
+  StepwiseVerifyConfig, StepwiseStage,
+} from "./graph.js";
 export type { SwarmCompileOpts as SwarmCompileOptions } from "./graph.js";
 
 // GAN loop types
@@ -38,6 +51,15 @@ export type {
   RuleRoute,
   AgentPoolConfig,
   SwarmTopology,
+} from "./types.js";
+
+// Advanced topology shared types
+export type {
+  RubricConfig, RubricDimension, RubricScore,
+  VerificationResult,
+  Vulnerability, VulnerabilitySeverity, VulnerabilityStatus, Patch,
+  BranchState,
+  SprintContract, SprintAttempt, SprintResult,
 } from "./types.js";
 
 // Swarm utilities

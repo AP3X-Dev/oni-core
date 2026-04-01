@@ -209,6 +209,26 @@ function mapFinishReason(
 
 import { parseSSEData as parseSSE } from "./sse.js";
 
+function parseStreamPayloads(data: string): Record<string, unknown>[] {
+  try {
+    return [JSON.parse(data) as Record<string, unknown>];
+  } catch (err) {
+    const lines = data
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (lines.length > 1 && lines.every((line) => line.startsWith("{") || line.startsWith("["))) {
+      try {
+        return lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+      } catch {
+        // Fall through to the warning below.
+      }
+    }
+    console.warn("openrouter: failed to parse SSE chunk", err, "data length:", data?.length ?? 0);
+    return [];
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /*  Factory                                                            */
 /* ------------------------------------------------------------------ */
@@ -411,95 +431,89 @@ export function openrouter(
     const activeToolCalls = new Map<number, { id: string; name: string; args: string }>();
 
     for await (const data of parseSSE(res.body)) {
-      let parsed: Record<string, unknown>;
-      try {
-        parsed = JSON.parse(data) as Record<string, unknown>;
-      } catch (err) {
-        console.warn("openrouter: failed to parse SSE chunk", err, "data length:", data?.length ?? 0);
-        continue;
-      }
+      for (const parsed of parseStreamPayloads(data)) {
+        const choices = parsed["choices"] as Array<Record<string, unknown>> | undefined;
+        if ((!choices || choices.length === 0) && !parsed["usage"]) continue;
 
-      const choices = parsed["choices"] as Array<Record<string, unknown>> | undefined;
-      if ((!choices || choices.length === 0) && !parsed["usage"]) continue;
+        if (choices && choices.length > 0) {
+          const choice = choices[0]!;
+          const delta = choice["delta"] as Record<string, unknown> | undefined;
+          if (delta) {
+            // Text content
+            if (delta["content"] && typeof delta["content"] === "string") {
+              yield { type: "text", text: delta["content"] };
+            }
 
-      if (choices && choices.length > 0) {
-        const choice = choices[0]!;
-        const delta = choice["delta"] as Record<string, unknown> | undefined;
-        if (delta) {
-          // Text content
-          if (delta["content"] && typeof delta["content"] === "string") {
-            yield { type: "text", text: delta["content"] };
-          }
+            // Tool calls
+            const toolCalls = delta["tool_calls"] as Array<Record<string, unknown>> | undefined;
+            if (toolCalls) {
+              for (const tc of toolCalls) {
+                const rawIndex = tc["index"];
+                const index = typeof rawIndex === "string" ? parseInt(rawIndex, 10) : Number(rawIndex ?? 0);
+                const fn = tc["function"] as Record<string, unknown> | undefined;
 
-          // Tool calls
-          const toolCalls = delta["tool_calls"] as Array<Record<string, unknown>> | undefined;
-          if (toolCalls) {
-            for (const tc of toolCalls) {
-              const rawIndex = tc["index"];
-              const index = typeof rawIndex === "string" ? parseInt(rawIndex, 10) : Number(rawIndex ?? 0);
-              const fn = tc["function"] as Record<string, unknown> | undefined;
-
-              if (tc["id"]) {
-                activeToolCalls.set(index, {
-                  id: tc["id"] as string,
-                  name: fn?.["name"] as string ?? "",
-                  args: (fn?.["arguments"] as string) ?? "",
-                });
-                yield {
-                  type: "tool_call_start",
-                  toolCall: {
+                if (tc["id"]) {
+                  activeToolCalls.set(index, {
                     id: tc["id"] as string,
                     name: fn?.["name"] as string ?? "",
-                    args: {},
-                  },
-                };
-              } else if (fn?.["arguments"]) {
-                const active = activeToolCalls.get(index);
-                if (active) {
-                  active.args += fn["arguments"] as string;
+                    args: (fn?.["arguments"] as string) ?? "",
+                  });
+                  yield {
+                    type: "tool_call_start",
+                    toolCall: {
+                      id: tc["id"] as string,
+                      name: fn?.["name"] as string ?? "",
+                      args: {},
+                    },
+                  };
+                } else if (fn?.["arguments"]) {
+                  const active = activeToolCalls.get(index);
+                  if (active) {
+                    active.args += fn["arguments"] as string;
+                  }
+                  yield {
+                    type: "tool_call_delta",
+                    toolCall: {
+                      args: { __partial: fn["arguments"] as string } as unknown as Record<string, unknown>,
+                    },
+                  };
                 }
-                yield {
-                  type: "tool_call_delta",
-                  toolCall: {
-                    args: { __partial: fn["arguments"] as string } as unknown as Record<string, unknown>,
-                  },
-                };
               }
             }
+
           }
 
-        }
-
-        // Finish reason → emit tool_call_end (checked outside delta block so it fires
-        // even when the final chunk has finish_reason but no delta object)
-        const finishReason = choice["finish_reason"] as string | null;
-        if (finishReason === "tool_calls") {
-          for (const [, active] of activeToolCalls) {
-            let args: Record<string, unknown> = {};
-            try {
-              args = JSON.parse(active.args) as Record<string, unknown>;
-            } catch {
-              // partial args
+          // Finish reason → emit tool_call_end (checked outside delta block so it fires
+          // even when the final chunk has finish_reason but no delta object)
+          const finishReason = choice["finish_reason"] as string | null;
+          if (finishReason === "tool_calls") {
+            for (const [, active] of activeToolCalls) {
+              let args: Record<string, unknown> = {};
+              try {
+                args = JSON.parse(active.args) as Record<string, unknown>;
+              } catch {
+                // partial args
+              }
+              yield {
+                type: "tool_call_end",
+                toolCall: { id: active.id, name: active.name, args },
+              };
             }
-            yield {
-              type: "tool_call_end",
-              toolCall: { id: active.id, name: active.name, args },
-            };
+            activeToolCalls.clear();
           }
-          activeToolCalls.clear();
         }
-      }
 
-      // Usage (outside choices guard — usage-only chunks have empty choices)
-      const usage = parsed["usage"] as { prompt_tokens?: number; completion_tokens?: number } | undefined;
-      if (usage) {
-        yield {
-          type: "usage",
-          usage: {
-            inputTokens: usage.prompt_tokens ?? 0,
-            outputTokens: usage.completion_tokens ?? 0,
-          },
-        };
+        // Usage (outside choices guard — usage-only chunks have empty choices)
+        const usage = parsed["usage"] as { prompt_tokens?: number; completion_tokens?: number } | undefined;
+        if (usage) {
+          yield {
+            type: "usage",
+            usage: {
+              inputTokens: usage.prompt_tokens ?? 0,
+              outputTokens: usage.completion_tokens ?? 0,
+            },
+          };
+        }
       }
     }
   }

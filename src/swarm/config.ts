@@ -10,7 +10,11 @@ import type { GuardrailsConfig } from "../guardrails/types.js";
 import type { EventListeners } from "../events/types.js";
 import type { TracerLike } from "../telemetry.js";
 import type { ONIModel } from "../models/types.js";
-import type { SwarmAgentDef, HandoffRecord, SwarmMessage } from "./types.js";
+import type {
+  SwarmAgentDef, HandoffRecord, SwarmMessage,
+  RubricConfig, VerificationResult, VulnerabilitySeverity,
+  BranchState, SprintResult,
+} from "./types.js";
 import type { AgentRegistry } from "./registry.js";
 
 // ----------------------------------------------------------------
@@ -185,4 +189,139 @@ export interface SwarmExtensions<S extends Record<string, unknown>> {
   spawnAgent: (def: SwarmAgentDef<S>) => void;
   /** Remove an agent from the compiled swarm (marks as terminated) */
   removeAgent: (agentId: string) => void;
+}
+
+// ----------------------------------------------------------------
+// CritiqueRefineConfig
+// ----------------------------------------------------------------
+
+export interface CritiqueRefineConfig<S extends BaseSwarmState> {
+  generator:  SwarmAgentDef<S>;
+  critic:     SwarmAgentDef<S>;
+  feedback:   "freeform" | RubricConfig;
+  maxRounds:  number;
+  channels?:  Partial<ChannelSchema<S>>;
+}
+
+// ----------------------------------------------------------------
+// EnsembleVoteConfig
+// ----------------------------------------------------------------
+
+export type EnsembleCustomAggregator<S> = (
+  agentResults: Record<string, unknown>,
+  state: S,
+) => Partial<S>;
+
+export interface EnsembleVoteConfig<S extends BaseSwarmState> {
+  agents:        SwarmAgentDef<S>[];
+  mode:          "vote" | "synthesize" | EnsembleCustomAggregator<S>;
+  judge?: {
+    model:         ONIModel;
+    systemPrompt?: string;
+  };
+  synthesizer?:  SwarmAgentDef<S>;
+  timeoutMs?:    number;
+  channels?:     Partial<ChannelSchema<S>>;
+}
+
+// ----------------------------------------------------------------
+// SpeculativeExecutionConfig
+// ----------------------------------------------------------------
+
+export interface SpeculativeExecutionConfig<S extends BaseSwarmState> {
+  strategies:           SwarmAgentDef<S>[];
+  validator:            (result: unknown, state: S) => boolean | Promise<boolean>;
+  timeoutMs?:           number;
+  perStrategyTimeoutMs?: number;
+  onCancel?:            (agentId: string) => void | Promise<void>;
+  channels?:            Partial<ChannelSchema<S>>;
+}
+
+// ----------------------------------------------------------------
+// TreeOfThoughtConfig
+// ----------------------------------------------------------------
+
+export interface TreeOfThoughtConfig<S extends BaseSwarmState> {
+  thinker:        SwarmAgentDef<S>;
+  scorer:         SwarmAgentDef<S> | ((branch: BranchState<S>, state: S) => number | Promise<number>);
+  branchFactor:   number;
+  maxDepth:       number;
+  topK:           number;
+  pruneThreshold: number;
+  channels?:      Partial<ChannelSchema<S>>;
+}
+
+// ----------------------------------------------------------------
+// AutoResearchConfig
+// ----------------------------------------------------------------
+
+export interface AutoResearchConfig<S extends BaseSwarmState> {
+  decomposer:             SwarmAgentDef<S>;
+  researcher:             SwarmAgentDef<S>;
+  synthesizer:            SwarmAgentDef<S>;
+  maxDepth:               number;
+  confidenceThreshold:    number;
+  maxConcurrentSearches?: number;
+  channels?:              Partial<ChannelSchema<S>>;
+}
+
+// ----------------------------------------------------------------
+// AdversarialDevConfig
+// ----------------------------------------------------------------
+
+export interface AdversarialDevConfig<S extends BaseSwarmState> {
+  planner:                    SwarmAgentDef<S>;
+  generator:                  SwarmAgentDef<S>;
+  evaluator:                  SwarmAgentDef<S>;
+  passThreshold:              number;
+  maxSprints:                 number;
+  maxRetriesPerSprint:        number;
+  contractNegotiationRounds?: number;   // default: 2
+  onSprintComplete?:          (sprint: SprintResult) => void | Promise<void>;
+  channels?:                  Partial<ChannelSchema<S>>;
+}
+
+// ----------------------------------------------------------------
+// SocraticElicitConfig
+// ----------------------------------------------------------------
+
+export interface SocraticElicitConfig<S extends BaseSwarmState> {
+  interviewer:          SwarmAgentDef<S>;
+  respondent:           "interrupt" | SwarmAgentDef<S>;
+  synthesizer?:         SwarmAgentDef<S>;
+  coverageDimensions:   string[];
+  completionThreshold:  number;
+  maxQuestions:          number;
+  outputFormat?:        string;
+  channels?:            Partial<ChannelSchema<S>>;
+}
+
+// ----------------------------------------------------------------
+// RedTeamConfig
+// ----------------------------------------------------------------
+
+export interface RedTeamConfig<S extends BaseSwarmState> {
+  attacker:            SwarmAgentDef<S>;
+  builder:             SwarmAgentDef<S>;
+  maxRounds:           number;
+  severityThreshold?:  VulnerabilitySeverity;
+  attackSurface?:      string[];
+  channels?:           Partial<ChannelSchema<S>>;
+}
+
+// ----------------------------------------------------------------
+// StepwiseVerifyConfig
+// ----------------------------------------------------------------
+
+export interface StepwiseStage<S extends BaseSwarmState> {
+  worker:        SwarmAgentDef<S>;
+  verifier:      SwarmAgentDef<S> | ((result: unknown, state: S) => VerificationResult | Promise<VerificationResult>);
+  maxRetries:    number;
+  retryDelayMs?: number;
+}
+
+export interface StepwiseVerifyConfig<S extends BaseSwarmState> {
+  stages:          StepwiseStage<S>[];
+  onStageFailure?: "halt" | "skip";
+  channels?:       Partial<ChannelSchema<S>>;
 }

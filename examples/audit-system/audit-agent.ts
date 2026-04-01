@@ -2,7 +2,7 @@ import { ONIHarness } from "../../src/harness/index.js";
 import { openrouter } from "../../src/models/openrouter.js";
 import { defineTool } from "../../src/tools/define.js";
 import { readdir, readFile, stat } from "node:fs/promises";
-import { join, extname, relative, resolve, normalize } from "node:path";
+import { join, extname, relative, resolve, normalize, sep } from "node:path";
 import type { BasePayload, PreToolUsePayload, StopPayload } from "../../src/harness/hooks-engine.js";
 import type { Finding, AuditConfig, Category, Severity } from "./types.js";
 import { findingId } from "./types.js";
@@ -99,7 +99,7 @@ export async function runAuditAgent(
     execute: async (input: { path: string; maxLines?: number }) => {
       const boundary = normalize(resolve(process.cwd()));
       const resolved = normalize(resolve(input.path));
-      if (!resolved.startsWith(boundary + "/") && resolved !== boundary) {
+      if (!resolved.startsWith(boundary + sep) && resolved !== boundary) {
         throw new Error(`Access denied: path "${input.path}" is outside the working directory`);
       }
       const content = await readFile(resolved, "utf-8");

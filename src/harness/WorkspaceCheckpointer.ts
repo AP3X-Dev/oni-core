@@ -12,7 +12,7 @@
 import { resolve } from "node:path";
 import type { ONICheckpoint, ONICheckpointer, CheckpointListOptions } from "../types.js";
 import { SqliteCheckpointer } from "../checkpointers/sqlite.js";
-import { execGit, isGitAvailable, atomicWriteJSON, readJSON, ensureDir } from "./utils.js";
+import { execGit, isGitAvailable, atomicWriteJSON, readJSON } from "./utils.js";
 import { WorkspaceGitUnavailableWarning } from "./errors.js";
 
 // ----------------------------------------------------------------

@@ -189,3 +189,99 @@ export interface AgentLifecycleHooks {
   onComplete?: (agentId: string, result?: unknown) => void | Promise<void>;
   onError?: (agentId: string, error?: unknown) => void | Promise<void>;
 }
+
+// ----------------------------------------------------------------
+// Rubric types (used by critiqueRefine)
+// ----------------------------------------------------------------
+
+export interface RubricDimension {
+  name:        string;
+  description: string;
+  weight?:     number;
+}
+
+export interface RubricConfig {
+  dimensions:       RubricDimension[];
+  passThreshold:    number;
+  globalThreshold?: number;
+}
+
+export interface RubricScore {
+  dimension: string;
+  score:     number;
+  comment:   string;
+}
+
+// ----------------------------------------------------------------
+// Verification types (used by stepwiseVerify)
+// ----------------------------------------------------------------
+
+export interface VerificationResult {
+  passed:      boolean;
+  feedback:    string;
+  confidence?: number;
+}
+
+// ----------------------------------------------------------------
+// Vulnerability types (used by redTeam)
+// ----------------------------------------------------------------
+
+export type VulnerabilitySeverity = "low" | "medium" | "high" | "critical";
+export type VulnerabilityStatus  = "open" | "patched" | "wontfix";
+
+export interface Vulnerability {
+  id:          string;
+  round:       number;
+  category:    string;
+  severity:    VulnerabilitySeverity;
+  description: string;
+  reproSteps:  string;
+  status:      VulnerabilityStatus;
+}
+
+export interface Patch {
+  vulnerabilityId: string;
+  round:           number;
+  description:     string;
+  filesChanged:    string[];
+}
+
+// ----------------------------------------------------------------
+// Branch types (used by treeOfThought)
+// ----------------------------------------------------------------
+
+export interface BranchState<S> {
+  branchId:       string;
+  depth:          number;
+  parentBranchId: string | null;
+  path:           string[];
+  thought:        unknown;
+  score:          number;
+  state:          Partial<S>;
+}
+
+// ----------------------------------------------------------------
+// Sprint types (used by adversarialDev)
+// ----------------------------------------------------------------
+
+export interface SprintContract {
+  sprintIndex:        number;
+  description:        string;
+  acceptanceCriteria: string[];
+  constraints:        string[];
+}
+
+export interface SprintAttempt {
+  attemptIndex: number;
+  score:        number;
+  feedback:     string;
+  passed:       boolean;
+}
+
+export interface SprintResult {
+  sprintIndex:  number;
+  contract:     SprintContract;
+  attempts:     SprintAttempt[];
+  passed:       boolean;
+  finalScore:   number;
+}

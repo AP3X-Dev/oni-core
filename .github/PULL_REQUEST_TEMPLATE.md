@@ -16,7 +16,7 @@ _Complete if you modified `src/pregel/`, `src/graph.ts`, `src/hitl/`, `src/check
 
 - [ ] Read `docs/RUNTIME_DESIGN.md` — this change is consistent with all documented invariants
 - [ ] Added or updated tests in `src/__tests__/core-invariants/` for touched behaviors
-- [ ] `npm run typecheck && npm run lint && npm test && npm run build` all pass locally
+- [ ] `pnpm run typecheck && pnpm run lint && pnpm test && pnpm run build` all pass locally
 - [ ] No new `as any` in production source (or documented with `// SAFE:` comment)
 
 ## Harness Checklist

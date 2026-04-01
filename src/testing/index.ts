@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { ONIModel, ChatParams, ChatResponse, ChatChunk } from "../models/index.js";
-import type { StateGraph, StateGraphInternals } from "../graph.js";
+import type { StateGraph } from "../graph.js";
 import type { ONIStreamEvent, CustomStreamEvent, MessageStreamEvent, StreamMode } from "../types.js";
 import { MemoryCheckpointer } from "../checkpoint.js";
 import { randomUUID } from "node:crypto";
@@ -85,9 +85,8 @@ export function assertGraph<S extends Record<string, unknown>>(
   graph: StateGraph<S>,
   assertions: GraphAssertions,
 ): void {
-  const g = graph as unknown as StateGraphInternals<S>;
-  const nodes = g.nodes;
-  const edges = g.edges as Array<{ type: string; from: string; to?: string }>;
+  const nodes = graph.getNodeMap();
+  const edges = graph.getEdges() as Array<{ type: string; from: string; to?: string }>;
 
   if (assertions.hasNode) {
     for (const name of assertions.hasNode) {

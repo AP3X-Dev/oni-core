@@ -2,6 +2,7 @@ import type {
   ONIModel,
   ONIModelMessage,
   ONIModelToolCall,
+  ContentPart,
   ChatParams,
   ChatResponse,
   ChatChunk,
@@ -56,6 +57,35 @@ interface AnthropicResponseBody {
   content: AnthropicContentBlock[];
   stop_reason: string | null;
   usage: { input_tokens: number; output_tokens: number };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Multimodal helpers                                                */
+/* ------------------------------------------------------------------ */
+
+/** Check if content parts contain any non-text (image) parts */
+function hasMultimodal(content: string | ContentPart[]): boolean {
+  if (typeof content === "string") return false;
+  return content.some((p) => p.type !== "text");
+}
+
+/** Parse a data URL into media_type and base64 data */
+function parseDataUrl(dataUrl: string): { media_type: string; data: string } {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (match) return { media_type: match[1]!, data: match[2]! };
+  return { media_type: "application/octet-stream", data: dataUrl };
+}
+
+/** Convert content parts to Anthropic multimodal format */
+function contentToMultimodal(content: ContentPart[]): unknown[] {
+  return content.map((p) => {
+    if (p.type === "text") return { type: "text", text: p.text ?? "" };
+    if (p.type === "image") {
+      const { media_type, data } = parseDataUrl(p.imageUrl ?? "");
+      return { type: "image", source: { type: "base64", media_type, data } };
+    }
+    return { type: "text", text: "" };
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -139,18 +169,25 @@ function convertMessages(messages: ONIModelMessage[]): {
     }
 
     // Regular user or assistant message
-    const content =
-      typeof msg.content === "string"
-        ? msg.content
-        : msg.content
-            .filter((p) => p.type === "text")
-            .map((p) => p.text ?? "")
-            .join("");
+    if (msg.role === "user" && hasMultimodal(msg.content)) {
+      converted.push({
+        role: "user",
+        content: contentToMultimodal(msg.content as ContentPart[]) as unknown as string,
+      });
+    } else {
+      const content =
+        typeof msg.content === "string"
+          ? msg.content
+          : msg.content
+              .filter((p) => p.type === "text")
+              .map((p) => p.text ?? "")
+              .join("");
 
-    converted.push({
-      role: msg.role as "user" | "assistant",
-      content,
-    });
+      converted.push({
+        role: msg.role as "user" | "assistant",
+        content,
+      });
+    }
   }
 
   // Flush any trailing tool results (conversation ending on tool messages).
@@ -191,7 +228,8 @@ function* drainSSELines(
     if (line.startsWith("event: ")) {
       state.event = line.slice(7).trim();
     } else if (line.startsWith("data: ")) {
-      state.data = line.slice(6);
+      // Per SSE spec, concatenate multiple data: lines with newlines
+      state.data = state.data ? state.data + "\n" + line.slice(6) : line.slice(6);
     } else if (line.trim() === "") {
       if (state.data) {
         yield { event: state.event, data: state.data };

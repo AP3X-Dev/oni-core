@@ -43,10 +43,15 @@ export function consumeInbox(messages: SwarmMessage[], agentId: string): SwarmMe
  * Strips characters / sequences that could be used for prompt injection.
  */
 function sanitize(input: string): string {
-  return input
+  const withoutControls = [...input]
+    .filter((char) => {
+      const code = char.charCodeAt(0);
+      return code === 9 || code === 10 || code === 13 || (code >= 32 && code !== 127);
+    })
+    .join("");
+  return withoutControls
     .replace(/[<>]/g, "")           // strip angle brackets to prevent tag injection
-    .replace(/\r?\n{3,}/g, "\n\n")  // collapse excessive newlines
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ""); // strip control chars (preserve \t \n \r)
+    .replace(/\r?\n{3,}/g, "\n\n"); // collapse excessive newlines
 }
 
 /** Format inbox as readable string for LLM context */

@@ -25,7 +25,7 @@ export function createSSEResponse(
         const errEvent = JSON.stringify({ error: { code: -32603, message: "Internal server error" } });
         try {
           controller.enqueue(encoder.encode(`data: ${errEvent}\n\n`));
-        } catch (_) { /* stream may already be cancelled */ }
+        } catch { /* stream may already be cancelled */ }
         controller.error(err);
         return;
       }

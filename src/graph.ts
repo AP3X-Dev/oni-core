@@ -63,6 +63,29 @@ export class StateGraph<S extends Record<string, unknown>> {
     this.channels = schema.channels;
   }
 
+  // ---- Stable introspection API ----
+  // Used by swarm layer, CLI inspect, and topology validation.
+
+  /** Return the current edges array. */
+  getEdges(): Edge<S>[] {
+    return this.edges;
+  }
+
+  /** Look up a single node definition by name. */
+  getNodeDef(name: string): NodeDefinition<S> | undefined {
+    return this.nodes.get(name);
+  }
+
+  /** Return the nodes map. Used by inspect/descriptor builders. */
+  getNodeMap(): ReadonlyMap<string, NodeDefinition<S>> {
+    return this.nodes;
+  }
+
+  /** Clear all edges. Used by swarm templates to rewire topology. */
+  clearEdges(): void {
+    this.edges = [];
+  }
+
   addNode(name: string, fn: NodeFn<S>, opts?: {
     retry?: RetryPolicy;
     cache?: boolean | CachePolicy;
@@ -197,14 +220,20 @@ export class StateGraph<S extends Record<string, unknown>> {
         // Mark as resumed BEFORE invoke to close the TOCTOU window —
         // a concurrent caller will see the status change and bail out above.
         store.markResumed(cfg.resumeId);
-        const result = await runner.invoke(
-          {},
-          {
-            threadId: cfg.threadId,
-            __resumeValues: { [nodeKey]: value },
-          } as ONIConfig & { __resumeValues: Record<string, unknown> }
-        );
-        return result;
+        try {
+          const result = await runner.invoke(
+            {},
+            {
+              threadId: cfg.threadId,
+              __resumeValues: { [nodeKey]: value },
+            } as ONIConfig & { __resumeValues: Record<string, unknown> }
+          );
+          return result;
+        } catch (err) {
+          // Revert to pending so the session can be retried after transient failures
+          store.markPending(cfg.resumeId);
+          throw err;
+        }
       },
 
       getPendingInterrupts(cfg) {
@@ -292,19 +321,10 @@ declare module "./graph.js" {
   }
 }
 
-/** Internal interface for accessing StateGraph's private nodes/edges fields from prototype extensions. */
-export interface StateGraphInternals<S extends Record<string, unknown>> {
-  nodes: Map<string, import("./types.js").NodeDefinition<S>>;
-  edges: import("./types.js").Edge<S>[];
-}
-
 StateGraph.prototype.getGraph = function <S extends Record<string, unknown>>(this: StateGraph<S>) {
-  const g = this as unknown as StateGraphInternals<S>;
-  return buildGraphDescriptor(g.nodes, g.edges);
+  return buildGraphDescriptor(this.getNodeMap() as Map<string, NodeDefinition<S>>, this.getEdges());
 };
 
 StateGraph.prototype.toMermaidDetailed = function <S extends Record<string, unknown>>(this: StateGraph<S>) {
-  const g = this as unknown as StateGraphInternals<S>;
-  const desc = buildGraphDescriptor(g.nodes, g.edges);
-  return toMermaidDetailed(desc);
+  return toMermaidDetailed(this.getGraph());
 };

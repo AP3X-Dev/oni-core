@@ -128,6 +128,48 @@ describe("google gemini adapter", () => {
     expect(result.toolCalls![0]!.args).toEqual({ location: "London" });
   });
 
+  it("chat() passes image content parts through to the API", async () => {
+    mockFetchResponse({
+      candidates: [
+        {
+          content: {
+            parts: [{ text: "I see a cat." }],
+            role: "model",
+          },
+          finishReason: "STOP",
+        },
+      ],
+      usageMetadata: {
+        promptTokenCount: 100,
+        candidatesTokenCount: 10,
+        totalTokenCount: 110,
+      },
+    });
+
+    const model = google("gemini-2.0-flash", { apiKey: "test-api-key" });
+    await model.chat({
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "What's in this image?" },
+            { type: "image", imageUrl: "data:image/png;base64,iVBOR..." },
+          ],
+        },
+      ],
+    });
+
+    const { body } = lastFetchCall();
+    const contents = body["contents"] as Array<Record<string, unknown>>;
+    const parts = contents[0]!["parts"] as Array<Record<string, unknown>>;
+
+    expect(parts.length).toBe(2);
+    expect(parts[0]).toEqual({ text: "What's in this image?" });
+    expect(parts[1]).toEqual({
+      inlineData: { mimeType: "image/png", data: "iVBOR..." },
+    });
+  });
+
   it("has correct metadata", () => {
     const model = google("gemini-2.0-flash", { apiKey: "test-api-key" });
 
