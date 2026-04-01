@@ -1,6 +1,6 @@
 // ============================================================
 // @oni.bot/core/harness/loop — Tools
-// Tool schema → adapter conversion + sequential execution.
+// Tool schema → adapter conversion + parallel/serial execution.
 // ============================================================
 
 import type { LLMToolDef, ONIModelToolCall } from "../../models/types.js";
@@ -81,8 +81,40 @@ export interface ToolExecutionContext {
 /**
  * Execute all tool calls for a turn.
  * Returns tool results and any yield-able events (tool_start, tool_metadata).
+ *
+ * When all tools in the batch have `parallelSafe !== false` (the default),
+ * pre-flight checks run serially but the actual `execute()` calls are
+ * dispatched concurrently via `Promise.allSettled()`.  When any tool has
+ * `parallelSafe === false`, the entire batch falls back to fully serial
+ * execution to avoid data races.
  */
 export async function executeTools(
+  toolCalls: ONIModelToolCall[],
+  ctx: ToolExecutionContext,
+): Promise<{ toolResults: LoopToolResult[]; events: LoopMessage[] }> {
+  const { toolMap } = ctx;
+
+  // Check if any tool in the batch explicitly opts out of parallel execution.
+  // `parallelSafe` defaults to true (undefined → safe), only an explicit
+  // `false` triggers the serial path.
+  const hasSafetyConstraint = toolCalls.some(
+    (call) => toolMap.get(call.name)?.parallelSafe === false,
+  );
+
+  if (hasSafetyConstraint) {
+    return executeToolsSerial(toolCalls, ctx);
+  }
+
+  return executeToolsParallel(toolCalls, ctx);
+}
+
+// ─── Serial execution (existing behavior) ──────────────────────────────────
+
+/**
+ * Run every tool call strictly in sequence.  Used when any tool in the
+ * batch has `parallelSafe === false`.
+ */
+async function executeToolsSerial(
   toolCalls: ONIModelToolCall[],
   ctx: ToolExecutionContext,
 ): Promise<{ toolResults: LoopToolResult[]; events: LoopMessage[] }> {
@@ -257,6 +289,243 @@ export async function executeTools(
           });
         } catch {
           // Hook errors are non-fatal — the tool error result is still recorded.
+        }
+      }
+
+      toolResults.push({
+        toolCallId: toolCall.id,
+        toolName: toolCall.name,
+        content: hasMemoryLoader
+          ? `Tool error: ${errorMsg}\n\nMemory query may help — call memory_query with a specific topic if this failure suggests a knowledge gap.`
+          : `Tool error: ${errorMsg}`,
+        isError: true,
+      });
+    }
+  }
+
+  return { toolResults, events };
+}
+
+// ─── Parallel execution ────────────────────────────────────────────────────
+
+/** Per-tool state collected during the serial pre-flight phase. */
+interface ApprovedCall {
+  toolCall: ONIModelToolCall;
+  toolDef: ToolDefinition;
+  toolCtx: HarnessToolContext;
+  metadataUpdates: Array<{ title?: string; metadata?: Record<string, unknown> }>;
+  /** Index in the original toolCalls array — used to place the result. */
+  index: number;
+}
+
+/**
+ * Run pre-flight checks serially, then dispatch approved `execute()` calls
+ * concurrently via `Promise.allSettled()`, then fire post-hooks serially.
+ *
+ * Results are always returned in the original call order regardless of
+ * which tool finishes first (`Promise.allSettled` preserves order).
+ */
+async function executeToolsParallel(
+  toolCalls: ONIModelToolCall[],
+  ctx: ToolExecutionContext,
+): Promise<{ toolResults: LoopToolResult[]; events: LoopMessage[] }> {
+  const { sessionId, threadId, turn, config, toolMap, hasMemoryLoader } = ctx;
+  const toolResults: LoopToolResult[] = [];
+  const events: LoopMessage[] = [];
+
+  // ── Phase 1: Serial pre-flight ────────────────────────────────────────
+  // Each tool goes through proto-stripping, PreToolUse hook, safety gate,
+  // lookup, validation, and tool_start event emission.  Denied or invalid
+  // tools are pushed straight into toolResults; approved tools are
+  // collected for concurrent execution.
+  const approved: ApprovedCall[] = [];
+
+  for (let i = 0; i < toolCalls.length; i++) {
+    const toolCall = toolCalls[i];
+
+    // Strip prototype-polluting keys
+    toolCall.args = stripProtoKeys(toolCall.args);
+
+    // Fire PreToolUse hook
+    if (config.hooksEngine) {
+      const preResult = await config.hooksEngine.fire("PreToolUse", {
+        sessionId,
+        toolName: toolCall.name,
+        input: toolCall.args,
+      });
+
+      if (preResult?.decision === "deny") {
+        toolResults.push({
+          toolCallId: toolCall.id,
+          toolName: toolCall.name,
+          content: `Tool use denied: ${preResult.reason ?? "blocked by hook"}`,
+          isError: true,
+        });
+        continue;
+      }
+
+      if (preResult?.modifiedInput) {
+        toolCall.args = stripProtoKeys(preResult.modifiedInput as Record<string, unknown>);
+      }
+    }
+
+    // Safety gate check
+    const safetyResult = await checkSafety(config.safetyGate, toolCall.id, toolCall.name, toolCall.args);
+    if (safetyResult !== null && !safetyResult.approved) {
+      toolResults.push({
+        toolCallId: toolCall.id,
+        toolName: toolCall.name,
+        content: `Tool blocked by safety gate: ${safetyResult.reason ?? "unsafe operation"}`,
+        isError: true,
+      });
+      continue;
+    }
+
+    // Find tool
+    const toolDef = toolMap.get(toolCall.name);
+    if (!toolDef) {
+      toolResults.push({
+        toolCallId: toolCall.id,
+        toolName: toolCall.name,
+        content: `Unknown tool: ${toolCall.name}`,
+        isError: true,
+      });
+      continue;
+    }
+
+    // Validate tool arguments
+    if (toolDef.schema) {
+      const validationError = validateToolArgs(toolCall.args, toolDef.schema, toolCall.name);
+      if (validationError) {
+        toolResults.push({
+          toolCallId: toolCall.id,
+          toolName: toolCall.name,
+          content: `${validationError}. Please retry with correct arguments.`,
+          isError: true,
+        });
+        continue;
+      }
+    }
+
+    // Yield tool_start
+    events.push(makeMessage("tool_start", sessionId, turn, {
+      metadata: {
+        toolName: toolCall.name,
+        toolArgs: toolCall.args,
+        toolCallId: toolCall.id,
+      },
+    }));
+
+    // Build per-tool context
+    const metadataUpdates: Array<{ title?: string; metadata?: Record<string, unknown> }> = [];
+    const toolCtx: HarnessToolContext = {
+      config: {},
+      store: null,
+      state: {},
+      emit: () => {},
+      sessionId,
+      threadId,
+      agentName: config.agentName,
+      turn,
+      signal: config.signal,
+      askUser: config.onQuestion
+        ? (question: string) =>
+            new Promise<string>((resolve) => {
+              config.onQuestion!(question, (answer) => {
+                resolve(answer ?? "");
+              });
+            })
+        : undefined,
+      metadata: (update: { title?: string; metadata?: Record<string, unknown> }) => {
+        metadataUpdates.push(update);
+      },
+    };
+
+    // Notify onToolMetadata that this tool is now running
+    config.onToolMetadata?.(toolCall.id, toolCall.name, { status: "running" });
+
+    approved.push({ toolCall, toolDef, toolCtx, metadataUpdates, index: i });
+  }
+
+  // ── Phase 2: Concurrent execution ────────────────────────────────────
+  // `Promise.allSettled` preserves the order of the input array, so
+  // results[k] corresponds to approved[k] regardless of completion order.
+  const settled = await Promise.allSettled(
+    approved.map(({ toolCall, toolDef, toolCtx }) => {
+      const startTime = Date.now();
+      return Promise.resolve(toolDef.execute(toolCall.args, toolCtx)).then(
+        (rawResult) => ({ rawResult, durationMs: Date.now() - startTime }),
+      );
+    }),
+  );
+
+  // ── Phase 3: Serial post-processing ──────────────────────────────────
+  // Process results in original call order (approved already preserves
+  // insertion order from phase 1, and settled preserves the order of
+  // the input promises).
+  for (let k = 0; k < approved.length; k++) {
+    const { toolCall, metadataUpdates } = approved[k];
+    const outcome = settled[k];
+
+    if (outcome.status === "fulfilled") {
+      const { rawResult, durationMs } = outcome.value;
+      const content = typeof rawResult === "string" ? rawResult : JSON.stringify(rawResult);
+
+      // Notify onToolMetadata that this tool completed successfully
+      config.onToolMetadata?.(toolCall.id, toolCall.name, { status: "complete", result: content });
+
+      toolResults.push({
+        toolCallId: toolCall.id,
+        toolName: toolCall.name,
+        content,
+        durationMs,
+      });
+
+      // Yield collected metadata updates
+      for (const mu of metadataUpdates) {
+        events.push(makeMessage("tool_metadata", sessionId, turn, {
+          metadata: {
+            toolCallId: toolCall.id,
+            toolName: toolCall.name,
+            title: mu.title,
+            data: mu.metadata,
+          },
+        }));
+      }
+
+      // Fire PostToolUse hook
+      if (config.hooksEngine) {
+        try {
+          await config.hooksEngine.fire("PostToolUse", {
+            sessionId,
+            toolName: toolCall.name,
+            input: toolCall.args,
+            output: rawResult,
+            durationMs,
+          });
+        } catch {
+          // Hook errors are non-fatal.
+        }
+      }
+    } else {
+      // outcome.status === "rejected"
+      const err = outcome.reason;
+      const errorMsg = err instanceof Error ? err.message : String(err);
+
+      // Notify onToolMetadata that this tool errored
+      config.onToolMetadata?.(toolCall.id, toolCall.name, { status: "error", error: errorMsg });
+
+      // Fire PostToolUseFailure hook
+      if (config.hooksEngine) {
+        try {
+          await config.hooksEngine.fire("PostToolUseFailure", {
+            sessionId,
+            toolName: toolCall.name,
+            input: toolCall.args,
+            error: err instanceof Error ? err : errorMsg,
+          });
+        } catch {
+          // Hook errors are non-fatal.
         }
       }
 
