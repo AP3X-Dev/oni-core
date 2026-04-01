@@ -102,3 +102,7 @@ export type {
   WorkProposal, VerificationCriterion, ProposalReview,
   ReviewDecision, NegotiatedContract, ContractStatus,
 } from "./NegotiatedHandoff.js";
+
+// Background agent
+export { spawnAgent } from "./background-agent.js";
+export type { AgentHandle, AgentStatus, SpawnAgentOptions } from "./background-agent.js";

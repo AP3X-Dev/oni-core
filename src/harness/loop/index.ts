@@ -281,6 +281,15 @@ export async function* agentLoop(
         }
       }
 
+      // ── 3j2. Drain injected messages ──────────────────────────────
+      if (config.messageQueue && config.messageQueue.length > 0) {
+        const injected = config.messageQueue.splice(0);
+        for (const msg of injected) {
+          messages.push({ role: "user", content: msg });
+          messages.push({ role: "assistant", content: "Message received." });
+        }
+      }
+
       // ── 3k. Yield tool_result, increment turn ──────────────────────
       yield makeMessage("tool_result", sessionId, turn, { toolResults });
       turn++;
