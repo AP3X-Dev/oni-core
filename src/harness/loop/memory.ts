@@ -105,15 +105,15 @@ export async function finalizeMemory(
       const summary = config.compactor?.getLastSummary() ?? prompt;
       try {
         await config.memoryExtractor.extractFromSummary(sessionId, summary);
-      } catch {
-        // Extraction errors are non-fatal
+      } catch (e) {
+        console.warn("[oni] Memory extraction failed:", e);
       }
 
       if (config.autoConsolidate) {
         try {
           await config.memoryExtractor.consolidate();
-        } catch {
-          // Consolidation errors are non-fatal
+        } catch (e) {
+          console.warn("[oni] Memory consolidation failed:", e);
         }
       }
     }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync, readFileSync, readdirSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { MemoryExtractor } from "../harness/memory/extractor.js";
@@ -120,6 +120,16 @@ describe("MemoryExtractor", () => {
 
       // Model should have been called to organize recurring facts
       expect(model.chat).toHaveBeenCalled();
+
+      // Verify a semantic file was actually written
+      const semanticDir = join(tmpDir, "semantic", "typescript");
+      expect(existsSync(semanticDir)).toBe(true);
+      const files = readdirSync(semanticDir).filter((f) => f.endsWith(".md"));
+      expect(files.length).toBeGreaterThanOrEqual(1);
+
+      // Verify the content includes the promoted fact
+      const content = readFileSync(join(semanticDir, files[0]!), "utf-8");
+      expect(content).toContain("[decision] Always use TypeScript strict mode");
     });
 
     it("does nothing with fewer than 3 episodic entries", async () => {
