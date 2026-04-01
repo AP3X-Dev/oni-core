@@ -330,13 +330,14 @@ async function executeToolsParallel(
   ctx: ToolExecutionContext,
 ): Promise<{ toolResults: LoopToolResult[]; events: LoopMessage[] }> {
   const { sessionId, threadId, turn, config, toolMap, hasMemoryLoader } = ctx;
-  const toolResults: LoopToolResult[] = [];
+  // Pre-size results array so denied/approved results land at their original index.
+  const toolResults: (LoopToolResult | undefined)[] = new Array(toolCalls.length).fill(undefined);
   const events: LoopMessage[] = [];
 
   // ── Phase 1: Serial pre-flight ────────────────────────────────────────
   // Each tool goes through proto-stripping, PreToolUse hook, safety gate,
   // lookup, validation, and tool_start event emission.  Denied or invalid
-  // tools are pushed straight into toolResults; approved tools are
+  // tools are placed directly into toolResults[i]; approved tools are
   // collected for concurrent execution.
   const approved: ApprovedCall[] = [];
 
@@ -355,12 +356,12 @@ async function executeToolsParallel(
       });
 
       if (preResult?.decision === "deny") {
-        toolResults.push({
+        toolResults[i] = {
           toolCallId: toolCall.id,
           toolName: toolCall.name,
           content: `Tool use denied: ${preResult.reason ?? "blocked by hook"}`,
           isError: true,
-        });
+        };
         continue;
       }
 
@@ -372,24 +373,24 @@ async function executeToolsParallel(
     // Safety gate check
     const safetyResult = await checkSafety(config.safetyGate, toolCall.id, toolCall.name, toolCall.args);
     if (safetyResult !== null && !safetyResult.approved) {
-      toolResults.push({
+      toolResults[i] = {
         toolCallId: toolCall.id,
         toolName: toolCall.name,
         content: `Tool blocked by safety gate: ${safetyResult.reason ?? "unsafe operation"}`,
         isError: true,
-      });
+      };
       continue;
     }
 
     // Find tool
     const toolDef = toolMap.get(toolCall.name);
     if (!toolDef) {
-      toolResults.push({
+      toolResults[i] = {
         toolCallId: toolCall.id,
         toolName: toolCall.name,
         content: `Unknown tool: ${toolCall.name}`,
         isError: true,
-      });
+      };
       continue;
     }
 
@@ -397,12 +398,12 @@ async function executeToolsParallel(
     if (toolDef.schema) {
       const validationError = validateToolArgs(toolCall.args, toolDef.schema, toolCall.name);
       if (validationError) {
-        toolResults.push({
+        toolResults[i] = {
           toolCallId: toolCall.id,
           toolName: toolCall.name,
           content: `${validationError}. Please retry with correct arguments.`,
           isError: true,
-        });
+        };
         continue;
       }
     }
@@ -428,6 +429,8 @@ async function executeToolsParallel(
       agentName: config.agentName,
       turn,
       signal: config.signal,
+      // NOTE: Tools that call askUser should declare parallelSafe: false.
+      // Concurrent askUser calls from parallel tools would overlap prompts.
       askUser: config.onQuestion
         ? (question: string) =>
             new Promise<string>((resolve) => {
@@ -460,11 +463,10 @@ async function executeToolsParallel(
   );
 
   // ── Phase 3: Serial post-processing ──────────────────────────────────
-  // Process results in original call order (approved already preserves
-  // insertion order from phase 1, and settled preserves the order of
-  // the input promises).
+  // Place each result at its original index so ordering matches the
+  // serial path even when pre-flight rejected some tools earlier.
   for (let k = 0; k < approved.length; k++) {
-    const { toolCall, metadataUpdates } = approved[k];
+    const { toolCall, metadataUpdates, index } = approved[k];
     const outcome = settled[k];
 
     if (outcome.status === "fulfilled") {
@@ -474,12 +476,12 @@ async function executeToolsParallel(
       // Notify onToolMetadata that this tool completed successfully
       config.onToolMetadata?.(toolCall.id, toolCall.name, { status: "complete", result: content });
 
-      toolResults.push({
+      toolResults[index] = {
         toolCallId: toolCall.id,
         toolName: toolCall.name,
         content,
         durationMs,
-      });
+      };
 
       // Yield collected metadata updates
       for (const mu of metadataUpdates) {
@@ -529,16 +531,17 @@ async function executeToolsParallel(
         }
       }
 
-      toolResults.push({
+      toolResults[index] = {
         toolCallId: toolCall.id,
         toolName: toolCall.name,
         content: hasMemoryLoader
           ? `Tool error: ${errorMsg}\n\nMemory query may help — call memory_query with a specific topic if this failure suggests a knowledge gap.`
           : `Tool error: ${errorMsg}`,
         isError: true,
-      });
+      };
     }
   }
 
-  return { toolResults, events };
+  // Filter out any undefined slots (should not happen if all calls are processed).
+  return { toolResults: toolResults.filter((r): r is LoopToolResult => r !== undefined), events };
 }
