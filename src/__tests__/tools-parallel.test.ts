@@ -99,8 +99,6 @@ describe("Tool parallel batching", () => {
     expect(alphaStartIdx).toBeLessThan(alphaEndIdx);
     expect(betaStartIdx).toBeLessThan(betaEndIdx);
     // Concurrency check: both starts happen before either end
-    expect(alphaStartIdx).toBeLessThan(alphaEndIdx);
-    expect(betaStartIdx).toBeLessThan(betaEndIdx);
     expect(Math.max(alphaStartIdx, betaStartIdx)).toBeLessThan(
       Math.min(alphaEndIdx, betaEndIdx),
     );
@@ -204,5 +202,40 @@ describe("Tool parallel batching", () => {
     expect(toolResults[0].content).toBe("slow-result");
     expect(toolResults[1].toolName).toBe("fast");
     expect(toolResults[1].content).toBe("fast-result");
+  });
+
+  it("handles tool errors in parallel path without aborting siblings", async () => {
+    const toolGood = makeToolDef("good", true, async () => {
+      await new Promise((r) => setTimeout(r, 30));
+      return "good-result";
+    });
+
+    const toolBad = makeToolDef("bad", true, async () => {
+      throw new Error("intentional kaboom");
+    });
+
+    const toolMap = buildToolMap([toolGood, toolBad]);
+    const ctx = makeContext(toolMap);
+
+    const { toolResults } = await executeTools(
+      [
+        { id: "c1", name: "good", args: {} },
+        { id: "c2", name: "bad", args: {} },
+      ],
+      ctx,
+    );
+
+    // Both results should be present, in call order
+    expect(toolResults).toHaveLength(2);
+
+    // The good tool should succeed
+    expect(toolResults[0].toolName).toBe("good");
+    expect(toolResults[0].content).toBe("good-result");
+    expect(toolResults[0].isError).toBeUndefined();
+
+    // The bad tool should produce an isError result with the error message
+    expect(toolResults[1].toolName).toBe("bad");
+    expect(toolResults[1].isError).toBe(true);
+    expect(toolResults[1].content).toContain("intentional kaboom");
   });
 });
