@@ -19,7 +19,15 @@
 import { extname } from "node:path";
 import { LSPClient } from "./client.js";
 import { findServersForExtension } from "./servers.js";
-import type { LSPServerConfig, LSPDiagnostic, LSPClientInfo } from "./types.js";
+import type {
+  LSPServerConfig,
+  LSPDiagnostic,
+  LSPClientInfo,
+  LSPLocation,
+  LSPDocumentSymbol,
+  LSPHover,
+  LSPCompletionItem,
+} from "./types.js";
 
 export { LSPClient } from "./client.js";
 export {
@@ -43,6 +51,11 @@ export type {
   InitializeResult,
   ServerCapabilities,
   PublishDiagnosticsParams,
+  LSPLocation,
+  LSPDocumentSymbol,
+  LSPHover,
+  LSPCompletionItem,
+  TextDocumentPositionParams,
 } from "./types.js";
 export { DiagnosticSeverity as DiagSeverity } from "./types.js";
 
@@ -132,6 +145,78 @@ export class LSPManager {
     const lines = limited.map((d) => formatDiagnostic(d));
 
     return `\n\nLSP errors detected:\n<diagnostics file="${filePath}">\n${lines.join("\n")}\n</diagnostics>`;
+  }
+
+  // ── Request Methods (pass-through) ───────────────────────
+
+  /**
+   * Get definition locations across all servers for the file type.
+   */
+  async getDefinition(filePath: string, line: number, character: number): Promise<LSPLocation[]> {
+    if (this.disabled) return [];
+    const clients = await this.getClientsForFile(filePath);
+    const results = await Promise.all(
+      clients.map((c) => c.getDefinition(filePath, line, character).catch(() => [] as LSPLocation[])),
+    );
+    return results.flat();
+  }
+
+  /**
+   * Get reference locations across all servers for the file type.
+   */
+  async getReferences(filePath: string, line: number, character: number): Promise<LSPLocation[]> {
+    if (this.disabled) return [];
+    const clients = await this.getClientsForFile(filePath);
+    const results = await Promise.all(
+      clients.map((c) => c.getReferences(filePath, line, character).catch(() => [] as LSPLocation[])),
+    );
+    return results.flat();
+  }
+
+  /**
+   * Get document symbols across all servers for the file type.
+   */
+  async getDocumentSymbols(filePath: string): Promise<LSPDocumentSymbol[]> {
+    if (this.disabled) return [];
+    const clients = await this.getClientsForFile(filePath);
+    const results = await Promise.all(
+      clients.map((c) => c.getDocumentSymbols(filePath).catch(() => [] as LSPDocumentSymbol[])),
+    );
+    return results.flat();
+  }
+
+  /**
+   * Get hover information — returns the first non-null result from any server.
+   */
+  async getHover(filePath: string, line: number, character: number): Promise<LSPHover | null> {
+    if (this.disabled) return null;
+    const clients = await this.getClientsForFile(filePath);
+    for (const client of clients) {
+      try {
+        const result = await client.getHover(filePath, line, character);
+        if (result) return result;
+      } catch {
+        // Try next client
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Get completions — returns the first non-empty result from any server.
+   */
+  async getCompletions(filePath: string, line: number, character: number): Promise<LSPCompletionItem[]> {
+    if (this.disabled) return [];
+    const clients = await this.getClientsForFile(filePath);
+    for (const client of clients) {
+      try {
+        const result = await client.getCompletions(filePath, line, character);
+        if (result.length > 0) return result;
+      } catch {
+        // Try next client
+      }
+    }
+    return [];
   }
 
   // ── State Queries ────────────────────────────────────────

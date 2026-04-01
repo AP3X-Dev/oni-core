@@ -41,6 +41,46 @@ export interface PublishDiagnosticsParams {
   diagnostics: LSPDiagnostic[];
 }
 
+// ── Location ────────────────────────────────────────────────
+
+export interface LSPLocation {
+  uri: string;
+  range: LSPRange;
+}
+
+// ── Document Symbols ────────────────────────────────────────
+
+export interface LSPDocumentSymbol {
+  name: string;
+  kind: number;
+  range: LSPRange;
+  selectionRange: LSPRange;
+  children?: LSPDocumentSymbol[];
+}
+
+// ── Hover ───────────────────────────────────────────────────
+
+export interface LSPHover {
+  contents: string | { kind: string; value: string };
+  range?: LSPRange;
+}
+
+// ── Completion ──────────────────────────────────────────────
+
+export interface LSPCompletionItem {
+  label: string;
+  kind?: number;
+  detail?: string;
+  insertText?: string;
+}
+
+// ── TextDocumentPositionParams ───────────────────────────────
+
+export interface TextDocumentPositionParams {
+  textDocument: { uri: string };
+  position: LSPPosition;
+}
+
 // ── Initialize ───────────────────────────────────────────────
 
 export interface InitializeParams {
@@ -60,6 +100,11 @@ export interface ClientCapabilities {
     publishDiagnostics?: {
       versionSupport?: boolean;
     };
+    definition?: { dynamicRegistration?: boolean };
+    references?: { dynamicRegistration?: boolean };
+    documentSymbol?: { dynamicRegistration?: boolean };
+    hover?: { contentFormat?: string[] };
+    completion?: { dynamicRegistration?: boolean };
   };
   window?: {
     workDoneProgress?: boolean;
