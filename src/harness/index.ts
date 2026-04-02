@@ -40,6 +40,7 @@ export type {
   MemoryType,
   LoadResult,
 } from "./memory-loader.js";
+export { MemoryExtractor } from "./memory/extractor.js";
 
 // Integration layer
 export { ONIHarness } from "./harness.js";
