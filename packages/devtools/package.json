@@ -1,0 +1,28 @@
+{
+  "name": "@oni.bot/devtools",
+  "version": "0.1.0",
+  "description": "Lightweight dev server for inspecting ONI graph topology, registry state, and live execution events",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@oni.bot/core": "^1.2.0"
+  },
+  "devDependencies": {
+    "@oni.bot/core": "workspace:*",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  },
+  "license": "MIT"
+}
