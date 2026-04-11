@@ -1,0 +1,38 @@
+{
+  "name": "@oni.bot/hot-loader",
+  "version": "0.1.0",
+  "description": "File-watching extension loader for DynamicToolRegistry — drop a file, get a tool",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@oni.bot/core": "^1.2.0",
+    "chokidar": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "chokidar": {
+      "optional": false
+    }
+  },
+  "dependencies": {
+    "jiti": "^2.4.2"
+  },
+  "devDependencies": {
+    "@oni.bot/core": "workspace:*",
+    "chokidar": "^4.0.3",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  },
+  "license": "MIT"
+}
