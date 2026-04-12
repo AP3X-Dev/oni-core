@@ -16,6 +16,13 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "peerDependencies": {
     "@oni.bot/core": "^1.2.0",
     "chokidar": ">=3.0.0"
