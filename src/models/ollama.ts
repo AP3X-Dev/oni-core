@@ -8,6 +8,7 @@ import type {
   ContentPart,
 } from "./types.js";
 import { throwModelHttpError } from "./http-error.js";
+import { getLogger } from "../logger.js";
 
 /* ------------------------------------------------------------------ */
 /*  Ollama API types (minimal, internal)                              */
@@ -125,7 +126,7 @@ async function* parseNDJSON(
         try {
           yield JSON.parse(trimmed) as Record<string, unknown>;
         } catch (err) {
-          console.warn("[oni-core] Ollama NDJSON: failed to parse line:", err, "| line length:", trimmed?.length ?? 0);
+          getLogger().warn("[oni-core] Ollama NDJSON: failed to parse line", { error: err, lineLength: trimmed?.length ?? 0 });
           continue;
         }
       }
@@ -136,7 +137,7 @@ async function* parseNDJSON(
       try {
         yield JSON.parse(buffer.trim()) as Record<string, unknown>;
       } catch (err) {
-        console.warn("[oni-core] Ollama NDJSON: failed to parse remaining buffer:", err, "| data length:", buffer.trim().length);
+        getLogger().warn("[oni-core] Ollama NDJSON: failed to parse remaining buffer", { error: err, dataLength: buffer.trim().length });
       }
     }
   } finally {

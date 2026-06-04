@@ -10,6 +10,7 @@ import { Handoff } from "./types.js";
 import type { AgentRegistry } from "./registry.js";
 import { getInbox } from "./mailbox.js";
 import { runWithTimeout } from "../internal/timeout.js";
+import { getLogger } from "../logger.js";
 import type { BaseSwarmState } from "./config.js";
 
 // ----------------------------------------------------------------
@@ -131,7 +132,7 @@ export function createAgentNode<S extends BaseSwarmState>(
           try {
             await def.hooks?.onComplete?.(def.id, result);
           } catch (onCompleteErr) {
-            console.warn(`[oni] onComplete hook for agent "${def.id}" threw:`, onCompleteErr);
+            getLogger().warn(`[oni] onComplete hook for agent "${def.id}" threw:`, { error: onCompleteErr });
           } finally {
             registry.markIdle(def.id);
           }
@@ -161,7 +162,7 @@ export function createAgentNode<S extends BaseSwarmState>(
         try {
           await def.hooks?.onComplete?.(def.id, result);
         } catch (onCompleteErr) {
-          console.warn(`[oni] onComplete hook for agent "${def.id}" threw:`, onCompleteErr);
+          getLogger().warn(`[oni] onComplete hook for agent "${def.id}" threw:`, { error: onCompleteErr });
         } finally {
           registry.markIdle(def.id);
         }
@@ -230,7 +231,7 @@ export function createAgentNode<S extends BaseSwarmState>(
     try {
       await def.hooks?.onError?.(def.id, lastError);
     } catch (hookErr) {
-      console.warn(`[oni] onError hook for agent "${def.id}" threw:`, hookErr);
+      getLogger().warn(`[oni] onError hook for agent "${def.id}" threw:`, { error: hookErr });
     }
 
     // Keep agent in error status (don't reset to idle)

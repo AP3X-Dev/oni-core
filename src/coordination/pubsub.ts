@@ -5,6 +5,8 @@
  * Supports wildcard patterns ("*" for single segment, "**" for deep match).
  */
 
+import { getLogger } from "../logger.js";
+
 export interface TopicMessage {
   topic: string;
   data: unknown;
@@ -41,7 +43,7 @@ export class PubSub {
             handler(msg);
           } catch (err) {
             // Isolate subscriber errors — delivery continues to remaining handlers
-            console.warn(`[PubSub] Subscriber handler error on topic "${topic}":`, err);
+            getLogger().warn(`[PubSub] Subscriber handler error on topic "${topic}"`, { error: err });
           }
         }
       }
@@ -60,7 +62,7 @@ export class PubSub {
       this.subscribers.set(pattern, new Set());
     const set = this.subscribers.get(pattern)!;
     if (set.size >= 100) {
-      console.warn(`PubSub: topic "${pattern}" has ${set.size} subscribers, possible memory leak`);
+      getLogger().warn(`PubSub: topic "${pattern}" has ${set.size} subscribers, possible memory leak`);
     }
     set.add(handler);
     return () => {

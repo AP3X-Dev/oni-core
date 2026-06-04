@@ -6,6 +6,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
+import { getLogger } from "../logger.js";
 import type { ONIConfig, LoadConfigOptions } from "./types.js";
 
 // ─── JSONC Parsing ─────────────────────────────────────────────────────────
@@ -253,7 +254,7 @@ async function loadSingleConfig(
     return null;
   } catch (err) {
     // Parse error — log so the user knows their config was ignored
-    console.warn(`[oni] Config parse error in "${path}": ${err instanceof Error ? err.message : String(err)}`);
+    getLogger().warn(`[oni] Config parse error in "${path}": ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }

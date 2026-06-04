@@ -16,6 +16,7 @@ import type {
   PeerNetworkConfig, MapReduceConfig, DebateConfig, HierarchicalMeshConfig,
 } from "./config.js";
 import { runWithTimeout } from "../internal/timeout.js";
+import { getLogger } from "../logger.js";
 
 // SwarmGraph — import type ONLY to avoid runtime circular dep
 import type { SwarmGraph } from "./graph.js";
@@ -87,14 +88,14 @@ export function buildFanOut<S extends BaseSwarmState>(
         try {
           await agent.hooks?.onComplete?.(id, result);
         } catch (hookErr) {
-          console.warn(`[oni] onComplete hook for agent "${id}" threw:`, hookErr);
+          getLogger().warn(`[oni] onComplete hook for agent "${id}" threw:`, { error: hookErr });
         }
         return { id, result, error: null };
       } catch (err) {
         try {
           await agent.hooks?.onError?.(id, err);
         } catch (hookErr) {
-          console.warn(`[oni] onError hook for agent "${id}" threw:`, hookErr);
+          getLogger().warn(`[oni] onError hook for agent "${id}" threw:`, { error: hookErr });
         }
         return { id, result: null, error: err };
       }

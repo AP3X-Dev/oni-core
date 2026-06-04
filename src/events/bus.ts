@@ -1,4 +1,5 @@
 import type { LifecycleEvent, EventType, EventHandler, EventListeners } from "./types.js";
+import { getLogger } from "../logger.js";
 
 export class EventBus {
   // EventHandler is covariant in the event type; store as LifecycleEvent and narrow at callsite.
@@ -44,7 +45,7 @@ export class EventBus {
         try {
           h(event);
         } catch (err) {
-          console.error(`[EventBus] listener error on "${event.type}":`, err);
+          getLogger().error(`[EventBus] listener error on "${event.type}"`, { error: err });
         }
       }
     }
@@ -52,7 +53,7 @@ export class EventBus {
       try {
         h(event);
       } catch (err) {
-        console.error(`[EventBus] onAll listener error on "${event.type}":`, err);
+        getLogger().error(`[EventBus] onAll listener error on "${event.type}"`, { error: err });
       }
     }
   }

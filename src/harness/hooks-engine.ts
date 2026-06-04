@@ -3,6 +3,8 @@
 // 12 lifecycle events for the agent loop
 // ============================================================
 
+import { getLogger } from "../logger.js";
+
 // ─── HookEvent ──────────────────────────────────────────────────────────────
 
 export type HookEvent =
@@ -231,7 +233,7 @@ export class HooksEngine {
       } catch (err) {
         // Security-critical hooks fail closed (deny) on error
         if (event === "PreToolUse" || event === "PermissionRequest") {
-          console.error(`[hooks-engine] ${event} hook crashed — denying (fail-closed):`, err);
+          getLogger().error(`[hooks-engine] ${event} hook crashed — denying (fail-closed)`, { error: err });
           return { decision: "deny", reason: "Hook error: fail-closed for security" };
         }
         // Non-security hooks fail open (pass)
@@ -242,7 +244,7 @@ export class HooksEngine {
       // when withTimeout fires). Non-security hooks can safely skip.
       if (result == null) {
         if (event === "PreToolUse" || event === "PermissionRequest") {
-          console.error(`[hooks-engine] ${event} hook timed out — denying (fail-closed)`);
+          getLogger().error(`[hooks-engine] ${event} hook timed out — denying (fail-closed)`);
           return { decision: "deny", reason: "Hook timeout — fail-closed for security" };
         }
         continue;

@@ -10,6 +10,7 @@ import type {
   LLMToolDef,
 } from "./types.js";
 import { throwModelHttpError } from "./http-error.js";
+import { getLogger } from "../logger.js";
 
 export interface AnthropicOptions extends ModelOptions {
   anthropicVersion?: string;
@@ -487,7 +488,7 @@ export function anthropic(
       try {
         parsed = JSON.parse(data) as Record<string, unknown>;
       } catch (err) {
-        console.warn("[oni-core] Anthropic SSE: failed to parse JSON chunk", { error: err, dataLength: data?.length ?? 0 });
+        getLogger().warn("[oni-core] Anthropic SSE: failed to parse JSON chunk", { error: err, dataLength: data?.length ?? 0 });
         continue;
       }
 

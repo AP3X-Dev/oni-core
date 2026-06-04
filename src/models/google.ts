@@ -11,6 +11,7 @@ import type {
 } from "./types.js";
 import { throwModelHttpError } from "./http-error.js";
 import { ModelAPIError } from "../errors.js";
+import { getLogger } from "../logger.js";
 
 /* ------------------------------------------------------------------ */
 /*  Gemini API types (minimal, internal)                              */
@@ -411,7 +412,7 @@ export function google(
       try {
         result.parsed = JSON.parse(content);
       } catch {
-        console.warn(
+        getLogger().warn(
           `[oni-core/google] responseFormat requested structured JSON output, but the model returned non-JSON content that could not be parsed. Content length: ${content?.length ?? 0}`,
         );
       }
@@ -450,7 +451,7 @@ export function google(
       try {
         parsed = JSON.parse(data) as GeminiResponseBody;
       } catch (err) {
-        console.warn("[oni-core] Google SSE: failed to parse JSON chunk:", err, "| data length:", data?.length ?? 0);
+        getLogger().warn("[oni-core] Google SSE: failed to parse JSON chunk", { error: err, dataLength: data?.length ?? 0 });
         continue;
       }
 

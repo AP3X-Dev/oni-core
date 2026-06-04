@@ -5,6 +5,7 @@
 // ============================================================
 
 import type { ExperimentResult } from "../../harness/loop/experimental-executor.js";
+import { getLogger } from "../../logger.js";
 import path from "node:path";
 
 export interface SkillUsageRecord {
@@ -152,7 +153,7 @@ export class SkillEvolver {
         maxTokens: 2048,
       });
     } catch (err) {
-      console.warn(`[SkillEvolver] llm.chat failed for skill "${skillName}":`, err);
+      getLogger().warn(`[SkillEvolver] llm.chat failed for skill "${skillName}":`, { error: err });
       return null;
     }
 
@@ -171,7 +172,7 @@ export class SkillEvolver {
       try {
         return await testFn(skillName, revisedContent, testTask);
       } catch (err) {
-        console.warn(`[SkillEvolver] testFn threw for skill "${skillName}":`, err);
+        getLogger().warn(`[SkillEvolver] testFn threw for skill "${skillName}":`, { error: err });
         return {
           hypothesis: `Skill revision for ${skillName}`,
           success: false,
@@ -203,11 +204,11 @@ export class SkillEvolver {
     // unconstrained content enables persistent prompt-injection attacks.
     const sizeBytes = Buffer.byteLength(revisedContent, "utf-8");
     if (sizeBytes === 0) {
-      console.error(`[skill-evolver] Rejected empty skill revision for "${skillName}"`);
+      getLogger().error(`[skill-evolver] Rejected empty skill revision for "${skillName}"`);
       return;
     }
     if (sizeBytes > MAX_SKILL_FILE_SIZE) {
-      console.error(
+      getLogger().error(
         `[skill-evolver] Rejected skill revision for "${skillName}": ${sizeBytes} bytes exceeds ${MAX_SKILL_FILE_SIZE} byte limit`,
       );
       return;
@@ -220,14 +221,14 @@ export class SkillEvolver {
     try {
       skillPath = safeSkillPath(this.skillsRoot, skillName, "SKILL.md");
     } catch (err) {
-      console.error(`[skill-evolver] Rejected skill revision for "${skillName}": path traversal detected`);
+      getLogger().error(`[skill-evolver] Rejected skill revision for "${skillName}": path traversal detected`);
       throw err;
     }
 
     // Valid SKILL.md must start with a markdown heading or YAML frontmatter
     const trimmed = revisedContent.trimStart();
     if (!trimmed.startsWith("#") && !trimmed.startsWith("---")) {
-      console.error(
+      getLogger().error(
         `[skill-evolver] Rejected skill revision for "${skillName}": content must start with a markdown heading (#) or frontmatter (---)`,
       );
       return;
@@ -239,7 +240,7 @@ export class SkillEvolver {
     // arbitrary prompt content, and persist across sessions. (See BUG-0211 for
     // the complementary fix at the injection site in SkillLoader.)
     if (/<\/skill-instructions>/i.test(revisedContent) || /<skill-instructions[\s>]/i.test(revisedContent)) {
-      console.error(
+      getLogger().error(
         `[skill-evolver] Rejected skill revision for "${skillName}": content contains XML injection pattern (skill-instructions tag)`,
       );
       return;
@@ -253,7 +254,7 @@ export class SkillEvolver {
       await mkdir(dirname(skillPath), { recursive: true });
       await writeFile(skillPath, revisedContent, "utf-8");
     } catch (err) {
-      console.error(`[skill-evolver] Failed to commit skill "${skillName}":`, err);
+      getLogger().error(`[skill-evolver] Failed to commit skill "${skillName}"`, { error: err });
     }
   }
 }

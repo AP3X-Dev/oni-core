@@ -12,6 +12,7 @@
 // ============================================================
 
 import type { ToolDefinition, ToolContext } from "../../tools/types.js";
+import { getLogger } from "../../logger.js";
 
 import { getFs, getPath } from "./fs-compat.js";
 import {
@@ -617,6 +618,6 @@ Returns: matching memory units or empty if nothing found.`,
   }
 
   private log(msg: string): void {
-    if (this.config.debug) console.log(`[MemoryLoader] ${msg}`);
+    if (this.config.debug) getLogger().info(`[MemoryLoader] ${msg}`);
   }
 }

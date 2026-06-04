@@ -6,6 +6,7 @@
 import { MemoryLoader } from "../memory-loader.js";
 import type { AgentLoopConfig } from "../types.js";
 import type { SessionOutcome } from "../types.js";
+import { getLogger } from "../../logger.js";
 
 // ─── initMemory ─────────────────────────────────────────────────────────────
 
@@ -32,7 +33,7 @@ export function initMemory(prompt: string, config: AgentLoopConfig): MemoryInitR
     memoryLoader.orient();
     const t2 = memoryLoader.match(prompt);
     if (config.memoryDebug && t2.dropped.length > 0) {
-      console.log(`[MemoryLoader] match() dropped ${t2.dropped.length} units over T2 budget`);
+      getLogger().info(`[MemoryLoader] match() dropped ${t2.dropped.length} units over T2 budget`);
     }
     memoryContext = memoryLoader.buildSystemPrompt([0, 1, 2]);
   }
@@ -106,14 +107,14 @@ export async function finalizeMemory(
       try {
         await config.memoryExtractor.extractFromSummary(sessionId, summary);
       } catch (e) {
-        console.warn("[oni] Memory extraction failed:", e);
+        getLogger().warn("[oni] Memory extraction failed", { error: e });
       }
 
       if (config.autoConsolidate) {
         try {
           await config.memoryExtractor.consolidate();
         } catch (e) {
-          console.warn("[oni] Memory consolidation failed:", e);
+          getLogger().warn("[oni] Memory consolidation failed", { error: e });
         }
       }
     }

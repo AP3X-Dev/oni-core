@@ -141,6 +141,16 @@ export type {
 export { ONITracer } from "./telemetry.js";
 export type { SpanLike, TracerLike } from "./telemetry.js";
 
+// -- Logging (injectable structured logger)
+export {
+  getLogger,
+  setDefaultLogger,
+  resetDefaultLogger,
+  consoleLogger,
+  noopLogger,
+} from "./logger.js";
+export type { LoggerLike } from "./logger.js";
+
 // -- Errors
 export {
   ONIError, InvalidSkeletonError, RecursionLimitError,

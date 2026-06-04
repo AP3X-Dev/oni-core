@@ -14,6 +14,7 @@
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { validateSpawnCommand } from "../internal/validate-command.js";
+import { getLogger } from "../logger.js";
 import type {
   JsonRpcRequest,
   JsonRpcResponse,
@@ -270,7 +271,7 @@ export class StdioTransport {
 
   private processBuffer(): void {
     if (this.buffer.length > StdioTransport.MAX_BUFFER_SIZE) {
-      console.error("[mcp] Buffer exceeded 64 MB limit — disconnecting");
+      getLogger().error("[mcp] Buffer exceeded 64 MB limit — disconnecting");
       this.buffer = Buffer.alloc(0);
       this.stop();
       return;

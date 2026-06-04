@@ -15,6 +15,7 @@ import type {
 import { generateId } from "../types.js";
 import type { SessionOutcome } from "../types.js";
 import type { ToolDefinition } from "../../tools/types.js";
+import { getLogger } from "../../logger.js";
 import { makeMessage } from "./types.js";
 
 // Sub-module imports
@@ -312,13 +313,13 @@ export async function* agentLoop(
       try {
         await fireSessionEnd(config.hooksEngine, sessionId, sessionOutcome, turn);
       } catch (e) {
-        console.warn("[oni] fireSessionEnd hook failed:", e);
+        getLogger().warn("[oni] fireSessionEnd hook failed", { error: e });
       }
     }
     try {
       await finalizeMemory(memoryLoader, sessionId, prompt, turn, sessionOutcome, config);
     } catch (e) {
-      console.warn("[oni] finalizeMemory failed:", e);
+      getLogger().warn("[oni] finalizeMemory failed", { error: e });
     }
   }
 }

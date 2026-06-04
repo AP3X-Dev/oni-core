@@ -1,5 +1,6 @@
 import type { TokenUsage } from "../models/types.js";
 import type { BudgetConfig, AuditEntry } from "./types.js";
+import { getLogger } from "../logger.js";
 
 export class BudgetExceededError extends Error {
   constructor(
@@ -82,7 +83,7 @@ export class BudgetTracker {
         (outputTokens / 1_000_000) * pricing.output;
       this.totalCost += cost;
     } else {
-      console.warn(
+      getLogger().warn(
         `[BudgetTracker] Unknown pricing for model "${modelId}"; cost tracking will be incomplete. ` +
         `maxCostPerRun limit may not be enforced.`,
       );

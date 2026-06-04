@@ -19,7 +19,7 @@ describe("SkillEvolver", () => {
     expect(result).toBeNull();
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("llm.chat failed"),
-      expect.any(Error),
+      expect.objectContaining({ error: expect.any(Error) }),
     );
 
     warnSpy.mockRestore();

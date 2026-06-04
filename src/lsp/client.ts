@@ -16,6 +16,7 @@
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { validateSpawnCommand } from "../internal/validate-command.js";
+import { getLogger } from "../logger.js";
 import { pathToFileURL } from "node:url";
 import { readFileSync } from "node:fs";
 import type {
@@ -554,7 +555,7 @@ export class LSPClient {
 
   private processBuffer(): void {
     if (this.buffer.length > LSPClient.MAX_BUFFER_SIZE) {
-      console.error("[lsp] Buffer exceeded 64 MB limit — disconnecting");
+      getLogger().error("[lsp] Buffer exceeded 64 MB limit — disconnecting");
       this.buffer = Buffer.alloc(0);
       this.stop();
       return;
@@ -596,7 +597,7 @@ export class LSPClient {
   private handleMessage(message: Record<string, unknown>): void {
     // Validate JSON-RPC 2.0 envelope
     if (message.jsonrpc !== "2.0") {
-      console.warn("[lsp] Ignoring non-JSON-RPC 2.0 message");
+      getLogger().warn("[lsp] Ignoring non-JSON-RPC 2.0 message");
       return;
     }
 
@@ -639,11 +640,11 @@ export class LSPClient {
     // Response (has id but no method)
     if ("id" in message && message.id !== null) {
       if (typeof message.id !== "number" && typeof message.id !== "string") {
-        console.warn("[lsp] Malformed response: id must be a number or string, got " + typeof message.id);
+        getLogger().warn("[lsp] Malformed response: id must be a number or string, got " + typeof message.id);
         return;
       }
       if (!("result" in message) && !("error" in message)) {
-        console.warn("[lsp] Malformed response: missing both result and error fields");
+        getLogger().warn("[lsp] Malformed response: missing both result and error fields");
         return;
       }
       const id = message.id as number;
@@ -666,7 +667,7 @@ export class LSPClient {
     // Notification (no id)
     if ("method" in message) {
       if (typeof message.method !== "string") {
-        console.warn("[lsp] Malformed notification: missing method");
+        getLogger().warn("[lsp] Malformed notification: missing method");
         return;
       }
       // BUG-0264: Construct validated notification instead of blind cast.

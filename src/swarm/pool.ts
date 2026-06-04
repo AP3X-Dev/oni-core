@@ -9,6 +9,7 @@
 import type { SwarmAgentDef } from "./types.js";
 import type { ONIConfig } from "../types.js";
 import { runWithTimeout } from "../internal/timeout.js";
+import { getLogger } from "../logger.js";
 
 // ---- BatchError ----
 
@@ -234,7 +235,7 @@ export class AgentPool<S extends Record<string, unknown>> {
       try {
         await agent.hooks?.onStart?.(agent.id, input as Record<string, unknown>);
       } catch (hookErr) {
-        console.warn(`[pool] onStart hook threw for agent "${agent.id}":`, hookErr);
+        getLogger().warn(`[pool] onStart hook threw for agent "${agent.id}":`, { error: hookErr });
       }
 
       let lastError: unknown;
@@ -251,7 +252,7 @@ export class AgentPool<S extends Record<string, unknown>> {
           try {
             await agent.hooks?.onComplete?.(agent.id, result);
           } catch (hookErr) {
-            console.warn(`[pool] onComplete hook threw for agent "${agent.id}":`, hookErr);
+            getLogger().warn(`[pool] onComplete hook threw for agent "${agent.id}":`, { error: hookErr });
           }
 
           return result;
@@ -273,7 +274,7 @@ export class AgentPool<S extends Record<string, unknown>> {
       try {
         await agent.hooks?.onError?.(agent.id, lastError);
       } catch (hookErr) {
-        console.warn(`[oni] onError hook for agent "${agent.id}" threw:`, hookErr);
+        getLogger().warn(`[oni] onError hook for agent "${agent.id}" threw:`, { error: hookErr });
       }
 
       throw lastError;

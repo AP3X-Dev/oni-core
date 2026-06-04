@@ -14,6 +14,7 @@ import type { ONICheckpoint, ONICheckpointer, CheckpointListOptions } from "../t
 import { SqliteCheckpointer } from "../checkpointers/sqlite.js";
 import { execGit, isGitAvailable, atomicWriteJSON, readJSON } from "./utils.js";
 import { WorkspaceGitUnavailableWarning } from "./errors.js";
+import { getLogger } from "../logger.js";
 
 // ----------------------------------------------------------------
 // Types
@@ -77,7 +78,7 @@ export class WorkspaceCheckpointer<S> implements ONICheckpointer<S> {
 
     if (!gitAvailable && config.autoCommit) {
       const warning = new WorkspaceGitUnavailableWarning();
-      console.warn(`[ONI] ${warning.message}`);
+      getLogger().warn(`[ONI] ${warning.message}`);
     }
   }
 
@@ -276,7 +277,7 @@ export class WorkspaceCheckpointer<S> implements ONICheckpointer<S> {
     } catch {
       // Git commit failure should not break checkpoint persistence.
       // The SQLite write already succeeded — log and continue.
-      console.warn(`[ONI] git commit failed for checkpoint ${checkpointId}, continuing without git`);
+      getLogger().warn(`[ONI] git commit failed for checkpoint ${checkpointId}, continuing without git`);
     }
   }
 

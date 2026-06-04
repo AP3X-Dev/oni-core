@@ -162,6 +162,21 @@ export {
   summarizePlatformAudit,
   summarizePlatformHealth,
 } from "./observability.js";
+export {
+  EXTERNAL_AGENT_EVENT_TAXONOMY,
+  EXTERNAL_AGENT_EVENT_TAXONOMY_VERSION,
+  externalAgentEventPhase,
+  isTerminalExternalAgentEvent,
+} from "./event-taxonomy.js";
+export type {
+  ExternalAgentLifecyclePhase,
+  ExternalAgentEventTaxonomyEntry,
+} from "./event-taxonomy.js";
+export {
+  redactSecrets,
+  collectRedactionValues,
+  REDACTION_PLACEHOLDER,
+} from "./redaction.js";
 export type {
   PlatformAuditSummary,
   PlatformAuditSummaryOptions,

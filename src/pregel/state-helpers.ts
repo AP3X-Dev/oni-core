@@ -8,6 +8,7 @@ import {
   type ONIConfig, type ONIStreamEvent, type DynamicInterrupt,
 } from "../types.js";
 import { ONIInterrupt } from "../errors.js";
+import { getLogger } from "../logger.js";
 import type { PendingSend } from "./types.js";
 
 export function buildInitialState<S extends Record<string, unknown>>(
@@ -49,7 +50,7 @@ export function applyUpdate<S extends Record<string, unknown>>(
     if (update[key] !== undefined) {
       const ch = channels[key];
       if (!ch) {
-        console.warn(`[oni-core] applyUpdate: unknown channel key "${String(key)}" — skipping (not in channel schema)`);
+        getLogger().warn(`[oni-core] applyUpdate: unknown channel key "${String(key)}" — skipping (not in channel schema)`);
         continue;
       }
       next[key] = ch.reducer(current[key], update[key] as S[keyof S]);

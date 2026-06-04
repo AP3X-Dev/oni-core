@@ -4,6 +4,8 @@
 // Stored as memory/identity/MANIFEST.md — agents read at wake().
 // ============================================================
 
+import { getLogger } from "../../logger.js";
+
 export interface ManifestGoal {
   metric: string;
   target: number;
@@ -46,7 +48,7 @@ export function parseManifest(content: string): ObjectiveManifest {
         if (!m) return null;
         const rawDir = m[3];
         if (rawDir !== "minimize" && rawDir !== "maximize") {
-          console.warn(`[manifest] Invalid direction value "${rawDir}" for metric "${m[1]}"; defaulting to "minimize"`);
+          getLogger().warn(`[manifest] Invalid direction value "${rawDir}" for metric "${m[1]}"; defaulting to "minimize"`);
         }
         const direction: "minimize" | "maximize" = (rawDir === "minimize" || rawDir === "maximize") ? rawDir : "minimize";
         return {

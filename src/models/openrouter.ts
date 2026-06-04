@@ -10,6 +10,7 @@ import type {
   ContentPart,
 } from "./types.js";
 import { throwModelHttpError } from "./http-error.js";
+import { getLogger } from "../logger.js";
 
 /* ------------------------------------------------------------------ */
 /*  OpenRouter API types (OpenAI-compatible)                           */
@@ -224,7 +225,7 @@ function parseStreamPayloads(data: string): Record<string, unknown>[] {
         // Fall through to the warning below.
       }
     }
-    console.warn("openrouter: failed to parse SSE chunk", err, "data length:", data?.length ?? 0);
+    getLogger().warn("openrouter: failed to parse SSE chunk", { error: err, dataLength: data?.length ?? 0 });
     return [];
   }
 }
@@ -400,7 +401,7 @@ export function openrouter(
       try {
         result.parsed = JSON.parse(content);
       } catch (err) {
-        console.warn("openrouter: responseFormat parsing failed", err, "content length:", content?.length ?? 0);
+        getLogger().warn("openrouter: responseFormat parsing failed", { error: err, contentLength: content?.length ?? 0 });
       }
     }
 

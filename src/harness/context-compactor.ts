@@ -5,6 +5,7 @@
 // ============================================================
 
 import type { ONIModel, ONIModelMessage } from "../models/types.js";
+import { getLogger } from "../logger.js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -348,7 +349,7 @@ export class ContextCompactor {
             });
             truncatedMsg = { ...msg, content: parts };
           }
-          console.warn(
+          getLogger().warn(
             `[ContextCompactor] fallbackTruncation: most recent message exceeded budget (${len} chars > ${budget} remaining); truncating to ${allowedChars} chars.`
           );
           kept.unshift(truncatedMsg);

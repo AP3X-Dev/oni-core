@@ -10,6 +10,7 @@ import type { SessionBridge, SessionArtifact, SessionMode } from "./SessionBridg
 import type { FeatureRegistry, Feature } from "./FeatureRegistry.js";
 import { EnvironmentUnhealthyError } from "./errors.js";
 import { sanitizeForPrompt } from "./utils.js";
+import { getLogger } from "../logger.js";
 
 // ----------------------------------------------------------------
 // Types
@@ -96,7 +97,7 @@ export async function runSessionInit(config: SessionInitConfig): Promise<Session
       }
 
       if (!environmentHealthy && onBrokenEnvironment === "warn") {
-        console.warn("[ONI] Smoke test failed. Environment may be unhealthy.");
+        getLogger().warn("[ONI] Smoke test failed. Environment may be unhealthy.");
       }
     }
   }

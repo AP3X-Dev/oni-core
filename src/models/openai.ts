@@ -10,6 +10,7 @@ import type {
   ContentPart,
 } from "./types.js";
 import { throwModelHttpError } from "./http-error.js";
+import { getLogger } from "../logger.js";
 
 /* ------------------------------------------------------------------ */
 /*  OpenAI API types (minimal, internal)                              */
@@ -199,7 +200,7 @@ function parseStreamPayloads(data: string): Record<string, unknown>[] {
         // Fall through to the warning below.
       }
     }
-    console.warn("[oni-core] OpenAI SSE: failed to parse JSON chunk:", err, "| data length:", data?.length ?? 0);
+    getLogger().warn("[oni-core] OpenAI SSE: failed to parse JSON chunk", { error: err, dataLength: data?.length ?? 0 });
     return [];
   }
 }
@@ -339,7 +340,7 @@ export function openai(
       try {
         parsed = JSON.parse(content);
       } catch {
-        console.warn(`[oni-core] Structured output parsing failed: json_schema response format was requested but the model returned invalid JSON. Content length: ${content?.length ?? 0}`);
+        getLogger().warn(`[oni-core] Structured output parsing failed: json_schema response format was requested but the model returned invalid JSON. Content length: ${content?.length ?? 0}`);
       }
     }
 
