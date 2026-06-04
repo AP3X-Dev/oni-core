@@ -34,3 +34,31 @@ _Complete if you modified checkpointing or HITL code._
 - [ ] Thread isolation test passes (two threads same checkpointer, no bleed)
 - [ ] HITL resume test passes (interrupt → resume delivers value to correct node)
 - [ ] forkFrom() creates divergent thread without mutating source
+
+## Platform / Agent Session Checklist
+
+_Complete if you modified `src/platform/`, `src/harness/`, external-agent providers, tool policy, or package tools._
+
+- [ ] Task scope and capability grants are enforced in code below the prompt layer
+- [ ] Policy denials are auditable and do not leak secret values
+- [ ] Failed background-agent runs produce a reviewable artifact or failed-run diagnosis
+- [ ] Provider output retention, timeouts, aborts, and resume metadata remain bounded and sanitized
+- [ ] Platform docs/runbooks were updated if lifecycle, policy, artifact, or audit behavior changed
+
+## Release / Packaging Checklist
+
+_Complete for public API, package, dependency, or release-gate changes._
+
+- [ ] `pnpm run verify:release` passes locally
+- [ ] `git diff --check` passes
+- [ ] Public export changes are covered by runtime and type export smoke checks
+- [ ] Package file-list changes are covered by `pnpm run pack:snapshot`
+- [ ] Source-map behavior matches `PACKAGE_RELEASE_POLICY.md`
+- [ ] README/GUIDE, `PROJECT_CONTEXT.md`, `PRODUCTION_HARDENING_PLAN.md`, and changelog entries are updated as needed
+
+## Semver Checklist
+
+- [ ] Patch: bug fix, security hardening, or internal implementation change with compatible API
+- [ ] Minor: new compatible public API, package export, or optional behavior
+- [ ] Major: breaking API, packaging, runtime, or policy behavior change
+- [ ] Version and changelog entries match the selected semver level

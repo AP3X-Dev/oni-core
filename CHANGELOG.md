@@ -5,6 +5,65 @@ All notable changes to @oni.bot/core are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] — 2026-05-12
+
+### Added
+- Background-agent platform control-plane APIs under `@oni.bot/core/platform`.
+- In-memory implementations for task submission, session queueing, environment provisioning, scoped identity, capability grants, artifacts, review gates, and audit traces.
+- JSON-file platform session and artifact stores for local/single-node durable background-agent state.
+- SQLite platform session and artifact stores for indexed local/single-node background-agent state with `better-sqlite3` kept as an optional peer.
+- Postgres platform session and artifact stores for multi-node background-agent state with `pg` kept as an optional peer.
+- Local execution environment provider for session-scoped workspace directories.
+- HTTP and Cerebro execution environment providers for remote devbox provisioning, release, and health checks.
+- External-agent platform runner that bridges `AgentSessionRunner` to harness `ExternalAgentDriver` instances.
+- Runtime platform policy helpers for path, command, network, and explicit env secret enforcement.
+- CLI and scheduled trigger adapters for normalizing launch events into platform `AgentTrigger` records.
+- Reusable `ToolDefinition` runtime policy wrappers for enforcing tool capability, path, command, and network scope before tool execution.
+- `oni platform-smoke` CLI command for local end-to-end background-agent platform verification with durable JSON session and artifact state.
+- Bounded event/output retention options for CLI-backed external-agent drivers, including `maxEvents`, `maxOutputChars`, `maxStderrChars`, and `maxEventContentChars`.
+- Harness `agentLoop` platform runner adapter for running native loop sessions behind the `AgentSessionRunner` contract.
+- Swarm platform runner adapter for running compiled ONI/Swarm skeletons behind the `AgentSessionRunner` contract.
+- Built package subpath export smoke script covering every root `package.json` export target and its generated type file.
+- Root exports for platform primitives and `ONI_CORE_VERSION`.
+- External black-box coding agent harness APIs for conductor-style orchestration of local Codex and Claude Code workers.
+- CLI external-agent driver factories, JSONL event parsers, swarm-node helpers, and root/harness exports for downstream packages.
+- Rich Codex and Claude Code driver option builders for model, sandbox, permissions, MCP config, worktree, budget, and extra CLI arguments.
+- External agent runtime registry with default Codex and Claude Code runtime factories for npm consumers.
+- Release verification gate covering normal verify, blocking coverage quality thresholds, strict typecheck, root build, package builds, production dependency audit, root npm pack dry run, and publishable workspace package pack dry runs.
+
+### Fixed
+- Replaced `SessionBridge`'s stale hard-coded agent version with the shared package version constant.
+- Cleared remaining strict ESLint errors in the package test helper, registry types, and advanced swarm factory guard.
+- Updated workspace verification scripts so package typechecks and tests actually run on Windows.
+- Hardened dependency overrides and test tooling versions to clear current moderate/high npm audit findings.
+- Fixed strict `noUncheckedIndexedAccess` failures in parallel tool execution and supervisor-verifier swarm stages.
+- Brought the private `@oni.bot/community` stub into workspace build, typecheck, and test gates.
+- Aligned workspace `@oni.bot/core` peer dependency ranges to the current `^1.3.0` compatibility line.
+- Restricted publishable workspace package tarballs to runtime `dist` output, excluding compiled test artifacts.
+- Recorded platform policy denials in session audit logs and redacted granted secret values from external-agent summaries and artifacts.
+- Blocked unsafe external-agent CLI options by default, including raw provider `extraArgs`, Codex approval/sandbox bypass, and Claude Code permission bypass unless an explicit `unsafe` override is provided.
+- Improved external-agent CLI timeout and abort handling with process-tree termination on Windows and capped retained provider events/output.
+- Enforced external-agent ownership paths for CLI `cwd`, Codex `addDirs`, and Claude Code `mcpConfig`/`worktree` path options before provider processes start.
+- Added structured capability summaries to platform `capability.granted` audit events without recording secret values.
+- Hardened external-agent JSONL parsing for nested provider frames, including Claude `tool_use` content arrays, provider-style Codex/Claude samples, malformed frames, and encrypted reasoning.
+- Preserved sanitized external-agent resume metadata and guaranteed failed-run diagnosis artifacts for failed platform-run external-agent sessions.
+- Added CLI external-agent env isolation and event redaction controls; platform-run CLI agents now avoid broad `process.env` inheritance by default and redact granted secret values before stdout/stderr events escape.
+- Added the subpath export smoke check to `verify:release` after the root build.
+- Added type-level public API smoke checks for every root package export subpath.
+- Added a tracked operations runbook for stuck sessions, failed external providers, audit review, and release gates.
+- Added a structural `runtimePolicy` hook to `@oni.bot/tools` filesystem tools so platform sessions can enforce grants and path scope in the package surface without importing core internals.
+- Added publishable package tarball snapshot checks to catch missing entrypoints, source/test leakage, local artifacts, and secret-like files.
+- Documented the package source-map policy and added a tarball guard against embedded `sourcesContent`.
+- Expanded the pull request template with platform/session, release-packaging, and semver production-readiness checklists.
+- Added platform health and audit summary helpers plus `BackgroundAgentPlatform#getHealthSnapshot()` and `getAuditSummary()`.
+- Added optional structured logger and OpenTelemetry-compatible platform span hooks around lifecycle phases.
+- Added blocking `coverage:quality` thresholds for global coverage plus platform, external-agent, MCP/LSP, prebuilt, tool, GitHub, and auth-resolver surfaces.
+- Added real stdio MCP transport integration coverage and ReAct agent graph-loop coverage for `createReactAgent`.
+- Added `GitHubArtifactStore` for publishing platform artifacts as GitHub pull requests or issue/PR comments while mirroring enriched artifact records locally.
+- Added GitHub webhook, chat command, and dependency alert trigger adapters, including HMAC verification for GitHub raw webhook bodies.
+- Made the circuit-breaker half-open integration test deterministic under coverage instrumentation by replacing wall-clock sleeps with fake timers.
+- Made retry backoff tests deterministic and ensured `maxDelay` caps the initial retry delay when it is lower than `initialDelay`.
+
 ## [1.2.0] — 2026-03-16
 
 Automated bug pipeline sweep: **90 bugs** found, fixed, and independently verified (BUG-0024 through BUG-0182). Primarily security hardening and reliability improvements across the entire codebase.
