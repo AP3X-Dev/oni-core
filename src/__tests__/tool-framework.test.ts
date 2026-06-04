@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { defineTool } from "../tools/index.js";
+import { _runWithContext } from "../context.js";
+import { defineTool, executeToolCalls } from "../tools/index.js";
 import type { ToolContext } from "../tools/index.js";
 
 describe("tool framework", () => {
@@ -89,5 +90,78 @@ describe("tool framework", () => {
     expect(emitFn).toHaveBeenCalledTimes(2);
     expect(emitFn).toHaveBeenCalledWith("progress", { percent: 50 });
     expect(emitFn).toHaveBeenCalledWith("progress", { percent: 100 });
+  });
+
+  it("executeToolCalls runs known tools inside runtime context", async () => {
+    const emitted: Array<{ event: string; data: unknown }> = [];
+    const tool = defineTool({
+      name: "double",
+      description: "Double a number",
+      schema: {
+        type: "object",
+        properties: { value: { type: "number" } },
+        required: ["value"],
+      },
+      execute(input: { value: number }, ctx) {
+        expect(ctx.config.threadId).toBe("thread-1");
+        expect(ctx.state).toEqual({ run: "state" });
+        ctx.emit("tool.progress", { value: input.value });
+        return input.value * 2;
+      },
+    });
+
+    const results = await _runWithContext({
+      config: { threadId: "thread-1" },
+      store: null,
+      writer: {
+        emit(event, data) {
+          emitted.push({ event, data });
+        },
+        token() {},
+      },
+      state: { run: "state" },
+      parentGraph: null,
+      parentUpdates: [],
+      step: 0,
+      recursionLimit: 10,
+    }, () => executeToolCalls([tool], [{ id: "call-1", name: "double", args: { value: 21 } }]));
+
+    expect(results).toEqual([{ toolCallId: "call-1", name: "double", result: 42 }]);
+    expect(emitted).toEqual([{ event: "tool.progress", data: { value: 21 } }]);
+  });
+
+  it("executeToolCalls returns structured errors for missing tools and invalid args", async () => {
+    const tool = defineTool({
+      name: "requires_text",
+      description: "Requires text",
+      schema: {
+        type: "object",
+        properties: { text: { type: "string" } },
+        required: ["text"],
+      },
+      execute(input: { text: string }) {
+        return input.text;
+      },
+    });
+
+    const results = await executeToolCalls([
+      tool,
+    ], [
+      { id: "missing-1", name: "missing", args: {} },
+      { id: "invalid-1", name: "requires_text", args: {} },
+    ]);
+
+    expect(results[0]).toEqual({
+      toolCallId: "missing-1",
+      name: "missing",
+      result: 'Tool "missing" not found',
+      isError: true,
+    });
+    expect(results[1]).toEqual(expect.objectContaining({
+      toolCallId: "invalid-1",
+      name: "requires_text",
+      isError: true,
+    }));
+    expect(String(results[1]?.result)).toContain("text");
   });
 });

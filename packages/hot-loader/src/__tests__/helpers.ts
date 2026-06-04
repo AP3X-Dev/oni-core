@@ -41,10 +41,11 @@ export async function waitFor(
  * used by the hot-loader.
  */
 export function createMockRegistry() {
-  const tools = new Map<string, { handler: Function; opts: Record<string, unknown> }>();
+  type MockHandler = (...args: unknown[]) => unknown;
+  const tools = new Map<string, { handler: MockHandler; opts: Record<string, unknown> }>();
 
   return {
-    register(name: string, handler: Function, opts: Record<string, unknown> = {}) {
+    register(name: string, handler: MockHandler, opts: Record<string, unknown> = {}) {
       tools.set(name, { handler, opts });
       return this;
     },

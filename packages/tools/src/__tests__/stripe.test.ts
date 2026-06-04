@@ -51,7 +51,7 @@ describe("stripeTools", () => {
 
   it("throws helpful error when stripe package is not installed", async () => {
     // Mock the dynamic import to fail
-    vi.mock("stripe", () => {
+    vi.doMock("stripe", () => {
       throw new Error("Cannot find module 'stripe'");
     });
 

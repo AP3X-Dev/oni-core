@@ -16,8 +16,12 @@ describe("devtools — tool registration SSE events", () => {
 
     server = await startDevtools({ graph, registry, port: 18930 });
 
-    const eventsPromise = collectSSE(`${server.url}/stream`, 500);
-    await new Promise((r) => setTimeout(r, 100));
+    let markSSEOpen!: () => void;
+    const sseOpen = new Promise<void>((resolve) => {
+      markSSEOpen = resolve;
+    });
+    const eventsPromise = collectSSE(`${server.url}/stream`, 500, markSSEOpen);
+    await sseOpen;
 
     server.emitToolRegistered("search_web", "extensions/search.ts");
 
@@ -36,8 +40,12 @@ describe("devtools — tool registration SSE events", () => {
 
     server = await startDevtools({ graph, registry, port: 18931 });
 
-    const eventsPromise = collectSSE(`${server.url}/stream`, 500);
-    await new Promise((r) => setTimeout(r, 100));
+    let markSSEOpen!: () => void;
+    const sseOpen = new Promise<void>((resolve) => {
+      markSSEOpen = resolve;
+    });
+    const eventsPromise = collectSSE(`${server.url}/stream`, 500, markSSEOpen);
+    await sseOpen;
 
     server.emitToolUnregistered("search_web");
 
@@ -55,8 +63,12 @@ describe("devtools — tool registration SSE events", () => {
 
     server = await startDevtools({ graph, registry, port: 18932 });
 
-    const eventsPromise = collectSSE(`${server.url}/stream`, 600);
-    await new Promise((r) => setTimeout(r, 100));
+    let markSSEOpen!: () => void;
+    const sseOpen = new Promise<void>((resolve) => {
+      markSSEOpen = resolve;
+    });
+    const eventsPromise = collectSSE(`${server.url}/stream`, 600, markSSEOpen);
+    await sseOpen;
 
     server.emitToolRegistered("temp_tool");
     await new Promise((r) => setTimeout(r, 50));

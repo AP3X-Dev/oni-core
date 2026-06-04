@@ -60,11 +60,19 @@ export async function fetchJSON(url: string): Promise<unknown> {
 /** Collect SSE events for a given duration. */
 export function collectSSE(
   url: string,
-  durationMs: number
+  durationMs: number,
+  onOpen?: () => void
 ): Promise<Array<{ event: string; data: unknown }>> {
   return new Promise((resolve) => {
     const events: Array<{ event: string; data: unknown }> = [];
     const controller = new AbortController();
+    let opened = false;
+
+    const markOpen = () => {
+      if (opened) return;
+      opened = true;
+      onOpen?.();
+    };
 
     // Use raw fetch for SSE since EventSource isn't available in Node
     fetch(url, { signal: controller.signal }).then(async (res) => {
@@ -76,6 +84,7 @@ export function collectSSE(
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
+          markOpen();
           buffer += decoder.decode(value, { stream: true });
 
           // Parse SSE frames

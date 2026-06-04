@@ -16,11 +16,12 @@ describe("devtools — /stream SSE", () => {
 
     server = await startDevtools({ graph, registry, port: 18920 });
 
-    // Start collecting SSE events for 500ms
-    const eventsPromise = collectSSE(`${server.url}/stream`, 500);
-
-    // Give the SSE connection a moment to establish
-    await new Promise((r) => setTimeout(r, 100));
+    let markSSEOpen!: () => void;
+    const sseOpen = new Promise<void>((resolve) => {
+      markSSEOpen = resolve;
+    });
+    const eventsPromise = collectSSE(`${server.url}/stream`, 500, markSSEOpen);
+    await sseOpen;
 
     // Emit events
     const now = Date.now();
