@@ -38,7 +38,7 @@ const DETECTORS = [
   { id: "stripe-live-publishable", re: /\bpk_live_[0-9A-Za-z]{16,}\b/, placeholderOk: false },
   { id: "openai-key", re: /\bsk-(?:proj-)?[A-Za-z0-9_-]{40,}\b/, placeholderOk: true },
   { id: "anthropic-key", re: /\bsk-ant-[A-Za-z0-9_-]{40,}\b/, placeholderOk: true },
-  { id: "private-key-pkcs8-b64", re: /-----BEGIN ENCRYPTED PRIVATE KEY-----/, placeholderOk: false },
+  { id: "private-key-pkcs8-b64", re: /-----BEGIN ENCRYPTED PRIVATE KEY-----/, placeholderOk: false }, // secret-scan: allow
 ];
 
 function trackedFiles() {
