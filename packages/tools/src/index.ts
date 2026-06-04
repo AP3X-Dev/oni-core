@@ -5,6 +5,11 @@ export { nodeEval } from "./code-execution/node-eval.js";
 export { e2bSandbox } from "./code-execution/e2b.js";
 export { firecrawlScrape } from "./browser/firecrawl.js";
 export { fileSystemTools } from "./filesystem/index.js";
+export type {
+  FileSystemToolsOptions,
+  RuntimePolicyCapabilityType,
+  RuntimePolicyLike,
+} from "./filesystem/index.js";
 export { githubTools } from "./github/index.js";
 export { slackTools } from "./slack/index.js";
 export { stripeTools } from "./stripe/index.js";

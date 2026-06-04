@@ -76,8 +76,47 @@ interface PathInput {
   path: string;
 }
 
-export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinition[] {
-  const { allowedPaths = [process.cwd()] } = opts ?? {};
+export type RuntimePolicyCapabilityType =
+  | "tool"
+  | "secret"
+  | "connector"
+  | "network"
+  | "repo"
+  | "command"
+  | "custom";
+
+export interface RuntimePolicyLike {
+  assertGrantActive(): void;
+  assertCapability(type: RuntimePolicyCapabilityType, name?: string): void;
+  assertPathAllowed(path: string): string;
+}
+
+export interface FileSystemToolsOptions {
+  allowedPaths?: string[];
+  runtimePolicy?: RuntimePolicyLike;
+  assertToolCapability?: boolean;
+}
+
+function resolveFileSystemPath(
+  filePath: string,
+  allowedPaths: string[],
+  toolName: string,
+  opts: FileSystemToolsOptions,
+): string {
+  if (opts.runtimePolicy) {
+    opts.runtimePolicy.assertGrantActive();
+    if (opts.assertToolCapability ?? true) {
+      opts.runtimePolicy.assertCapability("tool", toolName);
+    }
+    return opts.runtimePolicy.assertPathAllowed(filePath);
+  }
+
+  return checkAllowedPath(filePath, allowedPaths);
+}
+
+export function fileSystemTools(opts?: FileSystemToolsOptions): ToolDefinition[] {
+  const options = opts ?? {};
+  const { allowedPaths = [process.cwd()] } = options;
 
   const readFileTool: ToolDefinition = {
     name: "fs_read_file",
@@ -98,7 +137,7 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: true,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as ReadFileInput;
-      const safePath = checkAllowedPath(i.path, allowedPaths);
+      const safePath = resolveFileSystemPath(i.path, allowedPaths, readFileTool.name, options);
       const content = await readFile(safePath, { encoding: i.encoding ?? "utf8" });
       return { path: i.path, content };
     },
@@ -124,7 +163,7 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: false,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as WriteFileInput;
-      const safePath = checkAllowedPath(i.path, allowedPaths);
+      const safePath = resolveFileSystemPath(i.path, allowedPaths, writeFileTool.name, options);
       await writeFile(safePath, i.content, { encoding: i.encoding ?? "utf8" });
       return { path: i.path, success: true };
     },
@@ -145,7 +184,7 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: true,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as ListDirInput;
-      const safePath = checkAllowedPath(i.path, allowedPaths);
+      const safePath = resolveFileSystemPath(i.path, allowedPaths, listDirectoryTool.name, options);
       const entries = await readdir(safePath, { withFileTypes: true, recursive: !!i.recursive });
       const items = entries.map((e) => ({
         name: e.name,
@@ -169,7 +208,7 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: false,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as PathInput;
-      const safePath = checkAllowedPath(i.path, allowedPaths);
+      const safePath = resolveFileSystemPath(i.path, allowedPaths, createDirectoryTool.name, options);
       await mkdir(safePath, { recursive: true });
       return { path: i.path, success: true };
     },
@@ -189,7 +228,7 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: false,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as PathInput;
-      const safePath = checkAllowedPath(i.path, allowedPaths);
+      const safePath = resolveFileSystemPath(i.path, allowedPaths, deleteFileTool.name, options);
       await unlink(safePath);
       return { path: i.path, success: true };
     },
@@ -209,7 +248,7 @@ export function fileSystemTools(opts?: { allowedPaths?: string[] }): ToolDefinit
     parallelSafe: true,
     execute: async (input: unknown, _ctx: ToolContext) => {
       const i = input as PathInput;
-      const safePath = checkAllowedPath(i.path, allowedPaths);
+      const safePath = resolveFileSystemPath(i.path, allowedPaths, getFileInfoTool.name, options);
       const stats = await stat(safePath);
       return {
         path: i.path,
