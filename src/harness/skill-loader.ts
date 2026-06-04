@@ -25,6 +25,20 @@ export interface SkillDefinition {
   disableModelInvocation?: boolean;
 }
 
+/**
+ * Structural policy used to scope which skill files may be loaded. A platform
+ * RuntimePolicy satisfies this shape, so callers can keep skill loading inside
+ * the task's allowed paths without importing platform internals.
+ */
+export interface SkillLoaderPolicyLike {
+  assertPathAllowed(path: string): string;
+}
+
+export interface SkillLoaderOptions {
+  /** When set, every skill file path is checked against this policy before reading. */
+  runtimePolicy?: SkillLoaderPolicyLike;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /** Escape a string for safe interpolation inside XML attributes / text. */
@@ -72,16 +86,21 @@ function parseFrontmatter(raw: string): { meta: Record<string, string | string[]
 export class SkillLoader {
   private skills: Map<string, SkillDefinition> = new Map();
   private pendingInjection: string | null = null;
+  private readonly policy?: SkillLoaderPolicyLike;
   /** Monotonically increasing version — bumps on any skill registration or load. */
   version = 0;
+
+  constructor(options: SkillLoaderOptions = {}) {
+    this.policy = options.runtimePolicy;
+  }
 
   // ── Static Constructors (Node.js only) ───────────────────────────────
 
   /**
    * Scan a single directory (recursively) for SKILL.md files.
    */
-  static fromDirectory(dir: string): SkillLoader {
-    const loader = new SkillLoader();
+  static fromDirectory(dir: string, options?: SkillLoaderOptions): SkillLoader {
+    const loader = new SkillLoader(options);
     loader.loadDirectory(dir);
     return loader;
   }
@@ -89,8 +108,8 @@ export class SkillLoader {
   /**
    * Scan multiple directories for SKILL.md files.
    */
-  static fromDirectories(dirs: string[]): SkillLoader {
-    const loader = new SkillLoader();
+  static fromDirectories(dirs: string[], options?: SkillLoaderOptions): SkillLoader {
+    const loader = new SkillLoader(options);
     for (const dir of dirs) {
       loader.loadDirectory(dir);
     }
@@ -132,6 +151,9 @@ export class SkillLoader {
 
   private loadSkillFile(filePath: string): boolean {
     try {
+      // Scope check: during directory scans a denied path is silently skipped
+      // (same as an unreadable file); explicit single-file loads surface it.
+      this.policy?.assertPathAllowed(filePath);
       const raw = fs.readFileSync(filePath, "utf-8");
       const { meta, body } = parseFrontmatter(raw);
 
@@ -178,7 +200,7 @@ export class SkillLoader {
    * consumed by another agent.
    */
   fork(): SkillLoader {
-    const forked = new SkillLoader();
+    const forked = new SkillLoader({ runtimePolicy: this.policy });
     forked.skills = new Map(this.skills); // shallow copy — isolates mutations between fork and original
     forked.version = this.version;
     return forked;
@@ -214,6 +236,9 @@ export class SkillLoader {
    * Works in Node.js runtimes. Returns true on success.
    */
   loadSkillFromFile(filePath: string): boolean {
+    // Explicit loads surface a policy denial to the caller rather than silently
+    // returning false, so a scoped host knows the path was rejected.
+    this.policy?.assertPathAllowed(filePath);
     try {
       // Note: loadSkillFile already increments this.version on success.
       return this.loadSkillFile(filePath);
