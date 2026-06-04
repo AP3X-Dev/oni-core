@@ -1,6 +1,6 @@
 {
   "name": "@oni.bot/core",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "The graph execution engine for agent swarms — production-grade orchestration with zero dependencies",
   "type": "module",
   "sideEffects": false,
@@ -94,29 +94,44 @@
     "./registry": {
       "import": "./dist/registry/index.js",
       "types": "./dist/registry/index.d.ts"
+    },
+    "./platform": {
+      "import": "./dist/platform/index.js",
+      "types": "./dist/platform/index.d.ts"
     }
   },
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "prepublishOnly": "pnpm run verify && pnpm run build",
+    "prepublishOnly": "pnpm run verify:release",
     "build": "tsc",
+    "build:packages": "pnpm --filter \"./packages/**\" run build",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "typecheck:packages": "pnpm --filter './packages/*' run typecheck",
+    "typecheck:strict": "tsc --noEmit -p tsconfig.strict.json",
+    "typecheck:packages": "pnpm --filter \"./packages/**\" run typecheck",
     "test": "vitest run",
-    "test:packages": "pnpm --filter './packages/*' run test",
+    "test:packages": "pnpm --filter \"./packages/**\" run test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "coverage:quality": "vitest run --coverage",
     "lint": "eslint \"src/**/*.ts\" \"packages/*/src/**/*.ts\"",
+    "audit:deps": "pnpm audit --prod --audit-level moderate",
+    "smoke:exports": "node scripts/smoke-subpath-exports.mjs",
+    "typecheck:exports": "node scripts/type-smoke-subpath-exports.mjs",
+    "pack:dry-run": "npm pack --dry-run",
+    "pack:packages": "pnpm --filter \"./packages/**\" --filter \"!@oni.bot/community\" exec npm pack --dry-run",
+    "pack:snapshot": "node scripts/check-package-tarballs.mjs",
     "verify": "pnpm run typecheck && pnpm test && pnpm run typecheck:packages && pnpm run test:packages",
+    "verify:release": "pnpm run verify && pnpm run coverage:quality && pnpm run typecheck:strict && pnpm run build && pnpm run smoke:exports && pnpm run typecheck:exports && pnpm run build:packages && pnpm run audit:deps && pnpm run pack:dry-run && pnpm run pack:packages && pnpm run pack:snapshot",
     "demo": "tsx examples/demo-content-pipeline.ts",
     "bench": "tsx benchmarks/index.ts"
   },
   "peerDependencies": {
     "better-sqlite3": ">=9.0.0",
     "ioredis": ">=5.0.0",
+    "pg": ">=8.0.0",
     "redis": ">=4.0.0"
   },
   "peerDependenciesMeta": {
@@ -126,12 +141,15 @@
     "ioredis": {
       "optional": true
     },
+    "pg": {
+      "optional": true
+    },
     "redis": {
       "optional": true
     }
   },
   "bin": {
-    "oni-core": "./dist/cli/index.js"
+    "oni-core": "dist/cli/index.js"
   },
   "files": [
     "dist",
@@ -174,13 +192,29 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.0.0",
-    "@rolldown/binding-win32-x64-msvc": "1.0.0-rc.9",
+    "@rolldown/binding-win32-x64-msvc": "1.0.0",
     "@types/node": "^20.0.0",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.6",
     "eslint": "^9.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.0.0",
-    "vitest": "^4.0.18"
+    "vite": "8.0.12",
+    "vitest": "^4.1.6"
+  },
+  "pnpm": {
+    "overrides": {
+      "@xmldom/xmldom": "0.8.13",
+      "axios": "1.16.0",
+      "brace-expansion@<1.1.13": "1.1.13",
+      "brace-expansion@>=4.0.0 <5.0.6": "5.0.6",
+      "flatted": "3.4.2",
+      "follow-redirects": "1.16.0",
+      "picomatch": "4.0.4",
+      "postcss": "8.5.10",
+      "socket.io-parser": "4.2.6",
+      "vite": "8.0.12",
+      "ws@>=8.0.0 <8.20.1": "8.20.1"
+    }
   }
 }
