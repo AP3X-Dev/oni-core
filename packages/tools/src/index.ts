@@ -10,6 +10,11 @@ export type {
   RuntimePolicyCapabilityType,
   RuntimePolicyLike,
 } from "./filesystem/index.js";
+export { enforceCodeExecutionPolicy } from "./runtime-policy.js";
+export type {
+  CodeExecutionRuntimePolicyLike,
+  CodeExecutionPolicyOptions,
+} from "./runtime-policy.js";
 export { githubTools } from "./github/index.js";
 export { slackTools } from "./slack/index.js";
 export { stripeTools } from "./stripe/index.js";

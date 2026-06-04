@@ -21,6 +21,7 @@ import type {
   TaskSpec,
 } from "./types.js";
 import { createRuntimePolicy } from "./policy.js";
+import { redactSecrets } from "./redaction.js";
 
 export interface ExternalAgentSessionRunnerOptions {
   driver: ExternalAgentDriver;
@@ -32,6 +33,8 @@ export interface ExternalAgentSessionRunnerOptions {
   inheritProcessEnv?: boolean;
   requiredCommands?: string[];
   requiresNetwork?: boolean;
+  /** Kill the external agent after this many ms of no stdout/stderr activity. */
+  idleTimeoutMs?: number;
   onEvent?: (event: ExternalAgentEvent, request: AgentRunRequest) => void;
 }
 
@@ -57,12 +60,7 @@ function routeMode(mode: string | undefined, fallback: ExternalAgentMode): Exter
 }
 
 function redact(text: string, env: Record<string, string | undefined>): string {
-  let out = text;
-  for (const value of Object.values(env)) {
-    if (!value || value.length < 4) continue;
-    out = out.split(value).join("[REDACTED_SECRET]");
-  }
-  return out;
+  return redactSecrets(text, Object.values(env));
 }
 
 function artifactsFromEvents(
@@ -177,6 +175,7 @@ export class ExternalAgentSessionRunner implements AgentSessionRunner {
         inheritProcessEnv: this.options.inheritProcessEnv ?? false,
         redactValues,
         timeoutMs: request.route.timeoutMs,
+        idleTimeoutMs: this.options.idleTimeoutMs,
         ownership: policy.externalAgentOwnership(),
         mergePolicy: this.options.mergePolicy ?? "manual",
         sharedContext: {

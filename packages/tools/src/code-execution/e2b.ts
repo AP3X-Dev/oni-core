@@ -1,4 +1,8 @@
 import type { ToolDefinition, ToolContext } from "../types.js";
+import {
+  enforceCodeExecutionPolicy,
+  type CodeExecutionPolicyOptions,
+} from "../runtime-policy.js";
 
 interface E2BInput {
   code: string;
@@ -18,7 +22,9 @@ interface E2BSandboxConstructor {
   create: (opts: { apiKey: string }) => Promise<E2BSandbox>;
 }
 
-export function e2bSandbox(config: { apiKey: string }): ToolDefinition {
+export function e2bSandbox(
+  config: { apiKey: string } & CodeExecutionPolicyOptions,
+): ToolDefinition {
   return {
     name: "e2b_sandbox",
     description: "Execute code in an E2B cloud sandbox",
@@ -41,6 +47,8 @@ export function e2bSandbox(config: { apiKey: string }): ToolDefinition {
     },
     parallelSafe: false,
     execute: async (input: unknown, _ctx: ToolContext) => {
+      // E2B runs code in a remote cloud sandbox — it requires network access.
+      enforceCodeExecutionPolicy("e2b_sandbox", config, { requiresNetwork: true });
       const i = input as E2BInput;
       let SandboxClass: E2BSandboxConstructor;
       try {

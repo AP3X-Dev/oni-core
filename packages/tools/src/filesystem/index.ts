@@ -76,20 +76,11 @@ interface PathInput {
   path: string;
 }
 
-export type RuntimePolicyCapabilityType =
-  | "tool"
-  | "secret"
-  | "connector"
-  | "network"
-  | "repo"
-  | "command"
-  | "custom";
-
-export interface RuntimePolicyLike {
-  assertGrantActive(): void;
-  assertCapability(type: RuntimePolicyCapabilityType, name?: string): void;
-  assertPathAllowed(path: string): string;
-}
+import type { RuntimePolicyLike } from "../runtime-policy.js";
+export type {
+  RuntimePolicyCapabilityType,
+  RuntimePolicyLike,
+} from "../runtime-policy.js";
 
 export interface FileSystemToolsOptions {
   allowedPaths?: string[];

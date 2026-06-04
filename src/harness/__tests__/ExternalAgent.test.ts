@@ -732,6 +732,43 @@ describe("external agent support", () => {
     expect(result.events.some((event) => event.content?.includes("timed out"))).toBe(true);
   });
 
+  it("createCliExternalAgentDriver terminates idle providers that produce no output", async () => {
+    const driver = createCliExternalAgentDriver({
+      provider: "test-cli",
+      command: process.execPath,
+      // Stays alive but never writes to stdout/stderr — the idle watchdog fires.
+      args: () => ["-e", "setTimeout(() => {}, 5000);"],
+      stdin: "none",
+      idleTimeoutMs: 100,
+      maxEvents: 10,
+    });
+
+    const result = await driver.run(makeRequest({ provider: "test-cli" }), () => undefined);
+
+    expect(result.status).toBe("failed");
+    expect(result.events.some((event) => event.content?.includes("idle for"))).toBe(true);
+  });
+
+  it("createCliExternalAgentDriver keeps running while output resets the idle watchdog", async () => {
+    const driver = createCliExternalAgentDriver({
+      provider: "test-cli",
+      command: process.execPath,
+      // Emits lines on an interval shorter than the idle window, then exits.
+      args: () => [
+        "-e",
+        "let n=0;const t=setInterval(()=>{console.log('tick');if(++n>=4)clearInterval(t);},20);",
+      ],
+      stdin: "none",
+      idleTimeoutMs: 300,
+      maxEvents: 50,
+    });
+
+    const result = await driver.run(makeRequest({ provider: "test-cli" }), () => undefined);
+
+    expect(result.events.some((event) => event.content?.includes("idle for"))).toBe(false);
+    expect(result.status).toBe("completed");
+  });
+
   it("externalAgentAsNode throws when the provider process fails", async () => {
     const driver: ExternalAgentDriver = {
       provider: "codex",

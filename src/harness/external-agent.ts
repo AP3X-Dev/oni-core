@@ -78,6 +78,8 @@ export interface ExternalAgentRunRequest {
   inheritProcessEnv?: boolean;
   redactValues?: string[];
   timeoutMs?: number;
+  /** Kill the agent if no stdout/stderr activity occurs for this many ms. */
+  idleTimeoutMs?: number;
   ownership?: ExternalAgentOwnership;
   mergePolicy?: ExternalAgentMergePolicy;
   sharedContext?: Record<string, unknown>;
@@ -219,6 +221,8 @@ export interface CliExternalAgentDriverConfig {
   name?: string;
   capabilities?: Partial<ExternalAgentCapabilities>;
   timeoutMs?: number;
+  /** Kill the agent if no stdout/stderr activity occurs for this many ms. */
+  idleTimeoutMs?: number;
   maxEvents?: number;
   maxOutputChars?: number;
   maxStderrChars?: number;
@@ -994,6 +998,29 @@ export function createCliExternalAgentDriver(
         }, timeoutMs);
       }
 
+      // Inactivity watchdog: kill a process that produces no stdout/stderr for
+      // idleTimeoutMs. This bounds hung/stalled background agents that stay under
+      // the overall wall-clock timeout while making no progress.
+      let idleTimer: NodeJS.Timeout | undefined;
+      const idleTimeoutMs = request.idleTimeoutMs ?? config.idleTimeoutMs;
+      const clearIdle = (): void => {
+        if (idleTimer) {
+          clearTimeout(idleTimer);
+          idleTimer = undefined;
+        }
+      };
+      const resetIdle = (): void => {
+        if (!idleTimeoutMs || idleTimeoutMs <= 0 || settled) return;
+        clearIdle();
+        idleTimer = setTimeout(() => {
+          forward(eventOf(request, "external_agent_error", {
+            content: `External agent idle for ${idleTimeoutMs}ms with no output`,
+          }));
+          kill();
+        }, idleTimeoutMs);
+      };
+      resetIdle();
+
       const handleParsed = (parsed: ExternalAgentEvent | ExternalAgentEvent[] | null): void => {
         if (!parsed) return;
         const parsedEvents = Array.isArray(parsed) ? parsed : [parsed];
@@ -1001,6 +1028,7 @@ export function createCliExternalAgentDriver(
       };
 
       const handleStdoutLine = (line: string): void => {
+        resetIdle();
         forward(eventOf(request, "external_agent_stdout", { content: line }));
         if (config.parseStdoutLine) {
           handleParsed(config.parseStdoutLine(line, request));
@@ -1012,6 +1040,7 @@ export function createCliExternalAgentDriver(
       };
 
       const handleStderrLine = (line: string): void => {
+        resetIdle();
         stderr = appendCapped(stderr, redactExternalAgentText(line, redactValues), maxStderrChars);
         forward(eventOf(request, "external_agent_stderr", { content: line }));
         if (config.parseStderrLine) {
@@ -1034,6 +1063,7 @@ export function createCliExternalAgentDriver(
         child.on("error", (err) => {
           settled = true;
           if (timeout) clearTimeout(timeout);
+          clearIdle();
           signal?.removeEventListener("abort", abortHandler);
           const message = err instanceof Error ? err.message : String(err);
           forward(eventOf(request, "external_agent_error", { content: message }));
@@ -1061,6 +1091,7 @@ export function createCliExternalAgentDriver(
         child.on("close", (code, childSignal) => {
           settled = true;
           if (timeout) clearTimeout(timeout);
+          clearIdle();
           signal?.removeEventListener("abort", abortHandler);
           stdout.close();
           stderrReader.close();

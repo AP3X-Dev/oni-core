@@ -571,6 +571,42 @@ describe("production platform hardening", () => {
     }));
   });
 
+  it("redacts granted secret values from agentLoop artifacts and result", async () => {
+    const root = await mkdtemp(join(tmpdir(), "oni-platform-agent-loop-redact-"));
+    const secret = "supersecretvalue123";
+    const model = mockModel(() => ({
+      content: `Finished. Used token=${secret} to authenticate.`,
+      usage: { inputTokens: 5, outputTokens: 7 },
+      stopReason: "end",
+    }));
+
+    const platform = new BackgroundAgentPlatform({
+      router: new StaticAgentRouter({ agentId: "loop-worker", runtime: "agentLoop" }),
+      runner: createAgentLoopSessionRunner({
+        config: {
+          model,
+          tools: [],
+          agentName: "loop-worker",
+          systemPrompt: "Complete the task and report the result.",
+          maxTurns: 1,
+          // API_TOKEN is granted by the default task() scope.secrets.
+          env: { API_TOKEN: secret },
+        },
+      }),
+      environmentProvider: new LocalExecutionEnvironmentProvider({
+        workspaceRoot: join(root, "workspaces"),
+      }),
+    });
+
+    const completed = await platform.runTask({ task: task() });
+
+    expect(completed.status).toBe("completed");
+    expect(completed.result).not.toContain(secret);
+    expect(completed.result).toContain("[REDACTED_SECRET]");
+    expect(completed.artifacts[0]?.content).not.toContain(secret);
+    expect(completed.artifacts[0]?.content).toContain("[REDACTED_SECRET]");
+  });
+
   it("returns failed platform sessions when agentLoop inference fails", async () => {
     const root = await mkdtemp(join(tmpdir(), "oni-platform-agent-loop-fail-"));
     const model = mockModel(() => {

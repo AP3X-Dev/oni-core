@@ -18,6 +18,7 @@ import type {
   TaskSpec,
 } from "./types.js";
 import { createRuntimePolicy } from "./policy.js";
+import { collectRedactionValues, redactSecrets } from "./redaction.js";
 import {
   wrapToolsWithRuntimePolicy,
   type PlatformToolPolicyMap,
@@ -98,6 +99,12 @@ export class AgentLoopSessionRunner implements AgentSessionRunner {
       config.env.cwd = request.environment.workspaceDir;
     }
 
+    // Redact any granted secret values from durable output/artifacts so they
+    // never reach report storage in the clear (parity with the external-agent runner).
+    const redactValues = collectRedactionValues(policy.snapshot.secrets, config.env);
+    const redact = (text: string): string =>
+      redactValues.length > 0 ? redactSecrets(text, redactValues) : text;
+
     const prompt = this.options.prompt?.(request) ?? taskPrompt(request.task);
     const messages: LoopMessage[] = [];
     let result = "";
@@ -116,14 +123,15 @@ export class AgentLoopSessionRunner implements AgentSessionRunner {
     const messageSummary = summarizeMessages(messages);
     const durationMs = Date.now() - startedAt;
     if (!result && lastError) {
+      const safeError = redact(lastError);
       return {
         status: "failed",
-        summary: lastError,
-        error: lastError,
+        summary: safeError,
+        error: safeError,
         artifacts: [{
           type: "failed_run_diagnosis",
           title: "Agent loop failed run diagnosis",
-          content: lastError,
+          content: safeError,
           metadata: messageSummary,
         }],
         telemetry: {
@@ -133,7 +141,7 @@ export class AgentLoopSessionRunner implements AgentSessionRunner {
       };
     }
 
-    const summary = result || "Agent loop finished without a final result.";
+    const summary = redact(result) || "Agent loop finished without a final result.";
     const artifact: OutputArtifactInput = {
       type: "report",
       title: this.options.artifactTitle ?? "Agent loop report",

@@ -1,6 +1,10 @@
 import { execFile } from "node:child_process";
 import { platform } from "node:os";
 import type { ToolDefinition, ToolContext } from "../types.js";
+import {
+  enforceCodeExecutionPolicy,
+  type CodeExecutionPolicyOptions,
+} from "../runtime-policy.js";
 
 /**
  * BUG-0023: The previous implementation used node:vm which is trivially
@@ -98,7 +102,7 @@ function safeEnv(): Record<string, string> {
   return env;
 }
 
-export function nodeEval(): ToolDefinition {
+export function nodeEval(options: CodeExecutionPolicyOptions = {}): ToolDefinition {
   return {
     name: "node_eval",
     description:
@@ -118,7 +122,10 @@ export function nodeEval(): ToolDefinition {
     },
     parallelSafe: false,
 
-    execute: (input: unknown, _ctx: ToolContext): Promise<{ result: unknown; logs: string[] }> => {
+    execute: async (input: unknown, _ctx: ToolContext): Promise<{ result: unknown; logs: string[] }> => {
+      // The sandbox subprocess has no network grant of its own, so the tool
+      // capability is enough; network is not required for local code execution.
+      enforceCodeExecutionPolicy("node_eval", options, { requiresNetwork: false });
       const i = input as NodeEvalInput;
       const timeout = Math.min(i.timeout ?? 10_000, 30_000);
 
