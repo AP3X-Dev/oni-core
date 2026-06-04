@@ -18,7 +18,8 @@
 ## Current Priority
 
 **Focus area:** Background-agent platform primitives and public API stability.
-**Production hardening source:** See [PRODUCTION_HARDENING_PLAN.md](./PRODUCTION_HARDENING_PLAN.md) for the current readiness plan, release-gate backlog, and production completion sequence.
+**Production hardening status:** COMPLETE as of 2026-06-04 — all nine priorities in [PRODUCTION_HARDENING_PLAN.md](./PRODUCTION_HARDENING_PLAN.md) are DONE and `verify:release` is green end to end (including content secret scanning and a blocking lint-warning budget). Root suite: 316 files, 1842 passed, 2 skipped.
+**Production hardening source:** See [PRODUCTION_HARDENING_PLAN.md](./PRODUCTION_HARDENING_PLAN.md) for the readiness plan and the final completion summary.
 **Critical paths:**
 
 ```

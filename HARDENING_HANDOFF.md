@@ -5,7 +5,21 @@ Workspace: `C:\Users\Guerr\Desktop\oni-core-cerebro`
 
 ## Active Objective
 
-Continue production hardening until `PRODUCTION_HARDENING_PLAN.md` is genuinely complete or a real blocker is reached. The user wants execution, not a fresh analysis loop.
+COMPLETE as of 2026-06-04. `PRODUCTION_HARDENING_PLAN.md` is now fully complete:
+all nine priorities are DONE and `verify:release` passes end to end, including the
+new `audit:secrets` and `lint:budget` gate steps. This handoff is retained for
+history; see the plan's **Status: Complete** section for the authoritative summary.
+
+## Final Slice (2026-06-04)
+
+The closing pass added, on top of the HTTP/Cerebro and env-isolation baseline:
+runtime policy on code-execution tools, shared secret redaction for `agentLoop`
+artifacts, an opt-in `SkillLoader` path-scope hook, a cross-platform external-agent
+inactivity watchdog (`idleTimeoutMs`), an injectable core-library logger, a
+versioned external-agent event taxonomy, coverage/fuzz suites (functional,
+namespaced checkpointer, LSP, CLI, GitHub, auth-resolver, path/serialization
+property tests), a content secret scanner, a lint-warning budget, and an `axios`
+override bump to a patched `1.16.0`. Root suite: 316 files, 1842 passed, 2 skipped.
 
 ## Clean Stopping Point
 

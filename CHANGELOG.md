@@ -30,6 +30,17 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Rich Codex and Claude Code driver option builders for model, sandbox, permissions, MCP config, worktree, budget, and extra CLI arguments.
 - External agent runtime registry with default Codex and Claude Code runtime factories for npm consumers.
 - Release verification gate covering normal verify, blocking coverage quality thresholds, strict typecheck, root build, package builds, production dependency audit, root npm pack dry run, and publishable workspace package pack dry runs.
+- Injectable structured logger (`LoggerLike`, `getLogger`, `setDefaultLogger`, `consoleLogger`, `noopLogger`) exported from the root; every non-CLI core library module now logs through it instead of `console.*`.
+- Versioned external-agent event taxonomy (`EXTERNAL_AGENT_EVENT_TAXONOMY`, `externalAgentEventPhase`, `isTerminalExternalAgentEvent`) for stable platform observability.
+- Cross-platform inactivity watchdog (`idleTimeoutMs`) for CLI external-agent drivers and the platform external-agent runner.
+- Opt-in path-scope runtime policy hook on `SkillLoader`.
+- `fast-check` property/fuzz suites for path-scope normalization and artifact/audit serialization, plus deeper coverage for functional, namespaced-checkpointer, LSP, CLI, GitHub, and auth-resolver surfaces.
+
+### Security
+- Runtime policy enforcement extended to code-execution tools (`node_eval`, `e2b_sandbox`) with tool-capability and network grant checks; `e2b_sandbox` requires a network grant.
+- Shared `redactSecrets` utility now redacts granted secret values from `agentLoop` artifacts/output, matching the external-agent runner.
+- Content secret scanner (`audit:secrets`) and per-rule lint-warning budget (`lint:budget`) added as blocking steps in `verify:release`.
+- Raised the `axios` dependency override to a patched `1.16.0` to clear new transitive advisories.
 
 ### Fixed
 - Replaced `SessionBridge`'s stale hard-coded agent version with the shared package version constant.

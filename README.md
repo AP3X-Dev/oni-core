@@ -255,7 +255,15 @@ before packaging.
 It also runs `pnpm run pack:snapshot` to inspect root and publishable workspace
 tarball contents for missing entrypoints, source/test leakage, local artifacts,
 and secret-like files. See `PACKAGE_RELEASE_POLICY.md` for the source-map and
-tarball-content policy.
+tarball-content policy. The gate further runs `pnpm run audit:secrets` (a
+content secret scanner over every tracked source file) and `pnpm run lint:budget`
+(a per-rule lint-warning ceiling that fails on any lint error or budget
+regression).
+
+Internal library logging is injectable: every non-CLI core module logs through
+`getLogger()` rather than `console.*`, so a host can route or silence internal
+logs with `setDefaultLogger(...)` (or `noopLogger`). The default forwards to the
+matching `console` method, so behavior is unchanged until you inject a sink.
 
 ---
 
