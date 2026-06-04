@@ -10,6 +10,7 @@ import { inspectCommand } from "./inspect.js";
 import { devCommand } from "./dev.js";
 import { testCommand } from "./test.js";
 import { buildCommand } from "./build.js";
+import { platformSmokeCommand } from "./platform-smoke.js";
 import type { CommandRegistry } from "./router.js";
 
 const commands: CommandRegistry = {
@@ -19,6 +20,7 @@ const commands: CommandRegistry = {
   inspect: inspectCommand,
   test: testCommand,
   build: buildCommand,
+  "platform-smoke": platformSmokeCommand,
 };
 
 runCLI(process.argv.slice(2), commands).catch((err) => {

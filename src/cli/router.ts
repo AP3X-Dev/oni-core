@@ -78,6 +78,7 @@ export function getHelpText(): string {
     inspect <file>       Print graph topology
     test [pattern]       Run agent tests
     build                Build and validate project
+    platform-smoke       Run local background-agent platform smoke
 
   Options:
     --help, -h           Show this help
@@ -90,6 +91,7 @@ export function getHelpText(): string {
     oni inspect src/graph.ts --format mermaid
     oni test
     oni build
+    oni platform-smoke --dir .oni/platform-smoke
 `;
 }
 

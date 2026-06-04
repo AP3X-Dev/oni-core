@@ -57,6 +57,7 @@ describe("CLI Router", () => {
       expect(text).toContain("inspect");
       expect(text).toContain("test");
       expect(text).toContain("build");
+      expect(text).toContain("platform-smoke");
     });
 
     it("includes version", () => {
