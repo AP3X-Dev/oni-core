@@ -135,7 +135,7 @@ describe("ContextReset", () => {
       mode: "init" as const,
       startedAt: "2026-01-01T00:00:00.000Z",
       endedAt: "2026-01-01T01:00:00.000Z",
-      agentVersion: "1.1.1",
+      agentVersion: "1.3.1",
       progress: {
         featuresAttempted: ["f1"],
         featuresPassed: ["f1"],
@@ -190,7 +190,7 @@ describe("ContextReset", () => {
       mode: "init" as const,
       startedAt: "2026-01-01T00:00:00.000Z",
       endedAt: "2026-01-01T01:00:00.000Z",
-      agentVersion: "1.1.1",
+      agentVersion: "1.3.1",
       progress: { featuresAttempted: [], featuresPassed: [], featuresFailed: [], summary: "Done" },
       environment: { workingDirectory: "/app", gitCommitHash: null, gitBranch: null, serverRunning: false, lastSmokeTestPassed: false, lastSmokeTestAt: null },
       nextSession: { suggestedFirstAction: "Start", blockers: [], nextFeatureId: null },
@@ -211,7 +211,7 @@ describe("ContextReset", () => {
       mode: "init" as const,
       startedAt: "2026-01-01T00:00:00.000Z",
       endedAt: "2026-01-01T01:00:00.000Z",
-      agentVersion: "1.1.1",
+      agentVersion: "1.3.1",
       progress: {
         featuresAttempted: [],
         featuresPassed: [],

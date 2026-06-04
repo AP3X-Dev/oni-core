@@ -25,6 +25,15 @@ import { runWithTimeout } from "../internal/timeout.js";
 // SwarmGraph — type-only to avoid circular dep
 import type { SwarmGraph } from "./graph.js";
 
+function isAgentErrorResult(value: unknown): value is { _error: true } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "_error" in value &&
+    (value as { _error?: unknown })._error === true
+  );
+}
+
 // ----------------------------------------------------------------
 // buildCritiqueRefine
 // ----------------------------------------------------------------
@@ -141,8 +150,7 @@ export function buildStepwiseVerify<S extends BaseSwarmState>(
     let failedStage: { stageIndex: number; reason: string } | null = null;
     let accumulatedContext: Record<string, unknown> = { ...(state.context ?? {}) };
 
-    for (let i = 0; i < stages.length; i++) {
-      const stage = stages[i];
+    for (const [i, stage] of stages.entries()) {
       const verificationHistory: VerificationResult[] = [];
       let passed = false;
       let attempts = 0;
@@ -150,13 +158,14 @@ export function buildStepwiseVerify<S extends BaseSwarmState>(
 
       for (let attempt = 0; attempt <= stage.maxRetries; attempt++) {
         attempts++;
+        const latestVerification = verificationHistory.at(-1);
 
         const inputState = {
           ...state,
           context: {
             ...accumulatedContext,
-            ...(verificationHistory.length > 0
-              ? { verifierFeedback: verificationHistory[verificationHistory.length - 1].feedback }
+            ...(latestVerification
+              ? { verifierFeedback: latestVerification.feedback }
               : {}),
           },
         } as S;
@@ -291,7 +300,7 @@ export function buildEnsembleVote<S extends BaseSwarmState>(
 
     if (config.mode === "vote" && config.judge) {
       const resultsText = Object.entries(agentResults)
-        .filter(([, v]) => !(v as any)?._error)
+        .filter(([, v]) => !isAgentErrorResult(v))
         .map(([id, r]) => `${id}: ${JSON.stringify(r)}`)
         .join("\n\n");
 

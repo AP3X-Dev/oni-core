@@ -11,6 +11,7 @@ import { resolve, join } from "node:path";
 import { existsSync, readdirSync } from "node:fs";
 import { randomId, atomicWriteJSON, readJSON, ensureDir, sanitizeForPrompt } from "./utils.js";
 import { SessionBridgeNotOpenError } from "./errors.js";
+import { ONI_CORE_VERSION } from "../version.js";
 
 // ----------------------------------------------------------------
 // Types
@@ -107,7 +108,7 @@ export class SessionBridge {
       mode: this.previousSessionId ? "resume" : "init",
       startedAt: this.startedAt,
       endedAt: new Date().toISOString(),
-      agentVersion: "1.1.1", // matches package.json
+      agentVersion: ONI_CORE_VERSION,
 
       progress,
 

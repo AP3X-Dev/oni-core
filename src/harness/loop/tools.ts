@@ -341,8 +341,7 @@ async function executeToolsParallel(
   // collected for concurrent execution.
   const approved: ApprovedCall[] = [];
 
-  for (let i = 0; i < toolCalls.length; i++) {
-    const toolCall = toolCalls[i];
+  for (const [i, toolCall] of toolCalls.entries()) {
 
     // Strip prototype-polluting keys
     toolCall.args = stripProtoKeys(toolCall.args);
@@ -451,26 +450,36 @@ async function executeToolsParallel(
   }
 
   // ── Phase 2: Concurrent execution ────────────────────────────────────
-  // `Promise.allSettled` preserves the order of the input array, so
-  // results[k] corresponds to approved[k] regardless of completion order.
-  const settled = await Promise.allSettled(
-    approved.map(({ toolCall, toolDef, toolCtx }) => {
+  const outcomes = await Promise.all(
+    approved.map(async (approvedCall) => {
+      const { toolCall, toolDef, toolCtx } = approvedCall;
       const startTime = Date.now();
-      return Promise.resolve(toolDef.execute(toolCall.args, toolCtx)).then(
-        (rawResult) => ({ rawResult, durationMs: Date.now() - startTime }),
-      );
+      try {
+        const rawResult = await toolDef.execute(toolCall.args, toolCtx);
+        return {
+          status: "fulfilled" as const,
+          approvedCall,
+          rawResult,
+          durationMs: Date.now() - startTime,
+        };
+      } catch (reason) {
+        return {
+          status: "rejected" as const,
+          approvedCall,
+          reason,
+        };
+      }
     }),
   );
 
   // ── Phase 3: Serial post-processing ──────────────────────────────────
   // Place each result at its original index so ordering matches the
   // serial path even when pre-flight rejected some tools earlier.
-  for (let k = 0; k < approved.length; k++) {
-    const { toolCall, metadataUpdates, index } = approved[k];
-    const outcome = settled[k];
+  for (const outcome of outcomes) {
+    const { toolCall, metadataUpdates, index } = outcome.approvedCall;
 
     if (outcome.status === "fulfilled") {
-      const { rawResult, durationMs } = outcome.value;
+      const { rawResult, durationMs } = outcome;
       const content = typeof rawResult === "string" ? rawResult : JSON.stringify(rawResult);
 
       // Notify onToolMetadata that this tool completed successfully
