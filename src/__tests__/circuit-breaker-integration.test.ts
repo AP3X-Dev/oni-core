@@ -1,6 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { StateGraph, START, END, lastValue } from "../index.js";
 import { CircuitBreakerOpenError } from "../errors.js";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("circuit breaker integration", () => {
   it("trips after threshold failures through graph execution", async () => {
@@ -60,6 +64,8 @@ describe("circuit breaker integration", () => {
   it("circuit breaker resets after successful execution in half-open state", async () => {
     type S = { value: string };
     let shouldFail = true;
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-23T00:00:00.000Z"));
 
     const g = new StateGraph<S>({ channels: { value: lastValue(() => "") } });
     g.addNode("flaky", async () => {
@@ -78,8 +84,9 @@ describe("circuit breaker integration", () => {
     // Circuit is open — immediate rejection
     await expect(app.invoke({ value: "b" })).rejects.toThrow(CircuitBreakerOpenError);
 
-    // Wait for resetAfter to transition to half-open
-    await new Promise((r) => setTimeout(r, 60));
+    // Advance deterministically into half-open without depending on wall-clock
+    // scheduling under coverage instrumentation.
+    vi.advanceTimersByTime(51);
 
     // Now fix the node and try again (half-open allows one attempt)
     shouldFail = false;

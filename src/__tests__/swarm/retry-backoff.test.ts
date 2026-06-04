@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   SwarmGraph, quickAgent, type BaseSwarmState,
 } from "../../swarm/index.js";
@@ -33,30 +33,30 @@ describe("Agent retry backoff", () => {
   });
 
   it("no delay when retryDelayMs is not set (backwards compatible)", async () => {
-    const timestamps: number[] = [];
     let calls = 0;
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
 
-    const swarm = SwarmGraph.hierarchical<BaseSwarmState>({
-      supervisor: { strategy: "round-robin", maxRounds: 1 },
-      agents: [
-        quickAgent("flaky", async () => {
-          timestamps.push(Date.now());
-          calls++;
-          if (calls <= 1) throw new Error("fail");
-          return { messages: [{ role: "assistant", content: "ok" }], done: true };
-        }, { maxRetries: 1 }),
-      ],
-    });
+    try {
+      const swarm = SwarmGraph.hierarchical<BaseSwarmState>({
+        supervisor: { strategy: "round-robin", maxRounds: 1 },
+        agents: [
+          quickAgent("flaky", async () => {
+            calls++;
+            if (calls <= 1) throw new Error("fail");
+            return { messages: [{ role: "assistant", content: "ok" }], done: true };
+          }, { maxRetries: 1 }),
+        ],
+      });
 
-    const app = swarm.compile();
-    const result = await app.invoke({ task: "no delay" });
+      const app = swarm.compile();
+      const result = await app.invoke({ task: "no delay" });
 
-    expect(result.done).toBe(true);
-    expect(calls).toBe(2);
-
-    // Without retryDelayMs, retries should be near-instant (< 20ms gap)
-    const gap = timestamps[1]! - timestamps[0]!;
-    expect(gap).toBeLessThan(20);
+      expect(result.done).toBe(true);
+      expect(calls).toBe(2);
+      expect(setTimeoutSpy).not.toHaveBeenCalled();
+    } finally {
+      setTimeoutSpy.mockRestore();
+    }
   });
 
   it("backoff respects swarm deadline — skips delay if deadline would expire", async () => {

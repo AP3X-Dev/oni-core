@@ -29,7 +29,7 @@ export async function withRetry<T>(
   });
 
   let lastError: Error | undefined;
-  let delay = initialDelay;
+  let delay = Math.min(initialDelay, maxDelay);
   let actualAttempts = 0;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

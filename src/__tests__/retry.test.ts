@@ -1,6 +1,10 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { withRetry } from "../retry.js";
 import { NodeExecutionError } from "../errors.js";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("withRetry", () => {
   it("returns on first success without retrying", async () => {
@@ -83,43 +87,53 @@ describe("withRetry", () => {
   });
 
   it("applies exponential backoff between retries", async () => {
+    vi.useFakeTimers();
     const fn = vi.fn()
       .mockRejectedValueOnce(new Error("1"))
       .mockRejectedValueOnce(new Error("2"))
       .mockResolvedValueOnce("ok");
 
-    const start = Date.now();
-    await withRetry(fn, "node", {
+    const retry = withRetry(fn, "node", {
       maxAttempts: 3,
       initialDelay: 50,
       backoffMultiplier: 2,
       jitter: false,
     });
-    const elapsed = Date.now() - start;
 
-    // initialDelay=50 + 50*2=100 = 150ms minimum
-    expect(elapsed).toBeGreaterThanOrEqual(100);
+    expect(fn).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(49);
+    expect(fn).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fn).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(99);
+    expect(fn).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(retry).resolves.toBe("ok");
     expect(fn).toHaveBeenCalledTimes(3);
   });
 
   it("respects maxDelay cap", async () => {
+    vi.useFakeTimers();
     const fn = vi.fn()
       .mockRejectedValueOnce(new Error("1"))
       .mockRejectedValueOnce(new Error("2"))
       .mockResolvedValueOnce("ok");
 
-    const start = Date.now();
-    await withRetry(fn, "node", {
+    const retry = withRetry(fn, "node", {
       maxAttempts: 3,
       initialDelay: 100,
       backoffMultiplier: 10,
       maxDelay: 50,
       jitter: false,
     });
-    const elapsed = Date.now() - start;
 
-    // Both delays capped at 50ms each = ~100ms max (with some tolerance)
-    expect(elapsed).toBeLessThan(300);
+    expect(fn).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(49);
+    expect(fn).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fn).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(50);
+    await expect(retry).resolves.toBe("ok");
     expect(fn).toHaveBeenCalledTimes(3);
   });
 
