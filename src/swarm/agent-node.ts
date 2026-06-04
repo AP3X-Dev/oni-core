@@ -110,7 +110,6 @@ export function createAgentNode<S extends BaseSwarmState>(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ? (result as any).__pendingHandoff
             : null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (rawHandoff) { // SAFE: duck-typing unknown agent return value
           const handoff = rawHandoff instanceof Handoff
             ? rawHandoff

@@ -20,7 +20,6 @@ function emit(
   message: string,
   data?: Record<string, unknown>,
 ): void {
-  // eslint-disable-next-line no-console
   const sink = console[method] ?? console.log;
   if (data === undefined) sink(message);
   else sink(message, data);

@@ -54,7 +54,6 @@ describe("BUG-0431: testSkillRevision() handles throwing testFn without crashing
   it("BUG-0431: returns a failed ExperimentResult when testFn rejects with a non-Error value", async () => {
     const evolver = new SkillEvolver({});
 
-    // eslint-disable-next-line prefer-promise-reject-errors
     const rejectingTestFn = vi.fn().mockRejectedValue("string rejection");
 
     const result = await evolver.testSkillRevision(
