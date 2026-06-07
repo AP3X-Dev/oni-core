@@ -1,18 +1,14 @@
 <p align="center">
-  <strong>@oni.bot/core</strong>
-</p>
-
-<p align="center">
   <img src="./assets/oni-core-banner.png" alt="ONI Core - The graph execution engine for production agent swarms" />
 </p>
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/@oni.bot/core"><img src="https://img.shields.io/npm/v/@oni.bot/core.svg" alt="npm version" /></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License" /></a>
-  <img src="https://img.shields.io/badge/dependencies-0-brightgreen" alt="zero dependencies" />
-</p>
+ONI Core is a TypeScript graph execution engine for production agent swarms,
+stateful workflows, tool execution, streaming, persistence, human review, and
+background-agent orchestration.
 
----
+The root package stays dependency-light and ESM-first. Optional peer packages
+unlock runtime integrations such as SQLite, Postgres, Redis, model adapters,
+document loaders, and dev tooling without forcing them into every install.
 
 ## Install
 
@@ -20,283 +16,180 @@
 npm install @oni.bot/core
 ```
 
-- **Zero runtime dependencies.** Self-contained TypeScript. No transitive supply-chain risk. Runs in Node.js 18+, serverless functions, and edge runtimes without adaptation.
-- **5 model adapters via raw HTTP.** Anthropic, OpenAI, OpenRouter, Google, and Ollama — no vendor SDKs required.
-- **23 entry points.** Root package plus 22 named subpaths for precise tree shaking.
+Requirements:
 
----
+- Node.js 18+
+- TypeScript projects should use ESM-compatible module resolution.
+- Optional peers are installed only when you use the matching backend or package.
+
+## What Is Included
+
+- Graph runtime: `StateGraph`, `MessageGraph`, channels, reducers, conditional
+  routing, retries, checkpointing, and streaming.
+- Swarm runtime: agent registries, pools, handoffs, supervisors, tracing,
+  snapshots, scaling monitors, and topology helpers.
+- Tool runtime: structured tool definitions, runtime policy wrapping, execution,
+  permissions, audit logs, and guardrails.
+- Model adapters: raw HTTP adapters for Anthropic, OpenAI, OpenRouter, Google,
+  and Ollama.
+- Platform control plane: background sessions, triggers, queues, identities,
+  capability grants, environments, artifacts, review gates, health, and audit
+  summaries.
+- Harness layer: native agent loops, external CLI drivers, JSONL parsers,
+  resumable metadata, safety gates, hooks, and context compaction.
+- Release hardening: export smoke tests, type smoke tests, package tarball
+  snapshots, dependency audit, secret scanning, coverage gates, and lint budgets.
 
 ## Quick Start
 
 ```ts
-import { StateGraph, START, END, lastValue, anthropic } from "@oni.bot/core";
+import { END, START, StateGraph, lastValue, appendList } from "@oni.bot/core";
 
-type State = {
-  question: string;
-  answer: string;
+type WorkflowState = {
+  request: string;
+  steps: string[];
+  summary: string;
 };
 
-const model = anthropic("claude-sonnet-4-6");
-
-const graph = new StateGraph<State>({
+const graph = new StateGraph<WorkflowState>({
   channels: {
-    question: lastValue<string>(() => ""),
-    answer:   lastValue<string>(() => ""),
+    request: lastValue<string>(() => ""),
+    steps: appendList<string>(),
+    summary: lastValue<string>(() => ""),
   },
 });
 
-graph.addNode("answer", async (state) => {
-  const response = await model.chat({
-    messages: [{ role: "user", content: state.question }],
-  });
-  return { answer: response.content as string };
-});
+graph.addNode("plan", async (state) => ({
+  steps: [
+    `Clarify scope: ${state.request}`,
+    "Execute the smallest useful change",
+    "Verify the result",
+  ],
+}));
 
-graph.addEdge(START, "answer");
-graph.addEdge("answer", END);
+graph.addNode("summarize", async (state) => ({
+  summary: `Prepared ${state.steps.length} execution steps.`,
+}));
+
+graph.addEdge(START, "plan");
+graph.addEdge("plan", "summarize");
+graph.addEdge("summarize", END);
 
 const app = graph.compile();
+const result = await app.invoke({
+  request: "Ship a monitored support workflow",
+});
 
-for await (const chunk of app.stream(
-  { question: "What is a Pregel execution model?" },
-  { streamMode: "values" },
-)) {
-  console.log(chunk.answer);
-}
+console.log(result.summary);
 ```
 
----
+For token or event streaming, use `app.stream(input, { streamMode: "values" })`
+or the dedicated streaming helpers exported from `@oni.bot/core/streaming`.
 
-## Sub-modules
+## Public Entry Points
 
-23 entry points — import only what you use.
+The package publishes 23 import surfaces so consumers can import only the
+runtime area they need.
 
-| Subpath | Description |
+| Import | Use it for |
 |---|---|
-| `@oni.bot/core` | Core engine: `StateGraph`, `START`, `END`, channels, `Command`, `Send` |
-| `@oni.bot/core/prebuilt` | Prebuilt agents: `createReactAgent`, `defineAgent` |
-| `@oni.bot/core/swarm` | Swarm templates: `SwarmGraph` (hierarchical, fan-out, pipeline, peer-network, map-reduce, debate, mesh) |
-| `@oni.bot/core/hitl` | Human-in-the-loop: `interrupt`, `getUserInput`, `getUserApproval` |
-| `@oni.bot/core/store` | Cross-thread KV store: `InMemoryStore`, `BaseStore`, `NamespacedStore` |
-| `@oni.bot/core/messages` | Message channel primitives: `messagesChannel`, `MessageAnnotation` |
-| `@oni.bot/core/checkpointers` | Persistence backends: `MemoryCheckpointer`, `SqliteCheckpointer` |
-| `@oni.bot/core/functional` | Functional API: `task`, `entrypoint`, `pipe`, `branch` |
-| `@oni.bot/core/inspect` | Graph inspection: `buildGraphDescriptor`, `toMermaid`, cycle detection |
-| `@oni.bot/core/streaming` | Token streaming: `emitToken`, `getStreamWriter`, `StreamWriter` |
-| `@oni.bot/core/models` | LLM adapters: `anthropic`, `openai`, `openrouter`, `google`, `ollama` |
-| `@oni.bot/core/tools` | Tool definition: `defineTool`, `ToolSchema`, `ToolResult` |
-| `@oni.bot/core/agents` | Agent builder: `defineAgent`, `AgentDefinition` |
-| `@oni.bot/core/coordination` | Inter-agent messaging: `RequestReplyBroker`, `PubSub` |
-| `@oni.bot/core/events` | Event bus: `EventBus`, 10 lifecycle event types |
-| `@oni.bot/core/guardrails` | Budget and safety: `BudgetTracker`, `ContentFilter`, `PermissionGuard` |
-| `@oni.bot/core/testing` | Test utilities: `mockModel`, `assertGraph`, `createTestHarness` |
-| `@oni.bot/core/harness` | Agentic loop: `ONIHarness`, `AgentLoop`, `HooksEngine`, `ContextCompactor` |
-| `@oni.bot/core/mcp` | MCP client: JSON-RPC/stdio tool bridge |
-| `@oni.bot/core/lsp` | LSP client: language server protocol primitives |
-| `@oni.bot/core/config` | Config loader: JSONC parsing, environment variable resolution |
+| `@oni.bot/core` | Root graph runtime, channels, messages, swarm primitives, models, tools, platform, harness, telemetry, logging, and errors |
+| `@oni.bot/core/prebuilt` | ReAct agents, tool nodes, and prebuilt graph helpers |
+| `@oni.bot/core/swarm` | Swarm graph templates, pools, handoffs, supervisors, snapshots, scaling, tracing, and topology helpers |
+| `@oni.bot/core/hitl` | Human-in-the-loop interrupts, approvals, selections, and session storage |
+| `@oni.bot/core/store` | In-memory and namespaced cross-thread stores |
+| `@oni.bot/core/messages` | Message channels, reducers, message constructors, trimming, updates, and removals |
+| `@oni.bot/core/checkpointers` | Memory, SQLite, Postgres, Redis, and namespaced checkpoint backends |
+| `@oni.bot/core/functional` | Functional `task`, `entrypoint`, `pipe`, and `branch` APIs |
+| `@oni.bot/core/inspect` | Graph descriptors, cycle checks, topological order, and Mermaid output |
+| `@oni.bot/core/streaming` | Token streaming, stream writers, bounded buffers, and stream events |
+| `@oni.bot/core/models` | Anthropic, OpenAI, OpenRouter, Google, and Ollama model adapters |
+| `@oni.bot/core/tools` | `defineTool`, tool execution, schemas, permissions, and tool contexts |
+| `@oni.bot/core/agents` | Functional agent definitions and swarm message context helpers |
+| `@oni.bot/core/coordination` | Request/reply broker and pub/sub coordination primitives |
+| `@oni.bot/core/events` | Lifecycle event bus and event listener contracts |
+| `@oni.bot/core/guardrails` | Budgets, content filters, permission checks, and audit logging |
+| `@oni.bot/core/testing` | Mock models, graph assertions, harness helpers, and test utilities |
+| `@oni.bot/core/harness` | Agent loop, external agent host, CLI drivers, runtime registry, hooks, safety gates, context compaction, and JSONL parsers |
+| `@oni.bot/core/mcp` | MCP stdio transport and JSON-RPC tool bridge |
+| `@oni.bot/core/lsp` | Language Server Protocol client primitives |
+| `@oni.bot/core/config` | JSONC config loading and environment variable resolution |
 | `@oni.bot/core/registry` | Dynamic runtime tool registry |
-| `@oni.bot/core/platform` | Background-agent control plane: task specs, triggers, sessions, environments, identity, capabilities, artifacts, review gates |
+| `@oni.bot/core/platform` | Background-agent sessions, routing, triggers, environments, stores, artifacts, review gates, runtime policy, health, and audit summaries |
 
----
+## Platform Layer
 
-## Background Agent Platform
+`@oni.bot/core/platform` is the control plane for long-running or externally
+executed work. It normalizes task submission, trigger handling, routing,
+environment provisioning, scoped identity, capability grants, runtime policy,
+artifact publication, review, and session health into one lifecycle.
 
-`@oni.bot/core/platform` provides the reusable infrastructure layer around coding agents. It turns a task plus a trigger into a governed session with queueing, environment provisioning, scoped identity, capability grants, audit events, artifacts, and review state.
-`capability.granted` audit events include structured capability summaries so
-operators can see which command, connector, network, repo, secret, and tool
-grants were issued without recording secret values.
+The platform includes:
 
-```ts
-import {
-  BackgroundAgentPlatform,
-  CerebroExecutionEnvironmentProvider,
-  JsonFileAgentSessionStore,
-  JsonFileArtifactStore,
-  LocalExecutionEnvironmentProvider,
-  createPostgresPlatformStores,
-  createSqlitePlatformStores,
-  StaticAgentRouter,
-} from "@oni.bot/core/platform";
+- Local, HTTP, and Cerebro execution environment providers.
+- In-memory, JSON-file, SQLite, and Postgres session/artifact stores.
+- CLI, scheduled, chat command, GitHub webhook, and dependency alert triggers.
+- Runtime policy helpers for path, command, network, tool, and explicit secret
+  grants.
+- Session runners for native `agentLoop()`, external CLI providers, and compiled
+  swarm workflows.
+- `GitHubArtifactStore` for publishing pull requests, reports, diagnostics, and
+  test summaries to GitHub while mirroring enriched records to another store.
+- Health and audit summaries for queue depth, session status, failure rates,
+  durations, costs, artifacts, and lifecycle events.
 
-const platform = new BackgroundAgentPlatform({
-  router: new StaticAgentRouter({
-    agentId: "codex-worker",
-    runtime: "codex",
-    provider: "codex",
-    requiredTools: ["git", "pnpm"],
-  }),
-  runner: {
-    async run() {
-      return {
-        summary: "Implemented the fix and ran tests.",
-        artifacts: [{
-          type: "patch",
-          title: "Auth callback patch",
-          content: "diff --git ...",
-        }],
-      };
-    },
-  },
-  environmentProvider: new LocalExecutionEnvironmentProvider({
-    workspaceRoot: ".oni/workspaces",
-  }),
-  sessionStore: new JsonFileAgentSessionStore(".oni/platform/sessions.json"),
-  artifactStore: new JsonFileArtifactStore(".oni/platform/artifacts.json"),
-});
-
-const session = await platform.runTask({
-  task: {
-    title: "Fix auth callback",
-    goal: "Repair the redirect regression and verify it.",
-    successCriteria: ["Regression test passes"],
-    review: { required: true, reviewers: ["lead"] },
-  },
-  trigger: { kind: "vcs", source: "github.pull_request" },
-});
-```
-
-For durable local or single-node deployments, the platform ships both
-dependency-free JSON-file stores and optional SQLite stores. Use
-`createSqlitePlatformStores(".oni/platform/state.sqlite")` when a deployment
-needs indexed session status queries and artifact metadata in one durable
-database file; the SQLite adapter keeps `better-sqlite3` as an optional peer.
-For service deployments, `createPostgresPlatformStores(connectionString)`
-provides the same session and artifact contracts on Postgres with `pg` kept as
-an optional peer.
-
-Remote devbox providers can plug into the same platform lifecycle through
-`HttpExecutionEnvironmentProvider`, or `CerebroExecutionEnvironmentProvider`
-when the service exposes Cerebro-style `/api/environments` routes:
-
-```ts
-const environmentProvider = new CerebroExecutionEnvironmentProvider({
-  baseUrl: process.env.CEREBRO_URL!,
-  token: process.env.CEREBRO_TOKEN,
-});
-```
-
-For CLI-backed workers, `createExternalAgentSessionRunner()` bridges a platform
-session to a harness `ExternalAgentDriver`. It applies the task scope before the
-driver starts: allowed/disallowed paths are passed as ownership, explicit env is
-filtered through granted secrets, denied policy actions are audited, and output
-artifacts redact granted secret values.
-
-Codex and Claude Code convenience drivers fail closed for provider options that
-can bypass runtime controls. Raw `extraArgs`, Codex's approval/sandbox bypass,
-and Claude Code's permission bypass require an explicit `unsafe` override in
-the driver options.
-
-CLI-backed drivers also bound retained provider output by default. Configure
-`maxEvents`, `maxOutputChars`, `maxStderrChars`, and
-`maxEventContentChars` when a deployment needs tighter limits; timeout and
-abort handling attempt to terminate the provider process tree on Windows.
-When a request includes ownership paths, the driver validates `cwd` before
-spawning and validates provider path flags such as Codex `addDirs` and Claude
-Code `mcpConfig`/`worktree` against the same boundary.
-Codex and Claude JSONL parsers normalize text, tool calls, diffs, errors, and
-encrypted reasoning into provider-neutral external-agent events while keeping
-malformed frames observable as text/artifact events.
-Failed platform-run external-agent sessions always include a failed-run
-diagnosis artifact. If the provider exposes resume metadata, ONI preserves a
-sanitized summary so operators can retry without storing arbitrary provider
-metadata values.
-
-For reviewable GitHub output, `GitHubArtifactStore` implements the platform
-artifact-store contract. It can publish `pull_request` artifacts as GitHub pull
-requests, publish reports/test summaries/diagnostics as issue or PR comments,
-return the published URI to the session artifact, and mirror the enriched record
-to another store such as `JsonFileArtifactStore`.
-
-Trigger adapters such as `createCliTrigger()`, `createScheduledTrigger()`,
-`createGitHubWebhookTrigger()`, `createChatCommandTrigger()`, and
-`createDependencyAlertTrigger()` normalize launch events into platform
-`AgentTrigger` records. GitHub webhook ingestion can verify
-`X-Hub-Signature-256` from the raw body before creating VCS/security triggers.
-Tool callers that
-run inside a platform session can wrap existing `ToolDefinition`s with
-`wrapToolWithRuntimePolicy()` to enforce path, command, network, and tool
-capability checks before tool code executes.
-The `@oni.bot/tools` filesystem factory also accepts a structural
-`runtimePolicy` option, so platform callers can route default read/write/list
-operations through the same grant, tool-capability, and path-scope enforcement
-without adding a package build-order dependency on core internals.
-
-To verify the local platform path without a real coding CLI, run:
+For a local smoke run:
 
 ```bash
 oni platform-smoke --dir .oni/platform-smoke
 ```
 
-The smoke command provisions a local session workspace, runs an in-process
-external-agent driver, and writes durable JSON session/artifact state under the
-chosen directory.
-
-For operations, `BackgroundAgentPlatform#getHealthSnapshot()` summarizes queue
-depth, active sessions, status counts, failure/cancellation rates, duration,
-cost, and per-session artifact/audit counts. `getAuditSummary()` summarizes
-audit events by type and can filter by session id, event type, or timestamp.
-Deployments can pass a structural `logger` and OpenTelemetry-compatible
-`tracer` to `BackgroundAgentPlatform` to receive lifecycle logs and spans for
-routing, environment provisioning, identity/capability issuance, runner
-execution, artifact publication, review, and resource release.
-
-Platform sessions can also run the native harness loop with
-`createAgentLoopSessionRunner()`. The adapter converts a platform task into an
-`agentLoop()` prompt, applies runtime policy wrappers to configured tools by
-default, and returns a durable report or failed-run diagnosis artifact.
-Compiled swarm skeletons can run through `createSwarmSessionRunner()`, using the
-same platform lifecycle, audit, artifact, and telemetry flow.
-
-Release verification includes `pnpm run coverage:quality`, which enforces
-global and module-specific coverage floors for critical platform, MCP/LSP,
-external-agent, prebuilt, tool, GitHub, and auth-resolver surfaces. It also
-includes `pnpm run smoke:exports`, which imports every built root package
-export subpath, and `pnpm run typecheck:exports`, which compiles a temporary
-consumer-style TypeScript program against every public subpath declaration
-before packaging.
-It also runs `pnpm run pack:snapshot` to inspect root and publishable workspace
-tarball contents for missing entrypoints, source/test leakage, local artifacts,
-and secret-like files. The gate further runs `pnpm run audit:secrets` (a content
-secret scanner over every tracked source file) and `pnpm run lint:budget` (a
-per-rule lint-warning ceiling that fails on any lint error or budget regression).
-
-Internal library logging is injectable: every non-CLI core module logs through
-`getLogger()` rather than `console.*`, so a host can route or silence internal
-logs with `setDefaultLogger(...)` (or `noopLogger`). The default forwards to the
-matching `console` method, so behavior is unchanged until you inject a sink.
-
----
-
 ## Workspace Packages
 
-Extension packages in `packages/` — install separately as needed.
+The monorepo also contains focused packages that build on the root runtime.
 
-| Package | Description |
-|---|---|
-| `@oni.bot/tools` | Prebuilt `ToolDefinition`-conforming tools (filesystem, HTTP, search, etc.) |
-| `@oni.bot/stores` | Persistent KV store backends (Redis, Postgres) |
-| `@oni.bot/loaders` | Document loaders (Markdown, JSON, CSV, PDF, HTML, DOCX) |
-| `@oni.bot/a2a` | A2A protocol client, server, and swarm integration |
-| `@oni.bot/integrations` | ActivePieces-to-ONI adapter (612 community integrations) |
-| `@oni.bot/community` | ActivePieces community integrations source (internal) |
+| Package | Status | Purpose |
+|---|---|---|
+| `@oni.bot/tools` | Public | Prebuilt tool definitions for filesystem, HTTP, search, Slack, Stripe, E2B, and related integrations |
+| `@oni.bot/stores` | Public | Redis and Postgres store backends |
+| `@oni.bot/loaders` | Public | Markdown, JSON, CSV, PDF, HTML, and DOCX document loaders |
+| `@oni.bot/a2a` | Public | A2A protocol client, server, and swarm integration |
+| `@oni.bot/integrations` | Public | ActivePieces-to-ONI adapter for community integrations |
+| `@oni.bot/devtools` | Public | Lightweight dev server for graph topology, registry state, and live execution events |
+| `@oni.bot/hot-loader` | Public | File-watching extension loader for `DynamicToolRegistry` |
+| `@oni.bot/community` | Private | ActivePieces community source library used by the integrations package |
 
----
+## Verification
+
+Common local checks:
+
+```bash
+pnpm run typecheck
+pnpm test
+pnpm run build
+pnpm run smoke:exports
+pnpm run typecheck:exports
+pnpm run pack:snapshot
+```
+
+Release verification runs the broader gate:
+
+```bash
+pnpm run verify:release
+```
+
+That gate combines root and package tests, strict type checking, coverage
+thresholds, build checks, subpath export smoke tests, consumer type smoke tests,
+dependency audit, content secret scanning, lint-warning budgets, and package
+tarball snapshots.
 
 ## Documentation
 
-- **[Developer Guide](./GUIDE.md)** — Progressive tutorial from zero to advanced: graphs, channels, streaming, checkpointing, agents, swarms, and more.
-
----
-
-## Ecosystem
-
-**Built on @oni.bot/core:**
-
-- [`@oni.bot/code`](https://github.com/AP3X-Dev) — AI coding assistant CLI *(coming soon)*
-- [`@oni.bot/sentinel`](https://github.com/AP3X-Dev) — Code analysis and review engine *(coming soon)*
-
----
+- [Developer Guide](./GUIDE.md) - graph basics, channels, streaming,
+  checkpointing, agents, swarms, and advanced runtime patterns.
+- [Changelog](./CHANGELOG.md) - release history and compatibility notes.
+- [Security](./SECURITY.md) - reporting and security policy.
 
 ## License
 
-MIT — [AP3X Dev](https://github.com/AP3X-Dev)
+MIT - [AP3X Dev](https://github.com/AP3X-Dev)
