@@ -155,6 +155,7 @@
   },
   "files": [
     "dist",
+    "assets/oni-core-banner.png",
     "README.md",
     "CHANGELOG.md",
     "GUIDE.md",

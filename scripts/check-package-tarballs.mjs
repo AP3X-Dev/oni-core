@@ -11,7 +11,7 @@ const failures = [];
 const DISALLOWED_PATHS = [
   { pattern: /(^|\/)__tests__(\/|$)/, reason: "test directory" },
   { pattern: /(^|\/)(src|coverage|node_modules|scripts|\.github|\.tmp[^/]*)(\/|$)/, reason: "source/local directory" },
-  { pattern: /(^|\/)(CLAUDE|AGENTS|GEMINI|PRODUCTION_HARDENING_PLAN|PROJECT_CONTEXT|OPERATIONS_RUNBOOK|RESEARCH_SPEC|CONTRIBUTING)\.md$/i, reason: "internal planning doc" },
+  { pattern: /(^|\/)(CLAUDE|AGENTS|GEMINI|HARDENING_HANDOFF|OPERATIONS_RUNBOOK|PACKAGE_RELEASE_POLICY|PRODUCTION_HARDENING_PLAN|PROJECT_CONTEXT|RESEARCH_SPEC|CONTRIBUTING)\.md$/i, reason: "internal planning doc" },
   { pattern: /\.(test|spec)\.[cm]?[jt]sx?$/i, reason: "compiled test file" },
   { pattern: /\.(env|pem|key|p12|pfx)$/i, reason: "secret-like file" },
   { pattern: /(^|\/)(credentials|serviceAccount|service-account)[^/]*\.json$/i, reason: "credential file" },
@@ -19,6 +19,7 @@ const DISALLOWED_PATHS = [
 ];
 
 const ROOT_TOP_LEVEL = new Set([
+  "assets",
   "CHANGELOG.md",
   "GUIDE.md",
   "README.md",

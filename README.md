@@ -2,7 +2,9 @@
   <strong>@oni.bot/core</strong>
 </p>
 
-<h3 align="center">The graph execution engine for production agent swarms.</h3>
+<p align="center">
+  <img src="./assets/oni-core-banner.png" alt="ONI Core - The graph execution engine for production agent swarms" />
+</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@oni.bot/core"><img src="https://img.shields.io/npm/v/@oni.bot/core.svg" alt="npm version" /></a>
@@ -254,11 +256,9 @@ consumer-style TypeScript program against every public subpath declaration
 before packaging.
 It also runs `pnpm run pack:snapshot` to inspect root and publishable workspace
 tarball contents for missing entrypoints, source/test leakage, local artifacts,
-and secret-like files. See `PACKAGE_RELEASE_POLICY.md` for the source-map and
-tarball-content policy. The gate further runs `pnpm run audit:secrets` (a
-content secret scanner over every tracked source file) and `pnpm run lint:budget`
-(a per-rule lint-warning ceiling that fails on any lint error or budget
-regression).
+and secret-like files. The gate further runs `pnpm run audit:secrets` (a content
+secret scanner over every tracked source file) and `pnpm run lint:budget` (a
+per-rule lint-warning ceiling that fails on any lint error or budget regression).
 
 Internal library logging is injectable: every non-CLI core module logs through
 `getLogger()` rather than `console.*`, so a host can route or silence internal

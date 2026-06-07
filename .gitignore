@@ -38,14 +38,14 @@ serviceAccountKey.json
 # Test artifacts
 coverage/
 
-# Internal / planning docs
-# Policy: docs/ is a local planning/workspace tree (superpowers plans & specs) and
-# stays ignored. Production-facing docs (README, GUIDE, SECURITY, OPERATIONS_RUNBOOK,
-# PACKAGE_RELEASE_POLICY) live at the repo root so consumers can see them.
-# Root planning artifacts (PRODUCTION_HARDENING_PLAN, HARDENING_HANDOFF, PROJECT_CONTEXT)
-# are kept in-tree for maintainer/agent continuity but are excluded from npm tarballs
-# by scripts/check-package-tarballs.mjs and the package "files" allowlist.
+# Internal docs
 docs/
+HARDENING_HANDOFF.md
+OPERATIONS_RUNBOOK.md
+PACKAGE_RELEASE_POLICY.md
+PRODUCTION_HARDENING_PLAN.md
+PROJECT_CONTEXT.md
+RESEARCH_SPEC.md
 CLAUDE.md
 AGENTS.md
 GEMINI.md
