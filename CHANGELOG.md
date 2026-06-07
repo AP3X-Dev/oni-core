@@ -5,6 +5,17 @@ All notable changes to @oni.bot/core are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] — 2026-06-07
+
+### Changed
+- Refreshed the npm README with the ONI Core banner and current package surface.
+
+### Fixed
+- Hardened CLI external-agent watchdog cleanup so process timeouts and idle timers
+  do not fire after provider exit while stdio close is still draining.
+- Added a direct-kill fallback for Windows process-tree termination and made the
+  idle watchdog reset test less sensitive to full-suite scheduling delays.
+
 ## [1.3.1] — 2026-05-12
 
 ### Added

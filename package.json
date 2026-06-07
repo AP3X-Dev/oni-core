@@ -1,6 +1,6 @@
 {
   "name": "@oni.bot/core",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "The graph execution engine for agent swarms — production-grade orchestration with zero dependencies",
   "type": "module",
   "sideEffects": false,

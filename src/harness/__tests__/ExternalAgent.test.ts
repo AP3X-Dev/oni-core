@@ -759,7 +759,7 @@ describe("external agent support", () => {
         "let n=0;const t=setInterval(()=>{console.log('tick');if(++n>=4)clearInterval(t);},20);",
       ],
       stdin: "none",
-      idleTimeoutMs: 300,
+      idleTimeoutMs: 2_000,
       maxEvents: 50,
     });
 

@@ -883,12 +883,31 @@ function terminateChildProcess(
   if (child.exitCode !== null) return;
 
   if (killProcessTree && process.platform === "win32" && child.pid) {
+    const killDirectly = (): void => {
+      if (child.exitCode === null) {
+        child.kill();
+      }
+    };
+    let fallback: NodeJS.Timeout | undefined = setTimeout(killDirectly, 1_000);
+    fallback.unref?.();
+    const clearFallback = (): void => {
+      if (fallback) {
+        clearTimeout(fallback);
+        fallback = undefined;
+      }
+    };
+    child.once("exit", clearFallback);
     const killer = spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
       windowsHide: true,
       stdio: "ignore",
     });
     killer.on("error", () => {
-      child.kill();
+      clearFallback();
+      killDirectly();
+    });
+    killer.on("close", () => {
+      clearFallback();
+      killDirectly();
     });
     return;
   }
@@ -1060,11 +1079,15 @@ export function createCliExternalAgentDriver(
       }
 
       return new Promise<ExternalAgentRunResult>((resolve) => {
-        child.on("error", (err) => {
+        const clearProcessWatchdogs = (): void => {
           settled = true;
           if (timeout) clearTimeout(timeout);
           clearIdle();
           signal?.removeEventListener("abort", abortHandler);
+        };
+
+        child.on("error", (err) => {
+          clearProcessWatchdogs();
           const message = err instanceof Error ? err.message : String(err);
           forward(eventOf(request, "external_agent_error", { content: message }));
           resolve({
@@ -1088,11 +1111,10 @@ export function createCliExternalAgentDriver(
           });
         });
 
+        child.on("exit", clearProcessWatchdogs);
+
         child.on("close", (code, childSignal) => {
-          settled = true;
-          if (timeout) clearTimeout(timeout);
-          clearIdle();
-          signal?.removeEventListener("abort", abortHandler);
+          clearProcessWatchdogs();
           stdout.close();
           stderrReader.close();
 
