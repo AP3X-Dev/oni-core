@@ -182,10 +182,12 @@ function buildContextSummary(
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let handle: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    handle = setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms`)), timeoutMs);
+  });
   return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms`)), timeoutMs),
-    ),
+    promise.finally(() => clearTimeout(handle)),
+    timeoutPromise,
   ]);
 }
