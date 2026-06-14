@@ -71,11 +71,14 @@ describe("StdioTransport real stdio integration", () => {
   it("spawns with minimal env, exchanges framed requests, and receives notifications", async () => {
     process.env.SECRET_TOKEN = "must-not-leak";
     const notifications: JsonRpcNotification[] = [];
+    // Generous timeouts: v8 coverage instrumentation on Windows can slow
+    // subprocess spawn and I/O significantly (>1–2 s). These tests verify
+    // functionality, not timeout precision, so large values are correct.
     const transport = new StdioTransport({
       command: process.execPath,
       args: ["-e", stdioServerScript()],
       env: { ALLOWED_ENV: "allowed" },
-      spawnTimeout: 1000,
+      spawnTimeout: 30_000,
       onNotification: (notification) => notifications.push(notification),
     });
 
@@ -83,7 +86,7 @@ describe("StdioTransport real stdio integration", () => {
       await transport.start();
       expect(transport.isConnected()).toBe(true);
 
-      const response = await transport.send("test/ping", { value: 42 }, 1000);
+      const response = await transport.send("test/ping", { value: 42 }, 30_000);
       expect(response.result).toEqual({
         method: "test/ping",
         params: { value: 42 },
@@ -92,7 +95,7 @@ describe("StdioTransport real stdio integration", () => {
       });
 
       transport.notify("test/notify", { value: "seen" });
-      await expect(waitFor(() => notifications[0])).resolves.toMatchObject({
+      await expect(waitFor(() => notifications[0], 30_000)).resolves.toMatchObject({
         method: "server/notice",
         params: { value: "seen" },
       });
@@ -100,7 +103,7 @@ describe("StdioTransport real stdio integration", () => {
       transport.stop();
       delete process.env.SECRET_TOKEN;
     }
-  });
+  }, 60_000);
 
   it("rejects dangerous command strings before spawning", async () => {
     const transport = new StdioTransport({
