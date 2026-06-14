@@ -207,17 +207,25 @@ export function createAgentNode<S extends BaseSwarmState>(
               delay = Math.min(delay, remaining);
             }
             await new Promise<void>((resolve, reject) => {
-              const timer = setTimeout(resolve, delay);
               const signal = config?.signal;
               if (signal?.aborted) {
-                clearTimeout(timer);
                 reject(signal.reason ?? new Error("aborted"));
                 return;
               }
-              signal?.addEventListener("abort", () => {
-                clearTimeout(timer);
-                reject(signal.reason ?? new Error("aborted"));
-              }, { once: true });
+              let onAbort: (() => void) | undefined;
+              const timer = setTimeout(() => {
+                if (onAbort !== undefined) {
+                  signal?.removeEventListener("abort", onAbort);
+                }
+                resolve();
+              }, delay);
+              if (signal != null) {
+                onAbort = () => {
+                  clearTimeout(timer);
+                  reject(signal.reason ?? new Error("aborted"));
+                };
+                signal.addEventListener("abort", onAbort, { once: true });
+              }
             });
           }
           continue; // retry
