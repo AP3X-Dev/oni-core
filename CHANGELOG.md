@@ -5,6 +5,18 @@ All notable changes to @oni.bot/core are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.3] — 2026-06-14
+
+### Fixed
+- `AgentPool.dispose()` now wakes coroutines sleeping in a retry delay so they reject instead of hanging forever; previously, disposing a pool mid-retry-delay left the `invoke()` caller's promise permanently unsettled.
+- `SwarmSnapshotStore` now retains the full `MAX_SNAPSHOTS` capacity — the eviction guard was off by one and capped the store at `MAX_SNAPSHOTS - 1`.
+- `createAgentNode` retry delays no longer leak abort-signal listeners on the normal-timer path, preventing unbounded listener accumulation on a long-lived shared `AbortSignal`.
+- Multi-mode subgraph streaming now emits every active stream-mode tag (e.g. `updates` and `values`) when `debug` is also requested; secondary tags were previously dropped for forwarded subgraph events.
+- `Command.send` returned by `Send`-dispatched (fan-out) nodes is now forwarded to the next superstep, so chained sends execute instead of being silently dropped.
+- `LSPClient.clearAllWaiters()` now settles every pending diagnostics waiter; live-array mutation during iteration was skipping waiters and hanging callers awaiting diagnostics at shutdown.
+- The session-init smoke-test timeout timer is now cleared once initialization succeeds, so it no longer holds the Node event loop open for the remainder of the timeout.
+- `MemoryLoader.loadType()` now returns all units of a type regardless of session load state, so memory consolidation no longer early-returns and skips when units were already loaded earlier in the session.
+
 ## [1.3.2] — 2026-06-07
 
 ### Changed
