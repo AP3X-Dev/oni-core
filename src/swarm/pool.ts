@@ -49,6 +49,7 @@ export class AgentPool<S extends Record<string, unknown>> {
   private _pendingRemoval = new Set<string>();
   private _retryTimers = new Set<ReturnType<typeof setTimeout>>();
   private _disposed = false;
+  private _retryResolvers = new Set<() => void>();
   private static readonly PRIORITY_ORDER: Record<string, number> = {
     critical: 0, high: 1, normal: 2, low: 3,
   };
@@ -78,6 +79,10 @@ export class AgentPool<S extends Record<string, unknown>> {
     this._disposed = true;
     for (const timer of this._retryTimers) clearTimeout(timer);
     this._retryTimers.clear();
+    // Wake any coroutines sleeping in a retry delay so they can observe
+    // _disposed === true and reject rather than hanging indefinitely.
+    for (const resolveDelay of this._retryResolvers) resolveDelay();
+    this._retryResolvers.clear();
     const drainError = new Error("AgentPool disposed");
     for (const item of this.queue) {
       item.reject(drainError);
@@ -261,9 +266,16 @@ export class AgentPool<S extends Record<string, unknown>> {
           if (attempt < maxRetries) {
             if (retryDelayMs && retryDelayMs > 0) {
               await new Promise<void>((resolve) => {
-                const timer = setTimeout(() => { this._retryTimers.delete(timer); resolve(); }, retryDelayMs);
+                const timer = setTimeout(() => {
+                  this._retryTimers.delete(timer);
+                  this._retryResolvers.delete(resolve);
+                  resolve();
+                }, retryDelayMs);
                 this._retryTimers.add(timer);
+                this._retryResolvers.add(resolve);
               });
+              // If dispose() fired while we were sleeping, abort immediately.
+              if (this._disposed) throw new Error("AgentPool disposed");
             }
             continue;
           }
