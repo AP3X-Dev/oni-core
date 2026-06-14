@@ -148,5 +148,58 @@ describe("MemoryExtractor", () => {
       // Model should NOT have been called
       expect(model.chat).not.toHaveBeenCalled();
     });
+
+    it("consolidates all episodic units even when 3+ are already in this.loaded (BUG-8)", async () => {
+      // Regression test for BUG-8: loadType("episodic") was filtering out units
+      // already in this.loaded, so when match() had pre-loaded 3 episodic units,
+      // consolidate() saw <3 units and silently early-returned without running the model.
+      //
+      // We write 4 episodic files (all with the same recurring fact) then simulate the
+      // session-loading that initMemory/match() performs by calling loader.load(key)
+      // on 3 of them — adding their keys to the loader's internal `loaded` Set.
+      // consolidate() must still see all 4 units and call the model.
+      const factLine = "- [decision] Always use TypeScript strict mode";
+
+      const units = [];
+      for (let i = 1; i <= 4; i++) {
+        const unit = loader.persistEpisodic(`session-${i}`, [
+          `---`,
+          `type: episodic`,
+          `tier: 2`,
+          `tags: typescript`,
+          `summary: Session ${i}`,
+          `created: 2026-01-0${i}T00:00:00.000Z`,
+          `---`,
+          ``,
+          `# Session ${i}`,
+          ``,
+          factLine,
+          `- [fact] Unique to session ${i}`,
+        ].join("\n"));
+        units.push(unit);
+      }
+
+      // Simulate initMemory: pre-load 3 of the 4 units into the loader's `loaded` set
+      // (exactly as match() would do when episodic units score above the match threshold).
+      loader.load(units[0]!.key);
+      loader.load(units[1]!.key);
+      loader.load(units[2]!.key);
+
+      // At this point, the buggy loadType would return only 1 unit (units[3]),
+      // hitting the `result.units.length < 3` early-return and never calling the model.
+      // With the fix, all 4 units are returned and consolidation proceeds.
+      const organizedResponse = [
+        "## domain: typescript",
+        "### topic: strict-mode",
+        "- [decision] Always use TypeScript strict mode",
+      ].join("\n");
+      const model = makeMockModel(organizedResponse);
+      const extractor = new MemoryExtractor(model, loader);
+
+      await extractor.consolidate();
+
+      // The model MUST have been called — if consolidate() bailed early, this fails.
+      expect(model.chat).toHaveBeenCalled();
+    });
   });
 });

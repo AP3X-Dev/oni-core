@@ -176,10 +176,14 @@ export class MemoryLoader {
 
   /**
    * loadType(type) — Load all units of a given memory type.
-   * Budget: 16000t fixed (intentional escape hatch). Additive.
+   * Budget: 16000t fixed (intentional escape hatch).
+   * Non-additive: returns ALL units of the requested type regardless of
+   * whether they were already loaded during this session. This is
+   * intentional — callers such as MemoryExtractor.consolidate() need a
+   * complete view of every unit on disk, not just the incremental delta.
    */
   loadType(type: MemoryType): LoadResult {
-    const units = [...this.units.values()].filter((u) => u.type === type && !this.loaded.has(u.key));
+    const units = [...this.units.values()].filter((u) => u.type === type);
     return applyBudget(
       units, 16000,
       (u) => this.hydrate(u),
