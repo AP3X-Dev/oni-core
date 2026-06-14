@@ -98,7 +98,7 @@ describe("BUG-3 — retry-delay AbortSignal listener must be removed when timer 
         origRemove(type, listener, opts);
       });
 
-      const runPromise = nodeFn(state, { signal } as any);
+      const runPromise = nodeFn(state, { signal } as unknown as Parameters<typeof nodeFn>[1]);
 
       // Let the first retry delay fire (100ms)
       await vi.advanceTimersByTimeAsync(100);
@@ -124,10 +124,8 @@ describe("BUG-3 — retry-delay AbortSignal listener must be removed when timer 
       const ac = new AbortController();
       const signal = ac.signal;
 
-      let calls = 0;
       const skeleton = {
         invoke: vi.fn(async () => {
-          calls++;
           throw new Error("always fails");
         }),
       } as unknown as SwarmAgentDef<S>["skeleton"];
@@ -148,7 +146,7 @@ describe("BUG-3 — retry-delay AbortSignal listener must be removed when timer 
       const state = makeState({ currentAgent: "agent-b" });
 
       // Attach rejection handler immediately to avoid unhandled-rejection warning
-      const runPromise = nodeFn(state, { signal } as any);
+      const runPromise = nodeFn(state, { signal } as unknown as Parameters<typeof nodeFn>[1]);
       const resultCapture = runPromise.then(
         (v) => ({ ok: true, value: v }),
         (e) => ({ ok: false, error: e }),
