@@ -750,22 +750,60 @@ describe("external agent support", () => {
   });
 
   it("createCliExternalAgentDriver keeps running while output resets the idle watchdog", async () => {
+    // Use an injected fake timer to decouple the test from wall-clock speed.
+    // The fake timer records every set/clear call so we can verify that each
+    // stdout line causes resetIdle() to be invoked without any dependency on
+    // real elapsed time or v8-coverage-induced process-spawn latency.
+    let idleResetCount = 0; // incremented each time resetIdle() calls clearTimeout+setTimeout
+    let pendingFn: (() => void) | undefined;
+    let pendingId = 0;
+
+    const fakeTimers = {
+      setTimeout(fn: () => void, _ms: number): NodeJS.Timeout {
+        // Record the callback but never schedule it — no real timer is created.
+        // The idle timer can only fire if we explicitly call firePending() below.
+        pendingFn = fn;
+        return (++pendingId) as unknown as NodeJS.Timeout;
+      },
+      clearTimeout(_timer: NodeJS.Timeout | undefined): void {
+        // Each clearTimeout call from clearIdle() is paired with a subsequent
+        // setTimeout call from the same resetIdle() invocation; count the pair.
+        if (pendingFn !== undefined) {
+          idleResetCount++;
+        }
+        pendingFn = undefined;
+      },
+    };
+
     const driver = createCliExternalAgentDriver({
       provider: "test-cli",
       command: process.execPath,
-      // Emits lines on an interval shorter than the idle window, then exits.
+      // Emits 4 lines at 20 ms intervals, then exits cleanly.
       args: () => [
         "-e",
-        "let n=0;const t=setInterval(()=>{console.log('tick');if(++n>=4)clearInterval(t);},20);",
+        "let n=0;const t=setInterval(()=>{process.stdout.write('tick\\n');if(++n>=4)clearInterval(t);},20);",
       ],
       stdin: "none",
-      idleTimeoutMs: 2_000,
+      idleTimeoutMs: 500,
       maxEvents: 50,
+      _timers: fakeTimers,
     });
 
     const result = await driver.run(makeRequest({ provider: "test-cli" }), () => undefined);
 
+    // (a) Each of the 4 stdout lines must have called resetIdle(), which means
+    //     clearTimeout was invoked once per line (plus once from clearProcessWatchdogs),
+    //     so idleResetCount must equal the number of lines the subprocess emitted.
+    //     If resetIdle() were removed from handleStdoutLine the count would stay at
+    //     1 (only clearProcessWatchdogs' final clearIdle clears the startup timer),
+    //     failing this assertion and detecting the broken watchdog behaviour.
+    expect(idleResetCount).toBeGreaterThanOrEqual(4);
+
+    // (b) The idle watchdog must NOT have emitted an "idle for" event — the driver
+    //     must have run to natural completion, not been killed for inactivity.
     expect(result.events.some((event) => event.content?.includes("idle for"))).toBe(false);
+
+    // (c) The subprocess exits cleanly with code 0.
     expect(result.status).toBe("completed");
   });
 

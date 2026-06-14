@@ -237,6 +237,14 @@ export interface CliExternalAgentDriverConfig {
     line: string,
     request: ExternalAgentRunRequest,
   ) => ExternalAgentEvent | ExternalAgentEvent[] | null;
+  /**
+   * @internal Test-only seam: override the timer functions used for the idle
+   * watchdog and overall timeout. Never set this in production drivers.
+   */
+  _timers?: {
+    setTimeout: (fn: () => void, ms: number) => NodeJS.Timeout;
+    clearTimeout: (timer: NodeJS.Timeout | undefined) => void;
+  };
 }
 
 export class ExternalAgentPathPolicyError extends Error {
@@ -929,6 +937,8 @@ export function createCliExternalAgentDriver(
     DEFAULT_CLI_MAX_EVENT_CONTENT_CHARS,
   );
   const killProcessTree = config.killProcessTree ?? true;
+  const timerSetTimeout = config._timers?.setTimeout ?? setTimeout;
+  const timerClearTimeout = config._timers?.clearTimeout ?? clearTimeout;
 
   return {
     provider: config.provider,
@@ -1009,7 +1019,7 @@ export function createCliExternalAgentDriver(
       let timeout: NodeJS.Timeout | undefined;
       const timeoutMs = request.timeoutMs ?? config.timeoutMs;
       if (timeoutMs && timeoutMs > 0) {
-        timeout = setTimeout(() => {
+        timeout = timerSetTimeout(() => {
           forward(eventOf(request, "external_agent_error", {
             content: `External agent timed out after ${timeoutMs}ms`,
           }));
@@ -1024,14 +1034,14 @@ export function createCliExternalAgentDriver(
       const idleTimeoutMs = request.idleTimeoutMs ?? config.idleTimeoutMs;
       const clearIdle = (): void => {
         if (idleTimer) {
-          clearTimeout(idleTimer);
+          timerClearTimeout(idleTimer);
           idleTimer = undefined;
         }
       };
       const resetIdle = (): void => {
         if (!idleTimeoutMs || idleTimeoutMs <= 0 || settled) return;
         clearIdle();
-        idleTimer = setTimeout(() => {
+        idleTimer = timerSetTimeout(() => {
           forward(eventOf(request, "external_agent_error", {
             content: `External agent idle for ${idleTimeoutMs}ms with no output`,
           }));
@@ -1081,7 +1091,7 @@ export function createCliExternalAgentDriver(
       return new Promise<ExternalAgentRunResult>((resolve) => {
         const clearProcessWatchdogs = (): void => {
           settled = true;
-          if (timeout) clearTimeout(timeout);
+          if (timeout) timerClearTimeout(timeout);
           clearIdle();
           signal?.removeEventListener("abort", abortHandler);
         };
