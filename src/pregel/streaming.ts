@@ -411,13 +411,9 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
     // Yield buffered subgraph events — filtered by parent's active modes
     for (const subEvt of allSubgraphEvents) {
       const e = subEvt as ONIStreamEvent<S>;
-      if (modeDebug) {
-        yield tag(e, "debug");
-      } else if (modeUpdates && (e.event === "node_end")) {
-        yield tag(e, "updates");
-      } else if (modeValues && e.event === "state_update") {
-        yield tag(e, "values");
-      }
+      if (modeDebug) yield tag(e, "debug");
+      if (modeUpdates && e.event === "node_end") yield tag(e, "updates");
+      if (modeValues && e.event === "state_update") yield tag(e, "values");
       // Custom and message events from subgraphs are forwarded if those modes are active
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (modeCustom && (e as any).event === "custom") { // SAFE: narrowing union event type that doesn't include "custom" in current TS discriminant
