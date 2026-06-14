@@ -489,7 +489,7 @@ export class LSPClient {
 
   private clearAllWaiters(): void {
     for (const [, waiters] of this.diagnosticsWaiters) {
-      for (const w of waiters) {
+      for (const w of [...waiters]) {
         clearTimeout(w.overallTimer);
         if (w.debounceTimer) clearTimeout(w.debounceTimer);
         w.resolve();
