@@ -152,6 +152,7 @@ export async function* streamSupersteps<S extends Record<string, unknown>>(
             ? (Array.isArray(result.goto) ? result.goto : [result.goto])
             : getNextNodes(name, state, ctx._edgesBySource, config).nodes;
           nextNodes.push(...gotos);
+          if (result.send) nextSends.push(...result.send.map((s) => ({ node: s.node, args: s.args })));
         } else if (result && typeof result === "object") {
           // applyUpdate handles Handoff duck-types via the __pendingHandoff passthrough (BUG-0267)
           state = applyUpdate(ctx.channels, state, result as Partial<S>);
